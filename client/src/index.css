@@ -47,6 +47,42 @@
 }
 
 /* ============================================================
+   BRAND IDENTITY TOKENS & TYPOGRAPHY
+   ============================================================ */
+.brand-logicwhile {
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  color: #f8fafc;
+  background: linear-gradient(180deg, #ffffff 30%, #e2e8f0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.elevated-quiz-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #ea580c 100%);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  line-height: 1;
+}
+
+.brand-tagline {
+  color: #f59e0b;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.95;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+}
+
+/* ============================================================
    RESET
    ============================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
