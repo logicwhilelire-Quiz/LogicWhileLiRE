@@ -175,21 +175,22 @@ export default function LoadingLogo({
       <div style={{ textAlign: 'center', marginTop: 4 }}>
         <div
           style={{
-            fontSize: size === 'sm' ? '1rem' : size === 'lg' ? '1.5rem' : '1.25rem',
+            fontSize: size === 'sm' ? '1.05rem' : size === 'lg' ? '1.6rem' : '1.35rem',
             fontWeight: 800,
-            letterSpacing: '-0.02em',
+            letterSpacing: '-0.035em',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 6,
+            gap: size === 'sm' ? 8 : 10,
           }}
         >
-          <span style={{ color: '#ffffff', fontWeight: 800, letterSpacing: '-0.03em' }}>LogicWhile</span>
+          <span className="brand-logicwhile">LogicWhile</span>
           <span
             className="elevated-quiz-badge"
             style={{
-              fontSize: size === 'sm' ? '0.64rem' : size === 'lg' ? '0.88rem' : '0.74rem',
-              padding: size === 'sm' ? '2px 7px' : size === 'lg' ? '4px 12px' : '3px 9px',
+              fontSize: size === 'sm' ? '0.66rem' : size === 'lg' ? '0.94rem' : '0.78rem',
+              padding: size === 'sm' ? '2.5px 8px' : size === 'lg' ? '5px 14px' : '3.5px 11px',
+              letterSpacing: '0.18em',
             }}
           >
             QUIZ
@@ -197,14 +198,10 @@ export default function LoadingLogo({
         </div>
 
         <div
+          className="brand-tagline"
           style={{
-            fontSize: size === 'sm' ? '0.72rem' : '0.82rem',
-            color: '#f59e0b',
-            fontWeight: 700,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            marginTop: 4,
-            opacity: 0.95,
+            fontSize: size === 'sm' ? '0.65rem' : '0.76rem',
+            marginTop: 5,
           }}
         >
           Elevating Coding Knowledge

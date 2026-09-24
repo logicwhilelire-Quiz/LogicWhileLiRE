@@ -18,7 +18,7 @@ set -euo pipefail
 
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-BACKUP_FILE="${BACKUP_DIR}/logic_while_quiz_backup_${TIMESTAMP}.sql.gz"
+BACKUP_FILE="${BACKUP_DIR}/logicwhile_quiz_backup_${TIMESTAMP}.sql.gz"
 RETENTION_DAYS=14
 
 mkdir -p "${BACKUP_DIR}"
@@ -47,5 +47,5 @@ echo "✅ Backup completed successfully: $(du -h "${BACKUP_FILE}" | cut -f1)"
 
 # Prune old backups older than RETENTION_DAYS
 echo "Pruning backups older than ${RETENTION_DAYS} days..."
-find "${BACKUP_DIR}" -name "logic_while_quiz_backup_*.sql.gz" -mtime +${RETENTION_DAYS} -delete
+find "${BACKUP_DIR}" -name "logicwhile_quiz_backup_*.sql.gz" -mtime +${RETENTION_DAYS} -delete
 echo "Done!"

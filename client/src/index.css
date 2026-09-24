@@ -4,27 +4,33 @@
    DESIGN TOKENS
    ============================================================ */
 :root {
-  --color-bg: #0a0a0f;
-  --color-surface: #111118;
-  --color-surface-2: #1a1a25;
-  --color-surface-3: #22222e;
-  --color-border: rgba(255,255,255,0.08);
-  --color-border-hover: rgba(255,255,255,0.16);
+  --color-bg: #07090e;
+  --color-surface: #0d121f;
+  --color-surface-2: #131b2e;
+  --color-surface-3: #1a253e;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-hover: rgba(245, 158, 11, 0.35);
 
-  --color-primary: #7c3aed;
-  --color-primary-light: #8b5cf6;
-  --color-primary-glow: rgba(124, 58, 237, 0.25);
-  --color-accent: #06b6d4;
-  --color-accent-glow: rgba(6, 182, 212, 0.2);
+  --color-primary: #f59e0b;
+  --color-primary-light: #fbbf24;
+  --color-primary-dark: #d97706;
+  --color-primary-glow: rgba(245, 158, 11, 0.32);
+  --color-accent: #ea580c;
+  --color-accent-glow: rgba(234, 88, 12, 0.25);
+
+  --color-navy: #1e3a8a;
+  --color-navy-light: #3b82f6;
+  --color-navy-glow: rgba(59, 130, 246, 0.25);
+  --color-gold: #fef08a;
 
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
   --color-danger-glow: rgba(239, 68, 68, 0.2);
 
-  --color-text: #f0f0f8;
-  --color-text-muted: #8888aa;
-  --color-text-faint: #44445a;
+  --color-text: #f8fafc;
+  --color-text-muted: #94a3b8;
+  --color-text-faint: #475569;
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -86,7 +92,7 @@ input, textarea, select { font-family: inherit; }
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at top left, rgba(124,58,237,0.08) 0%, transparent 60%);
+  background: radial-gradient(ellipse at top left, rgba(245, 158, 11, 0.07) 0%, transparent 60%);
   pointer-events: none;
 }
 .card-sm { padding: 20px; border-radius: var(--radius-md); }
@@ -139,7 +145,7 @@ input, textarea, select { font-family: inherit; }
   caret-color: var(--color-primary);
 }
 .otp-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-glow); }
-.otp-input.filled { border-color: var(--color-primary-light); background: rgba(124,58,237,0.1); }
+.otp-input.filled { border-color: var(--color-primary-light); background: rgba(245, 158, 11, 0.1); }
 
 /* ============================================================
    BUTTONS
@@ -160,11 +166,16 @@ input, textarea, select { font-family: inherit; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--color-primary) 0%, #6d28d9 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
   color: #fff;
-  box-shadow: 0 4px 16px var(--color-primary-glow), inset 0 1px 0 rgba(255,255,255,0.15);
+  font-weight: 700;
+  box-shadow: 0 4px 16px var(--color-primary-glow), inset 0 1px 0 rgba(255,255,255,0.25);
 }
-.btn-primary:hover { box-shadow: 0 6px 24px var(--color-primary-glow), inset 0 1px 0 rgba(255,255,255,0.2); transform: translateY(-1px); }
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 45%, var(--color-accent) 100%);
+  box-shadow: 0 6px 24px rgba(245, 158, 11, 0.45), inset 0 1px 0 rgba(255,255,255,0.35);
+  transform: translateY(-1px);
+}
 .btn-primary:active { transform: translateY(0); }
 
 .btn-secondary {
@@ -221,14 +232,14 @@ input, textarea, select { font-family: inherit; }
 .badge-success { background: rgba(16,185,129,0.15); color: var(--color-success); }
 .badge-warning { background: rgba(245,158,11,0.15); color: var(--color-warning); }
 .badge-danger { background: rgba(239,68,68,0.15); color: var(--color-danger); }
-.badge-primary { background: rgba(124,58,237,0.15); color: var(--color-primary-light); }
+.badge-primary { background: rgba(245, 158, 11, 0.15); color: var(--color-primary-light); border: 1px solid rgba(245, 158, 11, 0.3); }
 .badge-neutral { background: rgba(255,255,255,0.08); color: var(--color-text-muted); }
 
 /* ============================================================
    NAVBAR
    ============================================================ */
 .navbar {
-  background: rgba(10,10,15,0.9);
+  background: rgba(7, 9, 14, 0.92);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--color-border);
   padding: 0 24px;
@@ -238,7 +249,7 @@ input, textarea, select { font-family: inherit; }
 }
 .navbar-brand {
   font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em;
-  background: linear-gradient(135deg, var(--color-primary-light), var(--color-accent));
+  background: linear-gradient(135deg, #ffffff 40%, var(--color-primary-light) 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 .navbar-links { display: flex; gap: 8px; align-items: center; }
@@ -284,12 +295,12 @@ input, textarea, select { font-family: inherit; }
   background: transparent;
   transition: background var(--transition);
 }
-.option-item:hover { border-color: var(--color-primary); background: rgba(124,58,237,0.06); }
-.option-item:hover::before { background: rgba(124,58,237,0.04); }
+.option-item:hover { border-color: rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.05); }
+.option-item:hover::before { background: rgba(245, 158, 11, 0.03); }
 .option-item.selected {
   border-color: var(--color-primary);
-  background: rgba(124,58,237,0.12);
-  box-shadow: 0 0 0 1px var(--color-primary);
+  background: rgba(245, 158, 11, 0.12);
+  box-shadow: 0 0 0 1px var(--color-primary), 0 4px 18px rgba(245, 158, 11, 0.15);
 }
 .option-key {
   width: 32px; height: 32px;
@@ -478,7 +489,7 @@ input, textarea, select { font-family: inherit; }
   background: transparent; width: 100%; text-align: left;
 }
 .admin-nav-item:hover { background: rgba(255,255,255,0.06); color: var(--color-text); }
-.admin-nav-item.active { background: rgba(124,58,237,0.15); color: var(--color-primary-light); }
+.admin-nav-item.active { background: rgba(245, 158, 11, 0.14); color: var(--color-primary-light); border-left: 3px solid var(--color-primary); }
 .admin-content { flex: 1; padding: 32px; overflow-y: auto; }
 
 /* ============================================================
@@ -518,7 +529,7 @@ input, textarea, select { font-family: inherit; }
 }
 .upload-zone:hover, .upload-zone.dragging {
   border-color: var(--color-primary);
-  background: rgba(124,58,237,0.06);
+  background: rgba(245, 158, 11, 0.06);
 }
 .upload-icon { font-size: 3rem; margin-bottom: 12px; }
 .upload-text { font-size: 1rem; font-weight: 500; margin-bottom: 6px; }
@@ -684,28 +695,33 @@ textarea:focus-visible,
    ============================================================ */
 .brand-logicwhile {
   font-weight: 800;
-  letter-spacing: -0.03em;
-  color: var(--color-text, #ffffff);
+  letter-spacing: -0.035em;
+  background: linear-gradient(180deg, #ffffff 30%, #e2e8f0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+  line-height: 1.1;
 }
 
 .elevated-quiz-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 45%, #ea580c 100%);
   color: #ffffff !important;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
   border-radius: 6px;
-  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.45), 0 0 16px rgba(234, 88, 12, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.45);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 12px rgba(245, 158, 11, 0.45), 0 0 18px rgba(234, 88, 12, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
   vertical-align: middle;
   transform: translateY(-1px);
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+  user-select: none;
 }
 
 .elevated-quiz-badge::after {
@@ -715,7 +731,7 @@ textarea:focus-visible,
   left: -100%;
   width: 50%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
   transform: skewX(-20deg);
   animation: badgeShimmer 3.2s ease-in-out infinite;
 }
@@ -726,8 +742,17 @@ textarea:focus-visible,
 }
 
 .elevated-quiz-badge:hover {
-  transform: translateY(-2px) scale(1.06);
-  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.65), 0 0 24px rgba(234, 88, 12, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.65), 0 0 22px rgba(234, 88, 12, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.7);
+}
+
+.brand-tagline {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #f59e0b;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  text-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
 }
 
 

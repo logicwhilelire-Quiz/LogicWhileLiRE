@@ -40,7 +40,7 @@ To test live exams, proctoring violations, and email flows without polluting pro
 ```
 
 ### Staging Setup Checklist
-1. **Supabase**: Create a separate project (e.g. `logic-while-quiz-staging`). Run `server/db/schema.sql`.
+1. **Supabase**: Create a separate project (e.g. `logicwhile-quiz-staging`). Run `server/db/schema.sql`.
 2. **Backend (Render / Railway)**:
    - Branch: `preview`
    - Set environment variables to point to staging Supabase & staging SMTP.

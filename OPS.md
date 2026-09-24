@@ -60,7 +60,7 @@ chmod +x scripts/backup-db.sh
 To restore from a backup:
 ```bash
 # Decompress and restore into target database
-gunzip -c backups/logic_while_quiz_backup_TIMESTAMP.sql.gz | psql "$DATABASE_URL"
+gunzip -c backups/logicwhile_quiz_backup_TIMESTAMP.sql.gz | psql "$DATABASE_URL"
 ```
 
 ---
@@ -114,7 +114,7 @@ graph LR
 2. **Deploy to Staging**:
    - Create a Pull Request into the `staging` branch.
    - GitHub Actions automatically runs CI (lint, build, unit tests, and smoke test).
-   - Once merged, Netlify deploys the branch preview (`staging--...`), and Render automatically deploys `logic-while-quiz-server-staging`.
+   - Once merged, Netlify deploys the branch preview (`staging--...`), and Render automatically deploys `logicwhile-quiz-server-staging`.
 3. **End-to-End Staging Verification**:
    - Run the automated smoke test suite directly against staging:
      ```bash
@@ -192,8 +192,8 @@ The platform does **not** allow plaintext passwords. `ADMIN_PASSWORD_HASH` must 
    ```
 3. Update `ADMIN_PASSWORD_HASH` in:
    - Local: `server/.env`
-   - Staging: Render Dashboard > `logic-while-quiz-server-staging` > **Environment**
-   - Production: Render Dashboard > `logic-while-quiz-server` > **Environment**
+   - Staging: Render Dashboard > `logicwhile-quiz-server-staging` > **Environment**
+   - Production: Render Dashboard > `logicwhile-quiz-server` > **Environment**
 4. Restart the service for changes to take effect immediately.
 
 ---
@@ -203,8 +203,8 @@ The platform does **not** allow plaintext passwords. `ADMIN_PASSWORD_HASH` must 
 Complete the following one-time manual tasks in your cloud dashboards:
 
 ### 1. Supabase Setup
-- [ ] Create **Production Project** (`logic-while-quiz-prod`) in Supabase.
-- [ ] Create **Staging Project** (`logic-while-quiz-staging`) in Supabase.
+- [ ] Create **Production Project** (`logicwhile-quiz-prod`) in Supabase.
+- [ ] Create **Staging Project** (`logicwhile-quiz-staging`) in Supabase.
 - [ ] In both projects, open the **SQL Editor**, paste the contents of [`server/db/schema.sql`](file:///c:/Users/chara/OneDrive/Desktop/Quiz/server/db/schema.sql), and run it.
 - [ ] Verify that all 10 tables (`exams`, `participants`, `exam_sessions`, `session_answers`, `questions`, `violations`, `suspicious_activity`, `results`, `deliverable_failures`, `audit_log`) and indexes are created.
 - [ ] Copy the Project URL, Anon Key, and Service Role Key for each environment.
@@ -212,8 +212,8 @@ Complete the following one-time manual tasks in your cloud dashboards:
 ### 2. Render / Railway Backend Deployment
 - [ ] Connect your GitHub repository to Render.
 - [ ] Apply [`render.yaml`](file:///c:/Users/chara/OneDrive/Desktop/Quiz/render.yaml) Blueprint to automatically create:
-  - `logic-while-quiz-server` (Production, branch `main`)
-  - `logic-while-quiz-server-staging` (Staging, branch `staging`)
+  - `logicwhile-quiz-server` (Production, branch `main`)
+  - `logicwhile-quiz-server-staging` (Staging, branch `staging`)
 - [ ] Fill in the environment variables marked with `sync: false` in Render's dashboard:
   - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`
   - `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`

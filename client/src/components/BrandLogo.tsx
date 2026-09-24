@@ -1,3 +1,5 @@
+import { motion } from 'framer-motion';
+
 interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showTagline?: boolean;
@@ -13,84 +15,108 @@ export default function BrandLogo({
 }: BrandLogoProps) {
   // Proportional sizing matching 222:174 logo aspect ratio (~1.276)
   const dims = {
-    sm: { h: 32, w: 41, title: '1.1rem', tag: '0.62rem', gap: 10, radius: 8, badgePad: '2px 7px', badgeFont: '0.66rem' },
-    md: { h: 42, w: 54, title: '1.38rem', tag: '0.72rem', gap: 12, radius: 10, badgePad: '3px 9px', badgeFont: '0.76rem' },
-    lg: { h: 60, w: 76, title: '1.85rem', tag: '0.84rem', gap: 16, radius: 12, badgePad: '4px 13px', badgeFont: '0.92rem' },
-    xl: { h: 84, w: 108, title: '2.4rem', tag: '0.98rem', gap: 20, radius: 16, badgePad: '6px 18px', badgeFont: '1.18rem' },
+    sm: { h: 34, w: 43, title: '1.15rem', tag: '0.62rem', gap: 14, wordmarkGap: 8, radius: 8, badgePad: '2.5px 8px', badgeFont: '0.68rem', badgeTrack: '0.16em' },
+    md: { h: 44, w: 56, title: '1.42rem', tag: '0.72rem', gap: 16, wordmarkGap: 10, radius: 10, badgePad: '3.5px 11px', badgeFont: '0.78rem', badgeTrack: '0.18em' },
+    lg: { h: 64, w: 82, title: '1.92rem', tag: '0.84rem', gap: 20, wordmarkGap: 12, radius: 14, badgePad: '5px 15px', badgeFont: '0.96rem', badgeTrack: '0.2em' },
+    xl: { h: 90, w: 115, title: '2.55rem', tag: '1.02rem', gap: 26, wordmarkGap: 16, radius: 18, badgePad: '7px 20px', badgeFont: '1.24rem', badgeTrack: '0.22em' },
   }[size];
+
+  // Micro entrance motion config for high-end feel
+  const entranceAnimation = {
+    initial: { opacity: 0, y: -6, scale: 0.96 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const },
+  };
 
   if (variant === 'badge-only') {
     return (
-      <div
+      <motion.div
+        {...entranceAnimation}
         className="brand-logo-badge"
         style={{
           width: dims.w,
           height: dims.h,
           borderRadius: dims.radius,
           overflow: 'hidden',
-          boxShadow: '0 4px 20px rgba(245, 158, 11, 0.45)',
+          boxShadow: '0 4px 20px rgba(245, 158, 11, 0.4), 0 0 1px rgba(255, 255, 255, 0.6)',
           border: '1.5px solid rgba(245, 158, 11, 0.85)',
-          background: '#ffffff',
+          background: 'linear-gradient(145deg, #ffffff 0%, #fffbeb 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+          cursor: 'pointer',
         }}
+        whileHover={{ scale: 1.05, boxShadow: '0 8px 28px rgba(245, 158, 11, 0.6), 0 0 2px rgba(255, 255, 255, 0.8)' }}
+        whileTap={{ scale: 0.98 }}
       >
         <img
           src="/logo.png"
           alt="LogicWhile QUIZ"
-          style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }}
+          style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2.5 }}
         />
-      </div>
+      </motion.div>
     );
   }
 
   if (variant === 'hero') {
     return (
-      <div
+      <motion.div
+        {...entranceAnimation}
         style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           textAlign: 'center',
-          gap: 14,
+          gap: 16,
         }}
       >
-        <div
+        {/* Emblem Crest */}
+        <motion.div
           className="brand-logo-badge"
           style={{
-            width: dims.w * 1.35,
-            height: dims.h * 1.35,
+            width: dims.w * 1.32,
+            height: dims.h * 1.32,
             borderRadius: dims.radius + 4,
             overflow: 'hidden',
-            boxShadow: '0 10px 36px rgba(245, 158, 11, 0.5), 0 0 20px rgba(234, 88, 12, 0.3)',
-            border: '2px solid rgba(245, 158, 11, 0.9)',
-            background: '#ffffff',
+            boxShadow: '0 12px 40px rgba(245, 158, 11, 0.45), 0 0 28px rgba(234, 88, 12, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.9)',
+            border: '2px solid rgba(245, 158, 11, 0.95)',
+            background: 'linear-gradient(145deg, #ffffff 0%, #fffdf5 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: 4,
-            transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            padding: 5,
+            position: 'relative',
           }}
+          whileHover={{ scale: 1.04, rotate: 0.5 }}
+          transition={{ type: 'spring', stiffness: 350, damping: 25 }}
         >
+          {/* Subtle ambient shimmer */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.8), transparent 70%)',
+              pointerEvents: 'none',
+            }}
+          />
           <img
             src="/logo.png"
             alt="LogicWhile QUIZ Logo"
-            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', zIndex: 1 }}
           />
-        </div>
+        </motion.div>
 
+        {/* Wordmark Hierarchy */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.25 }}>
           <div
             style={{
               fontSize: dims.title,
               fontWeight: 800,
-              letterSpacing: '-0.03em',
+              letterSpacing: '-0.035em',
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: dims.wordmarkGap,
             }}
           >
             <span className="brand-logicwhile">LogicWhile</span>
@@ -99,6 +125,7 @@ export default function BrandLogo({
               style={{
                 fontSize: dims.badgeFont,
                 padding: dims.badgePad,
+                letterSpacing: dims.badgeTrack,
               }}
             >
               QUIZ
@@ -107,28 +134,30 @@ export default function BrandLogo({
 
           {showTagline && (
             <span
+              className="brand-tagline"
               style={{
                 fontSize: dims.tag,
                 color: '#f59e0b',
                 fontWeight: 700,
-                letterSpacing: '0.1em',
+                letterSpacing: '0.14em',
                 textTransform: 'uppercase',
-                marginTop: 6,
+                marginTop: 7,
                 opacity: 0.95,
-                textShadow: '0 0 12px rgba(245, 158, 11, 0.3)',
+                textShadow: '0 0 14px rgba(245, 158, 11, 0.35)',
               }}
             >
               Elevating Coding Knowledge
             </span>
           )}
         </div>
-      </div>
+      </motion.div>
     );
   }
 
-  // Standard horizontal variant
+  // Standard horizontal variant (for headers, navigation bars, cards)
   return (
-    <div
+    <motion.div
+      {...entranceAnimation}
       style={{
         display: inline ? 'inline-flex' : 'flex',
         alignItems: 'center',
@@ -136,22 +165,24 @@ export default function BrandLogo({
         textDecoration: 'none',
       }}
     >
-      <div
+      {/* Emblem Crest */}
+      <motion.div
         className="brand-logo-badge"
         style={{
           width: dims.w,
           height: dims.h,
           borderRadius: dims.radius,
           overflow: 'hidden',
-          boxShadow: '0 4px 18px rgba(245, 158, 11, 0.4)',
-          border: '1.5px solid rgba(245, 158, 11, 0.8)',
-          background: '#ffffff',
+          boxShadow: '0 4px 18px rgba(245, 158, 11, 0.38), 0 0 1px rgba(255, 255, 255, 0.7)',
+          border: '1.5px solid rgba(245, 158, 11, 0.85)',
+          background: 'linear-gradient(145deg, #ffffff 0%, #fffdf5 100%)',
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease',
         }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.97 }}
       >
         <img
           src="/logo.png"
@@ -160,20 +191,21 @@ export default function BrandLogo({
             width: '100%',
             height: '100%',
             objectFit: 'contain',
-            padding: 2,
+            padding: 2.5,
           }}
         />
-      </div>
+      </motion.div>
 
+      {/* Wordmark & Product Name */}
       <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
         <div
           style={{
             fontSize: dims.title,
             fontWeight: 800,
-            letterSpacing: '-0.03em',
+            letterSpacing: '-0.035em',
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
+            gap: dims.wordmarkGap,
           }}
         >
           <span className="brand-logicwhile">LogicWhile</span>
@@ -182,6 +214,7 @@ export default function BrandLogo({
             style={{
               fontSize: dims.badgeFont,
               padding: dims.badgePad,
+              letterSpacing: dims.badgeTrack,
             }}
           >
             QUIZ
@@ -189,20 +222,22 @@ export default function BrandLogo({
         </div>
         {showTagline && (
           <span
+            className="brand-tagline"
             style={{
               fontSize: dims.tag,
               color: '#f59e0b',
               fontWeight: 700,
-              letterSpacing: '0.08em',
+              letterSpacing: '0.12em',
               textTransform: 'uppercase',
               marginTop: 3,
               opacity: 0.95,
+              textShadow: '0 0 10px rgba(245, 158, 11, 0.25)',
             }}
           >
             Elevating Coding Knowledge
           </span>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

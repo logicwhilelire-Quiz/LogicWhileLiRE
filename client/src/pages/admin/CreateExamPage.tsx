@@ -139,7 +139,7 @@ export default function CreateExamPage() {
                 type="checkbox"
                 checked={form.is_leaderboard_public}
                 onChange={(e) => setForm({ ...form, is_leaderboard_public: e.target.checked })}
-                style={{ width: 18, height: 18, accentColor: '#7c3aed', cursor: 'pointer' }}
+                style={{ width: 18, height: 18, accentColor: '#f59e0b', cursor: 'pointer' }}
               />
               <label htmlFor="exam-leaderboard-public" className="text-sm" style={{ cursor: 'pointer', margin: 0 }}>
                 <strong>Public Leaderboard</strong> — Candidate ranks visible on public standings & emailed result cards

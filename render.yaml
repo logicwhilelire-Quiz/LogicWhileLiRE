@@ -7,7 +7,7 @@ services:
   # 1. PRODUCTION BACKEND SERVICE
   # ——————————————————————————————————————————
   - type: web
-    name: logic-while-quiz-server
+    name: logicwhile-quiz-server
     runtime: node
     plan: starter
     region: oregon
@@ -60,7 +60,7 @@ services:
   # 2. STAGING BACKEND SERVICE
   # ——————————————————————————————————————————
   - type: web
-    name: logic-while-quiz-server-staging
+    name: logicwhile-quiz-server-staging
     runtime: node
     plan: starter
     region: oregon
