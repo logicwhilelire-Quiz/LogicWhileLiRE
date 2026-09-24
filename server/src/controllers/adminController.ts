@@ -49,7 +49,12 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
   }
 
   let passwordValid = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH!);
-  if (!passwordValid && process.env.DEMO_MODE === 'true' && password === 'admin123') {
+  if (
+    !passwordValid &&
+    process.env.DEMO_MODE === 'true' &&
+    process.env.NODE_ENV !== 'production' &&
+    password === 'admin123'
+  ) {
     passwordValid = true;
   }
   if (!passwordValid) {
