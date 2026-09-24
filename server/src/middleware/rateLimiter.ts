@@ -1,0 +1,72 @@
+import rateLimit from 'express-rate-limit';
+
+/**
+ * Rate limiter for enrollment endpoint — 5 requests per minute per IP
+ */
+export const enrollRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Too many enrollment attempts. Please try again in a minute.',
+  },
+});
+
+/**
+ * Rate limiter for OTP verification — 5 requests per minute per IP
+ */
+export const otpRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Too many OTP attempts. Please try again in a minute.',
+  },
+});
+
+/**
+ * Rate limiter for answer submission — 120 requests per minute per IP
+ * (generous to allow auto-save, but still bounded)
+ */
+export const answerRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Too many answer submissions. Please slow down.',
+  },
+});
+
+/**
+ * Rate limiter for admin login — 10 per 15 minutes per IP
+ */
+export const adminLoginRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Too many login attempts. Please try again later.',
+  },
+});
+
+/**
+ * General API rate limiter
+ */
+export const generalRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Too many requests. Please slow down.',
+  },
+});

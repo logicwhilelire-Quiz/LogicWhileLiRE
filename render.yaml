@@ -1,0 +1,110 @@
+# ==============================================================================
+# LOGICWHILE QUIZ — Render Infrastructure as Code Blueprint
+# Defines separate Production and Staging backend services
+# ==============================================================================
+services:
+  # ——————————————————————————————————————————
+  # 1. PRODUCTION BACKEND SERVICE
+  # ——————————————————————————————————————————
+  - type: web
+    name: logic-while-quiz-server
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: main
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: VIOLATION_THRESHOLD
+        value: 2
+      - key: JWT_EXPIRY
+        value: 3h
+      - key: OTP_EXPIRY_MINUTES
+        value: 5
+      - key: CLIENT_ORIGIN
+        sync: false # e.g. https://logicwhilequiz.com or https://your-app.netlify.app
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_JWT_SECRET
+        generateValue: true
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: OTP_FROM_EMAIL
+        sync: false
+      - key: ADMIN_ALERT_EMAIL
+        sync: false
+
+  # ——————————————————————————————————————————
+  # 2. STAGING BACKEND SERVICE
+  # ——————————————————————————————————————————
+  - type: web
+    name: logic-while-quiz-server-staging
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: staging
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: staging
+      - key: PORT
+        value: 3001
+      - key: VIOLATION_THRESHOLD
+        value: 2
+      - key: JWT_EXPIRY
+        value: 3h
+      - key: OTP_EXPIRY_MINUTES
+        value: 5
+      - key: CLIENT_ORIGIN
+        sync: false # e.g. https://staging--your-app.netlify.app
+      - key: SUPABASE_URL
+        sync: false # Staging Supabase project URL
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false # Staging Supabase service role key
+      - key: SUPABASE_ANON_KEY
+        sync: false # Staging Supabase anon key
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_JWT_SECRET
+        generateValue: true
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: OTP_FROM_EMAIL
+        sync: false
+      - key: ADMIN_ALERT_EMAIL
+        sync: false

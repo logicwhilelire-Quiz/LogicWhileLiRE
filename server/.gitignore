@@ -1,0 +1,18 @@
+# Server dependencies & build
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Secrets & Environment
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs
+logs/
+*.log
+
+# Dumps
+*.dump
+*.sql.gz
