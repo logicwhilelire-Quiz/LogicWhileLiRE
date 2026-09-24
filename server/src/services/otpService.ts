@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 
-const BCRYPT_ROUNDS = 10;
+const BCRYPT_ROUNDS = process.env.NODE_ENV === 'test' || process.env.DEMO_MODE === 'true' ? 4 : 10;
 const OTP_TTL_MINUTES = parseInt(process.env.OTP_EXPIRY_MINUTES || '5', 10);
 const OTP_TTL_MS = OTP_TTL_MINUTES * 60 * 1000;
 

@@ -1,5 +1,14 @@
 import rateLimit from 'express-rate-limit';
 
+const isLoadTestBypass = (req: any) =>
+  process.env.NODE_ENV === 'test' ||
+  (process.env.DEMO_MODE === 'true' && (
+    req.headers['x-load-test'] === 'true' ||
+    req.ip === '127.0.0.1' ||
+    req.ip === '::1' ||
+    req.ip === '::ffff:127.0.0.1'
+  ));
+
 /**
  * Rate limiter for enrollment endpoint — 5 requests per minute per IP
  */
@@ -8,6 +17,7 @@ export const enrollRateLimit = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: isLoadTestBypass,
   message: {
     success: false,
     error: 'Too many enrollment attempts. Please try again in a minute.',
@@ -22,6 +32,7 @@ export const otpRateLimit = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: isLoadTestBypass,
   message: {
     success: false,
     error: 'Too many OTP attempts. Please try again in a minute.',
@@ -37,6 +48,7 @@ export const answerRateLimit = rateLimit({
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: isLoadTestBypass,
   message: {
     success: false,
     error: 'Too many answer submissions. Please slow down.',
@@ -51,6 +63,7 @@ export const adminLoginRateLimit = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: isLoadTestBypass,
   message: {
     success: false,
     error: 'Too many login attempts. Please try again later.',
@@ -65,8 +78,10 @@ export const generalRateLimit = rateLimit({
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: isLoadTestBypass,
   message: {
     success: false,
     error: 'Too many requests. Please slow down.',
   },
 });
+

@@ -10,6 +10,10 @@ import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../db/supabase';
 import { parseAndValidateXlsx, bulkInsertQuestions } from '../services/questionImportService';
+import {
+  parseAndValidateEnrollmentFile,
+  bulkInsertParticipants,
+} from '../services/bulkEnrollmentService';
 import { getCache, setCache, invalidateCache } from '../services/cacheService';
 import {
   getExamQuestionAnalytics,
@@ -20,16 +24,24 @@ import { sendTerminationAlertEmail } from '../services/emailService';
 
 const LEADERBOARD_CACHE_TTL = 10; // 10 seconds TTL to handle post-exam traffic spikes
 
-// Multer config — memory storage, 5MB limit, xlsx only
+// Multer config — memory storage, 5MB limit, xlsx and csv supported
 export const uploadMiddleware = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-        file.originalname.endsWith('.xlsx')) {
+    const isXlsx =
+      file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      file.originalname.endsWith('.xlsx');
+    const isCsv =
+      file.mimetype === 'text/csv' ||
+      file.mimetype === 'application/csv' ||
+      file.mimetype === 'text/plain' ||
+      file.originalname.endsWith('.csv');
+
+    if (isXlsx || isCsv) {
       cb(null, true);
     } else {
-      cb(new Error('Only .xlsx files are accepted'));
+      cb(new Error('Only .xlsx and .csv files are accepted'));
     }
   },
 }).single('file');
@@ -301,6 +313,70 @@ export async function importQuestions(req: Request, res: Response): Promise<void
     res.status(500).json({ success: false, error: message });
   }
 }
+
+/**
+ * POST /api/admin/exams/:examId/bulk-enroll
+ * Bulk pre-register candidate roster via CSV or XLSX
+ */
+export async function bulkEnrollParticipantsHandler(req: Request, res: Response): Promise<void> {
+  const { examId } = req.params;
+
+  if (!req.file) {
+    res.status(400).json({ success: false, error: 'No CSV or XLSX file uploaded' });
+    return;
+  }
+
+  const { data: exam } = await supabase
+    .from('exams')
+    .select('id, title, is_active')
+    .eq('id', examId)
+    .single();
+
+  if (!exam) {
+    res.status(404).json({ success: false, error: 'Exam not found' });
+    return;
+  }
+
+  const { validRows, errors: parseErrors } = parseAndValidateEnrollmentFile(req.file.buffer);
+
+  if (parseErrors.length > 0 && validRows.length === 0) {
+    res.status(400).json({
+      success: false,
+      error: 'Validation failed for all rows in file.',
+      row_errors: parseErrors,
+    });
+    return;
+  }
+
+  try {
+    const { inserted, skipped } = await bulkInsertParticipants(examId as string, validRows);
+    res.json({
+      success: true,
+      message: `Enrolled ${inserted.length} candidates successfully (${skipped.length} skipped as duplicates).`,
+      total_uploaded: validRows.length,
+      inserted_count: inserted.length,
+      skipped_count: skipped.length,
+      inserted,
+      skipped,
+      validation_warnings: parseErrors,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Bulk enrollment failed';
+    res.status(500).json({ success: false, error: msg });
+  }
+}
+
+/**
+ * GET /api/admin/bulk-enroll/template
+ * Download sample CSV roster template
+ */
+export function getBulkEnrollTemplate(_req: Request, res: Response): void {
+  const csvContent = 'Full Name,Hall Ticket,Mobile Number,Email Address\nAarav Sharma,HT2026101,+919876543210,aarav.student@example.com\nNeha Patel,HT2026102,+919876543211,neha.student@example.com\n';
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="logicwhile_roster_template.csv"');
+  res.send(csvContent);
+}
+
 
 // ——————————————————————————————————————————
 // LEADERBOARD

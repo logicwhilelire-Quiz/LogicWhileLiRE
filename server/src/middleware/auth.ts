@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { supabase } from '../db/supabase';
 
@@ -59,7 +60,13 @@ export async function participantAuth(
     return;
   }
 
-  const hashMatch = await bcrypt.compare(token, session.token_hash);
+  let hashMatch = false;
+  if (session.token_hash && (session.token_hash.startsWith('$2b$') || session.token_hash.startsWith('$2a$'))) {
+    hashMatch = await bcrypt.compare(token, session.token_hash);
+  } else if (session.token_hash) {
+    const computedHash = crypto.createHash('sha256').update(token).digest('hex');
+    hashMatch = crypto.timingSafeEqual(Buffer.from(computedHash), Buffer.from(session.token_hash));
+  }
   if (!hashMatch) {
     res.status(401).json({ success: false, error: 'Token mismatch — possible replay attack' });
     return;

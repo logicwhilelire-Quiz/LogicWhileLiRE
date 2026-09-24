@@ -9,6 +9,7 @@ import {
 } from '../../lib/api';
 import BrandLogo from '../../components/BrandLogo';
 import AnimatedPage from '../../components/AnimatedPage';
+import BulkEnrollModal from '../../components/BulkEnrollModal';
 
 interface Session {
   id: string;
@@ -65,12 +66,13 @@ export default function SessionsPage() {
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total_pages: 1, total_count: 0 });
+  const [isBulkEnrollOpen, setIsBulkEnrollOpen] = useState(false);
 
   useEffect(() => {
     listExams().then((r) => setExams(r.data.exams));
   }, []);
 
-  useEffect(() => {
+  const refreshSessions = () => {
     if (!selectedExamId) return;
     setLoading(true);
     Promise.all([
@@ -89,6 +91,10 @@ export default function SessionsPage() {
       })
       .catch((err) => console.error('Failed to load sessions data:', err))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    refreshSessions();
   }, [selectedExamId, page]);
 
   async function handleTerminate(id: string) {
@@ -156,6 +162,16 @@ export default function SessionsPage() {
               <h1 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: 4 }}>Proctoring & Sessions</h1>
               <p className="text-muted text-sm mb-3">Monitor live candidate sessions, device fingerprints, and proctoring flags.</p>
             </div>
+            {selectedExamId && (
+              <button
+                id="sessions-bulk-enroll-btn"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setIsBulkEnrollOpen(true)}
+                style={{ alignSelf: 'center' }}
+              >
+                👥 Bulk Enroll Candidates (CSV/XLSX)
+              </button>
+            )}
           </div>
 
           <div className="form-group" style={{ maxWidth: 400, marginBottom: 24 }}>
@@ -401,6 +417,16 @@ export default function SessionsPage() {
             <div className="card text-center" style={{ padding: 48 }}>
               <p className="text-muted">Please select an exam above to view sessions and proctoring activity.</p>
             </div>
+          )}
+          {/* Bulk Enrollment Modal */}
+          {selectedExamId && isBulkEnrollOpen && (
+            <BulkEnrollModal
+              isOpen={isBulkEnrollOpen}
+              onClose={() => setIsBulkEnrollOpen(false)}
+              examId={selectedExamId}
+              examTitle={exams.find((e) => e.id === selectedExamId)?.title || 'Selected Assessment'}
+              onSuccess={refreshSessions}
+            />
           )}
         </main>
       </div>

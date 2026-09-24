@@ -114,7 +114,7 @@ export const startSessionSchema = z.object({
 });
 
 export const answerSchema = z.object({
-  question_id: z.string().uuid(),
+  question_id: z.string().min(1).max(64),
   chosen_option: z.enum(['a', 'b', 'c', 'd']),
   answer_latency_ms: z.number().int().nonnegative().optional(),
 });

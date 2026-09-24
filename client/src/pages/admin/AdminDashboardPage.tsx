@@ -4,6 +4,7 @@ import { listExams, activateExam, adminLogout, getQRUrl } from '../../lib/api';
 import BrandLogo from '../../components/BrandLogo';
 import AnimatedPage from '../../components/AnimatedPage';
 import AnimatedCounter from '../../components/AnimatedCounter';
+import BulkEnrollModal from '../../components/BulkEnrollModal';
 
 interface Exam {
   id: string;
@@ -21,6 +22,7 @@ export default function AdminDashboardPage() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [qrExamId, setQrExamId] = useState<string | null>(null);
+  const [bulkEnrollExam, setBulkEnrollExam] = useState<Exam | null>(null);
 
   const currentUser = (() => {
     try {
@@ -31,11 +33,16 @@ export default function AdminDashboardPage() {
   })();
   const isSuperAdmin = currentUser.role === 'super_admin';
 
-  useEffect(() => {
+  const loadExams = () => {
+    setLoading(true);
     listExams()
       .then((r) => setExams(r.data.exams))
       .catch(() => navigate('/admin'))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadExams();
   }, []);
 
   async function handleToggle(exam: Exam) {
@@ -215,6 +222,14 @@ export default function AdminDashboardPage() {
                       >
                         📥 Import
                       </button>
+                      <button
+                        id={`bulk-enroll-exam-${exam.id}`}
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setBulkEnrollExam(exam)}
+                        title="Bulk Pre-Enroll Candidate Roster via CSV/Excel"
+                      >
+                        👥 Bulk Enroll
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -223,6 +238,17 @@ export default function AdminDashboardPage() {
           </table>
         )}
       </main>
+
+      {/* Bulk Enrollment Modal */}
+      {bulkEnrollExam && (
+        <BulkEnrollModal
+          isOpen={!!bulkEnrollExam}
+          onClose={() => setBulkEnrollExam(null)}
+          examId={bulkEnrollExam.id}
+          examTitle={bulkEnrollExam.title}
+          onSuccess={loadExams}
+        />
+      )}
 
       {/* QR Code Modal */}
       {qrExamId && (

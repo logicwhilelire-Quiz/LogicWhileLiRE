@@ -116,3 +116,26 @@ export const createStaff = (data: {
 export const toggleStaffActive = (id: string, is_active: boolean) =>
   api.patch<{ success: boolean; message: string; staff: StaffMember }>(`/api/admin/staff/${id}/deactivate`, { is_active });
 
+// ——— Bulk Enrollment ———
+export interface BulkEnrollResult {
+  success: boolean;
+  message: string;
+  total_uploaded: number;
+  inserted_count: number;
+  skipped_count: number;
+  inserted: Array<{ id: string; name: string; hall_ticket: string; email: string }>;
+  skipped: Array<{ hall_ticket: string; reason: string }>;
+  validation_warnings?: Array<{ row: number; hall_ticket?: string; error: string }>;
+}
+
+export const getBulkEnrollTemplateUrl = () => `${BASE_URL}/api/admin/bulk-enroll/template`;
+
+export const bulkEnrollParticipants = (examId: string, file: File) => {
+  const form = new FormData();
+  form.append('file', file);
+  return api.post<BulkEnrollResult>(`/api/admin/exams/${examId}/bulk-enroll`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
+

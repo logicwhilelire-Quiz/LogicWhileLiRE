@@ -37,6 +37,8 @@ import {
   listStaff,
   createStaff,
   toggleStaffStatus,
+  getBulkEnrollTemplate,
+  bulkEnrollParticipantsHandler,
 } from '../controllers/adminController';
 import { getLeaderboard } from '../controllers/adminController';
 
@@ -95,6 +97,25 @@ router.post(
     });
   },
   importQuestions
+);
+
+// ——— Bulk Enrollment ———
+router.get('/bulk-enroll/template', getBulkEnrollTemplate);
+router.post(
+  '/exams/:examId/bulk-enroll',
+  requireExamOwnership('examId'),
+  auditLog('BULK_ENROLL', 'participants'),
+  validateParams(ExamIdParam),
+  (req, res, next) => {
+    uploadMiddleware(req, res, (err) => {
+      if (err) {
+        res.status(400).json({ success: false, error: err.message });
+        return;
+      }
+      next();
+    });
+  },
+  bulkEnrollParticipantsHandler
 );
 
 // ——— Sessions ———

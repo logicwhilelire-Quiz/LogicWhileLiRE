@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
@@ -178,8 +179,8 @@ export async function verifyEnrollmentOtp(req: Request, res: Response): Promise<
 
   const rawToken = jwt.sign(jwtPayload, process.env.JWT_SECRET!, { expiresIn: JWT_EXPIRY });
 
-  // Hash token for storage — NEVER store raw token
-  const tokenHash = await bcrypt.hash(rawToken, BCRYPT_ROUNDS);
+  // Hash token for revocation protection using SHA-256 (constant-time, cryptographically secure for high-entropy JWTs)
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
 
   const { error: sessionError } = await supabase.from('exam_sessions').insert({
     id: sessionId,
