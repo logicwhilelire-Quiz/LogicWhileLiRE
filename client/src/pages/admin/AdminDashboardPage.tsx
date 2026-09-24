@@ -12,6 +12,8 @@ interface Exam {
   start_time: string | null;
   is_active: boolean;
   created_at: string;
+  created_by_name?: string | null;
+  created_by_email?: string | null;
 }
 
 export default function AdminDashboardPage() {
@@ -19,6 +21,15 @@ export default function AdminDashboardPage() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [qrExamId, setQrExamId] = useState<string | null>(null);
+
+  const currentUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('admin_user') || '{"role":"super_admin"}');
+    } catch {
+      return { role: 'super_admin' };
+    }
+  })();
+  const isSuperAdmin = currentUser.role === 'super_admin';
 
   useEffect(() => {
     listExams()
@@ -39,6 +50,7 @@ export default function AdminDashboardPage() {
       await adminLogout();
     } catch (_) {}
     localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
     sessionStorage.removeItem('admin_token');
     navigate('/admin');
   }
@@ -52,8 +64,31 @@ export default function AdminDashboardPage() {
             <BrandLogo size="sm" />
           </div>
 
+          <div
+            style={{
+              padding: '8px 12px',
+              borderRadius: 8,
+              background: isSuperAdmin ? 'rgba(245, 158, 11, 0.12)' : 'rgba(59, 130, 246, 0.12)',
+              border: `1px solid ${isSuperAdmin ? 'rgba(245, 158, 11, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`,
+              marginBottom: 16,
+            }}
+          >
+            <div style={{ fontSize: '0.72rem', color: isSuperAdmin ? '#fbbf24' : '#93c5fd', fontWeight: 700, textTransform: 'uppercase' }}>
+              Logged in as
+            </div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {currentUser.name || currentUser.email || 'Admin User'}
+            </div>
+            <span className={`badge ${isSuperAdmin ? 'badge-warning' : 'badge-neutral'}`} style={{ fontSize: '0.65rem', marginTop: 4 }}>
+              {isSuperAdmin ? '🛡️ Super Admin' : '👨‍🏫 Faculty / Trainer'}
+            </span>
+          </div>
+
           <div className="admin-sidebar-title">Exam Management</div>
           <button id="nav-dashboard" className="admin-nav-item active" onClick={() => navigate('/admin/dashboard')}>📊 Dashboard</button>
+          {isSuperAdmin && (
+            <button id="nav-staff" className="admin-nav-item" onClick={() => navigate('/admin/staff')}>🛡️ Staff Management</button>
+          )}
           <button id="nav-create-exam" className="admin-nav-item" onClick={() => navigate('/admin/create-exam')}>➕ Create Exam</button>
           <button id="nav-import" className="admin-nav-item" onClick={() => navigate('/admin/import')}>📥 Import Questions</button>
           <button id="nav-sessions" className="admin-nav-item" onClick={() => navigate('/admin/sessions')}>👥 Sessions</button>
@@ -70,14 +105,22 @@ export default function AdminDashboardPage() {
         {/* Main content */}
         <main className="admin-content">
           <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: '1.7rem', fontWeight: 800, marginBottom: 4 }}>Control Center</h1>
-            <p className="text-muted text-sm">Real-time exam management, proctoring monitoring, and export reports.</p>
+            <h1 style={{ fontSize: '1.7rem', fontWeight: 800, marginBottom: 4 }}>
+              {isSuperAdmin ? 'Institutional Control Center' : 'My Assessments Dashboard'}
+            </h1>
+            <p className="text-muted text-sm">
+              {isSuperAdmin
+                ? 'Institutional-wide assessment governance, staff administration, and proctoring.'
+                : 'Manage, configure, and monitor your assigned assessments and live candidates.'}
+            </p>
           </div>
 
           {/* Animated Stat Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
             <div className="card card-sm">
-              <div className="text-muted text-xs font-mono" style={{ textTransform: 'uppercase', marginBottom: 6 }}>Total Exams</div>
+              <div className="text-muted text-xs font-mono" style={{ textTransform: 'uppercase', marginBottom: 6 }}>
+                {isSuperAdmin ? 'Total Institutional Exams' : 'My Total Exams'}
+              </div>
               <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--color-text)' }}>
                 <AnimatedCounter value={exams.length} />
               </div>
@@ -89,15 +132,17 @@ export default function AdminDashboardPage() {
               </div>
             </div>
             <div className="card card-sm" style={{ borderLeft: '3px solid #f59e0b' }}>
-              <div className="text-muted text-xs font-mono" style={{ textTransform: 'uppercase', marginBottom: 6 }}>Server Mode</div>
+              <div className="text-muted text-xs font-mono" style={{ textTransform: 'uppercase', marginBottom: 6 }}>Role Scope</div>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f59e0b', marginTop: 8 }}>
-                ⚡ Server-Authoritative
+                {isSuperAdmin ? '🛡️ Global Platform' : '🔒 Scoped to My Exams'}
               </div>
             </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h2 style={{ fontWeight: 700, fontSize: '1.1rem' }}>All Assessment Exams</h2>
+            <h2 style={{ fontWeight: 700, fontSize: '1.1rem' }}>
+              {isSuperAdmin ? 'All Assessment Exams' : 'My Assigned Exams'}
+            </h2>
             <button id="create-exam-quick-btn" className="btn btn-primary btn-sm" onClick={() => navigate('/admin/create-exam')}>
               ➕ New Exam
             </button>
@@ -110,7 +155,7 @@ export default function AdminDashboardPage() {
         ) : exams.length === 0 ? (
           <div className="card text-center" style={{ padding: 48 }}>
             <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📝</div>
-            <p className="font-bold mb-1">No exams yet</p>
+            <p className="font-bold mb-1">No exams found</p>
             <p className="text-muted text-sm mb-2">Create your first exam to get started.</p>
             <button className="btn btn-primary" onClick={() => navigate('/admin/create-exam')}>Create Exam</button>
           </div>
@@ -119,6 +164,7 @@ export default function AdminDashboardPage() {
             <thead>
               <tr>
                 <th>Title</th>
+                {isSuperAdmin && <th>Created By</th>}
                 <th>Duration</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -128,6 +174,11 @@ export default function AdminDashboardPage() {
               {exams.map((exam) => (
                 <tr key={exam.id}>
                   <td className="font-bold">{exam.title}</td>
+                  {isSuperAdmin && (
+                    <td className="text-muted text-sm">
+                      {exam.created_by_name || 'System / Default'}
+                    </td>
+                  )}
                   <td className="text-muted">{exam.duration_minutes} min</td>
                   <td>
                     <span className={`badge ${exam.is_active ? 'badge-success' : 'badge-neutral'}`}>

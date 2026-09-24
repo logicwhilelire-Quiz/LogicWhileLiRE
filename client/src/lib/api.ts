@@ -92,3 +92,27 @@ export const listSuspiciousActivity = (examId: string) =>
 export const resolveSuspiciousActivity = (id: string, action: 'clear' | 'confirm', notes?: string) =>
   api.patch(`/api/admin/suspicious-activity/${id}/resolve`, { action, notes });
 
+// ——— Staff Management (Super Admin) ———
+export interface StaffMember {
+  id: string;
+  name: string;
+  email: string;
+  role: 'super_admin' | 'faculty';
+  is_active: boolean;
+  created_by?: string;
+  created_at: string;
+}
+
+export const listStaff = () =>
+  api.get<{ success: boolean; staff: StaffMember[] }>('/api/admin/staff');
+
+export const createStaff = (data: {
+  name: string;
+  email: string;
+  password: string;
+  role: 'super_admin' | 'faculty';
+}) => api.post<{ success: boolean; message: string; staff: StaffMember }>('/api/admin/staff', data);
+
+export const toggleStaffActive = (id: string, is_active: boolean) =>
+  api.patch<{ success: boolean; message: string; staff: StaffMember }>(`/api/admin/staff/${id}/deactivate`, { is_active });
+

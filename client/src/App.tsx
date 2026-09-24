@@ -16,6 +16,7 @@ const ImportQuestionsPage = lazy(() => import('./pages/admin/ImportQuestionsPage
 const SessionsPage = lazy(() => import('./pages/admin/SessionsPage'));
 const ReportsPage = lazy(() => import('./pages/admin/ReportsPage'));
 const AnalyticsPage = lazy(() => import('./pages/admin/AnalyticsPage'));
+const StaffManagementPage = lazy(() => import('./pages/admin/StaffManagementPage'));
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -33,6 +34,7 @@ function AnimatedRoutes() {
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminLoginPage />} />
         <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+        <Route path="/admin/staff" element={<StaffManagementPage />} />
         <Route path="/admin/create-exam" element={<CreateExamPage />} />
         <Route path="/admin/import" element={<ImportQuestionsPage />} />
         <Route path="/admin/sessions" element={<SessionsPage />} />

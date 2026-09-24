@@ -7,7 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "node test-auth.js && node test-parser.js && node test-proctoring-sets.js && node test-communication.js",
+    "test": "node test-auth.js && node test-parser.js && node test-proctoring-sets.js && node test-communication.js && node test-roles.js",
     "test:smoke": "node test-smoke.js"
   },
   "keywords": [],

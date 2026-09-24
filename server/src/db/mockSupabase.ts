@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 
 export interface MockTableData {
+  staff: any[];
   exams: any[];
   participants: any[];
   exam_sessions: any[];
@@ -14,11 +15,47 @@ export interface MockTableData {
   [key: string]: any[];
 }
 
+export const DEMO_SUPER_ADMIN_ID = 'st000000-0000-0000-0000-000000000001';
+export const DEMO_FACULTY_1_ID = 'st000000-0000-0000-0000-000000000002';
+export const DEMO_FACULTY_2_ID = 'st000000-0000-0000-0000-000000000003';
+
 export const DEMO_EXAM_ID = 'e1000000-0000-0000-0000-000000000001';
 export const DEMO_EXAM_2_ID = 'e2000000-0000-0000-0000-000000000002';
 
 // In-memory store
 const store: MockTableData = {
+  staff: [
+    {
+      id: DEMO_SUPER_ADMIN_ID,
+      name: 'LogicWhile Super Admin',
+      email: 'admin@logicwhilequiz.com',
+      password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
+      role: 'super_admin',
+      created_by: null,
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
+    },
+    {
+      id: DEMO_FACULTY_1_ID,
+      name: 'Dr. Suresh Kumar (CRT Pillar)',
+      email: 'suresh@logicwhile.com',
+      password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
+      role: 'faculty',
+      created_by: DEMO_SUPER_ADMIN_ID,
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 10).toISOString(),
+    },
+    {
+      id: DEMO_FACULTY_2_ID,
+      name: 'Priya Sharma (Coding Institute)',
+      email: 'priya@logicwhile.com',
+      password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
+      role: 'faculty',
+      created_by: DEMO_SUPER_ADMIN_ID,
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+    },
+  ],
   exams: [
     {
       id: DEMO_EXAM_ID,
@@ -29,6 +66,7 @@ const store: MockTableData = {
       admin_email: 'admin@logicwhilequiz.com',
       is_leaderboard_public: true,
       is_active: true,
+      created_by_staff_id: DEMO_FACULTY_1_ID,
       created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
     },
     {
@@ -40,6 +78,7 @@ const store: MockTableData = {
       admin_email: 'admin@logicwhilequiz.com',
       is_leaderboard_public: true,
       is_active: true,
+      created_by_staff_id: DEMO_FACULTY_2_ID,
       created_at: new Date(Date.now() - 86400000).toISOString(),
     },
   ],
@@ -499,6 +538,15 @@ class MockQueryBuilder {
           sClone.participant = store.participants.find((p) => p.id === sClone.participant_id);
         }
         clone.session = sClone;
+      }
+    }
+
+    // Attach staff/creator if row has created_by_staff_id
+    if (clone.created_by_staff_id && store.staff) {
+      const st = store.staff.find((item) => item.id === clone.created_by_staff_id);
+      if (st) {
+        clone.staff = { id: st.id, name: st.name, email: st.email, role: st.role };
+        clone.creator = { id: st.id, name: st.name, email: st.email, role: st.role };
       }
     }
     return clone;

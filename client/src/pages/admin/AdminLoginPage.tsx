@@ -19,6 +19,9 @@ export default function AdminLoginPage() {
       if (res.data?.token) {
         localStorage.setItem('admin_token', res.data.token);
       }
+      if (res.data?.user) {
+        localStorage.setItem('admin_user', JSON.stringify(res.data.user));
+      }
       navigate('/admin/dashboard');
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Login failed');
@@ -40,21 +43,21 @@ export default function AdminLoginPage() {
             <BrandLogo size="lg" variant="hero" />
           </div>
           <h2 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: 4, color: 'var(--color-text)' }}>
-            Admin Control Center
+            Institutional Control Center
           </h2>
-          <p className="text-muted text-sm">Exam management, proctoring & reporting</p>
+          <p className="text-muted text-sm">Super Admin & Faculty Assessment Portal</p>
         </div>
 
         <div className="card">
           {error && <div className="alert alert-error mb-2">⚠️ {error}</div>}
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label className="form-label" htmlFor="admin-username">Username</label>
+              <label className="form-label" htmlFor="admin-username">Username or Staff Email</label>
               <input
                 id="admin-username"
                 className="form-input"
                 type="text"
-                placeholder="admin"
+                placeholder="admin or faculty@logicwhile.com"
                 value={form.username}
                 onChange={(e) => setForm({ ...form, username: e.target.value })}
                 autoComplete="username"

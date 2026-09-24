@@ -19,6 +19,25 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+DO $$ BEGIN
+  CREATE TYPE staff_role AS ENUM ('super_admin', 'faculty');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ============================================================
+-- TABLE: staff
+-- ============================================================
+CREATE TABLE IF NOT EXISTS staff (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name            TEXT NOT NULL,
+  email           TEXT UNIQUE NOT NULL,
+  password_hash   TEXT NOT NULL,
+  role            TEXT NOT NULL DEFAULT 'faculty' CHECK (role IN ('super_admin', 'faculty')),
+  created_by      UUID REFERENCES staff(id) ON DELETE SET NULL,
+  is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- ============================================================
 -- TABLE: exams
 -- ============================================================
@@ -31,6 +50,7 @@ CREATE TABLE IF NOT EXISTS exams (
   admin_email     TEXT,               -- Configurable proctoring alert recipient
   is_leaderboard_public BOOLEAN NOT NULL DEFAULT TRUE, -- Public rank visibility control
   is_active       BOOLEAN NOT NULL DEFAULT FALSE,
+  created_by_staff_id UUID REFERENCES staff(id) ON DELETE SET NULL, -- Institutional owner
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -185,6 +205,9 @@ CREATE TABLE IF NOT EXISTS audit_log (
 -- ============================================================
 -- INDEXES
 -- ============================================================
+CREATE INDEX IF NOT EXISTS idx_staff_email ON staff(email);
+CREATE INDEX IF NOT EXISTS idx_staff_role ON staff(role);
+CREATE INDEX IF NOT EXISTS idx_exams_created_by ON exams(created_by_staff_id);
 CREATE INDEX IF NOT EXISTS idx_participants_exam ON participants(exam_id);
 CREATE INDEX IF NOT EXISTS idx_participants_exam_hall ON participants(exam_id, hall_ticket);
 CREATE INDEX IF NOT EXISTS idx_sessions_participant ON exam_sessions(participant_id);

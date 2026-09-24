@@ -7,6 +7,7 @@ import QRCode from 'qrcode';
 import * as XLSX from 'xlsx';
 import PDFDocument from 'pdfkit';
 import multer from 'multer';
+import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../db/supabase';
 import { parseAndValidateXlsx, bulkInsertQuestions } from '../services/questionImportService';
 import { getCache, setCache, invalidateCache } from '../services/cacheService';
@@ -42,29 +43,97 @@ export const uploadMiddleware = multer({
  */
 export async function adminLogin(req: Request, res: Response): Promise<void> {
   const { username, password } = req.body;
+  const normalizedUser = (username || '').trim();
 
-  if (username !== process.env.ADMIN_USERNAME) {
-    res.status(401).json({ success: false, error: 'Invalid credentials' });
-    return;
+  let staffRecord: any = null;
+  const isBootstrapAdmin =
+    normalizedUser === (process.env.ADMIN_USERNAME || 'admin') ||
+    normalizedUser === 'admin@logicwhilequiz.com';
+
+  if (isBootstrapAdmin) {
+    const { data: existingAdmin } = await supabase
+      .from('staff')
+      .select('*')
+      .eq('role', 'super_admin')
+      .maybeSingle();
+
+    if (existingAdmin) {
+      staffRecord = existingAdmin;
+    } else {
+      staffRecord = {
+        id: 'st000000-0000-0000-0000-000000000001',
+        name: 'LogicWhile Super Admin',
+        email: 'admin@logicwhilequiz.com',
+        role: 'super_admin',
+        is_active: true,
+      };
+    }
+
+    let passwordValid = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH!);
+    if (
+      !passwordValid &&
+      process.env.DEMO_MODE === 'true' &&
+      process.env.NODE_ENV !== 'production' &&
+      password === 'admin123'
+    ) {
+      passwordValid = true;
+    }
+
+    if (!passwordValid) {
+      res.status(401).json({ success: false, error: 'Invalid credentials' });
+      return;
+    }
+  } else {
+    // Look up staff account by email
+    const { data: staff, error } = await supabase
+      .from('staff')
+      .select('*')
+      .eq('email', normalizedUser.toLowerCase())
+      .maybeSingle();
+
+    if (error || !staff) {
+      res.status(401).json({ success: false, error: 'Invalid credentials' });
+      return;
+    }
+
+    if (!staff.is_active) {
+      res.status(401).json({
+        success: false,
+        error: 'Account is deactivated. Please contact your Super Administrator.',
+      });
+      return;
+    }
+
+    let passwordValid = await bcrypt.compare(password, staff.password_hash);
+    if (
+      !passwordValid &&
+      process.env.DEMO_MODE === 'true' &&
+      process.env.NODE_ENV !== 'production' &&
+      password === 'admin123'
+    ) {
+      passwordValid = true;
+    }
+
+    if (!passwordValid) {
+      res.status(401).json({ success: false, error: 'Invalid credentials' });
+      return;
+    }
+
+    staffRecord = staff;
   }
 
-  let passwordValid = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH!);
-  if (
-    !passwordValid &&
-    process.env.DEMO_MODE === 'true' &&
-    process.env.NODE_ENV !== 'production' &&
-    password === 'admin123'
-  ) {
-    passwordValid = true;
-  }
-  if (!passwordValid) {
-    res.status(401).json({ success: false, error: 'Invalid credentials' });
-    return;
-  }
-
-  const token = jwt.sign({ sub: username, role: 'admin' }, process.env.ADMIN_JWT_SECRET!, {
-    expiresIn: '8h',
-  });
+  const token = jwt.sign(
+    {
+      sub: staffRecord.email,
+      role: staffRecord.role,
+      staff_id: staffRecord.id,
+      name: staffRecord.name,
+    },
+    process.env.ADMIN_JWT_SECRET!,
+    {
+      expiresIn: '8h',
+    }
+  );
 
   const isProduction = process.env.NODE_ENV === 'production';
   res.cookie('admin_token', token, {
@@ -75,7 +144,17 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     path: '/',
   });
 
-  res.json({ success: true, message: 'Admin logged in successfully', token });
+  res.json({
+    success: true,
+    message: 'Admin logged in successfully',
+    token,
+    user: {
+      id: staffRecord.id,
+      name: staffRecord.name,
+      email: staffRecord.email,
+      role: staffRecord.role,
+    },
+  });
 }
 
 /**
@@ -94,13 +173,28 @@ export function adminLogout(req: Request, res: Response): void {
  * GET /api/admin/exams
  */
 export async function listExams(req: Request, res: Response): Promise<void> {
-  const { data, error } = await supabase
-    .from('exams')
-    .select('*')
-    .order('created_at', { ascending: false });
+  let query = supabase.from('exams').select('*');
 
-  if (error) { res.status(500).json({ success: false, error: error.message }); return; }
-  res.json({ success: true, exams: data });
+  // If faculty role, restrict to their created exams only
+  if (req.admin?.role === 'faculty') {
+    query = query.eq('created_by_staff_id', req.admin.staff_id);
+  }
+
+  const { data: exams, error } = await query.order('created_at', { ascending: false });
+
+  if (error) {
+    res.status(500).json({ success: false, error: error.message });
+    return;
+  }
+
+  // Enrich with creator name and email for display
+  const enrichedExams = (exams || []).map((exam: any) => ({
+    ...exam,
+    created_by_name: exam.creator?.name || exam.staff?.name || null,
+    created_by_email: exam.creator?.email || exam.staff?.email || null,
+  }));
+
+  res.json({ success: true, exams: enrichedExams });
 }
 
 /**
@@ -119,6 +213,7 @@ export async function createExam(req: Request, res: Response): Promise<void> {
       admin_email: admin_email?.trim() || null,
       is_leaderboard_public: is_leaderboard_public ?? true,
       is_active: false,
+      created_by_staff_id: req.admin?.staff_id || null,
     })
     .select()
     .single();
@@ -696,6 +791,120 @@ export async function resolveSuspiciousActivity(req: Request, res: Response): Pr
     const msg = err instanceof Error ? err.message : 'Unknown error';
     res.status(500).json({ success: false, error: msg });
   }
+}
+
+// ——————————————————————————————————————————
+// STAFF MANAGEMENT (SUPER ADMIN ONLY)
+// ——————————————————————————————————————————
+
+/**
+ * GET /api/admin/staff
+ */
+export async function listStaff(_req: Request, res: Response): Promise<void> {
+  const { data: staffList, error } = await supabase
+    .from('staff')
+    .select('id, name, email, role, is_active, created_by, created_at')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    res.status(500).json({ success: false, error: error.message });
+    return;
+  }
+
+  const sanitized = (staffList || []).map((s: any) => ({
+    id: s.id,
+    name: s.name,
+    email: s.email,
+    role: s.role,
+    is_active: s.is_active,
+    created_by: s.created_by,
+    created_at: s.created_at,
+  }));
+
+  res.json({ success: true, staff: sanitized });
+}
+
+/**
+ * POST /api/admin/staff
+ */
+export async function createStaff(req: Request, res: Response): Promise<void> {
+  const { name, email, password, role } = req.body;
+  const normalizedEmail = (email || '').toLowerCase().trim();
+
+  // Check duplicate email
+  const { data: existing } = await supabase
+    .from('staff')
+    .select('id')
+    .eq('email', normalizedEmail)
+    .maybeSingle();
+
+  if (existing) {
+    res.status(409).json({ success: false, error: 'A staff member with this email already exists' });
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(password, 12);
+  const newStaffId = uuidv4();
+
+  const { data: created, error } = await supabase
+    .from('staff')
+    .insert({
+      id: newStaffId,
+      name: name.trim(),
+      email: normalizedEmail,
+      password_hash: passwordHash,
+      role: role || 'faculty',
+      created_by: req.admin?.staff_id || null,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    })
+    .select('id, name, email, role, is_active, created_at')
+    .single();
+
+  if (error) {
+    res.status(500).json({ success: false, error: error.message });
+    return;
+  }
+
+  res.status(201).json({
+    success: true,
+    message: 'Staff account created successfully',
+    staff: created,
+  });
+}
+
+/**
+ * PATCH /api/admin/staff/:id/deactivate
+ */
+export async function toggleStaffStatus(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { is_active } = req.body;
+
+  // Prevent super admin from deactivating themselves
+  if (req.admin?.staff_id === id) {
+    res.status(400).json({ success: false, error: 'You cannot deactivate your own administrative account' });
+    return;
+  }
+
+  const targetActive = typeof is_active === 'boolean' ? is_active : false;
+
+  const { data: updated, error } = await supabase
+    .from('staff')
+    .update({ is_active: targetActive })
+    .eq('id', id)
+    .select('id, name, email, role, is_active')
+    .single();
+
+  if (error || !updated) {
+    res.status(404).json({ success: false, error: 'Staff member not found' });
+    return;
+  }
+
+  res.json({
+    success: true,
+    message: `Staff member ${updated.name} has been ${targetActive ? 'activated' : 'deactivated'}`,
+    staff: updated,
+  });
 }
 
 
