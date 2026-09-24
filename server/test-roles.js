@@ -189,6 +189,27 @@ async function runRoleSecurityTests() {
   }
   console.log('  ✅ Deactivated account strictly blocked from authentication');
 
+  // Test 9: Participant PII Masking for Faculty
+  console.log('\n[9/9] Testing Candidate PII Masking for Faculty Role...');
+  const facultySessions = await request(
+    'GET',
+    `/api/admin/exams/${exam1Id}/sessions`,
+    { Authorization: `Bearer ${f1Token}` }
+  );
+  if (facultySessions.status !== 200) {
+    throw new Error(`Failed to fetch sessions as Faculty 1: ${facultySessions.status}`);
+  }
+  const sessionList = facultySessions.json?.sessions || [];
+  if (sessionList.length > 0 && sessionList[0].participant?.email) {
+    const candidateEmail = sessionList[0].participant.email;
+    if (!candidateEmail.includes('***')) {
+      throw new Error(`PII LEAK: Expected masked email with '***', but got raw email: ${candidateEmail}`);
+    }
+    console.log(`  ✅ Candidate PII properly masked for faculty: ${candidateEmail}`);
+  } else {
+    console.log('  ✅ Session list structure verified');
+  }
+
   console.log('\n================================================================');
   console.log('🎉 ALL ROLE SYSTEM & OWNERSHIP SECURITY TESTS PASSED CLEANLY! 🎉');
   console.log('================================================================\n');

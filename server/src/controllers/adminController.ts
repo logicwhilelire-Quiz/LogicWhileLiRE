@@ -367,6 +367,25 @@ export async function getLeaderboard(req: Request, res: Response): Promise<void>
 // ——————————————————————————————————————————
 
 /**
+ * PII Masking Utilities for Scoped Faculty Visibility
+ */
+export function maskEmail(email?: string): string {
+  if (!email) return '';
+  const parts = email.split('@');
+  if (parts.length !== 2) return '***';
+  const [user, domain] = parts;
+  const maskedUser = user.length <= 2 ? `${user[0]}*` : `${user[0]}***${user[user.length - 1]}`;
+  return `${maskedUser}@${domain}`;
+}
+
+export function maskMobile(mobile?: string): string {
+  if (!mobile) return '';
+  const digits = mobile.replace(/\s+/g, '');
+  if (digits.length <= 4) return '******';
+  return `${digits.slice(0, 3)}******${digits.slice(-3)}`;
+}
+
+/**
  * GET /api/admin/exams/:examId/report/excel
  * Per-participant report with topic breakdown + violations as .xlsx
  */
@@ -392,20 +411,26 @@ export async function exportExcelReport(req: Request, res: Response): Promise<vo
       )).data?.map(s => s.id) || []
     );
 
-  // Build summary sheet
-  const summaryRows = (results || []).map((r, i) => ({
-    Rank: i + 1,
-    Name: (r.participant as any)?.name,
-    'Hall Ticket': (r.participant as any)?.hall_ticket,
-    Email: (r.participant as any)?.email,
-    Score: r.total_score,
-    'Max Score': r.max_score,
-    Correct: r.correct_count,
-    Wrong: r.wrong_count,
-    'Time (s)': r.time_taken_seconds,
-    'Graded At': r.graded_at,
-    Platform: 'LogicWhile QUIZ',
-  }));
+  const isFaculty = req.admin?.role === 'faculty';
+
+  // Build summary sheet (PII masked for faculty)
+  const summaryRows = (results || []).map((r, i) => {
+    const p = r.participant as any;
+    return {
+      Rank: i + 1,
+      Name: p?.name,
+      'Hall Ticket': p?.hall_ticket,
+      Email: isFaculty ? maskEmail(p?.email) : p?.email,
+      Mobile: isFaculty ? maskMobile(p?.mobile) : p?.mobile,
+      Score: r.total_score,
+      'Max Score': r.max_score,
+      Correct: r.correct_count,
+      Wrong: r.wrong_count,
+      'Time (s)': r.time_taken_seconds,
+      'Graded At': r.graded_at,
+      Platform: 'LogicWhile QUIZ',
+    };
+  });
 
   // Build violations sheet
   const violationRows = (violations || []).map((v) => ({
@@ -555,9 +580,22 @@ export async function listSessions(req: Request, res: Response): Promise<void> {
     .range(offset, offset + limit - 1);
 
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
+
+  const isFaculty = req.admin?.role === 'faculty';
+  const sanitizedSessions = (data || []).map((s: any) => {
+    if (!s.participant) return s;
+    return {
+      ...s,
+      participant: {
+        ...s.participant,
+        email: isFaculty ? maskEmail(s.participant.email) : s.participant.email,
+      },
+    };
+  });
+
   res.json({
     success: true,
-    sessions: data,
+    sessions: sanitizedSessions,
     pagination: {
       page,
       limit,

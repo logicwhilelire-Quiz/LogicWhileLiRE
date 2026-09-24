@@ -24,10 +24,11 @@ export const DEMO_EXAM_2_ID = 'e2000000-0000-0000-0000-000000000002';
 
 // In-memory store
 const store: MockTableData = {
+  // [DEMO SEED ONLY — IN-MEMORY STORE — NEVER PERSISTED TO PRODUCTION]
   staff: [
     {
       id: DEMO_SUPER_ADMIN_ID,
-      name: 'LogicWhile Super Admin',
+      name: 'System Super Admin (Demo)',
       email: 'admin@logicwhilequiz.com',
       password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
       role: 'super_admin',
@@ -37,7 +38,7 @@ const store: MockTableData = {
     },
     {
       id: DEMO_FACULTY_1_ID,
-      name: 'Dr. Suresh Kumar (CRT Pillar)',
+      name: '[Demo] Dr. Suresh Kumar (CRT Pillar)',
       email: 'suresh@logicwhile.com',
       password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
       role: 'faculty',
@@ -47,7 +48,7 @@ const store: MockTableData = {
     },
     {
       id: DEMO_FACULTY_2_ID,
-      name: 'Priya Sharma (Coding Institute)',
+      name: '[Demo] Priya Sharma (Coding Institute)',
       email: 'priya@logicwhile.com',
       password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
       role: 'faculty',
