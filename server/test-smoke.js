@@ -1,5 +1,5 @@
 /**
- * LogicWhile QUIZ — End-to-End Pre-Launch Smoke Test Suite
+ * LOGICWHILE QUIZ — End-to-End Pre-Launch Smoke Test Suite
  *
  * Simulates complete exam lifecycle:
  * Enroll → OTP → Exam Start (with Fingerprint) → Answer → Violation → Submit → Auto-Grade → Leaderboard → Report Export
@@ -65,7 +65,7 @@ function request(method, urlPath, headers = {}, body = null) {
 
 async function runSmokeTest() {
   console.log('================================================================');
-  console.log('🚀 LogicWhile QUIZ — PRE-LAUNCH SMOKE TEST');
+  console.log('🚀 LOGICWHILE QUIZ — PRE-LAUNCH SMOKE TEST');
   console.log(`Target Environment: ${BASE_URL}`);
   console.log('================================================================\n');
 
@@ -131,7 +131,7 @@ async function runSmokeTest() {
       console.log(`  ℹ️ SMTP connection note: ${smtpCheck.error} (Safe dev fallback active).`);
     }
   } catch (_) {
-    console.log('  ✅ Email templates verified with LogicWhile QUIZ branding.');
+    console.log('  ✅ Email templates verified with LOGICWHILE QUIZ branding.');
   }
 
   // Step 7: Verify Reporting Endpoints

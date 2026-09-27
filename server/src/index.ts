@@ -4,9 +4,13 @@ import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { generalRateLimit } from './middleware/rateLimiter';
+import authRoutes from './routes/auth';
 import enrollmentRoutes from './routes/enrollment';
 import sessionRoutes from './routes/session';
 import adminRoutes, { getLeaderboard } from './routes/admin';
+import examCodeRoutes from './routes/examCode';
+import assessmentRoutes from './routes/assessment';
+import ultraRoutes from './routes/ultraRoutes';
 import { startSessionCron } from './jobs/sessionCron';
 import { validateParams, ExamIdParam } from './middleware/validate';
 
@@ -46,6 +50,13 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Authentication (Students & Password Reset)
+app.use('/api/auth', authRoutes);
+
+// Gate Module - Candidate Assessment Registration (AL-SPEC-2026-REG)
+app.use('/api/v1/assessment', assessmentRoutes);
+app.use('/api/assessment', assessmentRoutes);
+
 // Enrollment (public)
 app.use('/api/enroll', enrollmentRoutes);
 
@@ -54,6 +65,12 @@ app.use('/api/session', sessionRoutes);
 
 // Leaderboard (public)
 app.get('/api/exam/:examId/leaderboard', validateParams(ExamIdParam), getLeaderboard);
+
+// LogicWhile 4.0 ULTRA routes (execute, AI, proctor, certificate, leaderboard, create-exam-wizard)
+app.use('/api', ultraRoutes);
+
+// Exam Code System (Hall Ticket + Code entry, No OTP)
+app.use('/api', examCodeRoutes);
 
 // Admin (admin JWT required)
 app.use('/api/admin', adminRoutes);

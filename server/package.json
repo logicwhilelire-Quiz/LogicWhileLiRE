@@ -7,7 +7,10 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "node test-auth.js && node test-parser.js && node test-proctoring-sets.js && node test-communication.js && node test-roles.js && node test-bulk-enroll.js",
+    "test": "node test-registration-specification.js && node test-auth-module.js && node test-auth.js && node test-parser.js && node test-proctoring-sets.js && node test-communication.js",
+    "test:gate": "node test-registration-specification.js",
+    "test:auth": "node test-auth-module.js",
+    "test:integration": "node test-roles.js && node test-bulk-enroll.js",
     "test:bulk": "node test-bulk-enroll.js",
     "test:load": "node load-test.js",
     "test:smoke": "node test-smoke.js"

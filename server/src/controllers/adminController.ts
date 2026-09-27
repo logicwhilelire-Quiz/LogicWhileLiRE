@@ -50,12 +50,52 @@ export const uploadMiddleware = multer({
 // ADMIN AUTH
 // ——————————————————————————————————————————
 
+// In-memory lockout tracking for admin & staff login attempts
+const adminLockoutMap = new Map<string, { failedAttempts: number; lockedUntil?: number }>();
+
 /**
  * POST /api/admin/login
+ * Admin & Faculty login with rate limit and 15-minute lockout on 5 consecutive failures
  */
 export async function adminLogin(req: Request, res: Response): Promise<void> {
   const { username, password } = req.body;
   const normalizedUser = (username || '').trim();
+  const lockoutKey = normalizedUser.toLowerCase();
+
+  // Check lockout state
+  const lockoutState = adminLockoutMap.get(lockoutKey);
+  if (lockoutState?.lockedUntil && lockoutState.lockedUntil > Date.now()) {
+    const remainingMinutes = Math.ceil((lockoutState.lockedUntil - Date.now()) / (60 * 1000));
+    res.status(423).json({
+      success: false,
+      locked: true,
+      error: `Account is temporarily locked due to 5 failed attempts. Please try again in ${remainingMinutes} minute(s) or reset your password.`,
+    });
+    return;
+  }
+
+  function handleFailedAttempt(): void {
+    const current = adminLockoutMap.get(lockoutKey) || { failedAttempts: 0 };
+    const newCount = current.failedAttempts + 1;
+    if (newCount >= 5) {
+      adminLockoutMap.set(lockoutKey, {
+        failedAttempts: newCount,
+        lockedUntil: Date.now() + 15 * 60 * 1000,
+      });
+      res.status(423).json({
+        success: false,
+        locked: true,
+        error: 'Account has been locked for 15 minutes due to 5 consecutive failed login attempts. Please reset your password or wait 15 minutes.',
+      });
+    } else {
+      adminLockoutMap.set(lockoutKey, { failedAttempts: newCount });
+      const remaining = 5 - newCount;
+      res.status(401).json({
+        success: false,
+        error: `Invalid credentials. ${remaining} attempt(s) remaining before account lockout.`,
+      });
+    }
+  }
 
   let staffRecord: any = null;
   const isBootstrapAdmin =
@@ -92,7 +132,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     }
 
     if (!passwordValid) {
-      res.status(401).json({ success: false, error: 'Invalid credentials' });
+      handleFailedAttempt();
       return;
     }
   } else {
@@ -104,7 +144,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       .maybeSingle();
 
     if (error || !staff) {
-      res.status(401).json({ success: false, error: 'Invalid credentials' });
+      handleFailedAttempt();
       return;
     }
 
@@ -127,12 +167,15 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     }
 
     if (!passwordValid) {
-      res.status(401).json({ success: false, error: 'Invalid credentials' });
+      handleFailedAttempt();
       return;
     }
 
     staffRecord = staff;
   }
+
+  // Clear lockout on successful login
+  adminLockoutMap.delete(lockoutKey);
 
   const token = jwt.sign(
     {

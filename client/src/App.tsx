@@ -3,8 +3,14 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AnimatePresence, MotionConfig } from 'framer-motion';
 import ErrorBoundary from './components/ErrorBoundary';
 import PageLoader from './components/PageLoader';
+import CustomCursor from './components/CustomCursor';
 
 // Code-split routes for optimal performance and smaller initial bundles
+const StudentLoginPage = lazy(() => import('./pages/StudentLoginPage'));
+const CandidateRegisterGatePage = lazy(() => import('./pages/CandidateRegisterGatePage'));
+const WaitingLobbyPage = lazy(() => import('./pages/WaitingLobbyPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const EnrollPage = lazy(() => import('./pages/EnrollPage'));
 const OTPVerifyPage = lazy(() => import('./pages/OTPVerifyPage'));
 const ExamPage = lazy(() => import('./pages/ExamPage'));
@@ -18,14 +24,64 @@ const ReportsPage = lazy(() => import('./pages/admin/ReportsPage'));
 const AnalyticsPage = lazy(() => import('./pages/admin/AnalyticsPage'));
 const StaffManagementPage = lazy(() => import('./pages/admin/StaffManagementPage'));
 
+// ── NEW: Exam Code System (No OTP) ──────────────────────────────
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const EnterExamPage = lazy(() => import('./pages/EnterExamPage'));
+const InstructionsPage = lazy(() => import('./pages/InstructionsPage'));
+const ExamCodeQuizPage = lazy(() => import('./pages/ExamCodeQuizPage'));
+const ResultECPage = lazy(() => import('./pages/ResultECPage'));
+const LeaderboardECPage = lazy(() => import('./pages/LeaderboardECPage'));
+const VerifyCertificatePage = lazy(() => import('./pages/VerifyCertificatePage'));
+const PracticeArenaPage = lazy(() => import('./pages/PracticeArenaPage'));
+
+// ── NEW: Admin pages ─────────────────────────────────────────────
+const CollegesPage = lazy(() => import('./pages/admin/CollegesPage'));
+const ExamCodesPage = lazy(() => import('./pages/admin/ExamCodesPage'));
+const AdminMonitorPage = lazy(() => import('./pages/admin/AdminMonitorPage'));
+
 function AnimatedRoutes() {
   const location = useLocation();
 
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        {/* Public Routes */}
-        <Route path="/" element={<Navigate to="/admin" replace />} />
+        {/* ── PUBLIC LANDING (Marketing page — default route) ── */}
+        <Route path="/" element={<LandingPage />} />
+
+        {/* ── EXAM CODE SYSTEM (No OTP — Hall Ticket + Code) ── */}
+        <Route path="/enter-exam" element={<EnterExamPage />} />
+        <Route path="/instructions/:examCode" element={<InstructionsPage />} />
+        <Route path="/quiz/:examCode" element={<ExamCodeQuizPage />} />
+        <Route path="/result-ec/:examCode" element={<ResultECPage />} />
+        <Route path="/leaderboard-ec/:examCode" element={<LeaderboardECPage />} />
+        <Route path="/leaderboard/:examCode" element={<LeaderboardECPage />} />
+
+        {/* ── CERTIFICATE VERIFICATION & PRACTICE ARENA ── */}
+        <Route path="/verify/:token" element={<VerifyCertificatePage />} />
+        <Route path="/certificate/verify/:token" element={<VerifyCertificatePage />} />
+        <Route path="/verify" element={<VerifyCertificatePage />} />
+        <Route path="/practice" element={<PracticeArenaPage />} />
+        <Route path="/arena" element={<PracticeArenaPage />} />
+
+        {/* Gate Module: Candidate Assessment Registration (AL-SPEC-2026-REG) */}
+        <Route path="/register" element={<CandidateRegisterGatePage />} />
+        <Route path="/gate" element={<CandidateRegisterGatePage />} />
+        <Route path="/register-candidate" element={<CandidateRegisterGatePage />} />
+        <Route path="/student/register" element={<Navigate to="/register" replace />} />
+
+        {/* Contest Waiting Lobby (Section 4 Handoff) */}
+        <Route path="/contest/:contestId/waiting-lobby" element={<WaitingLobbyPage />} />
+        <Route path="/contest/waiting-lobby" element={<Navigate to="/contest/demo-contest/waiting-lobby" replace />} />
+        <Route path="/waiting-lobby" element={<Navigate to="/contest/demo-contest/waiting-lobby" replace />} />
+        <Route path="/enter-quiz" element={<Navigate to="/contest/demo-contest/waiting-lobby" replace />} />
+
+        {/* Student Auth & Recovery */}
+        <Route path="/login" element={<StudentLoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/student/login" element={<Navigate to="/login" replace />} />
+
+        {/* Public & Student Exam Routes (legacy) */}
         <Route path="/enroll/:examId" element={<EnrollPage />} />
         <Route path="/enroll/:examId/verify" element={<OTPVerifyPage />} />
         <Route path="/exam" element={<ExamPage />} />
@@ -42,18 +98,30 @@ function AnimatedRoutes() {
         <Route path="/admin/analytics" element={<AnalyticsPage />} />
         <Route path="/admin/analytics/:examId" element={<AnalyticsPage />} />
 
+        {/* ── NEW Admin Pages ── */}
+        <Route path="/admin/colleges" element={<CollegesPage />} />
+        <Route path="/admin/exam-codes" element={<ExamCodesPage />} />
+        <Route path="/admin/monitor" element={<AdminMonitorPage />} />
+        <Route path="/admin/monitor/:examId" element={<AdminMonitorPage />} />
+        <Route path="/admin/questions" element={<AdminMonitorPage />} />
+
         {/* Fallback */}
-        <Route path="*" element={<Navigate to="/admin" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>
   );
 }
 
+// PERFORMANCE RULE - TO KEEP 60FPS:
+// If mobile, reduce particles: isMobile ? 25 nodes : 50 nodes
+// Use <Canvas dpr={[1,1.5]}> - Cap pixel ratio
+// Use <Suspense> for all 3D - Lazy load
 export default function App() {
   return (
     <ErrorBoundary>
       <MotionConfig reducedMotion="user">
         <BrowserRouter>
+          <CustomCursor />
           <Suspense fallback={<PageLoader />}>
             <AnimatedRoutes />
           </Suspense>
@@ -62,3 +130,4 @@ export default function App() {
     </ErrorBoundary>
   );
 }
+

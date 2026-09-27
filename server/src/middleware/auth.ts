@@ -12,10 +12,21 @@ export interface ParticipantJWTPayload {
   exp?: number;
 }
 
+export interface StudentJWTPayload {
+  studentId: string;
+  name: string;
+  email: string;
+  hallTicket: string;
+  role: 'student';
+  iat?: number;
+  exp?: number;
+}
+
 declare global {
   namespace Express {
     interface Request {
       participant?: ParticipantJWTPayload;
+      student?: StudentJWTPayload;
       sessionTokenRaw?: string;
     }
   }
@@ -79,5 +90,61 @@ export async function participantAuth(
 
   req.participant = payload;
   req.sessionTokenRaw = token;
+  next();
+}
+
+/**
+ * Student auth middleware.
+ * Reads JWT from cookie 'student_token' or Authorization header.
+ * Validates signature, expiry, and verifies active student record in DB.
+ */
+export async function studentAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  const authHeader = req.headers.authorization;
+  const token = req.cookies?.student_token || (authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined);
+
+  if (!token) {
+    res.status(401).json({ success: false, error: 'Student authentication required' });
+    return;
+  }
+
+  let payload: StudentJWTPayload;
+  try {
+    payload = jwt.verify(token, process.env.JWT_SECRET!) as StudentJWTPayload;
+  } catch {
+    res.status(401).json({ success: false, error: 'Invalid or expired student session' });
+    return;
+  }
+
+  if (payload.role !== 'student' || !payload.studentId) {
+    res.status(403).json({ success: false, error: 'Access denied: not a student account' });
+    return;
+  }
+
+  const { data: student, error } = await supabase
+    .from('students')
+    .select('id, is_active, locked_until')
+    .eq('id', payload.studentId)
+    .maybeSingle();
+
+  if (error || !student) {
+    res.status(401).json({ success: false, error: 'Student account not found' });
+    return;
+  }
+
+  if (!student.is_active) {
+    res.status(403).json({ success: false, error: 'Student account is deactivated' });
+    return;
+  }
+
+  if (student.locked_until && new Date(student.locked_until) > new Date()) {
+    res.status(423).json({ success: false, error: 'Account is temporarily locked. Please reset your password.' });
+    return;
+  }
+
+  req.student = payload;
   next();
 }

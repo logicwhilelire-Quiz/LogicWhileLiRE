@@ -71,6 +71,36 @@ export const adminLoginRateLimit = rateLimit({
 });
 
 /**
+ * Rate limiter for student auth (login, register) — 15 per 15 minutes per IP
+ */
+export const authRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: isLoadTestBypass,
+  message: {
+    success: false,
+    error: 'Too many authentication attempts. Please try again later.',
+  },
+});
+
+/**
+ * Rate limiter for password reset requests — 5 per 15 minutes per IP
+ */
+export const passwordResetRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: isLoadTestBypass,
+  message: {
+    success: false,
+    error: 'Too many password reset requests. Please check your inbox or try again in 15 minutes.',
+  },
+});
+
+/**
  * General API rate limiter
  */
 export const generalRateLimit = rateLimit({

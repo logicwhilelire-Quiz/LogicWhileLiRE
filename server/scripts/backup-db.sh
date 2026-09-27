@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# LogicWhile QUIZ — Automated Supabase/Postgres Database Backup
+# LOGICWHILE QUIZ — Automated Supabase/Postgres Database Backup
 # ============================================================
 #
 # Prerequisites:

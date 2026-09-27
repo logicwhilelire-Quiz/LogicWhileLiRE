@@ -12,17 +12,69 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const isAdminRoute = config.url?.startsWith('/api/admin');
   const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
-  const participantToken = localStorage.getItem('session_token') || sessionStorage.getItem('session_token');
+  const studentToken = localStorage.getItem('student_token') || sessionStorage.getItem('student_token');
+  const sessionToken = localStorage.getItem('session_token') || sessionStorage.getItem('session_token');
 
   if (isAdminRoute && adminToken) {
     config.headers.Authorization = `Bearer ${adminToken}`;
-  } else if (!isAdminRoute && participantToken) {
-    config.headers.Authorization = `Bearer ${participantToken}`;
+  } else if (studentToken) {
+    config.headers.Authorization = `Bearer ${studentToken}`;
+  } else if (sessionToken) {
+    config.headers.Authorization = `Bearer ${sessionToken}`;
   }
   return config;
 });
 
-// ——— Enrollment ———
+// ——— Auth (Students & Recovery) ———
+export const studentLogin = (data: { login: string; password: string }) =>
+  api.post('/api/auth/login', data);
+
+export const studentRegister = (data: {
+  name: string;
+  email: string;
+  hall_ticket: string;
+  mobile?: string;
+  password: string;
+}) => api.post('/api/auth/register', data);
+
+export interface CandidateRegisterPayload {
+  first_name: string;
+  last_name: string;
+  college_id: string;
+  college_name?: string;
+  year_of_passing: number;
+  roll_number: string;
+  branch_code: string;
+  section: string;
+  email: string;
+  contact_number: string;
+  password: string;
+  confirm_password: string;
+  timestamp?: string;
+}
+
+// ——— Gate Module: Candidate Assessment Registration (AL-SPEC-2026-REG) ———
+export const registerCandidate = (data: CandidateRegisterPayload) =>
+  api.post('/api/v1/assessment/register-candidate', data);
+
+export const getAssessmentSystemCheck = () =>
+  api.get('/api/v1/assessment/system-check');
+
+export const getAssessmentLobbyStatus = (contestId?: string) =>
+  api.get(`/api/v1/assessment/lobby-status${contestId ? `?contest_id=${encodeURIComponent(contestId)}` : ''}`);
+
+
+export const getStudentMe = () => api.get('/api/auth/me');
+
+export const forgotPassword = (data: { email: string }) =>
+  api.post('/api/auth/forgot-password', data);
+
+export const resetPassword = (data: { token: string; email: string; new_password: string }) =>
+  api.post('/api/auth/reset-password', data);
+
+export const authLogout = () => api.post('/api/auth/logout');
+
+// ——— Enrollment (Legacy / Direct) ———
 export const enrollParticipant = (examId: string, data: {
   name: string; hall_ticket: string; mobile: string; email: string;
 }) => api.post(`/api/enroll/${examId}`, data);

@@ -134,8 +134,41 @@ export const createExamSchema = z.object({
 });
 
 export const adminLoginSchema = z.object({
-  username: z.string().min(1),
-  password: z.string().min(1),
+  username: z.string().min(1, 'Username or email is required').trim(),
+  password: z.string().min(1, 'Password is required'),
+});
+
+export const studentRegisterSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').max(100).trim(),
+  email: z.string().email('Invalid email address').toLowerCase().trim(),
+  hall_ticket: z
+    .string()
+    .min(3, 'Hall ticket must be at least 3 characters')
+    .max(30)
+    .trim()
+    .regex(/^[A-Za-z0-9\-_]+$/, 'Hall ticket may only contain letters, numbers, hyphens, underscores')
+    .transform((val) => val.toUpperCase()),
+  mobile: z
+    .string()
+    .regex(/^\+?[0-9]{7,15}$/, 'Invalid mobile number')
+    .optional()
+    .or(z.literal('')),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+export const studentLoginSchema = z.object({
+  login: z.string().min(1, 'Email or hall ticket is required').trim(),
+  password: z.string().min(1, 'Password is required'),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email('Valid email address is required').toLowerCase().trim(),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Reset token is required').trim(),
+  email: z.string().email('Valid email address is required').toLowerCase().trim(),
+  new_password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 export const createStaffSchema = z.object({
@@ -148,3 +181,65 @@ export const createStaffSchema = z.object({
 export const updateStaffStatusSchema = z.object({
   is_active: z.boolean().optional(),
 });
+
+/**
+ * Gate Module: Candidate Registration Schema
+ * Specification ID: AL-SPEC-2026-REG
+ */
+export const candidateRegisterSchema = z
+  .object({
+    first_name: z
+      .string()
+      .trim()
+      .min(2, 'First name must be at least 2 characters')
+      .regex(/^[A-Za-z\s]+$/, 'First name must contain only alphabetic characters')
+      .transform((val) => val.charAt(0).toUpperCase() + val.slice(1)),
+    last_name: z
+      .string()
+      .trim()
+      .min(1, 'Last name must be at least 1 character')
+      .regex(/^[A-Za-z\s]+$/, 'Last name must contain only alphabetic characters')
+      .transform((val) => val.charAt(0).toUpperCase() + val.slice(1)),
+    college_id: z.string().trim().min(1, 'College affiliation is required'),
+    college_name: z.string().trim().optional(),
+    year_of_passing: z
+      .union([z.number(), z.string()])
+      .transform((val) => Number(val))
+      .refine((val) => [2027, 2028, 2029, 2030].includes(val), {
+        message: 'Year of passing must be one of: 2027, 2028, 2029, 2030',
+      }),
+    roll_number: z
+      .string()
+      .trim()
+      .min(2, 'Roll / Hall Ticket number is required')
+      .max(30, 'Roll number cannot exceed 30 characters')
+      .regex(/^[A-Za-z0-9]+$/, 'Roll number must be alphanumeric (e.g. 22B91A0501)')
+      .transform((val) => val.toUpperCase()),
+    branch_code: z
+      .string()
+      .trim()
+      .min(1, 'Branch code is required')
+      .transform((val) => val.toUpperCase()),
+    section: z.enum(['A', 'B', 'C', 'D', 'E']),
+    email: z
+      .string()
+      .trim()
+      .email('Invalid email address (must follow RFC 5322 format)')
+      .toLowerCase(),
+    contact_number: z
+      .string()
+      .trim()
+      .regex(/^[6-9][0-9]{9}$/, 'Contact number must be a 10-digit mobile number starting with 6-9'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must contain at least 1 uppercase letter')
+      .regex(/\d/, 'Password must contain at least 1 number')
+      .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/, 'Password must contain at least 1 special character'),
+    confirm_password: z.string().min(1, 'Confirm password is required'),
+    timestamp: z.string().optional(),
+  })
+  .refine((data) => data.password === data.confirm_password, {
+    message: 'Confirm password must match password exactly',
+    path: ['confirm_password'],
+  });

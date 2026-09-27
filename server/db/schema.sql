@@ -28,14 +28,48 @@ END $$;
 -- TABLE: staff
 -- ============================================================
 CREATE TABLE IF NOT EXISTS staff (
-  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name            TEXT NOT NULL,
-  email           TEXT UNIQUE NOT NULL,
-  password_hash   TEXT NOT NULL,
-  role            TEXT NOT NULL DEFAULT 'faculty' CHECK (role IN ('super_admin', 'faculty')),
-  created_by      UUID REFERENCES staff(id) ON DELETE SET NULL,
-  is_active       BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name                TEXT NOT NULL,
+  email               TEXT UNIQUE NOT NULL,
+  password_hash       TEXT NOT NULL,
+  role                TEXT NOT NULL DEFAULT 'faculty' CHECK (role IN ('super_admin', 'faculty')),
+  created_by          UUID REFERENCES staff(id) ON DELETE SET NULL,
+  failed_attempts     INTEGER NOT NULL DEFAULT 0,
+  locked_until        TIMESTAMPTZ,
+  reset_token_hash    TEXT,
+  reset_token_expires TIMESTAMPTZ,
+  is_active           BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================
+-- ============================================================
+-- TABLE: students / candidates (Gate Module AL-SPEC-2026-REG)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS students (
+  id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  first_name          TEXT,
+  last_name           TEXT,
+  name                TEXT NOT NULL,
+  email               TEXT UNIQUE NOT NULL,
+  college_id          TEXT,
+  college_name        TEXT,
+  year_of_passing     INTEGER CHECK (year_of_passing IN (2027, 2028, 2029, 2030)),
+  roll_number         TEXT,
+  hall_ticket         TEXT UNIQUE,
+  branch_code         TEXT,
+  section             TEXT CHECK (section IN ('A', 'B', 'C', 'D', 'E')),
+  contact_number      TEXT,
+  mobile              TEXT,
+  password_hash       TEXT NOT NULL,
+  failed_attempts     INTEGER NOT NULL DEFAULT 0,
+  locked_until        TIMESTAMPTZ,
+  reset_token_hash    TEXT,
+  reset_token_expires TIMESTAMPTZ,
+  is_active           BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT uq_college_roll UNIQUE (college_id, roll_number)
 );
 
 -- ============================================================
@@ -207,6 +241,8 @@ CREATE TABLE IF NOT EXISTS audit_log (
 -- ============================================================
 CREATE INDEX IF NOT EXISTS idx_staff_email ON staff(email);
 CREATE INDEX IF NOT EXISTS idx_staff_role ON staff(role);
+CREATE INDEX IF NOT EXISTS idx_students_email ON students(email);
+CREATE INDEX IF NOT EXISTS idx_students_hall_ticket ON students(hall_ticket);
 CREATE INDEX IF NOT EXISTS idx_exams_created_by ON exams(created_by_staff_id);
 CREATE INDEX IF NOT EXISTS idx_participants_exam ON participants(exam_id);
 CREATE INDEX IF NOT EXISTS idx_participants_exam_hall ON participants(exam_id, hall_ticket);

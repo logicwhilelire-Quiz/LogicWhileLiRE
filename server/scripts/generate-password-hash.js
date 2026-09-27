@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * LogicWhile QUIZ — Admin Password Rotation Utility
+ * LOGICWHILE QUIZ — Admin Password Rotation Utility
  * Generates a high-security bcrypt hash (12 rounds) for ADMIN_PASSWORD_HASH
  *
  * Usage:

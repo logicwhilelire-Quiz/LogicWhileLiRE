@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { adminLogin } from '../../lib/api';
 import BrandLogo from '../../components/BrandLogo';
 import AnimatedPage from '../../components/AnimatedPage';
@@ -64,7 +64,12 @@ export default function AdminLoginPage() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="admin-password">Password</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <label className="form-label" htmlFor="admin-password" style={{ marginBottom: 0 }}>Password</label>
+                <Link to="/forgot-password" style={{ fontSize: '0.8rem', color: 'var(--color-primary, #f59e0b)', textDecoration: 'none' }}>
+                  Forgot password?
+                </Link>
+              </div>
               <input
                 id="admin-password"
                 className="form-input"
@@ -84,6 +89,22 @@ export default function AdminLoginPage() {
               {loading ? <><div className="btn-spinner" />Signing in...</> : '🔑 Sign In'}
             </button>
           </form>
+
+          <div
+            style={{
+              marginTop: 20,
+              paddingTop: 16,
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              textAlign: 'center',
+              fontSize: '0.85rem',
+              color: 'var(--color-text-muted, #94a3b8)',
+            }}
+          >
+            Are you a student?{' '}
+            <Link to="/login" style={{ color: 'var(--color-primary, #f59e0b)', fontWeight: 600 }}>
+              Go to Student Portal &rarr;
+            </Link>
+          </div>
         </div>
       </div>
     </div>

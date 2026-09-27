@@ -177,31 +177,45 @@ export default function LoadingLogo({
           style={{
             fontSize: size === 'sm' ? '1.05rem' : size === 'lg' ? '1.6rem' : '1.35rem',
             fontWeight: 800,
-            letterSpacing: '-0.035em',
+            letterSpacing: '-0.02em',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: size === 'sm' ? 8 : 10,
+            gap: 8,
           }}
         >
-          <span className="brand-logicwhile">LogicWhile</span>
-          <span
-            className="elevated-quiz-badge"
+          <span style={{ color: '#ffffff' }}>LogicWhile</span>
+          <div
             style={{
-              fontSize: size === 'sm' ? '0.66rem' : size === 'lg' ? '0.94rem' : '0.78rem',
-              padding: size === 'sm' ? '2.5px 8px' : size === 'lg' ? '5px 14px' : '3.5px 11px',
-              letterSpacing: '0.18em',
+              display: 'inline-flex',
+              alignItems: 'center',
+              position: 'relative',
+              animation: 'quizGlowPulse 2.8s ease-in-out infinite alternate',
             }}
           >
-            QUIZ
-          </span>
+            <img
+              src="/quiz-logo-transparent.png"
+              alt="Quiz"
+              style={{
+                height: size === 'sm' ? 32 : size === 'lg' ? 56 : 42,
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.95)) drop-shadow(0 0 18px rgba(245, 158, 11, 0.8)) drop-shadow(0 0 32px rgba(234, 88, 12, 0.5))',
+                display: 'inline-block',
+                verticalAlign: 'middle',
+              }}
+            />
+          </div>
         </div>
 
         <div
-          className="brand-tagline"
           style={{
-            fontSize: size === 'sm' ? '0.65rem' : '0.76rem',
-            marginTop: 5,
+            fontSize: size === 'sm' ? '0.7rem' : '0.8rem',
+            color: '#f59e0b',
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            marginTop: 2,
+            opacity: 0.9,
           }}
         >
           Elevating Coding Knowledge
@@ -280,11 +294,21 @@ export default function LoadingLogo({
         @keyframes logoShimmer {
           0% { left: -100%; opacity: 0; }
           40% { left: 140%; opacity: 0.8; }
-          100% { left: 140%; opacity: 0; }
+          100% { left: 140%; opacity: 0.8; }
         }
         @keyframes indeterminateTrack {
           0% { left: -45%; }
           100% { left: 100%; }
+        }
+        @keyframes quizGlowPulse {
+          0% {
+            transform: scale(0.97);
+            filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.75));
+          }
+          100% {
+            transform: scale(1.04);
+            filter: drop-shadow(0 0 12px rgba(245, 158, 11, 1)) drop-shadow(0 0 24px rgba(234, 88, 12, 0.7));
+          }
         }
       `}</style>
     </div>

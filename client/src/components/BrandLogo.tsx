@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { useState } from 'react';
 
 interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -13,151 +13,158 @@ export default function BrandLogo({
   inline = false,
   variant = 'standard',
 }: BrandLogoProps) {
+  const [scriptLoaded, setScriptLoaded] = useState(true);
+
   // Proportional sizing matching 222:174 logo aspect ratio (~1.276)
   const dims = {
-    sm: { h: 34, w: 43, title: '1.15rem', tag: '0.62rem', gap: 14, wordmarkGap: 8, radius: 8, badgePad: '2.5px 8px', badgeFont: '0.68rem', badgeTrack: '0.16em' },
-    md: { h: 44, w: 56, title: '1.42rem', tag: '0.72rem', gap: 16, wordmarkGap: 10, radius: 10, badgePad: '3.5px 11px', badgeFont: '0.78rem', badgeTrack: '0.18em' },
-    lg: { h: 64, w: 82, title: '1.92rem', tag: '0.84rem', gap: 20, wordmarkGap: 12, radius: 14, badgePad: '5px 15px', badgeFont: '0.96rem', badgeTrack: '0.2em' },
-    xl: { h: 90, w: 115, title: '2.55rem', tag: '1.02rem', gap: 26, wordmarkGap: 16, radius: 18, badgePad: '7px 20px', badgeFont: '1.24rem', badgeTrack: '0.22em' },
+    sm: { h: 32, w: 41, title: '1.05rem', scriptH: 28, tag: '0.62rem', gap: 10, radius: 7 },
+    md: { h: 42, w: 54, title: '1.35rem', scriptH: 36, tag: '0.72rem', gap: 12, radius: 10 },
+    lg: { h: 60, w: 76, title: '1.85rem', scriptH: 54, tag: '0.84rem', gap: 16, radius: 12 },
+    xl: { h: 84, w: 108, title: '2.4rem', scriptH: 74, tag: '0.98rem', gap: 18, radius: 14 },
   }[size];
-
-  // Micro entrance motion config for high-end feel
-  const entranceAnimation = {
-    initial: { opacity: 0, y: -6, scale: 0.96 },
-    animate: { opacity: 1, y: 0, scale: 1 },
-    transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const },
-  };
 
   if (variant === 'badge-only') {
     return (
-      <motion.div
-        {...entranceAnimation}
+      <div
         className="brand-logo-badge"
         style={{
           width: dims.w,
           height: dims.h,
           borderRadius: dims.radius,
           overflow: 'hidden',
-          boxShadow: '0 4px 20px rgba(245, 158, 11, 0.4), 0 0 1px rgba(255, 255, 255, 0.6)',
-          border: '1.5px solid rgba(245, 158, 11, 0.85)',
-          background: 'linear-gradient(145deg, #ffffff 0%, #fffbeb 100%)',
+          boxShadow: '0 4px 20px rgba(245, 158, 11, 0.4)',
+          border: '1.5px solid rgba(245, 158, 11, 0.75)',
+          background: '#ffffff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          cursor: 'pointer',
+          transition: 'transform 0.25s ease, box-shadow 0.25s ease',
         }}
-        whileHover={{ scale: 1.05, boxShadow: '0 8px 28px rgba(245, 158, 11, 0.6), 0 0 2px rgba(255, 255, 255, 0.8)' }}
-        whileTap={{ scale: 0.98 }}
       >
         <img
           src="/logo.png"
           alt="LogicWhile QUIZ"
-          style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2.5 }}
+          style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }}
         />
-      </motion.div>
+      </div>
     );
   }
 
   if (variant === 'hero') {
     return (
-      <motion.div
-        {...entranceAnimation}
+      <div
         style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           textAlign: 'center',
-          gap: 16,
+          gap: 12,
         }}
       >
-        {/* Emblem Crest */}
-        <motion.div
+        {/* Main Logo Card Badge */}
+        <div
           className="brand-logo-badge"
           style={{
-            width: dims.w * 1.32,
-            height: dims.h * 1.32,
-            borderRadius: dims.radius + 4,
+            width: dims.w * 1.35,
+            height: dims.h * 1.35,
+            borderRadius: dims.radius + 3,
             overflow: 'hidden',
-            boxShadow: '0 12px 40px rgba(245, 158, 11, 0.45), 0 0 28px rgba(234, 88, 12, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.9)',
-            border: '2px solid rgba(245, 158, 11, 0.95)',
-            background: 'linear-gradient(145deg, #ffffff 0%, #fffdf5 100%)',
+            boxShadow: '0 8px 32px rgba(245, 158, 11, 0.45), 0 0 16px rgba(234, 88, 12, 0.25)',
+            border: '2px solid rgba(245, 158, 11, 0.85)',
+            background: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: 5,
-            position: 'relative',
+            padding: 4,
+            transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}
-          whileHover={{ scale: 1.04, rotate: 0.5 }}
-          transition={{ type: 'spring', stiffness: 350, damping: 25 }}
         >
-          {/* Subtle ambient shimmer */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.8), transparent 70%)',
-              pointerEvents: 'none',
-            }}
-          />
           <img
             src="/logo.png"
-            alt="LogicWhile QUIZ Logo"
-            style={{ width: '100%', height: '100%', objectFit: 'contain', zIndex: 1 }}
+            alt="LogicWhile Logo"
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
           />
-        </motion.div>
+        </div>
 
-        {/* Wordmark Hierarchy */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.25 }}>
+        {/* Combined Brand Name: LogicWhile + Calligraphic Quiz Script */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.15 }}>
           <div
             style={{
               fontSize: dims.title,
               fontWeight: 800,
-              letterSpacing: '-0.035em',
+              letterSpacing: '-0.02em',
               display: 'flex',
               alignItems: 'center',
-              gap: dims.wordmarkGap,
+              justifyContent: 'center',
+              gap: 8,
+              flexWrap: 'wrap',
             }}
           >
-            <span className="brand-logicwhile">LogicWhile</span>
-            <span
-              className="elevated-quiz-badge"
-              style={{
-                fontSize: dims.badgeFont,
-                padding: dims.badgePad,
-                letterSpacing: dims.badgeTrack,
-              }}
-            >
-              QUIZ
-            </span>
+            <span style={{ color: 'var(--color-text, #ffffff)' }}>LogicWhile</span>
+            {scriptLoaded ? (
+              <div
+                className="elevated-quiz-container"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  position: 'relative',
+                }}
+              >
+                <img
+                  src="/quiz-logo-transparent.png"
+                  alt="Quiz"
+                  onError={() => setScriptLoaded(false)}
+                  style={{
+                    height: dims.scriptH,
+                    objectFit: 'contain',
+                    filter:
+                      'drop-shadow(0 0 4px rgba(245, 158, 11, 0.95)) drop-shadow(0 0 14px rgba(245, 158, 11, 0.8)) drop-shadow(0 0 28px rgba(234, 88, 12, 0.5))',
+                    display: 'inline-block',
+                    verticalAlign: 'middle',
+                    transition: 'transform 0.25s ease, filter 0.25s ease',
+                  }}
+                />
+              </div>
+            ) : (
+              <span
+                style={{
+                  background: 'linear-gradient(135deg, #fef08a 0%, #f59e0b 50%, #ea580c 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 900,
+                  letterSpacing: '0.05em',
+                  textShadow: '0 0 20px rgba(245, 158, 11, 0.6)',
+                }}
+              >
+                QUIZ
+              </span>
+            )}
           </div>
 
           {showTagline && (
             <span
-              className="brand-tagline"
               style={{
                 fontSize: dims.tag,
                 color: '#f59e0b',
-                fontWeight: 700,
-                letterSpacing: '0.14em',
+                fontWeight: 600,
+                letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                marginTop: 7,
+                marginTop: 4,
                 opacity: 0.95,
-                textShadow: '0 0 14px rgba(245, 158, 11, 0.35)',
               }}
             >
               Elevating Coding Knowledge
             </span>
           )}
         </div>
-      </motion.div>
+      </div>
     );
   }
 
-  // Standard horizontal variant (for headers, navigation bars, cards)
+  // Standard horizontal variant
   return (
-    <motion.div
-      {...entranceAnimation}
+    <div
       style={{
         display: inline ? 'inline-flex' : 'flex',
         alignItems: 'center',
@@ -165,79 +172,102 @@ export default function BrandLogo({
         textDecoration: 'none',
       }}
     >
-      {/* Emblem Crest */}
-      <motion.div
+      <div
         className="brand-logo-badge"
         style={{
           width: dims.w,
           height: dims.h,
           borderRadius: dims.radius,
           overflow: 'hidden',
-          boxShadow: '0 4px 18px rgba(245, 158, 11, 0.38), 0 0 1px rgba(255, 255, 255, 0.7)',
-          border: '1.5px solid rgba(245, 158, 11, 0.85)',
-          background: 'linear-gradient(145deg, #ffffff 0%, #fffdf5 100%)',
+          boxShadow: '0 4px 18px rgba(245, 158, 11, 0.35)',
+          border: '1.5px solid rgba(245, 158, 11, 0.75)',
+          background: '#ffffff',
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease',
         }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.97 }}
       >
         <img
           src="/logo.png"
-          alt="LogicWhile QUIZ"
+          alt="LogicWhile"
           style={{
             width: '100%',
             height: '100%',
             objectFit: 'contain',
-            padding: 2.5,
+            padding: 2,
           }}
         />
-      </motion.div>
+      </div>
 
-      {/* Wordmark & Product Name */}
-      <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
         <div
           style={{
             fontSize: dims.title,
             fontWeight: 800,
-            letterSpacing: '-0.035em',
+            letterSpacing: '-0.02em',
             display: 'flex',
             alignItems: 'center',
-            gap: dims.wordmarkGap,
+            gap: 6,
           }}
         >
-          <span className="brand-logicwhile">LogicWhile</span>
-          <span
-            className="elevated-quiz-badge"
-            style={{
-              fontSize: dims.badgeFont,
-              padding: dims.badgePad,
-              letterSpacing: dims.badgeTrack,
-            }}
-          >
-            QUIZ
-          </span>
+          <span style={{ color: 'var(--color-text, #ffffff)' }}>LogicWhile</span>
+          {scriptLoaded ? (
+            <div
+              className="elevated-quiz-container"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                position: 'relative',
+              }}
+            >
+              <img
+                src="/quiz-logo-transparent.png"
+                alt="Quiz"
+                onError={() => setScriptLoaded(false)}
+                style={{
+                  height: dims.scriptH,
+                  objectFit: 'contain',
+                  filter:
+                    'drop-shadow(0 0 4px rgba(245, 158, 11, 0.9)) drop-shadow(0 0 12px rgba(245, 158, 11, 0.75)) drop-shadow(0 0 24px rgba(234, 88, 12, 0.45))',
+                  display: 'inline-block',
+                  verticalAlign: 'middle',
+                  transition: 'transform 0.25s ease, filter 0.25s ease',
+                }}
+              />
+            </div>
+          ) : (
+            <span
+              style={{
+                background: 'linear-gradient(135deg, #fef08a 0%, #f59e0b 50%, #ea580c 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontWeight: 900,
+                letterSpacing: '0.05em',
+                textShadow: '0 0 16px rgba(245, 158, 11, 0.6)',
+              }}
+            >
+              QUIZ
+            </span>
+          )}
         </div>
         {showTagline && (
           <span
-            className="brand-tagline"
             style={{
               fontSize: dims.tag,
               color: '#f59e0b',
-              fontWeight: 700,
-              letterSpacing: '0.12em',
+              fontWeight: 600,
+              letterSpacing: '0.06em',
               textTransform: 'uppercase',
-              marginTop: 3,
-              opacity: 0.95,
-              textShadow: '0 0 10px rgba(245, 158, 11, 0.25)',
+              marginTop: 2,
+              opacity: 0.9,
             }}
           >
             Elevating Coding Knowledge
           </span>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }

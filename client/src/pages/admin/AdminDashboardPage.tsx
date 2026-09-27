@@ -5,6 +5,8 @@ import BrandLogo from '../../components/BrandLogo';
 import AnimatedPage from '../../components/AnimatedPage';
 import AnimatedCounter from '../../components/AnimatedCounter';
 import BulkEnrollModal from '../../components/BulkEnrollModal';
+import LiquidBlob from '../../components/3d/LiquidBlob';
+import ParticleField from '../../components/3d/ParticleField';
 
 interface Exam {
   id: string;
@@ -96,6 +98,8 @@ export default function AdminDashboardPage() {
           {isSuperAdmin && (
             <button id="nav-staff" className="admin-nav-item" onClick={() => navigate('/admin/staff')}>🛡️ Staff Management</button>
           )}
+          <button id="nav-colleges" className="admin-nav-item" onClick={() => navigate('/admin/colleges')}>🏛️ Colleges</button>
+          <button id="nav-exam-codes" className="admin-nav-item" onClick={() => navigate('/admin/exam-codes')}>🔑 Exam Codes</button>
           <button id="nav-create-exam" className="admin-nav-item" onClick={() => navigate('/admin/create-exam')}>➕ Create Exam</button>
           <button id="nav-import" className="admin-nav-item" onClick={() => navigate('/admin/import')}>📥 Import Questions</button>
           <button id="nav-sessions" className="admin-nav-item" onClick={() => navigate('/admin/sessions')}>👥 Sessions</button>
@@ -109,10 +113,13 @@ export default function AdminDashboardPage() {
           </div>
         </aside>
 
-        {/* Main content */}
-        <main className="admin-content">
-          <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: '1.7rem', fontWeight: 800, marginBottom: 4 }}>
+        {/* Main content with Module 15: LiquidBlob & Module 16: ParticleField */}
+        <main className="admin-content" style={{ position: 'relative', overflow: 'hidden' }}>
+          <ParticleField liveCount={Math.max(1, exams.length * 8)} particleCount={400} color="#6C5CE7" />
+          <LiquidBlob />
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <div style={{ marginBottom: 24 }}>
+              <h1 style={{ fontSize: '1.7rem', fontWeight: 800, marginBottom: 4 }}>
               {isSuperAdmin ? 'Institutional Control Center' : 'My Assessments Dashboard'}
             </h1>
             <p className="text-muted text-sm">
@@ -237,6 +244,7 @@ export default function AdminDashboardPage() {
             </tbody>
           </table>
         )}
+          </div>
       </main>
 
       {/* Bulk Enrollment Modal */}
