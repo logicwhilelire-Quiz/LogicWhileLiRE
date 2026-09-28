@@ -1,11 +1,11 @@
 {
-  "name": "LogicWhile Quiz — Mission Control & Coding Arena",
-  "short_name": "LogicWhile",
-  "description": "Enterprise Aerospace Proctored Assessment & Coding Platform with Real-Time Telemetry and Holo-Code Execution",
+  "name": "GROWTHRAN — Learn. Grow. Run.",
+  "short_name": "GROWTHRAN",
+  "description": "GROWTHRAN — Autonomous AI Proctored Assessment & Coding Platform with Real-Time Telemetry and Code Execution. Developed by R. Charan Sai.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#050814",
-  "theme_color": "#2B7FFF",
+  "background_color": "#0C0720",
+  "theme_color": "#190F3B",
   "orientation": "any",
   "icons": [
     {

@@ -299,7 +299,7 @@ export default function CollegesPage() {
                     required disabled={!!editCollege}
                     style={{ fontFamily: 'monospace', letterSpacing: '0.08em' }} />
                   <div className="text-xs text-muted" style={{ marginTop: 4 }}>
-                    Used in exam codes: LW-<strong>{form.college_code || 'CODE'}</strong>-XXXXXX
+                    Used in exam codes: GR-<strong>{form.college_code || 'CODE'}</strong>-XXXXXX
                     {editCollege && ' (cannot change after creation)'}
                   </div>
                 </div>

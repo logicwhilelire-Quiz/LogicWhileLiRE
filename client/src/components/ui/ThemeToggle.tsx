@@ -5,8 +5,8 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
-    const savedTheme = (localStorage.getItem('lw_theme') as 'dark' | 'light') || 'dark';
-    setTheme(savedTheme);
+    const savedTheme = (localStorage.getItem('growthran_theme') || localStorage.getItem('lw_theme') as 'dark' | 'light') || 'dark';
+    setTheme(savedTheme as 'dark' | 'light');
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
 
@@ -14,7 +14,8 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);
     document.documentElement.setAttribute('data-theme', nextTheme);
-    localStorage.setItem('lw_theme', nextTheme);
+    localStorage.setItem('growthran_theme', nextTheme);
+    localStorage.removeItem('lw_theme');
   };
 
   return (

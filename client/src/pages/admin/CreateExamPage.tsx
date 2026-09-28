@@ -105,7 +105,7 @@ function Step1({ form, setForm }: { form: ExamMeta; setForm: React.Dispatch<Reac
     const prefixes = ['CRT', 'TECH', 'DSA', 'AI', 'CODE']
     const pfx = prefixes[Math.floor(Math.random() * prefixes.length)]
     const num = Math.floor(1000 + Math.random() * 9000)
-    setForm(prev => ({ ...prev, code: `LW-${pfx}-${num}` }))
+    setForm(prev => ({ ...prev, code: `GR-${pfx}-${num}` }))
   }
 
   const field = (key: keyof ExamMeta, label: string, type = 'text', extra?: React.InputHTMLAttributes<HTMLInputElement>) => (
@@ -130,16 +130,16 @@ function Step1({ form, setForm }: { form: ExamMeta; setForm: React.Dispatch<Reac
       style={{
         display: 'flex', alignItems: 'center', gap: 14,
         padding: '12px 16px',
-        background: form[key] ? 'rgba(43,127,255,0.08)' : 'rgba(255,255,255,0.02)',
+        background: form[key] ? 'rgba(191,159,98,0.12)' : 'rgba(255,255,255,0.02)',
         border: '1px solid',
-        borderColor: form[key] ? 'rgba(43,127,255,0.35)' : 'var(--color-border)',
+        borderColor: form[key] ? 'rgba(191,159,98,0.35)' : 'var(--color-border)',
         borderRadius: 'var(--radius-md)',
         cursor: 'pointer', transition: 'all 0.25s ease',
         marginBottom: 10,
       }}
     >
       <motion.div
-        animate={{ background: form[key] ? '#2B7FFF' : 'rgba(255,255,255,0.1)' }}
+        animate={{ background: form[key] ? '#bf9f62' : 'rgba(255,255,255,0.1)' }}
         style={{ width: 44, height: 24, borderRadius: 999, position: 'relative', flexShrink: 0 }}
       >
         <motion.div
@@ -159,7 +159,7 @@ function Step1({ form, setForm }: { form: ExamMeta; setForm: React.Dispatch<Reac
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
         <div style={{ gridColumn: '1 / -1' }}>
-          {field('exam_name', '📝 Exam Title', 'text', { placeholder: 'e.g. LogicWhile National Engineering Qualifier 2026' })}
+          {field('exam_name', '📝 Exam Title', 'text', { placeholder: 'e.g. GROWTHRAN National Engineering Qualifier 2026' })}
         </div>
 
         {/* Code with Generator button */}
@@ -183,7 +183,7 @@ function Step1({ form, setForm }: { form: ExamMeta; setForm: React.Dispatch<Reac
             className="form-input"
             value={form.code}
             onChange={e => setForm(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
-            placeholder="e.g. DEMO123 or LW-CRT-2026"
+            placeholder="e.g. GR-CRT-2026 or LW-CRT-2026"
             style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', textTransform: 'uppercase' }}
           />
         </div>

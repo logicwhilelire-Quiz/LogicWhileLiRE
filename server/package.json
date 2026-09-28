@@ -1,13 +1,15 @@
 {
-  "name": "server",
-  "version": "1.0.0",
-  "description": "",
+  "name": "growthran-server",
+  "version": "4.0.0",
+  "description": "GROWTHRAN — Learn. Grow. Run. Autonomous Examination Engine & API",
   "main": "index.js",
+  "author": "R. Charan Sai",
+  "license": "UNLICENSED",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "node test-registration-specification.js && node test-auth-module.js && node test-auth.js && node test-parser.js && node test-proctoring-sets.js && node test-communication.js",
+    "test": "node test-registration-specification.js && node test-auth-module.js && node test-auth.js && node test-parser.js && node test-proctoring-sets.js && node test-communication.js && node test-rebrand-exam-codes.js",
     "test:gate": "node test-registration-specification.js",
     "test:auth": "node test-auth-module.js",
     "test:integration": "node test-roles.js && node test-bulk-enroll.js",
@@ -15,9 +17,12 @@
     "test:load": "node load-test.js",
     "test:smoke": "node test-smoke.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "growthran",
+    "assessment",
+    "proctoring",
+    "exam-engine"
+  ],
   "type": "commonjs",
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

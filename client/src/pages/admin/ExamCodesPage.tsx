@@ -216,7 +216,7 @@ export default function ExamCodesPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h1 style={{ fontSize: '1.7rem', fontWeight: 800, marginBottom: 4 }}>🔑 Exam Codes</h1>
-            <p className="text-muted text-sm">Generate and manage unique exam codes (LW-COLLEGE-XXXXXX) for each college's assessment.</p>
+            <p className="text-muted text-sm">Generate and manage unique exam codes (GR-COLLEGE-XXXXXX or legacy LW-) for each college's assessment.</p>
           </div>
           <button id="generate-exam-code-btn" className="btn btn-primary"
             onClick={() => {
@@ -322,7 +322,7 @@ export default function ExamCodesPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="modal-overlay" onClick={() => setShowForm(false)}>
             <motion.div initial={{ opacity: 0, scale: 0.94, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.94, y: 20 }} transition={{ duration: 0.3 }} className="modal" style={{ maxWidth: 540 }} onClick={e => e.stopPropagation()}>
               <h3 style={{ fontWeight: 800, fontSize: '1.2rem', marginBottom: 6 }}>⚡ Generate Exam Code</h3>
-              <p className="text-muted text-sm" style={{ marginBottom: 20 }}>A unique LW-COLLEGE-XXXXXX code will be auto-generated.</p>
+              <p className="text-muted text-sm" style={{ marginBottom: 20 }}>A unique GR-COLLEGE-XXXXXX code will be auto-generated (legacy LW- codes remain fully supported).</p>
 
               {error && <div className="alert alert-error mb-2" style={{ fontSize: '0.88rem' }}>{error}</div>}
 
@@ -370,8 +370,8 @@ export default function ExamCodesPage() {
                 </div>
 
                 <div style={{ background: 'rgba(108,92,231,0.08)', border: '1px solid rgba(108,92,231,0.2)', borderRadius: 10, padding: '12px 16px', fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
-                  💡 Code preview: <strong style={{ color: '#a29bfe', fontFamily: 'monospace' }}>LW-{form.college_id ? (colleges.find(c => String(c.id) === form.college_id)?.college_code || 'CODE') : 'CODE'}-XXXXXX</strong>
-                  <br />Share this code with your entire college batch via WhatsApp. Each hall ticket can use it only once.
+                  💡 Code preview: <strong style={{ color: '#a29bfe', fontFamily: 'monospace' }}>GR-{form.college_id ? (colleges.find(c => String(c.id) === form.college_id)?.college_code || 'CODE') : 'CODE'}-XXXXXX</strong>
+                  <br />Share this code with your entire college batch. Existing LW- and new GR- codes are accepted seamlessly.
                 </div>
 
                 <div style={{ display: 'flex', gap: 12 }}>

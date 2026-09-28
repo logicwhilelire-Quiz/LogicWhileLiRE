@@ -499,7 +499,7 @@ router.get('/certificate/verify/:token', async (req: Request, res: Response) => 
         const hash = crypto.createHash('sha256').update(cleanToken + (attempt.hall_ticket || '')).digest('hex');
         const cert = {
           qr_token: cleanToken,
-          certificate_id: `LW-${(attempt.hall_ticket || '2026').toUpperCase()}-${hash.substring(0, 8).toUpperCase()}`,
+          certificate_id: `GR-${(attempt.hall_ticket || '2026').toUpperCase()}-${hash.substring(0, 8).toUpperCase()}`,
           candidate_name: attempt.candidate_name || `Candidate ${attempt.hall_ticket}`,
           hall_ticket: attempt.hall_ticket || '2201A0501',
           exam_name: attempt.exam_name || 'Aerospace & Systems Engineering Examination',
@@ -511,7 +511,8 @@ router.get('/certificate/verify/:token', async (req: Request, res: Response) => 
           grade: (attempt.percentage ?? 88) >= 90 ? 'O (Outstanding)' : 'A+ (Distinction)',
           issued_at: attempt.submitted_at || new Date().toISOString(),
           expires_at: 'NEVER (LIFETIME VALIDITY)',
-          issuer: 'LogicWhile Technical Examination Board & Quality Council',
+          issuer: 'GROWTHRAN Examination Board & Quality Council',
+          developer_credit: 'Developed by R. Charan Sai',
           verification_authority: 'National Technical Skills Accreditation Authority',
           integrity_score: '100% PROCTOR VERIFIED (ZERO VIOLATIONS)',
           crypto_hash: hash,
@@ -534,7 +535,7 @@ router.get('/certificate/verify/:token', async (req: Request, res: Response) => 
 
     const syntheticCert = {
       qr_token: cleanToken,
-      certificate_id: `LW-CERT-${hash.substring(0, 10).toUpperCase()}`,
+      certificate_id: `GR-CERT-${hash.substring(0, 10).toUpperCase()}`,
       candidate_name: `Aarav Sharma`,
       hall_ticket: hallTicket || '2201A0501',
       exam_name: 'Aerospace & Distributed Systems Engineering Assessment',
@@ -546,7 +547,8 @@ router.get('/certificate/verify/:token', async (req: Request, res: Response) => 
       grade: 'O (Outstanding Distinction)',
       issued_at: new Date(Date.now() - 3600000 * 2).toISOString(),
       expires_at: 'NEVER (LIFETIME VALIDITY)',
-      issuer: 'LogicWhile Technical Examination Board & Quality Council',
+      issuer: 'GROWTHRAN Examination Board & Quality Council',
+      developer_credit: 'Developed by R. Charan Sai',
       verification_authority: 'National Technical Skills Accreditation Authority',
       integrity_score: '100% PROCTOR VERIFIED (CLEAN TELEMETRY)',
       crypto_hash: hash,

@@ -52,12 +52,21 @@ export async function verifyAttemptToken(
 // ─────────────────────────────────────────────
 
 /**
- * Generates a unique exam code: LW-{COLLEGE_CODE}-{6CHAR}
- * e.g. LW-VRSEC-8X9P2Q
+ * Generates a unique exam code: GR-{COLLEGE_CODE}-{6CHAR} (GROWTHRAN)
+ * e.g. GR-VRSEC-8X9P2Q
+ * Note: The platform continuously accepts both new GR- and legacy LW- codes.
  */
-function generateExamCode(collegeCode: string): string {
+export function generateExamCode(collegeCode: string): string {
   const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-  return `LW-${collegeCode.toUpperCase()}-${random}`;
+  return `GR-${collegeCode.toUpperCase()}-${random}`;
+}
+
+/**
+ * Validates exam code format. Explicitly supports both new GR- and legacy LW- codes.
+ */
+export function isValidExamCodeFormat(code: string): boolean {
+  if (!code || typeof code !== 'string') return false;
+  return /^(GR|LW)-[A-Z0-9]+-[A-Z0-9]+$/i.test(code.trim()) || /^[A-Z0-9_-]{3,32}$/i.test(code.trim());
 }
 
 // ─────────────────────────────────────────────
