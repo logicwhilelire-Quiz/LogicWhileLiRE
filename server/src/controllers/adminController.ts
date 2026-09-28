@@ -1096,4 +1096,180 @@ export async function listAuditLogs(req: Request, res: Response): Promise<void> 
   res.json({ success: true, count: data?.length || 0, logs: data || [] });
 }
 
+/**
+ * PATCH /api/admin/students/:id/block
+ * Toggle student block status during live exam or pre-assessment
+ */
+export async function toggleStudentBlock(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { is_blocked, block_reason } = req.body;
+
+  const targetBlocked = typeof is_blocked === 'boolean' ? is_blocked : true;
+
+  const { data: updated, error } = await supabase
+    .from('students')
+    .update({
+      is_blocked: targetBlocked,
+      block_reason: targetBlocked ? (block_reason || 'Blocked by administrator') : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select('id, name, hall_ticket, is_blocked, block_reason')
+    .maybeSingle();
+
+  if (error) {
+    res.status(500).json({ success: false, error: error.message });
+    return;
+  }
+
+  res.json({
+    success: true,
+    message: `Student has been ${targetBlocked ? 'blocked' : 'unblocked'}.`,
+    student: updated || { id, is_blocked: targetBlocked },
+  });
+}
+
+/**
+ * POST /api/admin/results/:sessionId/override
+ * Override candidate score or grant grace marks
+ */
+export async function overrideScore(req: Request, res: Response): Promise<void> {
+  const { sessionId } = req.params;
+  const { score_override, grace_marks, reason } = req.body;
+
+  const updatePayload: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (score_override !== undefined && !isNaN(Number(score_override))) {
+    updatePayload['score_override'] = Number(score_override);
+    updatePayload['total_score'] = Number(score_override);
+  }
+  if (grace_marks !== undefined && !isNaN(Number(grace_marks))) {
+    updatePayload['grace_marks'] = Number(grace_marks);
+  }
+  if (reason) {
+    updatePayload['override_reason'] = String(reason);
+  }
+
+  const { data: updated, error } = await supabase
+    .from('results')
+    .update(updatePayload)
+    .eq('session_id', sessionId)
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
+    res.status(500).json({ success: false, error: error.message });
+    return;
+  }
+
+  res.json({
+    success: true,
+    message: 'Score override and adjustments applied successfully.',
+    result: updated || { session_id: sessionId, ...updatePayload },
+  });
+}
+
+/**
+ * PATCH /api/admin/exams/:id/settings
+ * Update exam security, passing %, and feature toggles
+ */
+export async function updateExamSettings(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const settings = req.body;
+
+  const { data: updated, error } = await supabase
+    .from('exams')
+    .update({
+      ...settings,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
+    res.status(500).json({ success: false, error: error.message });
+    return;
+  }
+
+  res.json({
+    success: true,
+    message: 'Exam settings updated successfully.',
+    exam: updated || { id, ...settings },
+  });
+}
+
+/**
+ * GET /api/admin/settings
+ * Fetch global platform branding & engine settings
+ */
+export async function getPlatformSettings(_req: Request, res: Response): Promise<void> {
+  const { data, error } = await supabase
+    .from('platform_settings')
+    .select('*')
+    .limit(1)
+    .maybeSingle();
+
+  if (error && error.message) {
+    // Return sensible defaults if table not populated
+    res.json({
+      success: true,
+      settings: {
+        platform_name: 'GROWRAN',
+        tagline: 'Grow + Run',
+        primary_color: '#2B7FFF',
+        secondary_color: '#050814',
+        maintenance_mode: false,
+        allowed_languages: ['python', 'javascript', 'cpp', 'java', 'go'],
+        execution_timeout_ms: 5000,
+      },
+    });
+    return;
+  }
+
+  res.json({
+    success: true,
+    settings: data || {
+      platform_name: 'GROWRAN',
+      tagline: 'Grow + Run',
+      primary_color: '#2B7FFF',
+      secondary_color: '#050814',
+      maintenance_mode: false,
+      allowed_languages: ['python', 'javascript', 'cpp', 'java', 'go'],
+      execution_timeout_ms: 5000,
+    },
+  });
+}
+
+/**
+ * POST /api/admin/settings
+ * Save platform branding and maintenance mode
+ */
+export async function updatePlatformSettings(req: Request, res: Response): Promise<void> {
+  const settings = req.body;
+
+  const { data, error } = await supabase
+    .from('platform_settings')
+    .upsert({
+      id: '00000000-0000-0000-0000-000000000001',
+      ...settings,
+      updated_at: new Date().toISOString(),
+    })
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
+    res.status(500).json({ success: false, error: error.message });
+    return;
+  }
+
+  res.json({
+    success: true,
+    message: 'Platform configuration updated.',
+    settings: data || settings,
+  });
+}
+
 

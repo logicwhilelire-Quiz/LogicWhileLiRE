@@ -40,6 +40,11 @@ import {
   getBulkEnrollTemplate,
   bulkEnrollParticipantsHandler,
   listAuditLogs,
+  toggleStudentBlock,
+  overrideScore,
+  updateExamSettings,
+  getPlatformSettings,
+  updatePlatformSettings,
 } from '../controllers/adminController';
 import { getLeaderboard } from '../controllers/adminController';
 
@@ -147,6 +152,19 @@ router.patch(
   validateParams(UUIDParam),
   resolveSuspiciousActivity
 );
+
+// ——— Student & Candidate Master Controls ———
+router.patch('/students/:id/block', requireRole('super_admin'), auditLog('BLOCK_STUDENT', 'students'), toggleStudentBlock);
+
+// ——— Score Override & Grace Marks ———
+router.post('/results/:sessionId/override', requireRole('super_admin'), auditLog('OVERRIDE_SCORE', 'results'), overrideScore);
+
+// ——— Exam Security & Feature Toggles ———
+router.patch('/exams/:id/settings', requireExamOwnership('id'), auditLog('UPDATE_EXAM_SETTINGS', 'exams'), updateExamSettings);
+
+// ——— Platform & Engine Settings ———
+router.get('/settings', getPlatformSettings);
+router.post('/settings', requireRole('super_admin'), auditLog('UPDATE_PLATFORM_SETTINGS', 'platform_settings'), updatePlatformSettings);
 
 // ——— Audit Logs (Phase 3 Results Vault) ———
 router.get('/audit-logs', requireRole('super_admin'), listAuditLogs);
