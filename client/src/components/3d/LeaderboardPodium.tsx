@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import PlasmaBall from './PlasmaBall'
 import CodeCube from './CodeCube'
 
-interface LeaderboardEntry {
+export interface LeaderboardEntry {
   rank: number
   name: string
   score: number

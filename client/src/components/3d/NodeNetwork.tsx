@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import { isReducedMotion, isLowEndDevice } from './shared3d';
 
 interface NodeNetworkProps {
   nodeCount?: number;
@@ -9,11 +10,11 @@ interface NodeNetworkProps {
 }
 
 export default function NodeNetwork({
-  nodeCount = 50,
-  maxDistance = 120,
+  nodeCount = 45,
+  maxDistance = 130,
   className = 'w-full h-full',
-  lineColor = '#06B6D4',
-  nodeColor = '#6C5CE7',
+  lineColor = 'rgba(56, 189, 248, 0.35)',
+  nodeColor = '#38BDF8',
 }: NodeNetworkProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -23,39 +24,79 @@ export default function NodeNetwork({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let width = (canvas.width = canvas.parentElement?.offsetWidth || window.innerWidth);
-    let height = (canvas.height = canvas.parentElement?.offsetHeight || window.innerHeight);
+    // Hard Rule: Respect prefers-reduced-motion
+    const reducedMotion = isReducedMotion();
+    const lowEnd = isLowEndDevice();
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    let width = canvas.parentElement?.offsetWidth || window.innerWidth;
+    let height = canvas.parentElement?.offsetHeight || window.innerHeight;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
 
     const handleResize = () => {
       if (!canvas) return;
-      width = canvas.width = canvas.parentElement?.offsetWidth || window.innerWidth;
-      height = canvas.height = canvas.parentElement?.offsetHeight || window.innerHeight;
+      width = canvas.parentElement?.offsetWidth || window.innerWidth;
+      height = canvas.parentElement?.offsetHeight || window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.scale(dpr, dpr);
     };
     window.addEventListener('resize', handleResize);
 
-    // Performance rule: If mobile, reduce particles: isMobile ? 25 nodes : 50 nodes
-    const isMobile = width < 768;
-    const activeNodeCount = isMobile ? Math.min(25, nodeCount) : nodeCount;
+    // Mouse interaction tracking
+    const mouse = { x: -1000, y: -1000, active: false };
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+      mouse.active = true;
+    };
+    const handleMouseLeave = () => {
+      mouse.active = false;
+    };
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    window.addEventListener('mouseleave', handleMouseLeave);
 
-    // Initialize nodes with random positions and velocities
+    // Performance rule: If mobile or low-end device, throttle particle count
+    const isMobile = width < 768;
+    const activeNodeCount = lowEnd ? 16 : isMobile ? 22 : nodeCount;
+
+    // Initialize nodes
     const nodes = Array.from({ length: activeNodeCount }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      vx: (Math.random() - 0.5) * 0.8,
-      vy: (Math.random() - 0.5) * 0.8,
-      radius: Math.random() * 1.8 + 1.2,
+      vx: (Math.random() - 0.5) * 0.75,
+      vy: (Math.random() - 0.5) * 0.75,
+      radius: Math.random() * 1.6 + 1.2,
     }));
 
     let animId = 0;
+    let isRunning = true;
 
     const render = () => {
+      if (!isRunning) return;
       ctx.clearRect(0, 0, width, height);
 
-      // Move nodes & bounce off boundaries
+      // Move nodes & gentle mouse repulsion
       for (let i = 0; i < nodes.length; i++) {
         const n = nodes[i];
         n.x += n.vx;
         n.y += n.vy;
+
+        if (mouse.active) {
+          const dx = n.x - mouse.x;
+          const dy = n.y - mouse.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 110 && dist > 0) {
+            const force = (110 - dist) / 110;
+            n.x += (dx / dist) * force * 2.5;
+            n.y += (dy / dist) * force * 2.5;
+          }
+        }
 
         if (n.x < 0) { n.x = 0; n.vx *= -1; }
         else if (n.x > width) { n.x = width; n.vx *= -1; }
@@ -75,8 +116,8 @@ export default function NodeNetwork({
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           if (dist < maxDistance) {
-            const alpha = (1 - dist / maxDistance) * 0.45;
-            ctx.strokeStyle = `rgba(6, 182, 212, ${alpha})`;
+            const alpha = (1 - dist / maxDistance) * 0.4;
+            ctx.strokeStyle = lineColor.replace('0.35', String(alpha.toFixed(3)));
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(b.x, b.y);
@@ -91,20 +132,41 @@ export default function NodeNetwork({
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
         ctx.fillStyle = nodeColor;
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = 6;
         ctx.shadowColor = nodeColor;
         ctx.fill();
         ctx.shadowBlur = 0;
       }
 
-      animId = requestAnimationFrame(render);
+      if (!reducedMotion) {
+        animId = requestAnimationFrame(render);
+      }
     };
 
-    animId = requestAnimationFrame(render);
+    // Hard Rule: Pause when tab hidden
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        isRunning = false;
+        cancelAnimationFrame(animId);
+      } else {
+        isRunning = true;
+        if (!reducedMotion) {
+          animId = requestAnimationFrame(render);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Initial render
+    render();
 
     return () => {
+      isRunning = false;
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [nodeCount, maxDistance, lineColor, nodeColor]);
 
@@ -118,7 +180,7 @@ export default function NodeNetwork({
         pointerEvents: 'none',
         display: 'block',
       }}
-      aria-label="Interactive WebSocket Proximity Node Network"
+      aria-label="Interactive Proximity Node Network"
     />
   );
 }

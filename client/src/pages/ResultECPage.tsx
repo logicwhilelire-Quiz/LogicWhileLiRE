@@ -8,6 +8,7 @@ import MagneticButton from '../components/3d/MagneticButton'
 import LeaderboardPodium from '../components/3d/LeaderboardPodium'
 import ShimmerText from '../components/3d/ShimmerText'
 import FlightPathLines from '../components/3d/FlightPathLines'
+import AltimeterDial from '../components/3d/AltimeterDial'
 
 const RadarChart3D  = lazy(() => import('../components/3d/RadarChart3D'))
 const StarField     = lazy(() => import('../components/3d/StarField'))
@@ -111,11 +112,17 @@ export default function ResultECPage() {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           style={{ textAlign: 'center', marginBottom: 64 }}
         >
-          <div style={{ fontSize: '4rem', marginBottom: 16 }}>
-            {pct >= 80 ? '🏆' : pct >= 60 ? '🎓' : '📝'}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+            <AltimeterDial
+              value={Math.round(pct)}
+              label="FINAL SCORE"
+              suffix="%"
+              color={scoreColor}
+              size={140}
+            />
           </div>
 
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3rem, 6vw, 5rem)', fontWeight: 800, letterSpacing: '-0.04em', marginBottom: 8 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 800, letterSpacing: '-0.04em', marginBottom: 8 }}>
             <ShimmerText text={`${pct.toFixed(1)}%`} shimmer />
           </h1>
 

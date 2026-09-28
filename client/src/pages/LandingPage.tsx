@@ -14,6 +14,7 @@ import LogicCoil from '../components/LogicCoil'
 const CollegeGlobe = lazy(() => import('../components/3d/CollegeGlobe'))
 const LiquidBlob   = lazy(() => import('../components/3d/LiquidBlob'))
 const ParticleField = lazy(() => import('../components/3d/ParticleField'))
+const NodeNetwork   = lazy(() => import('../components/3d/NodeNetwork'))
 
 const STATS = [
   { value: 50000,  label: 'Students Assessed', suffix: '+', color: '#2B7FFF' },
@@ -264,10 +265,11 @@ export default function LandingPage() {
           paddingTop: 80,
         }}
       >
-        {/* Blob background */}
+        {/* Hero Interactive 3D Node Network & Blob background */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
           <Suspense fallback={null}>
             <LiquidBlob />
+            <NodeNetwork nodeCount={36} maxDistance={140} lineColor="rgba(56, 189, 248, 0.22)" nodeColor="#38bdf8" />
           </Suspense>
           <div style={{
             position: 'absolute', inset: 0,

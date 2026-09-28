@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import BrandLogo from '../components/BrandLogo';
 import AnimatedPage from '../components/AnimatedPage';
 import ParticleField from '../components/3d/ParticleField';
+import NodeNetwork from '../components/3d/NodeNetwork';
 import { getAssessmentSystemCheck, getAssessmentLobbyStatus, authLogout } from '../lib/api';
 
 interface CandidateProfile {
@@ -175,8 +176,9 @@ export default function WaitingLobbyPage() {
           overflow: 'hidden',
         }}
       >
-        {/* Module 16: 3D Star Particle Field */}
-        <ParticleField liveCount={connectedCount} particleCount={1000} color="#a78bfa" />
+        {/* Module 16: 3D Star Particle Field & Live Participant Node Network */}
+        <ParticleField liveCount={connectedCount} particleCount={800} color="#a78bfa" />
+        <NodeNetwork nodeCount={connectedCount > 80 ? 40 : 25} maxDistance={140} lineColor="#38bdf8" nodeColor="#818cf8" />
         {/* Navigation Bar */}
         <div
           style={{
