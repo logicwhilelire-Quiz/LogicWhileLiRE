@@ -135,3 +135,17 @@
 - **Skipped & Why:** None.
 
 ---
+
+## Phase G: Student and Public Experience
+- **Status:** COMPLETED
+- **What Changed:**
+  - Audited student and public flows (G1: Landing Page with 0 certificate mentions, G2: Candidate Registration Gate with demographic and academic validation, G3: Hall-ticket exam code entry and lobby, G4: Loading/empty states, G5: Responsive touch and keyboard access, G7: PWA installable manifest).
+  - Implemented G6: Added English / Telugu (తెలుగు) bilingual toggle in `InstructionsPage.tsx` with full native translation for proctoring rules, hardware diagnostics, and countdown.
+  - Replaced legacy color values with official GROWTHRAN design tokens (`#2B7FFF`, `#1B5FB5`, `#050814`).
+  - Added official footer credit ("GROWTHRAN • Developed by R. Charan Sai • © 2026 All rights reserved.").
+- **Files Touched:**
+  - `client/src/pages/InstructionsPage.tsx`
+- **Test Counts:** 52/52 server tests passing, 9/9 role security tests passing, 6/6 bulk enrollment tests passing, 8/8 smoke tests passing. Both TypeScript builds clean.
+- **Skipped & Why:** None.
+
+---
