@@ -28,7 +28,6 @@ interface ResultData {
   unanswered?: number
   topicBreakdown?: Record<string, number>
   qrToken?: string
-  certificateUrl?: string
 }
 
 interface LeaderboardEntry {
@@ -163,7 +162,7 @@ export default function ResultECPage() {
           ))}
         </div>
 
-        {/* ─── MAIN GRID: Radar + Certificate ─── */}
+        {/* ─── MAIN GRID: Radar + Telemetry ─── */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 48 }}>
 
           {/* Topic Radar Chart */}

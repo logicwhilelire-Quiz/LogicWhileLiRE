@@ -24,12 +24,6 @@ export default function SettingsControl() {
     enablePlagiarism: true,
   });
 
-  // Certificate Controls
-  const [cert, setCert] = useState({
-    templateName: 'aerospace_standard',
-    criteriaPassPct: 40,
-    revokeToken: '',
-  });
 
   // Audit Logs
   const [auditLogs] = useState([
@@ -238,52 +232,6 @@ export default function SettingsControl() {
               </div>
             </div>
 
-            {/* 4. Certificate Control */}
-            <div className="card" style={{ padding: '24px 28px', borderRadius: 12, border: '1px solid var(--color-border)', background: 'rgba(11, 18, 38, 0.65)' }}>
-              <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#FFFFFF', margin: '0 0 16px 0' }}>
-                📜 Certificate Master Control
-              </h2>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div>
-                  <label className="form-label">Certificate Criteria (Pass Score %)</label>
-                  <input
-                    className="form-input"
-                    type="number"
-                    value={cert.criteriaPassPct}
-                    onChange={(e) => setCert({ ...cert, criteriaPassPct: Number(e.target.value) })}
-                  />
-                  <div style={{ fontSize: '0.74rem', color: 'var(--color-text-faint)', marginTop: 4 }}>
-                    Candidates must achieve ≥ this percentage to unlock verification QR.
-                  </div>
-                </div>
-
-                <div>
-                  <label className="form-label">Revoke Certificate by QR Token</label>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input
-                      className="form-input font-mono"
-                      placeholder="e.g. GR-CERT-9B31E7C4..."
-                      value={cert.revokeToken}
-                      onChange={(e) => setCert({ ...cert, revokeToken: e.target.value })}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (cert.revokeToken) {
-                          alert(`Certificate with token ${cert.revokeToken} has been revoked.`);
-                          setCert({ ...cert, revokeToken: '' });
-                        }
-                      }}
-                      className="btn"
-                      style={{ background: '#EF444420', color: '#EF4444', border: '1px solid #EF444440', fontWeight: 700 }}
-                    >
-                      Revoke
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* 5. Audit Log Wall */}

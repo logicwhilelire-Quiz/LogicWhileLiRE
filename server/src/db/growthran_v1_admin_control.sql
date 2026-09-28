@@ -322,25 +322,9 @@ CREATE TABLE IF NOT EXISTS results (
   updated_by_admin    UUID REFERENCES staff(id) ON DELETE SET NULL,
   graded_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
--- ─── 17. TABLE: certificates (Admin-Managed Template & Issuance)
-CREATE TABLE IF NOT EXISTS certificates (
-  id                    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  candidate_id          TEXT,
-  hall_ticket           TEXT,
-  exam_id               TEXT,
-  score                 NUMERIC(5,2),
-  percentage            NUMERIC(5,2),
-  qr_token              TEXT UNIQUE DEFAULT encode(gen_random_bytes(24), 'hex'),
-  template_name         TEXT DEFAULT 'aerospace_standard',
-  criteria_pass_pct     NUMERIC DEFAULT 40,
-  is_revoked            BOOLEAN NOT NULL DEFAULT FALSE,
-  revoked_reason        TEXT,
-  pdf_url               TEXT,
-  created_by_admin      UUID REFERENCES staff(id) ON DELETE SET NULL,
-  updated_by_admin      UUID REFERENCES staff(id) ON DELETE SET NULL,
-  issued_at             TIMESTAMPTZ DEFAULT NOW()
-);
+-- ─── 17. CERTIFICATES: DISCONTINUED (Phase C Spec) ───────────
+-- Digital certificate issuance has been permanently retired.
+-- For legacy database migration, see server/db/migration_remove_certificates.sql.
 
 -- ─── 18. TABLE: leaderboard ──────────────────────────────────
 CREATE TABLE IF NOT EXISTS leaderboard (
@@ -385,7 +369,6 @@ ALTER TABLE session_answers     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE violations          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proctor_logs        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE results             ENABLE ROW LEVEL SECURITY;
-ALTER TABLE certificates        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leaderboard         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_log           ENABLE ROW LEVEL SECURITY;
 
@@ -405,7 +388,6 @@ CREATE POLICY "session_answers admin service role" ON session_answers   FOR ALL 
 CREATE POLICY "violations admin service role"     ON violations         FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY "proctor_logs admin service role"   ON proctor_logs       FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY "results admin service role"        ON results            FOR ALL TO service_role USING (true) WITH CHECK (true);
-CREATE POLICY "certificates admin service role"   ON certificates       FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY "leaderboard admin service role"    ON leaderboard        FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY "audit_log admin service role"      ON audit_log          FOR ALL TO service_role USING (true) WITH CHECK (true);
 
@@ -415,5 +397,4 @@ CREATE POLICY "student read launched active exams" ON exams FOR SELECT TO anon, 
 CREATE POLICY "student read active exam_codes" ON exam_codes FOR SELECT TO anon, authenticated USING (is_active = true);
 -- Student sees results ONLY after Admin marks results_published = true
 CREATE POLICY "student read published results" ON results FOR SELECT TO anon, authenticated USING (is_published = true);
-CREATE POLICY "student read verified certificates" ON certificates FOR SELECT TO anon, authenticated USING (is_revoked = false);
 CREATE POLICY "student read platform branding" ON platform_settings FOR SELECT TO anon, authenticated USING (true);

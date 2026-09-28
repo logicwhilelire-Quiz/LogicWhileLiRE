@@ -463,113 +463,49 @@ router.post('/proctor/log', async (req: Request, res: Response) => {
   }
 });
 
-// ─── CERTIFICATE VERIFY ────────────────────────────────────────
-router.get('/certificate/verify/:token', async (req: Request, res: Response) => {
-  try {
-    const { token } = req.params;
-    const cleanToken = String(token).trim();
+// ─── RETIRED CERTIFICATE VERIFICATION (Phase C4 Spec) ──────────
+// Old public verification URLs must not 404 or crash. Serves status 200 with retirement explanation.
+router.get('/certificate/verify/:token', (req: Request, res: Response) => {
+  const accepts = req.headers['accept'] || '';
+  const isHtml = accepts.includes('text/html') || (!accepts.includes('application/json') && !req.xhr);
 
-    // 1. Check certificates table
-    try {
-      const { data, error } = await supabase
-        .from('certificates')
-        .select('*, candidates(name, hall_ticket), exam_codes(exam_name)')
-        .eq('qr_token', cleanToken)
-        .single();
-
-      if (!error && data) {
-        return res.json({
-          success: true,
-          valid: true,
-          certificate: data,
-          message: 'Certificate is valid and authentic',
-        });
-      }
-    } catch {}
-
-    // 2. Check exam_code_attempts table
-    try {
-      const { data: attempt } = await supabase
-        .from('exam_code_attempts')
-        .select('*')
-        .or(`qr_token.eq.${cleanToken},hall_ticket.eq.${cleanToken}`)
-        .single();
-
-      if (attempt) {
-        const hash = crypto.createHash('sha256').update(cleanToken + (attempt.hall_ticket || '')).digest('hex');
-        const isLegacyLW = cleanToken.toUpperCase().startsWith('LW-');
-        const certPrefix = isLegacyLW ? 'LW' : 'GR';
-        const cert = {
-          qr_token: cleanToken,
-          certificate_id: `${certPrefix}-${(attempt.hall_ticket || '2026').toUpperCase()}-${hash.substring(0, 8).toUpperCase()}`,
-          candidate_name: attempt.candidate_name || `Candidate ${attempt.hall_ticket}`,
-          hall_ticket: attempt.hall_ticket || '2201A0501',
-          exam_name: attempt.exam_name || 'Aerospace & Systems Engineering Examination',
-          exam_code: attempt.exam_code || 'DEMO123',
-          score: attempt.score ?? 88,
-          total_marks: attempt.total_marks ?? 100,
-          percentage: attempt.percentage ?? 88,
-          percentile: 94.2,
-          grade: (attempt.percentage ?? 88) >= 90 ? 'O (Outstanding)' : 'A+ (Distinction)',
-          issued_at: attempt.submitted_at || new Date().toISOString(),
-          expires_at: 'NEVER (LIFETIME VALIDITY)',
-          issuer: 'GROWTHRAN Examination Board & Quality Council',
-          developer_credit: 'Developed by R. Charan Sai',
-          verification_authority: 'National Technical Skills Accreditation Authority',
-          integrity_score: '100% PROCTOR VERIFIED (ZERO VIOLATIONS)',
-          crypto_hash: hash,
-        };
-        return res.json({
-          success: true,
-          valid: true,
-          certificate: cert,
-          message: 'Certificate is valid and cryptographically authentic',
-        });
-      }
-    } catch {}
-
-    // 3. Fallback / Universal Decoded Certificate for demo tokens & QR codes
-    // Matches e.g. token_DEMO123_2201A0501, LW-CERT-XXXXX, GR-CERT-XXXXX or any valid token
-    const isLegacyLW = cleanToken.toUpperCase().startsWith('LW-') || cleanToken.includes('LW_');
-    const certPrefix = isLegacyLW ? 'LW' : 'GR';
-    const parts = cleanToken.split('_');
-    const hallTicket = parts.length >= 3 ? parts[2] : (cleanToken.includes('-') ? cleanToken.split('-')[1] : '2201A0501');
-    const examCode = parts.length >= 2 ? parts[1] : 'DEMO123';
-    const hash = crypto.createHash('sha256').update(cleanToken).digest('hex');
-
-    const syntheticCert = {
-      qr_token: cleanToken,
-      certificate_id: `${certPrefix}-CERT-${hash.substring(0, 10).toUpperCase()}`,
-      candidate_name: `Aarav Sharma`,
-      hall_ticket: hallTicket || '2201A0501',
-      exam_name: 'Aerospace & Distributed Systems Engineering Assessment',
-      exam_code: examCode || 'DEMO123',
-      score: 92,
-      total_marks: 100,
-      percentage: 92,
-      percentile: 98.4,
-      grade: 'O (Outstanding Distinction)',
-      issued_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-      expires_at: 'NEVER (LIFETIME VALIDITY)',
-      issuer: 'GROWTHRAN Examination Board & Quality Council',
-      developer_credit: 'Developed by R. Charan Sai',
-      verification_authority: 'National Technical Skills Accreditation Authority',
-      integrity_score: '100% PROCTOR VERIFIED (CLEAN TELEMETRY)',
-      crypto_hash: hash,
-      signature: `SIG_${hash.substring(0, 24).toUpperCase()}`,
-    };
-
-    return res.json({
-      success: true,
-      valid: true,
-      certificate: syntheticCert,
-      message: 'Certificate is valid and cryptographically authentic',
-    });
-
-  } catch (err) {
-    res.status(500).json({ success: false, error: 'Verification failed' });
+  if (isHtml) {
+    return res.status(200).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GROWTHRAN — Certificate Verification Retired</title>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #050814; color: #F0F4FC; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
+    .card { max-width: 520px; width: 100%; padding: 40px; background: #0C1222; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+    .badge { display: inline-block; padding: 4px 14px; border-radius: 999px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #EF4444; font-size: 12px; font-weight: 700; margin-bottom: 20px; letter-spacing: 0.04em; }
+    h1 { font-size: 24px; font-weight: 800; margin: 0 0 14px; color: #F0F4FC; }
+    p { font-size: 15px; color: #94A3B8; line-height: 1.6; margin: 0 0 28px; }
+    a { display: inline-block; padding: 12px 28px; background: #2B7FFF; color: #FFFFFF; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; transition: background 0.2s; }
+    a:hover { background: #1B5FB5; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">SERVICE RETIRED</div>
+    <h1>Certificate verification has been retired.</h1>
+    <p>The digital certificate verification service on GROWTHRAN has been permanently discontinued. If your printed credential or QR code directed you here, please contact your institution administrator directly.</p>
+    <a href="/">← Return to Home</a>
+  </div>
+</body>
+</html>`);
   }
+
+  return res.status(200).json({
+    success: true,
+    retired: true,
+    valid: false,
+    message: 'Certificate verification has been retired.',
+    home_url: '/',
+  });
 });
+
 
 // ─── LEADERBOARD (real-time) ───────────────────────────────────
 router.get('/leaderboard/:examCode', async (req: Request, res: Response) => {

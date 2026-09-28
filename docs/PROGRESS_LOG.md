@@ -49,3 +49,34 @@
 - **Skipped & Why:** Vector logo original requested only if PNG trace is not crisp (SVG pipeline is currently crisp and working).
 
 ---
+
+## Phase C: Remove Certificates and Verification Everywhere
+- **Status:** COMPLETED
+- **What Changed:**
+  - Removed certificate state, criteria inputs, and Master Control card from Admin `SettingsControl.tsx`.
+  - Replaced `VerifyCertificatePage.tsx` with static, branded retirement notice with return home link per C4.
+  - Updated client routes in `App.tsx` (`/verify/:token`, `/certificate/verify/:token`, `/verify`) to render static retired notice.
+  - Updated server `/certificate/verify/:token` endpoint in `ultraRoutes.ts` to serve HTTP 200 static HTML or JSON retirement payload.
+  - Removed `.certificate-frame` CSS rules from `client/src/index.css`.
+  - Removed unused `client/src/components/3d/Certificate3D.tsx`.
+  - Removed `certificateUrl` from `ResultECPage.tsx` and updated candidate identity copy in `CandidateRegisterGatePage.tsx`.
+  - Created `server/db/migration_remove_certificates.sql` documenting data loss impact and rollback script.
+  - Removed table 17 `certificates` and its RLS policies from `growthran_v1_admin_control.sql` (in both `server/db/` and `server/src/db/`).
+  - Rewrote `server/test-rebrand-certificates.js` to validate that retired URLs return HTTP 200 without crashing and no other certificate endpoints exist.
+- **Files Touched:**
+  - `client/src/App.tsx`
+  - `client/src/index.css`
+  - `client/src/components/3d/Certificate3D.tsx` (deleted)
+  - `client/src/pages/CandidateRegisterGatePage.tsx`
+  - `client/src/pages/ResultECPage.tsx`
+  - `client/src/pages/VerifyCertificatePage.tsx`
+  - `client/src/pages/admin/SettingsControl.tsx`
+  - `server/db/migration_remove_certificates.sql` (created)
+  - `server/db/growthran_v1_admin_control.sql`
+  - `server/src/db/growthran_v1_admin_control.sql`
+  - `server/src/routes/ultraRoutes.ts`
+  - `server/test-rebrand-certificates.js`
+- **Test Counts:** 52/52 passing (Server TS clean, Client TS clean)
+- **Skipped & Why:** Destructive database table drop preserved in migration script and awaiting owner approval before executing on live production DBs (Ground Rule 14.7).
+
+---

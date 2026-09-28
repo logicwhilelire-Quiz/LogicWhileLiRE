@@ -1716,7 +1716,7 @@ export default function CandidateRegisterGatePage() {
                         👤 Candidate Identity
                       </h2>
                       <p style={{ fontSize: '0.86rem', color: '#94a3b8', margin: '0 0 22px' }}>
-                        Your verified personal name for contest certificates and public leaderboard ranking.
+                        Your verified personal name for official evaluation records and public leaderboard ranking.
                       </p>
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>

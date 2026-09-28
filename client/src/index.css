@@ -1024,26 +1024,6 @@ img { max-width: 100%; }
 .status-cheating { background: var(--color-danger); animation: blink 0.5s infinite; }
 .status-offline  { background: var(--color-text-faint); }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-/* ============================================================
-   CERTIFICATE
-   ============================================================ */
-.certificate-frame {
-  background: linear-gradient(135deg, #0f1c38, #1a2e58);
-  border: 2px solid rgba(43,127,255,0.3);
-  border-radius: var(--radius-xl);
-  padding: 48px;
-  position: relative;
-  overflow: hidden;
-  transform-style: preserve-3d;
-}
-.certificate-frame::before {
-  content: '';
-  position: absolute; inset: 12px;
-  border: 1px solid rgba(43,127,255,0.15);
-  border-radius: 16px; pointer-events: none;
-}
-
 /* ============================================================
    SHIMMER TEXT
    ============================================================ */
