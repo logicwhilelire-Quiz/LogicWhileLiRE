@@ -43,6 +43,15 @@ const CollegesPage = lazy(() => import('./pages/admin/CollegesPage'));
 const ExamCodesPage = lazy(() => import('./pages/admin/ExamCodesPage'));
 const AdminMonitorPage = lazy(() => import('./pages/admin/AdminMonitorPage'));
 
+// ── GROWRAN 1.0 Clean Admin Control Center ───────────────────────
+const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
+const ExamControl = lazy(() => import('./pages/admin/ExamControl'));
+const QuestionControl = lazy(() => import('./pages/admin/QuestionControl'));
+const StudentControl = lazy(() => import('./pages/admin/StudentControl'));
+const MonitorControl = lazy(() => import('./pages/admin/MonitorControl'));
+const ResultControl = lazy(() => import('./pages/admin/ResultControl'));
+const SettingsControl = lazy(() => import('./pages/admin/SettingsControl'));
+
 function AnimatedRoutes() {
   const location = useLocation();
 
@@ -91,9 +100,25 @@ function AnimatedRoutes() {
         <Route path="/exam" element={<ExamPage />} />
         <Route path="/leaderboard/:examId" element={<LeaderboardPage />} />
 
-        {/* Admin Routes */}
+        {/* Admin Authentication & Control Center */}
         <Route path="/admin" element={<AdminLoginPage />} />
-        <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route path="/admin/dashboard" element={<Dashboard />} />
+        <Route path="/admin/exams" element={<ExamControl />} />
+        <Route path="/admin/exam-control" element={<ExamControl />} />
+        <Route path="/admin/questions" element={<QuestionControl />} />
+        <Route path="/admin/question-control" element={<QuestionControl />} />
+        <Route path="/admin/students" element={<StudentControl />} />
+        <Route path="/admin/student-control" element={<StudentControl />} />
+        <Route path="/admin/monitor" element={<MonitorControl />} />
+        <Route path="/admin/monitor/:examId" element={<MonitorControl />} />
+        <Route path="/admin/monitor-control" element={<MonitorControl />} />
+        <Route path="/admin/results" element={<ResultControl />} />
+        <Route path="/admin/result-control" element={<ResultControl />} />
+        <Route path="/admin/settings" element={<SettingsControl />} />
+        <Route path="/admin/settings-control" element={<SettingsControl />} />
+
+        {/* Supporting Admin Management Pages */}
         <Route path="/admin/staff" element={<StaffManagementPage />} />
         <Route path="/admin/create-exam" element={<CreateExamPage />} />
         <Route path="/admin/import" element={<ImportQuestionsPage />} />
@@ -101,13 +126,8 @@ function AnimatedRoutes() {
         <Route path="/admin/reports" element={<ReportsPage />} />
         <Route path="/admin/analytics" element={<AnalyticsPage />} />
         <Route path="/admin/analytics/:examId" element={<AnalyticsPage />} />
-
-        {/* ── NEW Admin Pages ── */}
         <Route path="/admin/colleges" element={<CollegesPage />} />
         <Route path="/admin/exam-codes" element={<ExamCodesPage />} />
-        <Route path="/admin/monitor" element={<AdminMonitorPage />} />
-        <Route path="/admin/monitor/:examId" element={<AdminMonitorPage />} />
-        <Route path="/admin/questions" element={<AdminMonitorPage />} />
 
         {/* ── About & Philosophy ── */}
         <Route path="/about" element={<AboutPage />} />
