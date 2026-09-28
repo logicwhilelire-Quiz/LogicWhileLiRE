@@ -70,7 +70,7 @@ export default function ExamPage() {
   // ——— Duplicate Tab Prevention ———
   useEffect(() => {
     if (!sessionId) return;
-    const channelName = `logicwhile_exam_${sessionId}`;
+    const channelName = `growthran_exam_${sessionId}`;
     const bc = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(channelName) : null;
     const tabId = Math.random().toString(36).substring(2, 9);
     localStorage.setItem(`exam_tab_${sessionId}`, tabId);

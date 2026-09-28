@@ -776,7 +776,7 @@ router.get('/exam-code/:code/start', async (req: Request, res: Response) => {
           topic: 'Algorithms (Strings)',
           test_cases: [
             { id: 'tc-p1', input_text: "racecar", expected_output: "True", marks: 3, is_hidden: false },
-            { id: 'tc-p2', input_text: "logicwhile", expected_output: "False", marks: 3, is_hidden: false },
+            { id: 'tc-p2', input_text: "growthran", expected_output: "False", marks: 3, is_hidden: false },
             { id: 'tc-p3', input_text: "deified", expected_output: "True", marks: 4, is_hidden: true },
           ],
         },

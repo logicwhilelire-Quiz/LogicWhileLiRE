@@ -143,7 +143,7 @@ export default function BulkEnrollModal({
             </div>
             <a
               href={getBulkEnrollTemplateUrl()}
-              download="logicwhile_enrollment_template.csv"
+              download="growthran_enrollment_template.csv"
               className="btn btn-secondary btn-sm"
               style={{ fontSize: '0.75rem', padding: '4px 10px' }}
             >

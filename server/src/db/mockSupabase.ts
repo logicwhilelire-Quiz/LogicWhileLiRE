@@ -25,7 +25,7 @@ const store: MockTableData = {
     {
       id: 'st000000-0000-0000-0000-000000000001',
       name: 'GROWTHRAN Super Admin',
-      email: 'admin@logicwhilequiz.com',
+      email: 'admin@growthran.com',
       password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
       role: 'super_admin',
       created_by: null,
@@ -39,7 +39,7 @@ const store: MockTableData = {
     {
       id: 'st000000-0000-0000-0000-000000000002',
       name: 'Dr. Suresh Kumar (Faculty)',
-      email: 'suresh@logicwhile.com',
+      email: 'suresh@growthran.com',
       password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
       role: 'faculty',
       created_by: 'st000000-0000-0000-0000-000000000001',
@@ -53,7 +53,7 @@ const store: MockTableData = {
     {
       id: 'st000000-0000-0000-0000-000000000003',
       name: 'Prof. Priya Sharma (Faculty)',
-      email: 'priya@logicwhile.com',
+      email: 'priya@growthran.com',
       password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
       role: 'faculty',
       created_by: 'st000000-0000-0000-0000-000000000001',
@@ -122,7 +122,7 @@ const store: MockTableData = {
       duration_minutes: 30,
       start_time: new Date(Date.now() - 3600000).toISOString(),
       end_time: new Date(Date.now() + 86400000 * 7).toISOString(),
-      admin_email: 'admin@logicwhilequiz.com',
+      admin_email: 'admin@growthran.com',
       created_by_staff_id: 'st000000-0000-0000-0000-000000000002',
       staff_id: 'st000000-0000-0000-0000-000000000002',
       is_leaderboard_public: true,
@@ -135,7 +135,7 @@ const store: MockTableData = {
       duration_minutes: 45,
       start_time: new Date(Date.now() - 86400000).toISOString(),
       end_time: new Date(Date.now() + 86400000 * 14).toISOString(),
-      admin_email: 'admin@logicwhilequiz.com',
+      admin_email: 'admin@growthran.com',
       created_by_staff_id: 'st000000-0000-0000-0000-000000000003',
       staff_id: 'st000000-0000-0000-0000-000000000003',
       is_leaderboard_public: true,
@@ -932,7 +932,7 @@ demoCodes.forEach(code => {
       display_order: 15,
       test_cases: [
         { id: 'tc-p1', input_text: "racecar", expected_output: "True", marks: 3, is_hidden: false },
-        { id: 'tc-p2', input_text: "logicwhile", expected_output: "False", marks: 3, is_hidden: false },
+        { id: 'tc-p2', input_text: "growthran", expected_output: "False", marks: 3, is_hidden: false },
         { id: 'tc-p3', input_text: "deified", expected_output: "True", marks: 4, is_hidden: true },
       ],
     },

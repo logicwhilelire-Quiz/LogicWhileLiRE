@@ -419,7 +419,7 @@ export async function bulkEnrollParticipantsHandler(req: Request, res: Response)
 export function getBulkEnrollTemplate(_req: Request, res: Response): void {
   const csvContent = 'Full Name,Hall Ticket,Mobile Number,Email Address\nAarav Sharma,HT2026101,+919876543210,aarav.student@example.com\nNeha Patel,HT2026102,+919876543211,neha.student@example.com\n';
   res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', 'attachment; filename="logicwhile_roster_template.csv"');
+  res.setHeader('Content-Disposition', 'attachment; filename="growthran_roster_template.csv"');
   res.send(csvContent);
 }
 
@@ -571,7 +571,7 @@ export async function exportExcelReport(req: Request, res: Response): Promise<vo
   const safeTitle = (exam?.title || 'exam').replace(/[^a-zA-Z0-9_\-]/g, '_');
   res.set({
     'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'Content-Disposition': `attachment; filename="LogicWhile_${safeTitle}_report.xlsx"`,
+    'Content-Disposition': `attachment; filename="Growthran_${safeTitle}_report.xlsx"`,
   });
   res.send(buf);
 }

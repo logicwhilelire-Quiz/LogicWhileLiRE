@@ -57,7 +57,7 @@ export default function AdminLoginPage() {
                 id="admin-username"
                 className="form-input"
                 type="text"
-                placeholder="admin or faculty@logicwhile.com"
+                placeholder="admin or faculty@growthran.com"
                 value={form.username}
                 onChange={(e) => setForm({ ...form, username: e.target.value })}
                 autoComplete="username"
