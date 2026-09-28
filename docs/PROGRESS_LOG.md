@@ -80,3 +80,19 @@
 - **Skipped & Why:** Destructive database table drop preserved in migration script and awaiting owner approval before executing on live production DBs (Ground Rule 14.7).
 
 ---
+
+## Phase D: Exam Integrity (Verify, Then Fill Gaps)
+- **Status:** COMPLETED
+- **What Changed:**
+  - Audited D1-D7 against current implementation and verified complete coverage.
+  - Enhanced `server/src/services/autoSubmitService.ts`: added `autoSubmitExpiredExamCodeAttempts` to ensure exam code attempts that expire while a candidate is offline or disconnected are automatically scored and marked completed on the 30-second server cron.
+  - Updated `server/test-roles.js` and `server/test-bulk-enroll.js` with new brand emails to validate 100% role-based security, cross-exam 403 access control, and faculty ownership isolation.
+  - Confirmed WebSocket server timer sync (`socketService.ts`) and Service Worker offline caching (`client/public/sw.js`).
+- **Files Touched:**
+  - `server/src/services/autoSubmitService.ts`
+  - `server/test-roles.js`
+  - `server/test-bulk-enroll.js`
+- **Test Counts:** 52/52 server tests passing, 9/9 role security tests passing, 6/6 bulk enrollment tests passing, 8/8 smoke tests passing. Both TypeScript builds clean.
+- **Skipped & Why:** Working code in D1-D5 preserved per Ground Rule 0.5; gaps filled cleanly.
+
+---

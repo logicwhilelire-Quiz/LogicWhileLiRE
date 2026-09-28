@@ -71,7 +71,7 @@ async function runTests() {
     const facultyLoginRes = await request('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-    }, JSON.stringify({ username: 'suresh@logicwhile.com', password: 'admin123' }));
+    }, JSON.stringify({ username: 'suresh@growthran.com', password: 'admin123' }));
 
     if (facultyLoginRes.status !== 200 || !facultyLoginRes.data.token) {
       throw new Error(`Faculty login failed: ${JSON.stringify(facultyLoginRes.data)}`);
