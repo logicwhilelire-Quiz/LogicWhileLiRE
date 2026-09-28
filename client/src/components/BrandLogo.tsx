@@ -65,8 +65,8 @@ export default function BrandLogo({
         width={dimensions.markW}
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className={`growran-mark ${className}`}
-        aria-label="GROWRAN Logo Mark"
+        className={`growthran-mark ${className}`}
+        aria-label="GROWTHRAN Logo Mark"
         style={{ flexShrink: 0, display: 'inline-block' }}
       >
         <path d="M20 72 V128 H180 V72" stroke={markStroke} strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
@@ -85,7 +85,7 @@ export default function BrandLogo({
 
   return (
     <div
-      className={`growran-brand-lockup ${className}`}
+      className={`growthran-brand-lockup ${className}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -93,7 +93,7 @@ export default function BrandLogo({
         textDecoration: 'none',
         userSelect: 'none',
       }}
-      aria-label="GROWRAN — Grow + Run"
+      aria-label="GROWTHRAN — Learn. Grow. Run."
     >
       {/* Official Mark */}
       <svg
@@ -126,7 +126,7 @@ export default function BrandLogo({
             lineHeight: 1.05,
           }}
         >
-          GROWRAN
+          GROWTHRAN
         </span>
         {effectiveShowTagline && (
           <span

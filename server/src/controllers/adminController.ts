@@ -100,7 +100,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
   let staffRecord: any = null;
   const isBootstrapAdmin =
     normalizedUser === (process.env.ADMIN_USERNAME || 'admin') ||
-    normalizedUser === 'admin@logicwhilequiz.com';
+    normalizedUser === (process.env.INITIAL_ADMIN_EMAIL || 'admin@growthran.local');
 
   if (isBootstrapAdmin) {
     const { data: existingAdmin } = await supabase
@@ -115,11 +115,12 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       staffRecord = {
         id: 'st000000-0000-0000-0000-000000000001',
         name: 'GROWTHRAN Super Admin',
-        email: 'admin@logicwhilequiz.com',
+        email: process.env.INITIAL_ADMIN_EMAIL || 'admin@growthran.local',
         role: 'super_admin',
         is_active: true,
       };
     }
+
 
     let passwordValid = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH!);
     if (
@@ -1217,8 +1218,8 @@ export async function getPlatformSettings(_req: Request, res: Response): Promise
     res.json({
       success: true,
       settings: {
-        platform_name: 'GROWRAN',
-        tagline: 'Grow + Run',
+        platform_name: 'GROWTHRAN',
+        tagline: 'Learn. Grow. Run.',
         primary_color: '#2B7FFF',
         secondary_color: '#050814',
         maintenance_mode: false,
@@ -1232,8 +1233,8 @@ export async function getPlatformSettings(_req: Request, res: Response): Promise
   res.json({
     success: true,
     settings: data || {
-      platform_name: 'GROWRAN',
-      tagline: 'Grow + Run',
+      platform_name: 'GROWTHRAN',
+      tagline: 'Learn. Grow. Run.',
       primary_color: '#2B7FFF',
       secondary_color: '#050814',
       maintenance_mode: false,

@@ -53,7 +53,7 @@ interface ParseResult {
 /**
  * Parse an Excel buffer and validate every row.
  * Supports:
- * 1. GROWRAN 1-Click 5-Column Format:
+ * 1. GROWTHRAN 1-Click 5-Column Format:
  *    Column A: question_text
  *    Column B: type (mcq/code)
  *    Column C: option1 | option2 | option3 | option4

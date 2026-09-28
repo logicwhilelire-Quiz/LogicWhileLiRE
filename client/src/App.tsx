@@ -43,7 +43,7 @@ const CollegesPage = lazy(() => import('./pages/admin/CollegesPage'));
 const ExamCodesPage = lazy(() => import('./pages/admin/ExamCodesPage'));
 const AdminMonitorPage = lazy(() => import('./pages/admin/AdminMonitorPage'));
 
-// ── GROWRAN 1.0 Clean Admin Control Center ───────────────────────
+// ── GROWTHRAN 1.0 Clean Admin Control Center ───────────────────────
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
 const ExamControl = lazy(() => import('./pages/admin/ExamControl'));
 const QuestionControl = lazy(() => import('./pages/admin/QuestionControl'));

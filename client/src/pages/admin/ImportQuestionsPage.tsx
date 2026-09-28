@@ -162,7 +162,7 @@ export default function ImportQuestionsPage() {
           {/* Template info */}
           <div className="card">
             <h3 style={{ fontWeight: 700, marginBottom: 12 }}>📋 Supported Formats</h3>
-            <p className="text-muted text-sm mb-2"><strong>Option 1 (GROWRAN 1-Click Format):</strong> 5 columns:</p>
+            <p className="text-muted text-sm mb-2"><strong>Option 1 (GROWTHRAN 1-Click Format):</strong> 5 columns:</p>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', marginBottom: 16 }}>
               <thead>
                 <tr>

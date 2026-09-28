@@ -4,6 +4,7 @@ import http from 'http';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import { runProductionBootGuard } from './middleware/productionBootGuard';
 import { generalRateLimit } from './middleware/rateLimiter';
 import { sanitizeInput } from './middleware/sanitize';
 import authRoutes from './routes/auth';
@@ -16,6 +17,9 @@ import ultraRoutes from './routes/ultraRoutes';
 import { startSessionCron } from './jobs/sessionCron';
 import { validateParams, ExamIdParam } from './middleware/validate';
 import { initSocketIO } from './services/socketService';
+
+// ── PRODUCTION BOOT GUARD (must be first — refuses to start with weak secrets) ──
+runProductionBootGuard();
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -59,9 +63,27 @@ app.use(generalRateLimit);
 // ROUTES
 // =====================================
 
-// Health check
+// Health check — exposes demo mode status and version info
+const isDemo =
+  process.env.DEMO_MODE === 'true' ||
+  !process.env.SUPABASE_URL ||
+  (process.env.SUPABASE_URL || '').includes('your-project');
+
+app.get('/api/health', (_req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'GROWTHRAN Assessment Engine',
+    version: '4.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    demo_mode: isDemo,
+    demo_banner: isDemo ? 'Running on in-memory demo data. Connect Supabase to enable production persistence.' : null,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Legacy health route (keep for backwards compat)
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', demo_mode: isDemo, timestamp: new Date().toISOString() });
 });
 
 // Authentication (Students & Password Reset)
@@ -80,7 +102,7 @@ app.use('/api/session', sessionRoutes);
 // Leaderboard (public)
 app.get('/api/exam/:examId/leaderboard', validateParams(ExamIdParam), getLeaderboard);
 
-// GROWTHRAN Autonomous Assessment Engine routes (execute, AI, proctor, certificate, leaderboard, create-exam-wizard)
+// GROWTHRAN Autonomous Assessment Engine routes (execute, AI, proctor, leaderboard, create-exam-wizard)
 app.use('/api', ultraRoutes);
 
 // Exam Code System (Hall Ticket + Code entry, No OTP)

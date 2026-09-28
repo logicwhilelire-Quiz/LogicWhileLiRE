@@ -7,13 +7,13 @@ export default function SettingsControl() {
 
   // Platform & Branding Settings
   const [platform, setPlatform] = useState({
-    platformName: 'GROWRAN',
-    tagline: 'Grow + Run',
+    platformName: 'GROWTHRAN',
+    tagline: 'Learn. Grow. Run.',
     institutionName: 'Aerospace Engineering & Tech Partner',
     primaryColor: '#2B7FFF',
     midnightNavy: '#050814',
     maintenanceMode: false,
-    maintenanceMsg: 'GROWRAN portal is undergoing scheduled administrative maintenance.',
+    maintenanceMsg: 'GROWTHRAN portal is undergoing scheduled administrative maintenance.',
   });
 
   // Execution Engine Settings
