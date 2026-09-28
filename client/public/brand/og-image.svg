@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" fill="none">
+  <rect width="1200" height="630" fill="#080E1F"/>
+  <circle cx="600" cy="280" r="320" fill="#1B5FB5" opacity="0.12"/>
+  <circle cx="200" cy="150" r="200" fill="#0A3F8F" opacity="0.2"/>
+  
+  <g transform="translate(180, 160) scale(1.6)">
+    <g transform="translate(10, 10)">
+      <path d="M20 72 V128 H180 V72" stroke="#3B82F6" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M34 65 C55 60 80 66 96 76 V134 C80 124 55 118 34 123 Z" fill="#0C1631" stroke="#3B82F6" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M48 76 C65 72 82 76 94 84 V126 C82 118 65 114 48 118 Z" fill="none" stroke="#60A5FA" stroke-width="5" stroke-linejoin="round" opacity="0.9"/>
+      <path d="M166 65 C145 60 120 66 104 76 V134 C120 124 145 118 166 123 Z" fill="#0C1631" stroke="#3B82F6" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M152 76 C135 72 118 76 106 84 V126 C118 118 135 114 152 118 Z" fill="none" stroke="#60A5FA" stroke-width="5" stroke-linejoin="round" opacity="0.9"/>
+      <line x1="100" y1="76" x2="100" y2="134" stroke="#3B82F6" stroke-width="7" stroke-linecap="round"/>
+      <path d="M38 108 L78 74 L106 95 L174 24" stroke="#60A5FA" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+      <polygon points="182,16 150,22 176,48" fill="#60A5FA" stroke="#60A5FA" stroke-width="4" stroke-linejoin="round"/>
+    </g>
+    <text x="215" y="102" font-family="'Montserrat', 'Poppins', 'Inter', -apple-system, sans-serif" font-size="64" font-weight="800" fill="#FFFFFF" letter-spacing="0.02em">GROWTHRAN</text>
+    <text x="218" y="146" font-family="'Poppins', 'Montserrat', 'Inter', -apple-system, sans-serif" font-size="34" font-weight="400" fill="#93C5FD" letter-spacing="0.03em">Learn. Grow. Run.</text>
+  </g>
+
+  <!-- Subtitle & Credit -->
+  <text x="600" y="500" text-anchor="middle" font-family="'Inter', -apple-system, sans-serif" font-size="22" font-weight="600" fill="#94A3B8" letter-spacing="0.05em">Autonomous AI Proctoring • Server-Authoritative Timing • Real-Time Analytics</text>
+  <text x="600" y="545" text-anchor="middle" font-family="'Inter', -apple-system, sans-serif" font-size="18" font-weight="500" fill="#64748B">Developed by R. Charan Sai</text>
+</svg>
