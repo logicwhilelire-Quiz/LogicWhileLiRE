@@ -1,14 +1,12 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
 import { supabase } from '../lib/supabaseClient'
-import QuestionMorph from '../components/3d/QuestionMorph'
-import CodeEditorHolo from '../components/3d/CodeEditorHolo'
-import MagneticButton from '../components/3d/MagneticButton'
-import TypingDots from '../components/3d/TypingDots'
-import HoloScan from '../components/3d/HoloScan'
-import FlightPathLines from '../components/3d/FlightPathLines'
+import ExamQuestionCard from '../components/exam/ExamQuestionCard'
+import ExamCodeEditor from '../components/exam/ExamCodeEditor'
+import ExamFaceMonitor from '../components/exam/ExamFaceMonitor'
+import ExamTimerProgress from '../components/exam/ExamTimerProgress'
 import ProctoringConsentModal from '../components/ProctoringConsentModal'
 import BrandLogo from '../components/BrandLogo'
 import FullscreenEnforcementOverlay from '../components/exam/FullscreenEnforcementOverlay'
@@ -21,9 +19,6 @@ import {
   markAnswersSynced,
   clearAnswerBuffer,
 } from '../lib/offlineAnswerStore'
-
-const FaceMeshOrb = lazy(() => import('../components/3d/FaceMeshOrb'))
-const CircularProgress3D = lazy(() => import('../components/3d/CircularProgress3D'))
 
 /* ── Types ── */
 interface ExamQuestion {
@@ -618,14 +613,12 @@ export default function QuizPage() {
   /* ── Render states ── */
   if (loading) return (
     <div className="page-center">
-      <HoloScan color="#2B7FFF">
-        <div style={{ padding: '48px 64px', textAlign: 'center' }}>
-          <div className="btn-spinner" style={{ width: 32, height: 32, margin: '0 auto 16px', borderTopColor: '#2B7FFF' }} />
-          <div style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-display)' }}>
-            Loading Exam<TypingDots />
-          </div>
+      <div className="card" style={{ padding: '48px 64px', textAlign: 'center', maxWidth: 360 }}>
+        <div className="btn-spinner" style={{ width: 32, height: 32, margin: '0 auto 16px', borderTopColor: '#2B7FFF' }} />
+        <div style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-display)' }}>
+          Loading Exam...
         </div>
-      </HoloScan>
+      </div>
     </div>
   )
 
@@ -635,9 +628,9 @@ export default function QuizPage() {
         <div style={{ fontSize: '3rem', marginBottom: 16 }}>⚠️</div>
         <h2 style={{ fontFamily: 'var(--font-display)', marginBottom: 8 }}>Exam Load Error</h2>
         <p style={{ color: 'var(--color-text-muted)', marginBottom: 24 }}>{error}</p>
-        <MagneticButton className="btn btn-primary" onClick={() => navigate('/enter-exam')}>
+        <button className="btn btn-primary" onClick={() => navigate('/enter-exam')}>
           Try Again
-        </MagneticButton>
+        </button>
       </div>
     </div>
   )
@@ -651,10 +644,8 @@ export default function QuizPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Background */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.06 }}>
-        <FlightPathLines color="#2B7FFF" opacity={1} count={8} className="" />
-      </div>
+      {/* Subtle Focus Background */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.03, backgroundImage: 'radial-gradient(circle, #2B7FFF 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
       {/* ─── EXAM HEADER ─── */}
       <div className="exam-header" style={{ zIndex: 100 }}>
@@ -685,12 +676,10 @@ export default function QuizPage() {
           } : {}}
           transition={{ repeat: Infinity, duration: 1 }}
         >
-          <Suspense fallback={<div className="btn-spinner" style={{ width: 44, height: 44, borderTopColor: timerColor }} />}>
-            <CircularProgress3D
-              timeLeft={timeLeft}
-              totalTime={session?.duration || 3600}
-            />
-          </Suspense>
+          <ExamTimerProgress
+            timeLeft={timeLeft}
+            totalTime={session?.duration || 3600}
+          />
           <div>
             <div style={{
               fontFamily: 'var(--font-mono)',
@@ -706,14 +695,14 @@ export default function QuizPage() {
           </div>
         </motion.div>
 
-        {/* Right: FaceMeshOrb + Actions */}
+        {/* Right: Proctor Monitor + Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <MagneticButton
+          <button
             className="btn btn-secondary btn-sm"
             onClick={() => setShowSubmitModal(true)}
           >
             Submit Exam
-          </MagneticButton>
+          </button>
 
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 28 }}>
             {session?.proctoringMode !== 'webcam' && (
@@ -795,11 +784,7 @@ export default function QuizPage() {
                 <span>🔄 Syncing ({pendingSyncCount})</span>
               </div>
             ) : null}
-            <Suspense fallback={
-              <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(43,127,255,0.1)', border: '2px solid rgba(43,127,255,0.2)' }} />
-            }>
-              <FaceMeshOrb onStatusChange={handleFaceStatus} size={52} />
-            </Suspense>
+            <ExamFaceMonitor onStatusChange={handleFaceStatus} size={52} />
           </div>
         </div>
       </div>
@@ -940,13 +925,13 @@ export default function QuizPage() {
             <div style={{ fontSize: '0.78rem', opacity: 0.9, marginBottom: 12 }}>
               Your session is being monitored in real time. Continued infractions will result in immediate disqualification.
             </div>
-            <MagneticButton
+            <button
               className="btn btn-sm"
               style={{ background: '#fff', color: '#EF4444', fontWeight: 800 }}
               onClick={() => setShowAdminWarning(false)}
             >
               ✓ I Understand & Acknowledge
-            </MagneticButton>
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -962,7 +947,7 @@ export default function QuizPage() {
 
         {/* ── Left Column: Question Content ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <QuestionMorph
+          <ExamQuestionCard
             question={currentQuestion}
             questionIndex={currentQ}
             selectedOption={typeof answers[currentQuestion.id] === 'number' ? answers[currentQuestion.id] as number : null}
@@ -972,35 +957,35 @@ export default function QuizPage() {
           {/* When in MCQ mode, navigation sits in Left Column */}
           {!isCode && (
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 8 }}>
-              <MagneticButton
+              <button
                 className="btn btn-secondary"
                 disabled={currentQ === 0}
                 onClick={() => setCurrentQ(q => q - 1)}
               >
                 ← Previous
-              </MagneticButton>
+              </button>
               <div style={{ display: 'flex', gap: 8 }}>
-                <MagneticButton
+                <button
                   className={`btn ${isFlagged ? 'btn-warning' : 'btn-ghost'}`}
                   style={{ color: isFlagged ? '#F59E0B' : undefined }}
                   onClick={toggleFlag}
                 >
                   {isFlagged ? '🚩 Flagged' : '⚑ Flag'}
-                </MagneticButton>
+                </button>
                 {currentQ < session.questions.length - 1 ? (
-                  <MagneticButton
+                  <button
                     className="btn btn-primary"
                     onClick={() => setCurrentQ(q => q + 1)}
                   >
                     Next →
-                  </MagneticButton>
+                  </button>
                 ) : (
-                  <MagneticButton
+                  <button
                     className="btn btn-success"
                     onClick={() => setShowSubmitModal(true)}
                   >
                     Submit Exam 🏁
-                  </MagneticButton>
+                  </button>
                 )}
               </div>
             </div>
@@ -1036,7 +1021,7 @@ export default function QuizPage() {
         {/* ── Right Column: Code Editor (in Code Mode) OR Question Palette (in MCQ Mode) ── */}
         {isCode ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <CodeEditorHolo
+            <ExamCodeEditor
               value={codeAnswers[currentQuestion.id] || ''}
               onChange={handleCodeAnswer}
               height={440}
@@ -1053,35 +1038,35 @@ export default function QuizPage() {
 
             {/* Navigation for coding mode */}
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-              <MagneticButton
+              <button
                 className="btn btn-secondary"
                 disabled={currentQ === 0}
                 onClick={() => setCurrentQ(q => q - 1)}
               >
                 ← Previous
-              </MagneticButton>
+              </button>
               <div style={{ display: 'flex', gap: 8 }}>
-                <MagneticButton
+                <button
                   className={`btn ${isFlagged ? 'btn-warning' : 'btn-ghost'}`}
                   style={{ color: isFlagged ? '#F59E0B' : undefined }}
                   onClick={toggleFlag}
                 >
                   {isFlagged ? '🚩 Flagged' : '⚑ Flag'}
-                </MagneticButton>
+                </button>
                 {currentQ < session.questions.length - 1 ? (
-                  <MagneticButton
+                  <button
                     className="btn btn-primary"
                     onClick={() => setCurrentQ(q => q + 1)}
                   >
                     Next Question →
-                  </MagneticButton>
+                  </button>
                 ) : (
-                  <MagneticButton
+                  <button
                     className="btn btn-success"
                     onClick={() => setShowSubmitModal(true)}
                   >
                     Submit Exam 🏁
-                  </MagneticButton>
+                  </button>
                 )}
               </div>
             </div>
@@ -1202,19 +1187,19 @@ export default function QuizPage() {
                 <strong>This action cannot be undone.</strong>
               </div>
               <div style={{ display: 'flex', gap: 12 }}>
-                <MagneticButton
+                <button
                   className="btn btn-ghost w-full"
                   onClick={() => setShowSubmitModal(false)}
                 >
                   Continue Exam
-                </MagneticButton>
-                <MagneticButton
+                </button>
+                <button
                   className="btn btn-success w-full"
                   onClick={handleSubmit}
                   disabled={submitting}
                 >
                   {submitting ? <><span className="btn-spinner" /> Submitting</> : '✓ Confirm Submit'}
-                </MagneticButton>
+                </button>
               </div>
             </motion.div>
           </div>

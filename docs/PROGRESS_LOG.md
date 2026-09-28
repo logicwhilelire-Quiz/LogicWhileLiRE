@@ -148,4 +148,47 @@
 - **Test Counts:** 52/52 server tests passing, 9/9 role security tests passing, 6/6 bulk enrollment tests passing, 8/8 smoke tests passing. Both TypeScript builds clean.
 - **Skipped & Why:** None.
 
+## Phase H: 3D and Animation System
+- **Status:** COMPLETED
+- **What Changed:**
+  - H1: Built unified shared 3D kit at `client/src/three/` featuring:
+    - `renderer.ts`: Standardized WebGLRenderer factory with safe DPR capping (<= 1.5) and ACESFilmicToneMapping.
+    - `materials.ts`: Shared brand palette materials (`#0A3F8F`, `#1B5FB5`, `#2B7FFF`) and cached geometry reuse.
+    - `sceneManager.ts`: Lifecycle manager with IntersectionObserver viewport pause and `visibilitychange` tab pause.
+    - `disposal.ts`: Recursive resource cleanup helper for geometries, materials, textures, and renderers.
+    - `capability.ts`: WebGL availability, low-end device detection, and `prefers-reduced-motion` detection.
+  - H1 Consolidation: Removed unused duplicate `client/src/components/3d/Podium3D.tsx` in favor of active `LeaderboardPodium.tsx`.
+  - H2 & H6 Hard Guard: Enforced strict zero-3D rule on exam-taking screens (`ExamCodeQuizPage.tsx` and `ExamPage.tsx`). Replaced miscategorized 3D imports in `ExamCodeQuizPage.tsx` with dedicated 2D components in `client/src/components/exam/`:
+    - `ExamTimerProgress.tsx`: 2D SVG circular timer ring.
+    - `ExamFaceMonitor.tsx`: 2D webcam proctoring widget with MediaPipe detection.
+    - `ExamCodeEditor.tsx`: High-performance 2D code editor with syntax execution.
+    - `ExamQuestionCard.tsx`: High-contrast, distraction-free accessible question card.
+  - H6 Tests: Added `server/test-3d-architecture.js` checking:
+    1. Capability detector and DPR cap <= 1.5.
+    2. Vite manual chunk separation for `vendor-three`.
+    3. Architecture assertion that exam pages import 0 3D or three.js modules.
+    4. Shared 3D kit utilities (DPR cap, low-end detector, tab pause, disposal).
+- **Files Touched:**
+  - `client/src/three/capability.ts`
+  - `client/src/three/renderer.ts`
+  - `client/src/three/materials.ts`
+  - `client/src/three/sceneManager.ts`
+  - `client/src/three/disposal.ts`
+  - `client/src/three/index.ts`
+  - `client/src/components/exam/ExamTimerProgress.tsx`
+  - `client/src/components/exam/ExamFaceMonitor.tsx`
+  - `client/src/components/exam/ExamCodeEditor.tsx`
+  - `client/src/components/exam/ExamQuestionCard.tsx`
+  - `client/src/pages/ExamCodeQuizPage.tsx`
+  - `client/src/components/3d/Podium3D.tsx` (removed)
+  - `server/test-3d-architecture.js`
+- **Test Counts:**
+  - 4/4 3D architecture tests passing (`node test-3d-architecture.js`).
+  - 52/52 server tests passing (`npm test`).
+  - 9/9 role security tests passing (`node test-roles.js`).
+  - 6/6 bulk enrollment tests passing (`node test-bulk-enroll.js`).
+  - 8/8 smoke tests passing (`node test-smoke.js`).
+  - Client & Server TypeScript: 0 errors (`npx tsc -b`, `npx tsc --noEmit`).
+- **Skipped & Why:** None.
+
 ---
