@@ -17,10 +17,10 @@ const ParticleField = lazy(() => import('../components/3d/ParticleField'))
 const NodeNetwork   = lazy(() => import('../components/3d/NodeNetwork'))
 
 const STATS = [
-  { value: 50000,  label: 'Students Assessed', suffix: '+', color: '#bf9f62' },
-  { value: 200,    label: 'Partner Colleges',  suffix: '+', color: '#064484' },
-  { value: 99,     label: 'Uptime',            suffix: '%', color: '#10B981' },
-  { value: 5000,   label: 'Questions Bank',    suffix: '+', color: '#bf9f62' },
+  { value: 10000,  label: 'Concurrent Scale Engine', suffix: '+', color: '#2B7FFF' },
+  { value: 50,     label: 'WebSocket Latency',        suffix: 'ms', color: '#38BDF8' },
+  { value: 100,    label: 'Server Timing Integrity', suffix: '%', color: '#10B981' },
+  { value: 30,     label: 'Sandboxed Code Runtimes', suffix: '+', color: '#F59E0B' },
 ]
 
 const FEATURES = [
@@ -28,7 +28,7 @@ const FEATURES = [
     icon: '🤖',
     title: 'AI Question Generator',
     desc: 'Generate 100 DBMS questions in seconds with GPT-4. Set difficulty, topic, and format. Human-review then publish.',
-    color: '#bf9f62',
+    color: '#2B7FFF',
   },
   {
     icon: '👁️',
@@ -40,32 +40,33 @@ const FEATURES = [
     icon: '💻',
     title: 'Code Execution Engine',
     desc: 'Monaco Editor + Piston API. Run code in 30+ languages with hidden test cases and instant verdict.',
-    color: '#064484',
+    color: '#38BDF8',
   },
   {
     icon: '📊',
     title: 'Real-time Analytics',
     desc: '3D radar charts, predictive placement analysis, department micro-rankings, and comprehensive cognitive skill heatmaps.',
-    color: '#bf9f62',
+    color: '#A855F7',
   },
   {
     icon: '🏆',
     title: '3D Leaderboard',
     desc: 'Live ranked leaderboard with animated 3D podium. PlasmaBall for 1st, CodeCube for 2nd, NeonGrid for 3rd.',
-    color: '#e45d5d',
+    color: '#F59E0B',
   },
   {
     icon: '⚡',
     title: 'Bulk Enrollment',
     desc: 'Upload Excel with thousands of candidates. Auto-generate hall tickets. Send invites via email/SMS.',
-    color: '#093569',
+    color: '#6366F1',
   },
 ]
 
-const COLLEGES = [
-  'IARE (Institute of Aeronautical Engineering)', 'IARE Autonomous', 'Samvidha Portal', 'BuildIT Arena',
-  'VRSEC', 'KL University', 'GITAM', 'RVR & JC', 'VIT-AP', 'SRM', 'Amrita', 'BITS Pilani',
-  'NIT Warangal', 'JNTU Hyderabad', 'Andhra University', 'Vignan', 'Shri Vishnu', 'Centurion',
+const DOMAINS = [
+  'Data Structures & Algorithms', 'Full-Stack Web Systems', 'System Design & Microservices',
+  'Operating Systems & Concurrency', 'Database Normalization & SQL', 'Machine Learning & Neural Networks',
+  'Cloud Infrastructure & DevOps', 'Cybersecurity & Cryptography', 'Quantitative Aptitude & Logic',
+  'Compiler Design & AST Trees', 'Distributed Consensus & Caching', 'Object-Oriented Design & Clean Code',
 ]
 
 const PROCTORING_PILLARS = [
@@ -103,50 +104,46 @@ const PROCTORING_PILLARS = [
   },
 ]
 
-const COLLEGE_SPOTLIGHTS = [
+const DEPLOYMENT_MODES = [
   {
-    name: 'Institute of Aeronautical Engineering',
-    short: 'IARE (Autonomous)',
-    city: 'Dundigal, Hyderabad, TS',
-    metric: '20,000+ Assessments',
-    desc: 'Autonomous engineering college ranked in NIRF Top 200 band with NAAC A++ accreditation. Deployed GROWTHRAN for high-stakes semester exams and campus placement pre-assessments.',
-    tag: 'Autonomous Flagship',
+    name: 'University Semester & Midterm Examinations',
+    short: 'Academic Finals',
+    city: 'Campus Scale',
+    metric: 'Zero-Drift Timer',
+    desc: 'Locked full-screen environment, randomized multi-set question distribution, and microsecond-synchronized server timing preventing peer collaboration.',
+    tag: 'University Scale',
   },
   {
-    name: 'Velagapudi Ramakrishna Siddhartha Engineering College',
-    short: 'VRSEC',
-    city: 'Vijayawada, AP',
-    metric: '12,500+ Candidates',
-    desc: 'Conducted simultaneous department assessments with zero server lag and automated hall-ticket seat verification.',
-    tag: 'Placement Drives',
+    name: 'Technical Campus Placement Screening',
+    short: 'Placement Drives',
+    city: 'Corporate Hiring',
+    metric: 'Instant Percentiles',
+    desc: 'Comprehensive multi-disciplinary screening across core engineering, DSA, and quantitative logic with real-time candidate rank aggregation.',
+    tag: 'Campus Placement',
   },
   {
-    name: 'Koneru Lakshmaiah Education Foundation',
-    short: 'KL University',
-    city: 'Vaddeswaram, AP',
-    metric: '99.8% Integrity Index',
-    desc: 'Adopted automated AI question generation across 14 engineering streams with multi-tenant college admin controls.',
-    tag: 'Campus Assessments',
+    name: 'Competitive Coding Sprints & Lab Exams',
+    short: 'Code Sandbox',
+    city: '30+ Runtimes',
+    metric: 'Sub-Second Verdict',
+    desc: 'In-browser Monaco code editor with multi-tier test cases (public validation + hidden memory & CPU boundary suites) and instant feedback.',
+    tag: 'Coding Arena',
   },
   {
-    name: 'SRM University AP',
-    short: 'SRM-AP',
-    city: 'Amaravati, AP',
-    metric: '450+ Concurrent Coders',
-    desc: 'Utilized real-time code sandboxes and live proctored evaluation for annual hackathons and mid-term lab exams.',
-    tag: 'Code Execution',
-  },
-  {
-    name: 'Gandhi Institute of Technology and Management',
-    short: 'GITAM',
-    city: 'Visakhapatnam, AP',
-    metric: '8,000+ Students Evaluated',
-    desc: 'Conducted high-concurrency placement screening across engineering departments with real-time analytics.',
-    tag: 'Institutional Analytics',
+    name: 'Autonomous Remote Proctored Assessments',
+    short: 'Remote Proctoring',
+    city: 'Edge AI Vision',
+    metric: '100% Privacy',
+    desc: 'Client-side WebAssembly facial landmarking, multi-face alerts, and acoustic spike detection with zero persistent raw video stored on servers.',
+    tag: 'Zero-Cloud Video',
   },
 ]
 
 const FAQS = [
+  {
+    q: 'How does our institution join the GROWTHRAN Early Pilot Program?',
+    a: 'We offer an early access pilot program for engineering colleges, coding bootcamps, and recruitment teams. Our engineering team provisions a dedicated, zero-cost cloud sandbox with custom branding, institutional admin credentials, and AI question authoring in under 24 hours.',
+  },
   {
     q: 'How does the server-authoritative timer prevent cheating?',
     a: 'Traditional web exams rely on the candidate’s browser timer, which can be paused or altered by freezing browser tabs or adjusting system clocks. GROWTHRAN’s timer is driven by the server. The server dispatches live time ticks over Socket.io, and remaining duration is calculated against server timestamps. Even if candidates disconnect or refresh, their timer continues accurately without granting unauthorized time.',
@@ -164,8 +161,8 @@ const FAQS = [
     a: 'No. GROWTHRAN enforces strict single-active-session concurrency per hall ticket and exam code. If a second device attempts login, it is blocked immediately, or triggers a verified takeover that immediately terminates and evicts the previous session, logging an audit event.',
   },
   {
-    q: 'How do colleges onboard their question banks and configure custom exams?',
-    a: 'Colleges can bulk-import existing questions via Excel or CSV with automatic format validation and duplicate detection. Alternatively, instructors can use the integrated AI question generator to build structured question pools with tagged difficulty levels, sections, and randomized candidate shuffling.',
+    q: 'How do instructors onboard their question banks and configure custom exams?',
+    a: 'Colleges and instructors can bulk-import questions via Excel or CSV with automatic format validation and duplicate detection. Alternatively, instructors can use the integrated AI question generator to build structured question pools with tagged difficulty levels, sections, and randomized candidate shuffling.',
   },
 ]
 
@@ -381,9 +378,9 @@ export default function LandingPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1.1, duration: 0.7 }}
-                style={{ display: 'flex', gap: 24, marginTop: 40, alignItems: 'center' }}
+                style={{ display: 'flex', gap: 20, marginTop: 40, alignItems: 'center', flexWrap: 'wrap' }}
               >
-                {['🔒 Secure', '⚡ 99.9% Uptime', '🌍 200+ Colleges'].map(badge => (
+                {['🔒 Zero-Trust Security', '⚡ Sub-50ms Latency', '👁️ On-Device AI Vision', '🚀 Early Access Pilot'].map(badge => (
                   <div key={badge} style={{
                     fontSize: '0.82rem', color: 'var(--color-text-faint)',
                     display: 'flex', alignItems: 'center', gap: 4,
@@ -421,16 +418,16 @@ export default function LandingPage() {
         </motion.div>
       </motion.section>
 
-      {/* ─── MARQUEE — Trusted by ─── */}
+      {/* ─── MARQUEE — Domains ─── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '40px 0', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'rgba(20,28,47,0.5)' }}>
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-text-faint)' }}>
-            TRUSTED BY INDIA'S PREMIER INSTITUTIONS
+            ARCHITECTED FOR UNIVERSITIES, CODING BOOTCAMPS & ENTERPRISE RECRUITMENT
           </span>
         </div>
         <div className="marquee-wrapper">
           <div className="marquee-track">
-            {[...COLLEGES, ...COLLEGES].map((name, i) => (
+            {[...DOMAINS, ...DOMAINS].map((name, i) => (
               <motion.div
                 key={i}
                 style={{
@@ -446,7 +443,7 @@ export default function LandingPage() {
                 }}
                 whileHover={{ background: 'rgba(43,127,255,0.12)', color: 'var(--color-text)', scale: 1.02 }}
               >
-                🎓 {name}
+                ⚡ {name}
               </motion.div>
             ))}
           </div>
@@ -457,10 +454,10 @@ export default function LandingPage() {
       <section style={{ position: 'relative', zIndex: 1, padding: '96px 0' }}>
         <div className="page-content">
           <div style={{ textAlign: 'center', marginBottom: 64 }}>
-            <span className="section-label">BY THE NUMBERS</span>
-            <h2 className="section-title">Impact at Scale</h2>
+            <span className="section-label">ENGINEERING BENCHMARKS</span>
+            <h2 className="section-title">Architected for Reliability</h2>
             <p className="section-subtitle" style={{ margin: '12px auto' }}>
-              Real numbers from real campuses across India.
+              Engineered from the ground up for high-concurrency exams, sub-millisecond clock sync, and zero-compromise anti-cheat integrity.
             </p>
           </div>
           <div style={{
@@ -644,19 +641,19 @@ export default function LandingPage() {
       {/* ─── LOGIC COIL DIVIDER ─── */}
       <LogicCoil variant="divider" size={26} />
 
-      {/* ─── INSTITUTIONAL COLLEGE SHOWCASE ─── */}
+      {/* ─── ENTERPRISE ARCHITECTURE SHOWCASE ─── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '96px 0' }}>
         <div className="page-content">
           <div style={{ textAlign: 'center', marginBottom: 64 }}>
-            <span className="section-label">PARTNER INSTITUTIONS</span>
-            <h2 className="section-title">Tested in High-Stakes Campus Drives</h2>
+            <span className="section-label">DEPLOYMENT ARCHITECTURE</span>
+            <h2 className="section-title">Engineered for Every High-Stakes Evaluation</h2>
             <p className="section-subtitle" style={{ margin: '12px auto', maxWidth: 640 }}>
-              Discover how leading universities run institutional midterm assessments, semester finals, and placement drives on GROWTHRAN.
+              Purpose-built infrastructure supporting high-concurrency semester finals, campus placement screening, competitive coding hackathons, and remote proctoring.
             </p>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
-            {COLLEGE_SPOTLIGHTS.map((col, i) => (
+            {DEPLOYMENT_MODES.map((col, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 30 }}
@@ -785,13 +782,14 @@ export default function LandingPage() {
       <LogicCoil variant="divider" size={26} />
 
       {/* ─── CONTACT & DEMO REQUEST ─── */}
+      {/* ─── CONTACT & PILOT ONBOARDING REQUEST ─── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '96px 0' }}>
         <div className="page-content" style={{ maxWidth: 840, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <span className="section-label">GET STARTED</span>
-            <h2 className="section-title">Schedule an Institutional Demo</h2>
+            <span className="section-label">STARTUP PILOT PROGRAM</span>
+            <h2 className="section-title">Apply for Early Campus Sandbox Access</h2>
             <p className="section-subtitle" style={{ margin: '12px auto' }}>
-              Connect with our assessment engineers to pilot GROWTHRAN in your next semester examination or placement test.
+              We are partnering with forward-thinking universities, institutes, and placement cells to deploy pilot assessments with dedicated engineering support.
             </p>
           </div>
 
@@ -804,10 +802,10 @@ export default function LandingPage() {
               >
                 <div style={{ fontSize: '3rem', marginBottom: 16 }}>🎉</div>
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, marginBottom: 10 }}>
-                  Demo Request Received!
+                  Pilot Application Received!
                 </h3>
                 <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem', maxWidth: 520, margin: '0 auto 24px' }}>
-                  Thank you, <strong>{demoForm.name}</strong>. Our enterprise team will reach out to <strong>{demoForm.email}</strong> within 4 business hours to set up your dedicated institution sandbox.
+                  Thank you, <strong>{demoForm.name}</strong>. Our engineering team will reach out to <strong>{demoForm.email}</strong> within 4 business hours to provision your dedicated pilot sandbox.
                 </p>
                 <button
                   className="btn btn-secondary"
@@ -824,7 +822,7 @@ export default function LandingPage() {
                     <input
                       type="text"
                       className="form-input"
-                      placeholder="Dr. Rajesh Sharma"
+                      placeholder="e.g. Dr. Rajesh Sharma"
                       required
                       value={demoForm.name}
                       onChange={e => setDemoForm({ ...demoForm, name: e.target.value })}
@@ -836,7 +834,7 @@ export default function LandingPage() {
                     <input
                       type="email"
                       className="form-input"
-                      placeholder="r.sharma@vrsec.ac.in"
+                      placeholder="e.g. dean.academics@university.edu"
                       required
                       value={demoForm.email}
                       onChange={e => setDemoForm({ ...demoForm, email: e.target.value })}
@@ -850,7 +848,7 @@ export default function LandingPage() {
                     <input
                       type="text"
                       className="form-input"
-                      placeholder="VR Siddhartha Engineering College"
+                      placeholder="e.g. National Institute of Technology"
                       required
                       value={demoForm.institution}
                       onChange={e => setDemoForm({ ...demoForm, institution: e.target.value })}
@@ -864,20 +862,20 @@ export default function LandingPage() {
                       value={demoForm.candidateCount}
                       onChange={e => setDemoForm({ ...demoForm, candidateCount: e.target.value })}
                     >
-                      <option value="100 - 500 students">100 - 500 students</option>
-                      <option value="500 - 2,000 students">500 - 2,000 students</option>
-                      <option value="2,000 - 10,000 students">2,000 - 10,000 students</option>
-                      <option value="10,000+ students (University Scale)">10,000+ students (University Scale)</option>
+                      <option value="50 - 200 candidates (Pilot Class)">50 - 200 candidates (Pilot Class)</option>
+                      <option value="200 - 1,000 candidates (Department)">200 - 1,000 candidates (Department)</option>
+                      <option value="1,000 - 5,000 candidates (Campus Wide)">1,000 - 5,000 candidates (Campus Wide)</option>
+                      <option value="5,000+ candidates (University Scale)">5,000+ candidates (University Scale)</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Special Requirements / Target Exam Date</label>
+                  <label className="form-label">Target Evaluation Format / Requirements</label>
                   <textarea
                     className="form-textarea"
                     rows={3}
-                    placeholder="We plan to run placement assessments for 1,200 final-year B.Tech students in Python & DBMS next month..."
+                    placeholder="Describe your upcoming assessment format (e.g. Semester Final, Campus Placement Drive, Coding Hackathon)..."
                     value={demoForm.message}
                     onChange={e => setDemoForm({ ...demoForm, message: e.target.value })}
                   />
@@ -892,10 +890,10 @@ export default function LandingPage() {
                   {demoForm.loading ? (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                       <div className="btn-spinner" />
-                      <span>Scheduling Demo...</span>
+                      <span>Provisioning Sandbox...</span>
                     </div>
                   ) : (
-                    '🚀 Request Institutional Demo Sandbox'
+                    '🚀 Apply for Pilot Sandbox'
                   )}
                 </button>
               </form>
@@ -931,16 +929,16 @@ export default function LandingPage() {
               fontWeight: 800, letterSpacing: '-0.03em',
               marginBottom: 16, position: 'relative',
             }}>
-              Ready to Elevate Your<br />
-              <ShimmerText text="Assessment Game?" shimmer />
+              Ready to Deploy the<br />
+              <ShimmerText text="Future of Assessment?" shimmer />
             </h2>
             <p style={{ color: 'var(--color-text-muted)', fontSize: '1.1rem', marginBottom: 36, position: 'relative' }}>
-              Join 200+ colleges using GROWTHRAN for fair, smart, and autonomous assessments.
+              Experience uncompromised integrity, real-time proctoring, and instant analytics with our launch pilot program.
             </p>
             <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', position: 'relative' }}>
               <Link to="/enter-exam" style={{ textDecoration: 'none' }}>
                 <MagneticButton className="btn btn-primary btn-xl" style={{ minWidth: 220 }}>
-                  🚀 Start Your Exam
+                  🚀 Start Assessment
                 </MagneticButton>
               </Link>
               <Link to="/admin" style={{ textDecoration: 'none' }}>
