@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { generalRateLimit } from './middleware/rateLimiter';
+import { sanitizeInput } from './middleware/sanitize';
 import authRoutes from './routes/auth';
 import enrollmentRoutes from './routes/enrollment';
 import sessionRoutes from './routes/session';
@@ -49,6 +50,7 @@ app.use(
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
+app.use(sanitizeInput);
 
 // ------- General rate limit -------
 app.use(generalRateLimit);
