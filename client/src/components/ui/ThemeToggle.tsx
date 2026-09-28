@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 export default function ThemeToggle({ className = '' }: { className?: string }) {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light'>('light');
 
   useEffect(() => {
-    const savedTheme = (localStorage.getItem('growthran_theme') || localStorage.getItem('lw_theme') as 'dark' | 'light') || 'dark';
+    const savedTheme = (localStorage.getItem('growthran_theme') || localStorage.getItem('lw_theme') as 'dark' | 'light') || 'light';
     setTheme(savedTheme as 'dark' | 'light');
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
