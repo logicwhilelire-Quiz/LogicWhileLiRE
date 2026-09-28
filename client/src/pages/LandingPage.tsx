@@ -259,69 +259,6 @@ export default function LandingPage() {
     <div style={{ background: 'var(--color-bg)', minHeight: '100vh', overflow: 'hidden' }}>
       <SiteHeader />
 
-      {/* ─── IARE INSTITUTIONAL TICKERS (Official https://www.iare.ac.in) ─── */}
-      <div style={{ marginTop: 72, position: 'relative', zIndex: 10 }}>
-        {/* Placements Hot News Ticker */}
-        <div style={{
-          background: '#190F3B',
-          color: '#ffffff',
-          padding: '6px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 14,
-          borderBottom: '1px solid rgba(191,159,98,0.25)',
-          fontSize: '0.8rem',
-        }}>
-          <strong style={{
-            background: 'linear-gradient(135deg, #bf9f62, #a28b40)',
-            color: '#190F3B',
-            padding: '2px 10px',
-            borderRadius: 3,
-            fontWeight: 800,
-            whiteSpace: 'nowrap',
-            fontSize: '0.72rem',
-            letterSpacing: '0.04em',
-            fontFamily: 'var(--font-display)',
-          }}>
-            812 Campus Placements - 2026 :
-          </strong>
-          <div style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap' }}>
-            <motion.div
-              animate={{ x: ['0%', '-50%'] }}
-              transition={{ duration: 32, repeat: Infinity, ease: 'linear' }}
-              style={{ display: 'inline-block', whiteSpace: 'nowrap', color: '#E2E8F0', fontWeight: 500 }}
-            >
-              Microsoft (5) &nbsp;||&nbsp; Rubrik (1) &nbsp;||&nbsp; Juspay (7) &nbsp;||&nbsp; New Relic (2) &nbsp;||&nbsp; JPMorgan Chase & Co. (8) &nbsp;||&nbsp; FactSet (3) &nbsp;||&nbsp; TCS (65) &nbsp;||&nbsp; EPAM (4) &nbsp;||&nbsp; Lumen Technologies (21) &nbsp;||&nbsp; DeltaX (2) &nbsp;||&nbsp; Capgemini (124) &nbsp;||&nbsp; Cognizant (199) &nbsp;||&nbsp; Virtusa (57) &nbsp;||&nbsp; IBM (25) &nbsp;||&nbsp; LTI Mindtree (130) &nbsp;||&nbsp; Infosys (32) &nbsp;||&nbsp; Deloitte (5) &nbsp;||&nbsp; Microsoft (5) &nbsp;||&nbsp; Rubrik (1) &nbsp;||&nbsp; Juspay (7) &nbsp;||&nbsp; JPMorgan Chase & Co. (8) &nbsp;||&nbsp; TCS (65) &nbsp;||&nbsp; Capgemini (124) &nbsp;||&nbsp; Cognizant (199) &nbsp;||&nbsp; LTI Mindtree (130)
-            </motion.div>
-          </div>
-        </div>
-
-        {/* NIRF & Autonomous Accreditation Ticker */}
-        <div style={{
-          background: 'rgba(6, 68, 132, 0.95)',
-          color: '#ffffff',
-          padding: '4px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          fontSize: '0.74rem',
-          borderBottom: '2px solid #bf9f62',
-        }}>
-          <span style={{ fontWeight: 800, color: '#bf9f62', whiteSpace: 'nowrap', fontFamily: 'var(--font-display)' }}>
-            🏛️ IARE RECOGNITION :
-          </span>
-          <div style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap' }}>
-            <motion.div
-              animate={{ x: ['0%', '-50%'] }}
-              transition={{ duration: 38, repeat: Infinity, ease: 'linear' }}
-              style={{ display: 'inline-block', whiteSpace: 'nowrap', color: '#F8F9FC' }}
-            >
-              Institute of Aeronautical Engineering (IARE) — Autonomous Engineering College, Dundigal, Hyderabad • Ranked in 151–200 Band in Engineering Category under NIRF (MoE, Govt. of India) • NAAC 'A++' Grade Accreditation • NBA Accredited Programmes • Integrated with Samvidha, Akanksha & BuildIT Platforms • Institute of Aeronautical Engineering (IARE) — Ranked in 151–200 Band NIRF • NAAC 'A++' Grade
-            </motion.div>
-          </div>
-        </div>
-      </div>
-
       {/* ─── FLIGHT PATH BACKGROUND (fixed) ─── */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
         <FlightPathLines color="#bf9f62" opacity={0.08} count={16} className="" />
@@ -331,10 +268,10 @@ export default function LandingPage() {
       <motion.section
         style={{
           opacity: heroOpacity, y: heroY,
-          minHeight: 'calc(100vh - 140px)',
+          minHeight: 'calc(100vh - 80px)',
           display: 'flex', alignItems: 'center',
           position: 'relative', zIndex: 1,
-          paddingTop: 36,
+          paddingTop: 96,
           paddingBottom: 48,
         }}
       >
