@@ -7,10 +7,9 @@ import ThemeToggle from './ui/ThemeToggle'
 
 const NAV_LINKS = [
   { label: 'Home', to: '/' },
-  { label: 'Enter Exam', to: '/enter-exam' },
+  { label: 'Assessments', to: '/enter-exam' },
   { label: 'Practice Arena 🔥', to: '/practice' },
-  { label: 'Verify 📜', to: '/verify' },
-  { label: 'Admin', to: '/admin' },
+  { label: 'Admin Portal', to: '/admin' },
 ]
 
 export default function SiteHeader() {

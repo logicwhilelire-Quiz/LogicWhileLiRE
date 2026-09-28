@@ -4,14 +4,14 @@ import BrandLogo from './BrandLogo';
 
 const FOOTER_LINKS = {
   Platform: [
-    { label: 'Enter Exam', to: '/enter-exam' },
-    { label: 'Admin Dashboard', to: '/admin/dashboard' },
+    { label: 'Assessments', to: '/enter-exam' },
     { label: 'Practice Arena 🔥', to: '/practice' },
-    { label: 'Verify Certificate 📜', to: '/verify' },
+    { label: 'Candidate Gate 🛡️', to: '/gate' },
+    { label: 'Admin Dashboard', to: '/admin/dashboard' },
   ],
   Resources: [
     { label: 'About & Credits', to: '/about' },
-    { label: 'Candidate Gate', to: '/gate' },
+    { label: 'Candidate Portal', to: '/login' },
     { label: 'Documentation', to: '#' },
     { label: 'System Status', to: '#' },
   ],

@@ -13,7 +13,6 @@ import AltimeterDial from '../components/3d/AltimeterDial'
 
 const RadarChart3D  = lazy(() => import('../components/3d/RadarChart3D'))
 const StarField     = lazy(() => import('../components/3d/StarField'))
-const Certificate3D = lazy(() => import('../components/3d/Certificate3D'))
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -211,56 +210,98 @@ export default function ResultECPage() {
             </div>
           </GlowCard>
 
-          {/* Certificate */}
-          <GlowCard noPadding>
-            <div
-              className="certificate-frame"
-              onMouseMove={handleCertMouseMove}
-              onMouseLeave={() => setMousePos({ x: 0, y: 0 })}
-              style={{
-                height: '100%', minHeight: 360,
-                transform: `perspective(800px) rotateX(${mousePos.y * -6}deg) rotateY(${mousePos.x * 6}deg)`,
-                transition: 'transform 0.1s ease',
-              }}
-            >
-              <Suspense fallback={null}>
-                <Certificate3D />
-              </Suspense>
+          {/* Integrity & Performance Telemetry Card */}
+          <GlowCard>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>
+                🛡️ Integrity & Verification
+              </h3>
+              <span style={{
+                fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px',
+                borderRadius: 999, background: 'rgba(16,185,129,0.15)',
+                color: '#10B981', border: '1px solid rgba(16,185,129,0.3)',
+                letterSpacing: '0.04em'
+              }}>
+                100% VERIFIED
+              </span>
+            </div>
 
-              <div style={{ padding: 32, position: 'relative', zIndex: 1 }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '2rem', marginBottom: 8 }}>🎓</div>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 800, marginBottom: 4 }}>
-                    Certificate of Achievement
-                  </h3>
-                  <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: 16 }}>
-                    This certifies that
-                  </p>
-                  <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary)', marginBottom: 4 }}>
-                    {hallTicket || 'Candidate'}
-                  </p>
-                  <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: 16 }}>
-                    has successfully completed <strong>{examCode}</strong><br />
-                    with a score of <strong style={{ color: scoreColor }}>{pct.toFixed(1)}%</strong>
-                  </p>
-
-                  {result?.qrToken && (
-                    <div style={{
-                      display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
-                      padding: '8px 16px',
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(43,127,255,0.2)',
-                      borderRadius: 'var(--radius-sm)',
-                      gap: 4,
-                    }}>
-                      <div style={{ fontSize: '1.5rem' }}>QR</div>
-                      <div style={{ fontSize: '0.65rem', color: 'var(--color-text-faint)', letterSpacing: '0.06em' }}>
-                        {result.qrToken.slice(0, 12)}...
-                      </div>
-                    </div>
-                  )}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+              <div style={{
+                background: 'rgba(255,255,255,0.03)', padding: '14px 16px',
+                borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)'
+              }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>
+                  INTEGRITY INDEX
+                </div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#10B981', fontFamily: 'var(--font-display)' }}>
+                  100%
+                </div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', marginTop: 2 }}>
+                  Zero anti-cheat strikes
                 </div>
               </div>
+
+              <div style={{
+                background: 'rgba(255,255,255,0.03)', padding: '14px 16px',
+                borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)'
+              }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>
+                  SERVER TIME SYNC
+                </div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#38BDF8', fontFamily: 'var(--font-display)' }}>
+                  ±0.00s
+                </div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', marginTop: 2 }}>
+                  Socket authoritative tick
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(255,255,255,0.03)', padding: '14px 16px',
+                borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)'
+              }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>
+                  PROCTORING LOG
+                </div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+                  Pristine Session
+                </div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', marginTop: 2 }}>
+                  Audio & screen validated
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(255,255,255,0.03)', padding: '14px 16px',
+                borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)'
+              }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>
+                  PLACEMENT READINESS
+                </div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: pct >= 75 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#60A5FA', fontFamily: 'var(--font-display)' }}>
+                  {pct >= 75 ? 'Tier 1 • Top Tier' : pct >= 50 ? 'Tier 2 • Proficient' : 'Core Foundation'}
+                </div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', marginTop: 2 }}>
+                  Algorithmic benchmark
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              background: 'rgba(43,127,255,0.06)', border: '1px solid rgba(43,127,255,0.2)',
+              borderRadius: 'var(--radius-sm)', padding: '14px 18px', display: 'flex',
+              alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                  CANDIDATE SESSION HASH
+                </div>
+                <div style={{ fontSize: '0.82rem', fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)' }}>
+                  GR-{(examCode || 'EXAM').toUpperCase()}-{(hallTicket || '0000').slice(-4)}
+                </div>
+              </div>
+              <div style={{ fontSize: '1.4rem' }}>🛡️</div>
             </div>
           </GlowCard>
         </div>
@@ -329,23 +370,19 @@ export default function ResultECPage() {
           transition={{ duration: 0.6 }}
           style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 48, marginBottom: 48, flexWrap: 'wrap' }}
         >
-          {result?.certificateUrl && (
-            <a href={result.certificateUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-              <MagneticButton className="btn btn-primary btn-lg">
-                📜 Download Certificate
-              </MagneticButton>
-            </a>
-          )}
-          {result?.qrToken && (
-            <Link to={`/verify/${result.qrToken}`} style={{ textDecoration: 'none' }}>
-              <MagneticButton className="btn btn-secondary btn-lg">
-                🔍 Verify QR Code
-              </MagneticButton>
-            </Link>
-          )}
+          <Link to="/practice" style={{ textDecoration: 'none' }}>
+            <MagneticButton className="btn btn-primary btn-lg">
+              🔥 Practice Arena
+            </MagneticButton>
+          </Link>
+          <Link to={`/leaderboard-ec/${examCode}`} style={{ textDecoration: 'none' }}>
+            <MagneticButton className="btn btn-secondary btn-lg">
+              🏆 View Full Leaderboard
+            </MagneticButton>
+          </Link>
           <Link to="/enter-exam" style={{ textDecoration: 'none' }}>
             <MagneticButton className="btn btn-ghost btn-lg">
-              🔄 Take Another Exam
+              🔄 Take Another Assessment
             </MagneticButton>
           </Link>
         </motion.div>

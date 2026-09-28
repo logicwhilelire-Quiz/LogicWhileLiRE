@@ -45,7 +45,7 @@ const FEATURES = [
   {
     icon: '📊',
     title: 'Real-time Analytics',
-    desc: '3D radar charts, placement analysis, department rankings, and downloadable PDF certificates with QR verification.',
+    desc: '3D radar charts, predictive placement analysis, department micro-rankings, and comprehensive cognitive skill heatmaps.',
     color: '#bf9f62',
   },
   {
@@ -140,9 +140,9 @@ const COLLEGE_SPOTLIGHTS = [
     name: 'Gandhi Institute of Technology and Management',
     short: 'GITAM',
     city: 'Visakhapatnam, AP',
-    metric: '8,000+ Certificates',
-    desc: 'Issued cryptographic QR-verified merit and participation certificates with direct public verification portals.',
-    tag: 'Digital Credentials',
+    metric: '8,000+ Students Evaluated',
+    desc: 'Conducted high-concurrency placement screening across engineering departments with real-time analytics.',
+    tag: 'Institutional Analytics',
   },
 ]
 
@@ -308,15 +308,15 @@ export default function LandingPage() {
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                   padding: '6px 16px',
-                  background: 'rgba(191,159,98,0.12)',
-                  border: '1px solid rgba(191,159,98,0.35)',
+                  background: 'rgba(43,127,255,0.12)',
+                  border: '1px solid rgba(43,127,255,0.35)',
                   borderRadius: 999, fontSize: '0.8rem', fontWeight: 600,
                   color: 'var(--color-primary)', marginBottom: 20,
                   letterSpacing: '0.04em',
                 }}
               >
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', animation: 'blink 2s infinite' }} />
-                INSTITUTE OF AERONAUTICAL ENGINEERING (IARE) — AUTONOMOUS
+                ⚡ NEXT-GEN AI ASSESSMENT & PROCTORING PLATFORM
               </motion.div>
 
               <h1 style={{
@@ -354,8 +354,8 @@ export default function LandingPage() {
                   lineHeight: 1.75, marginBottom: 36, maxWidth: 480,
                 }}
               >
-                AI-powered question generation, live face proctoring, code execution in 30+ languages,
-                3D leaderboards, and instant certificate QR verification — all in one platform.
+                AI-powered question generation, multimodal face & audio proctoring, sandboxed code execution in 30+ languages,
+                and live 3D leaderboards — all in one platform.
               </motion.p>
 
               <motion.div
@@ -608,7 +608,7 @@ export default function LandingPage() {
             {[
               { step: '01', title: 'Admin Creates Exam', desc: 'Upload questions, set time limit, configure proctoring rules. Get a shareable exam code.', icon: '📋' },
               { step: '02', title: 'Students Enter Exam', desc: 'Enter hall ticket + exam code. Face verified. Instructions reviewed. Timer starts.', icon: '🎓' },
-              { step: '03', title: 'Instant Results + Certificate', desc: 'Auto-graded with AI insights. PDF certificate with QR code. Leaderboard live.', icon: '🏆' },
+              { step: '03', title: 'Authoritative Scoring & Analytics', desc: 'Instant server-side grading, granular psychometric skill radar, and real-time live 3D leaderboards.', icon: '📊' },
             ].map((item, i) => (
               <motion.div
                 key={i}
