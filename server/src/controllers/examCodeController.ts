@@ -1,7 +1,51 @@
 import { Request, Response } from 'express';
 import QRCode from 'qrcode';
 import * as XLSX from 'xlsx';
+import crypto from 'crypto';
 import { supabase } from '../db/supabase';
+
+// ─────────────────────────────────────────────
+// SESSION TOKEN UTILITIES  (1a: concurrent-session block)
+// ─────────────────────────────────────────────
+
+/**
+ * Generate a cryptographically random session token (16 bytes → 32 hex chars).
+ * Stored per-attempt; a second verifyExamEntry with same hall_ticket+exam_code
+ * overwrites this token, evicting any already-open browser session.
+ */
+function generateSessionToken(): string {
+  return crypto.randomBytes(16).toString('hex');
+}
+
+/**
+ * Verify that the provided session_token matches the stored token for this attempt.
+ * Returns { valid, evicted, terminated } to let the caller decide the response.
+ */
+export async function verifyAttemptToken(
+  attemptId: string,
+  examCode: string,
+  providedToken: string | undefined
+): Promise<{ valid: boolean; evicted: boolean; terminated: boolean; attempt: any | null }> {
+  const { data: attempt } = await supabase
+    .from('exam_code_attempts')
+    .select('id, status, session_token, exam_code')
+    .eq('id', attemptId)
+    .eq('exam_code', examCode.toUpperCase())
+    .maybeSingle();
+
+  if (!attempt) return { valid: false, evicted: false, terminated: false, attempt: null };
+  if (attempt.status === 'terminated_cheating' || attempt.status === 'completed') {
+    return { valid: false, evicted: false, terminated: true, attempt };
+  }
+  // If no stored token yet (legacy row), accept and migrate
+  if (!attempt.session_token) return { valid: true, evicted: false, terminated: false, attempt };
+  const match = providedToken && crypto.timingSafeEqual(
+    Buffer.from(attempt.session_token, 'hex'),
+    Buffer.from(providedToken.padEnd(32, '0').slice(0, 32), 'hex')
+  );
+  if (!match) return { valid: false, evicted: true, terminated: false, attempt };
+  return { valid: true, evicted: false, terminated: false, attempt };
+}
 
 // ─────────────────────────────────────────────
 // HELPERS
@@ -285,11 +329,21 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
 
   if (existing) {
     if (existing.status === 'in_progress') {
-      // Allow resume
+      // ── 1a: Concurrent-session block ──────────────────────────────────────
+      // Issue a FRESH session_token so any previously-open browser is evicted.
+      // The new token is returned to THIS caller; the old tab's token no longer
+      // matches and will receive SESSION_EVICTED on its next save/submit call.
+      const freshToken = generateSessionToken();
+      await supabase
+        .from('exam_code_attempts')
+        .update({ session_token: freshToken, last_resumed_at: new Date().toISOString() })
+        .eq('id', existing.id);
+
       res.json({
         success: true,
         resumed: true,
         attempt_id: existing.id,
+        session_token: freshToken,
         examDetails: {
           exam_code: exam.exam_code,
           exam_name: exam.exam_name,
@@ -299,7 +353,7 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
           end_time: exam.end_time,
           college: exam.college,
         },
-        message: 'Resuming your existing session.',
+        message: 'Resuming your existing session. Any other open tabs have been logged out.',
       });
       return;
     }
@@ -325,7 +379,8 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
     return;
   }
 
-  // 5. Create attempt record
+  // 5. Create attempt record — include a fresh session_token from the start
+  const newToken = generateSessionToken();
   const { data: attempt, error: insertError } = await supabase
     .from('exam_code_attempts')
     .insert({
@@ -333,6 +388,7 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
       exam_code: ec,
       student_name: studentName?.trim() || ht,
       status: 'in_progress',
+      session_token: newToken,
     })
     .select()
     .single();
@@ -346,6 +402,7 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
     success: true,
     resumed: false,
     attempt_id: attempt.id,
+    session_token: newToken,
     examDetails: {
       exam_code: exam.exam_code,
       exam_name: exam.exam_name,
@@ -368,18 +425,18 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
  */
 export async function getExamCodeQuestions(req: Request, res: Response): Promise<void> {
   const { code } = req.params;
-  const { attemptId } = req.query as { attemptId: string };
+  const { attemptId, session_token } = req.query as { attemptId: string; session_token?: string };
 
-  // Verify attempt is valid and in_progress
-  const { data: attempt } = await supabase
-    .from('exam_code_attempts')
-    .select('id, status, exam_code, hall_ticket_no')
-    .eq('id', attemptId)
-    .eq('exam_code', String(code).toUpperCase())
-    .maybeSingle();
-
-  if (!attempt || attempt.status !== 'in_progress') {
-    res.status(403).json({ success: false, error: 'Invalid or expired attempt' });
+  // ── 1a: verify session token (concurrent-session guard) ──
+  const tokenCheck = await verifyAttemptToken(String(attemptId ?? ""), String(code), session_token ? String(session_token) : undefined);
+  if (!tokenCheck.valid) {
+    if (tokenCheck.evicted) {
+      res.status(409).json({ success: false, error: 'Your session was taken over from another device. Please log in again.', code: 'SESSION_EVICTED' });
+    } else if (tokenCheck.terminated) {
+      res.status(403).json({ success: false, error: 'This exam session has already ended.', code: 'SESSION_ENDED' });
+    } else {
+      res.status(403).json({ success: false, error: 'Invalid or expired attempt', code: 'INVALID_ATTEMPT' });
+    }
     return;
   }
 
@@ -404,16 +461,21 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
  */
 export async function submitExamCodeAttempt(req: Request, res: Response): Promise<void> {
   const { code } = req.params;
-  const { attemptId, answers, timeTakenSeconds, violationCount } = req.body;
+  const { attemptId, answers, timeTakenSeconds, violationCount, session_token } = req.body;
 
-  // Verify attempt
-  const { data: attempt } = await supabase
-    .from('exam_code_attempts')
-    .select('*')
-    .eq('id', attemptId)
-    .eq('exam_code', String(code).toUpperCase())
-    .maybeSingle();
-
+  // ── 1a: verify session token (concurrent-session guard) ──
+  const tokenCheck = await verifyAttemptToken(String(attemptId ?? ""), String(code), session_token ? String(session_token) : undefined);
+  if (!tokenCheck.valid) {
+    if (tokenCheck.evicted) {
+      res.status(409).json({ success: false, error: 'Your session was taken over from another device.', code: 'SESSION_EVICTED' });
+      return;
+    }
+    if (!tokenCheck.terminated && !tokenCheck.attempt) {
+      res.status(404).json({ success: false, error: 'Attempt not found' });
+      return;
+    }
+  }
+  const attempt = tokenCheck.attempt;
   if (!attempt) {
     res.status(404).json({ success: false, error: 'Attempt not found' });
     return;
@@ -502,8 +564,9 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
  */
 export async function logExamCodeViolation(req: Request, res: Response): Promise<void> {
   const { code } = req.params;
-  const { attemptId, violationType } = req.body;
+  const { attemptId, violationType, session_token } = req.body;
 
+  // ── 1a: token check (soft — violations should still record even if evicted)
   const { data: attempt } = await supabase
     .from('exam_code_attempts')
     .select('id, violation_count, status')
@@ -534,6 +597,65 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
     message: shouldTerminate
       ? 'Exam auto-submitted due to repeated violations.'
       : `Warning ${newCount}/3. Your exam will be terminated on the 3rd violation.`,
+  });
+}
+
+/**
+ * POST /api/exam-code/:code/save-answer
+ * 1b: Per-question autosave with session-token guard.
+ */
+export async function saveExamCodeAnswer(req: Request, res: Response): Promise<void> {
+  const { code } = req.params;
+  const { attemptId, question_id, answer, current_question_index, session_token } = req.body;
+  if (!attemptId || !session_token) {
+    res.status(400).json({ success: false, error: 'attemptId and session_token are required' });
+    return;
+  }
+  const tokenCheck = await verifyAttemptToken(String(attemptId ?? ""), String(code), session_token ? String(session_token) : undefined);
+  if (!tokenCheck.valid) {
+    const errCode = tokenCheck.evicted ? 'SESSION_EVICTED' : tokenCheck.terminated ? 'SESSION_ENDED' : 'INVALID_ATTEMPT';
+    res.status(tokenCheck.evicted ? 409 : 403).json({ success: false, code: errCode });
+    return;
+  }
+  const { data: row } = await supabase
+    .from('exam_code_attempts')
+    .select('partial_answers')
+    .eq('id', attemptId)
+    .maybeSingle();
+  const existing = (row?.partial_answers as Record<string, string>) || {};
+  if (question_id && answer !== undefined) existing[String(question_id)] = String(answer);
+  const upd: Record<string, unknown> = { partial_answers: existing };
+  if (current_question_index !== undefined && Number.isInteger(Number(current_question_index))) {
+    upd.last_question_index = Number(current_question_index);
+  }
+  await supabase.from('exam_code_attempts').update(upd).eq('id', attemptId);
+  res.json({ success: true, saved: true, total_saved: Object.keys(existing).length });
+}
+
+/**
+ * GET /api/exam-code/:code/resume-state
+ * 1b: Returns partial_answers + last_question_index for crash/refresh recovery.
+ */
+export async function getExamCodeResumeState(req: Request, res: Response): Promise<void> {
+  const { code } = req.params;
+  const { attemptId, session_token } = req.query as { attemptId: string; session_token: string };
+  const tokenCheck = await verifyAttemptToken(String(attemptId ?? ""), String(code), session_token ? String(session_token) : undefined);
+  if (!tokenCheck.valid) {
+    res.status(tokenCheck.evicted ? 409 : 403).json({
+      success: false,
+      code: tokenCheck.evicted ? 'SESSION_EVICTED' : 'INVALID_ATTEMPT',
+    });
+    return;
+  }
+  const { data: row } = await supabase
+    .from('exam_code_attempts')
+    .select('partial_answers, last_question_index')
+    .eq('id', attemptId)
+    .maybeSingle();
+  res.json({
+    success: true,
+    partial_answers: row?.partial_answers || {},
+    last_question_index: row?.last_question_index ?? 0,
   });
 }
 
@@ -701,3 +823,4 @@ export async function getExamCodeReport(req: Request, res: Response): Promise<vo
     })),
   });
 }
+

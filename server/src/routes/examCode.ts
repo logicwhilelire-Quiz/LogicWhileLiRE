@@ -20,7 +20,11 @@ import {
   submitExamCodeAttempt,
   logExamCodeViolation,
   getExamCodeLeaderboard,
+  saveExamCodeAnswer,
+  getExamCodeResumeState,
 } from '../controllers/examCodeController';
+import { enrollRateLimit, answerRateLimit } from '../middleware/rateLimiter';
+
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
@@ -30,8 +34,9 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 // Public list of colleges for dropdown
 router.get('/colleges', listColleges);
 
-// Student exam entry verification (NO OTP)
-router.post('/verify-exam-entry', verifyExamEntry);
+// Student exam entry verification (NO OTP) — rate-limited
+router.post('/verify-exam-entry', enrollRateLimit, verifyExamEntry);
+
 
 // Adapters for EnterExamPage & QuizPage routes
 router.get('/exam-code/:code/verify', (req, res) => {
@@ -110,6 +115,12 @@ router.get('/exam-code/:code/start', async (req, res) => {
 
 // Get questions for a quiz session
 router.get('/exam-code/:code/questions', getExamCodeQuestions);
+
+// Per-question autosave (1b)
+router.post('/exam-code/:code/save-answer', answerRateLimit, saveExamCodeAnswer);
+
+// Resume state after refresh/crash (1b)
+router.get('/exam-code/:code/resume-state', getExamCodeResumeState);
 
 // Submit answers
 router.post('/exam-code/:code/submit', submitExamCodeAttempt);
