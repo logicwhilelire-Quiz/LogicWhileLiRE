@@ -1067,4 +1067,31 @@ export async function toggleStaffStatus(req: Request, res: Response): Promise<vo
   });
 }
 
+/**
+ * GET /api/admin/audit-logs
+ * Phase 3 Results Vault: List audit logs of all admin actions
+ */
+export async function listAuditLogs(req: Request, res: Response): Promise<void> {
+  const { action, limit } = req.query;
+  const maxLimit = Math.min(parseInt(String(limit || '50'), 10), 200);
+
+  let query = supabase
+    .from('audit_log')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(maxLimit);
+
+  if (action) {
+    query = (query as any).eq('action', String(action));
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    res.status(500).json({ success: false, error: error.message });
+    return;
+  }
+
+  res.json({ success: true, count: data?.length || 0, logs: data || [] });
+}
+
 

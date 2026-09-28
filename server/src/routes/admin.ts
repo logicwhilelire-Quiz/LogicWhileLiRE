@@ -39,6 +39,7 @@ import {
   toggleStaffStatus,
   getBulkEnrollTemplate,
   bulkEnrollParticipantsHandler,
+  listAuditLogs,
 } from '../controllers/adminController';
 import { getLeaderboard } from '../controllers/adminController';
 
@@ -146,6 +147,9 @@ router.patch(
   validateParams(UUIDParam),
   resolveSuspiciousActivity
 );
+
+// ——— Audit Logs (Phase 3 Results Vault) ———
+router.get('/audit-logs', requireRole('super_admin'), listAuditLogs);
 
 export default router;
 

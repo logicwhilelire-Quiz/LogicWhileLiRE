@@ -15,6 +15,10 @@ import {
   getExamCodeReport,
   getAttemptViolations,
   reviewAttemptViolation,
+  extendAttemptTime,
+  forceSubmitAttempt,
+  reevaluateExamCode,
+  getExamCodeAnalytics,
 } from '../controllers/examCodeController';
 import {
   verifyExamEntry,
@@ -162,5 +166,11 @@ router.post(
 // Phase 2: Violation timeline & false-positive review
 router.get('/admin/attempts/:id/violations', adminAuth, getAttemptViolations);
 router.patch('/admin/attempts/:id/violations/:violationId/review', adminAuth, reviewAttemptViolation);
+
+// Phase 3: Live Monitor, Analytics & Results Vault
+router.post('/admin/attempts/:id/extend-time', adminAuth, extendAttemptTime);
+router.post('/admin/attempts/:id/force-submit', adminAuth, forceSubmitAttempt);
+router.post('/admin/exam-codes/:id/reevaluate', adminAuth, requireCollegeScope(), reevaluateExamCode);
+router.get('/admin/exam-codes/:id/analytics', adminAuth, requireCollegeScope(), getExamCodeAnalytics);
 
 export default router;

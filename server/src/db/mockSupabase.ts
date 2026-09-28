@@ -1006,7 +1006,7 @@ class MockQueryBuilder {
           return participant ? participant[child] === value : false;
         }
       }
-      return row[field] === value;
+      return row[field] === value || String(row[field]) === String(value);
     });
     return this;
   }

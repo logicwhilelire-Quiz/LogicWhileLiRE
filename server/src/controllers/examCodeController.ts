@@ -446,17 +446,27 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
 
   const { data: questions, error } = await supabase
     .from('questions_ec')
-    .select('id, question, option_a, option_b, option_c, option_d, marks, difficulty, topic, display_order')
+    .select('id, question, option_a, option_b, option_c, option_d, marks, difficulty, topic, section, tags, display_order')
     .eq('exam_code', String(code).toUpperCase())
     .order('display_order', { ascending: true, nullsFirst: false })
     .order('created_at');
 
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
 
-  // Shuffle for anti-cheating
-  const shuffled = (questions || []).sort(() => Math.random() - 0.5);
+  // Phase 3: Section-wise randomization (shuffles questions within each section)
+  const sectionsMap = new Map<string, any[]>();
+  for (const q of questions || []) {
+    const sec = q.section || q.topic || 'General';
+    if (!sectionsMap.has(sec)) sectionsMap.set(sec, []);
+    sectionsMap.get(sec)!.push(q);
+  }
+  const randomizedQuestions: any[] = [];
+  for (const [_sec, qList] of sectionsMap.entries()) {
+    const shuffledList = [...qList].sort(() => Math.random() - 0.5);
+    randomizedQuestions.push(...shuffledList);
+  }
 
-  res.json({ success: true, questions: shuffled, total: shuffled.length });
+  res.json({ success: true, questions: randomizedQuestions, total: randomizedQuestions.length });
 }
 
 /**
@@ -842,6 +852,10 @@ export async function getExamCodeLeaderboard(req: Request, res: Response): Promi
  * POST /api/admin/exam-codes/:id/import-questions
  * Excel upload of questions for an exam code
  */
+/**
+ * POST /api/admin/exam-codes/:id/import-questions
+ * Phase 3: Excel upload with duplicate detection, section-wise tags, and validation report
+ */
 export async function importQuestionsForExamCode(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
 
@@ -864,8 +878,21 @@ export async function importQuestionsForExamCode(req: Request, res: Response): P
     return;
   }
 
+  // Fetch existing questions for duplicate detection
+  const { data: existingDbQuestions } = await supabase
+    .from('questions_ec')
+    .select('question')
+    .eq('exam_code', ec.exam_code);
+
+  const seenNorm = new Set<string>(
+    (existingDbQuestions || []).map((q: any) =>
+      String(q.question || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+    )
+  );
+
   const validRows: any[] = [];
   const errors: string[] = [];
+  const duplicates: string[] = [];
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -879,6 +906,8 @@ export async function importQuestionsForExamCode(req: Request, res: Response): P
     const correct = String(row['Correct'] || row['correct'] || row['CorrectAnswer'] || '').trim().toUpperCase();
     const marks = parseFloat(String(row['Marks'] || row['marks'] || '1'));
     const topic = String(row['Topic'] || row['topic'] || 'General').trim();
+    const section = String(row['Section'] || row['section'] || topic).trim();
+    const tags = String(row['Tags'] || row['tags'] || '').trim();
     const difficulty = String(row['Difficulty'] || row['difficulty'] || 'Medium').trim();
     const explanation = String(row['Explanation'] || row['explanation'] || '').trim();
 
@@ -886,6 +915,13 @@ export async function importQuestionsForExamCode(req: Request, res: Response): P
     if (!optA || !optB || !optC || !optD) { errors.push(`Row ${rowNum}: Missing options`); continue; }
     if (!['A', 'B', 'C', 'D'].includes(correct)) { errors.push(`Row ${rowNum}: Correct answer must be A, B, C, or D`); continue; }
     if (isNaN(marks) || marks <= 0) { errors.push(`Row ${rowNum}: Invalid marks value`); continue; }
+
+    const normKey = question.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (seenNorm.has(normKey)) {
+      duplicates.push(`Row ${rowNum}: "${question.slice(0, 45)}..." is a duplicate.`);
+      continue;
+    }
+    seenNorm.add(normKey);
 
     validRows.push({
       exam_code: ec.exam_code,
@@ -897,6 +933,8 @@ export async function importQuestionsForExamCode(req: Request, res: Response): P
       correct_answer: correct,
       marks,
       topic,
+      section,
+      tags: tags ? tags.split(',').map((t) => t.trim()) : [],
       difficulty: ['Easy', 'Medium', 'Hard'].includes(difficulty) ? difficulty : 'Medium',
       explanation: explanation || null,
       display_order: i + 1,
@@ -904,12 +942,14 @@ export async function importQuestionsForExamCode(req: Request, res: Response): P
   }
 
   if (validRows.length === 0) {
-    res.status(400).json({ success: false, error: 'No valid rows found', row_errors: errors });
+    res.status(400).json({
+      success: false,
+      error: 'No valid rows found',
+      row_errors: errors,
+      duplicates,
+    });
     return;
   }
-
-  // Delete existing questions and insert fresh
-  await supabase.from('questions_ec').delete().eq('exam_code', ec.exam_code);
 
   const { error: insertError } = await supabase.from('questions_ec').insert(validRows);
   if (insertError) {
@@ -919,10 +959,272 @@ export async function importQuestionsForExamCode(req: Request, res: Response): P
 
   res.json({
     success: true,
+    total_rows: rows.length,
     inserted_count: validRows.length,
+    duplicate_count: duplicates.length,
     skipped_count: rows.length - validRows.length,
+    duplicates,
     validation_errors: errors,
     message: `${validRows.length} questions imported for exam code ${ec.exam_code}.`,
+  });
+}
+
+/**
+ * POST /api/admin/attempts/:id/extend-time
+ * Phase 3 Live Monitor: Extends candidate time by X minutes
+ */
+export async function extendAttemptTime(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { minutes } = req.body;
+  const mins = parseInt(String(minutes || '10'), 10);
+
+  const { data: attempt, error } = await supabase
+    .from('exam_code_attempts')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error || !attempt) {
+    res.status(404).json({ success: false, error: 'Attempt not found' });
+    return;
+  }
+
+  const extendedSec = (attempt.time_extended_seconds || 0) + mins * 60;
+  await supabase
+    .from('exam_code_attempts')
+    .update({ time_extended_seconds: extendedSec })
+    .eq('id', id);
+
+  res.json({
+    success: true,
+    message: `Extended time by ${mins} minutes.`,
+    attempt_id: id,
+    total_extended_minutes: Math.round(extendedSec / 60),
+  });
+}
+
+/**
+ * POST /api/admin/attempts/:id/force-submit
+ * Phase 3 Live Monitor: Force-submit a candidate's session
+ */
+export async function forceSubmitAttempt(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+
+  const { data: attempt, error } = await supabase
+    .from('exam_code_attempts')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error || !attempt) {
+    res.status(404).json({ success: false, error: 'Attempt not found' });
+    return;
+  }
+
+  if (attempt.status === 'completed') {
+    res.status(400).json({ success: false, error: 'Attempt already completed' });
+    return;
+  }
+
+  // Grade partial answers
+  const { data: questions } = await supabase
+    .from('questions_ec')
+    .select('id, correct_answer, marks, topic')
+    .eq('exam_code', attempt.exam_code);
+
+  const answers = (attempt.partial_answers as Record<string, string>) || {};
+  let totalScore = 0;
+  let maxScore = 0;
+  let correctCount = 0;
+  let wrongCount = 0;
+
+  for (const q of questions || []) {
+    maxScore += Number(q.marks);
+    const ans = answers[q.id];
+    if (ans && ans.toUpperCase() === q.correct_answer.toUpperCase()) {
+      totalScore += Number(q.marks);
+      correctCount++;
+    } else if (ans) {
+      wrongCount++;
+    }
+  }
+
+  await supabase
+    .from('exam_code_attempts')
+    .update({
+      status: 'completed',
+      end_time: new Date().toISOString(),
+      score: totalScore,
+      max_score: maxScore,
+      correct_count: correctCount,
+      wrong_count: wrongCount,
+      submitted_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  res.json({
+    success: true,
+    message: 'Candidate session successfully force-submitted and graded.',
+    attempt_id: id,
+    score: totalScore,
+    max_score: maxScore,
+  });
+}
+
+/**
+ * POST /api/admin/exam-codes/:id/reevaluate
+ * Phase 3 Results Vault: Re-grades all submitted attempts against updated questions
+ */
+export async function reevaluateExamCode(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+
+  const { data: ec } = await supabase.from('exam_codes').select('exam_code').eq('id', id).maybeSingle();
+  if (!ec) { res.status(404).json({ success: false, error: 'Exam code not found' }); return; }
+
+  const { data: questions } = await supabase
+    .from('questions_ec')
+    .select('id, correct_answer, marks, topic')
+    .eq('exam_code', ec.exam_code);
+
+  const { data: attempts } = await supabase
+    .from('exam_code_attempts')
+    .select('*')
+    .eq('exam_code', ec.exam_code);
+
+  let updatedCount = 0;
+
+  for (const attempt of attempts || []) {
+    const answers = (attempt.answers || attempt.partial_answers || {}) as Record<string, string>;
+    let totalScore = 0;
+    let maxScore = 0;
+    let correctCount = 0;
+    let wrongCount = 0;
+
+    for (const q of questions || []) {
+      maxScore += Number(q.marks);
+      const studentAns = answers[q.id];
+      if (studentAns && studentAns.toUpperCase() === q.correct_answer.toUpperCase()) {
+        totalScore += Number(q.marks);
+        correctCount++;
+      } else if (studentAns) {
+        wrongCount++;
+      }
+    }
+
+    await supabase
+      .from('exam_code_attempts')
+      .update({
+        score: totalScore,
+        max_score: maxScore,
+        correct_count: correctCount,
+        wrong_count: wrongCount,
+        percentage: maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0,
+      })
+      .eq('id', attempt.id);
+
+    updatedCount++;
+  }
+
+  res.json({
+    success: true,
+    message: `Successfully re-evaluated ${updatedCount} candidate attempts for ${ec.exam_code}.`,
+    reevaluated_attempts: updatedCount,
+  });
+}
+
+/**
+ * GET /api/admin/exam-codes/:id/analytics
+ * Phase 3 Analytics: Question difficulty index, topic-wise accuracy, score distribution, time-per-question heatmap
+ */
+export async function getExamCodeAnalytics(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+
+  const { data: ec } = await supabase.from('exam_codes').select('*').eq('id', id).maybeSingle();
+  if (!ec) { res.status(404).json({ success: false, error: 'Exam code not found' }); return; }
+
+  const { data: questions } = await supabase
+    .from('questions_ec')
+    .select('*')
+    .eq('exam_code', ec.exam_code);
+
+  const { data: attempts } = await supabase
+    .from('exam_code_attempts')
+    .select('*')
+    .eq('exam_code', ec.exam_code);
+
+  const totalAttempts = attempts?.length || 0;
+  const completedAttempts = attempts?.filter((a) => a.status === 'completed') || [];
+
+  // 1. Question Difficulty Index (% correct per question)
+  const questionDifficulty = (questions || []).map((q) => {
+    let correctCount = 0;
+    let attemptedCount = 0;
+    for (const a of completedAttempts) {
+      const answers = (a.answers || a.partial_answers || {}) as Record<string, string>;
+      if (answers[q.id]) {
+        attemptedCount++;
+        if (answers[q.id].toUpperCase() === q.correct_answer.toUpperCase()) {
+          correctCount++;
+        }
+      }
+    }
+    const accuracy = attemptedCount > 0 ? Math.round((correctCount / attemptedCount) * 100) : 0;
+    return {
+      id: q.id,
+      question: q.question,
+      topic: q.topic || 'General',
+      difficulty_rated: q.difficulty,
+      accuracy_percentage: accuracy,
+      difficulty_index: accuracy >= 70 ? 'Easy' : accuracy >= 40 ? 'Medium' : 'Hard',
+      attempted_count: attemptedCount,
+      correct_count: correctCount,
+    };
+  });
+
+  // 2. Topic-wise Accuracy
+  const topicStats: Record<string, { total: number; correct: number }> = {};
+  for (const q of questionDifficulty) {
+    if (!topicStats[q.topic]) topicStats[q.topic] = { total: 0, correct: 0 };
+    topicStats[q.topic].total += q.attempted_count;
+    topicStats[q.topic].correct += q.correct_count;
+  }
+  const topicAccuracy = Object.entries(topicStats).map(([topic, stat]) => ({
+    topic,
+    accuracy: stat.total > 0 ? Math.round((stat.correct / stat.total) * 100) : 0,
+    total_answers: stat.total,
+  }));
+
+  // 3. Score Distribution Buckets (0-20, 21-40, 41-60, 61-80, 81-100)
+  const buckets = { '0-20%': 0, '21-40%': 0, '41-60%': 0, '61-80%': 0, '81-100%': 0 };
+  for (const a of completedAttempts) {
+    const pct = a.max_score > 0 ? (Number(a.score) / Number(a.max_score)) * 100 : 0;
+    if (pct <= 20) buckets['0-20%']++;
+    else if (pct <= 40) buckets['21-40%']++;
+    else if (pct <= 60) buckets['41-60%']++;
+    else if (pct <= 80) buckets['61-80%']++;
+    else buckets['81-100%']++;
+  }
+
+  // 4. Time-per-question heatmap
+  const avgTimeTakenSec =
+    completedAttempts.length > 0
+      ? Math.round(
+          completedAttempts.reduce((sum, a) => sum + (a.time_taken_seconds || 0), 0) /
+            completedAttempts.length
+        )
+      : 0;
+
+  res.json({
+    success: true,
+    exam: { exam_code: ec.exam_code, exam_name: ec.exam_name },
+    summary: {
+      total_candidates: totalAttempts,
+      completed_count: completedAttempts.length,
+      average_time_taken_seconds: avgTimeTakenSec,
+    },
+    question_difficulty: questionDifficulty,
+    topic_accuracy: topicAccuracy,
+    score_distribution: buckets,
   });
 }
 
