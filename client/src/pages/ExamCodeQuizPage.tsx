@@ -9,6 +9,7 @@ import MagneticButton from '../components/3d/MagneticButton'
 import TypingDots from '../components/3d/TypingDots'
 import HoloScan from '../components/3d/HoloScan'
 import FlightPathLines from '../components/3d/FlightPathLines'
+import ProctoringConsentModal from '../components/ProctoringConsentModal'
 
 const FaceMeshOrb = lazy(() => import('../components/3d/FaceMeshOrb'))
 const CircularProgress3D = lazy(() => import('../components/3d/CircularProgress3D'))
@@ -34,7 +35,7 @@ interface ExamSession {
   questions: ExamQuestion[]
 }
 
-type FaceStatus = 'ok' | 'no_face' | 'multiple' | 'loading'
+type FaceStatus = 'ok' | 'no_face' | 'multiple' | 'looking_away' | 'loading'
 
 const BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -64,6 +65,7 @@ export default function QuizPage() {
   const [violationMsg, setViolationMsg] = useState('')
   const [faceStatus, setFaceStatus] = useState<FaceStatus>('loading')
   const [showProctoringAlert, setShowProctoringAlert] = useState(false)
+  const [consentGiven, setConsentGiven] = useState(() => Boolean(sessionStorage.getItem(`lw_camera_consented_${examCode}`)))
   const [adminWarningMsg, setAdminWarningMsg] = useState('')
   const [showAdminWarning, setShowAdminWarning] = useState(false)
   const [runResult, setRunResult] = useState<{ output: string; error?: string } | null>(null)
@@ -213,6 +215,10 @@ export default function QuizPage() {
       logViolation('no_face', 'No face detected — student may have left camera')
       setShowProctoringAlert(true)
       setTimeout(() => setShowProctoringAlert(false), 3000)
+    } else if (status === 'looking_away') {
+      logViolation('looking_away', 'Candidate looking away from screen')
+      setShowProctoringAlert(true)
+      setTimeout(() => setShowProctoringAlert(false), 3000)
     }
   }, [])
 
@@ -222,6 +228,22 @@ export default function QuizPage() {
     setViolationMsg(msg)
     setShowViolationModal(true)
     setTimeout(() => setShowViolationModal(false), 3000)
+
+    // Capture low-res snapshot thumbnail for audit evidence
+    let snapshotThumb: string | null = null
+    try {
+      const videoEl = document.querySelector('video')
+      if (videoEl && videoEl.videoWidth > 0) {
+        const snapCanvas = document.createElement('canvas')
+        snapCanvas.width = 160
+        snapCanvas.height = 120
+        const ctx = snapCanvas.getContext('2d')
+        if (ctx) {
+          ctx.drawImage(videoEl, 0, 0, 160, 120)
+          snapshotThumb = snapCanvas.toDataURL('image/jpeg', 0.5)
+        }
+      }
+    } catch { /* ignore capture error */ }
 
     // Broadcast over Realtime WebSocket for instant sub-100ms invigilator alert
     if (realtimeChannelRef.current) {
@@ -233,17 +255,19 @@ export default function QuizPage() {
           eventType: type,
           message: msg,
           violationCount: violationRef.current,
+          snapshotThumb,
           timestamp: Date.now(),
         },
       })
     }
 
     try {
-      await axios.post(`${BASE}/api/proctor/log`, {
+      await axios.post(`${BASE}/api/exam-code/${examCode}/violation`, {
         candidateId: session?.candidateId || hallTicket,
         examCode,
-        eventType: type,
-        metadata: { message: msg, count: violationRef.current },
+        violationType: type,
+        notes: msg,
+        snapshot_thumb: snapshotThumb,
       })
     } catch { /* non-blocking */ }
 
@@ -761,6 +785,16 @@ export default function QuizPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* ─── PROCTORING PRIVACY & CAMERA CONSENT MODAL ─── */}
+      <ProctoringConsentModal
+        isOpen={!consentGiven}
+        onConsent={() => {
+          setConsentGiven(true);
+          sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
+        }}
+        examName={session?.examName || examCode}
+      />
     </div>
   )
 }

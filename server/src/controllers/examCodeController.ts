@@ -564,43 +564,184 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
 
 /**
  * POST /api/exam-code/:code/violation
- * Logs a violation and potentially terminates
+ * Phase 2: Logs violation with snapshot thumbnail, timestamps, configurable thresholds,
+ * grace period check, and maintains violation_timeline.
  */
 export async function logExamCodeViolation(req: Request, res: Response): Promise<void> {
-  const { code } = req.params;
-  const { attemptId, violationType, session_token } = req.body;
+  const code = (req.params.code || req.body.examCode || '').toUpperCase();
+  const attemptId = req.body.attemptId || req.body.candidateId;
+  const violationType = req.body.violationType || req.body.eventType || 'tab_switch';
+  const notes = req.body.notes || req.body.metadata?.message || req.body.message || '';
+  const snapshot_thumb = req.body.snapshot_thumb || req.body.snapshot || null;
 
-  // ── 1a: token check (soft — violations should still record even if evicted)
-  const { data: attempt } = await supabase
-    .from('exam_code_attempts')
-    .select('id, violation_count, status')
-    .eq('id', attemptId)
-    .eq('exam_code', String(code).toUpperCase())
-    .maybeSingle();
+  // 1. Look up attempt
+  let query = supabase.from('exam_code_attempts').select('*');
+  if (attemptId) {
+    query = (query as any).or(`id.eq.${attemptId},hall_ticket_no.eq.${attemptId}`);
+  }
+  if (code) {
+    query = (query as any).eq('exam_code', code);
+  }
+  const { data: attempt } = await query.maybeSingle();
 
   if (!attempt || attempt.status !== 'in_progress') {
-    res.status(403).json({ success: false, error: 'Invalid attempt' });
+    res.status(403).json({ success: false, error: 'Invalid attempt or session closed' });
     return;
   }
 
-  const newCount = attempt.violation_count + 1;
-  const shouldTerminate = newCount >= 3;
+  // 2. Fetch exam settings for configurable proctoring rules
+  const { data: exam } = await supabase
+    .from('exam_codes')
+    .select('max_violations, auto_terminate, grace_period_seconds')
+    .eq('exam_code', attempt.exam_code)
+    .maybeSingle();
+
+  const maxViolations = Number(exam?.max_violations) > 0 ? Number(exam?.max_violations) : 5;
+  const autoTerminate = exam?.auto_terminate !== false;
+  const gracePeriodSec = Number(exam?.grace_period_seconds) || 0;
+
+  // Check if inside grace period since attempt creation
+  const attemptStart = new Date(attempt.created_at || Date.now()).getTime();
+  const elapsedSec = (Date.now() - attemptStart) / 1000;
+  const isGrace = elapsedSec < gracePeriodSec;
+
+  const currentTimeline = Array.isArray(attempt.violation_timeline) ? attempt.violation_timeline : [];
+  const currentCount = Number(attempt.violation_count) || 0;
+  const newCount = isGrace ? currentCount : currentCount + 1;
+  const shouldTerminate = autoTerminate && newCount >= maxViolations;
+
+  const vItem = {
+    id: `viol_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    type: violationType,
+    message: notes || `${violationType} detected`,
+    timestamp: new Date().toISOString(),
+    snapshot_thumb: snapshot_thumb ? String(snapshot_thumb).slice(0, 30000) : null,
+    count: newCount,
+    in_grace_period: isGrace,
+    is_false_positive: false,
+    reviewed_by: null,
+    reviewed_at: null,
+  };
+
+  const updatedTimeline = [...currentTimeline, vItem];
 
   await supabase
     .from('exam_code_attempts')
     .update({
       violation_count: newCount,
+      violation_timeline: updatedTimeline,
       ...(shouldTerminate ? { status: 'terminated_cheating', end_time: new Date().toISOString() } : {}),
     })
-    .eq('id', attemptId);
+    .eq('id', attempt.id);
 
   res.json({
     success: true,
+    violation_id: vItem.id,
     violation_count: newCount,
+    max_violations: maxViolations,
+    in_grace_period: isGrace,
     terminated: shouldTerminate,
-    message: shouldTerminate
-      ? 'Exam auto-submitted due to repeated violations.'
-      : `Warning ${newCount}/3. Your exam will be terminated on the 3rd violation.`,
+    message: isGrace
+      ? `Grace period active: ${notes || violationType} noted without strike.`
+      : shouldTerminate
+      ? `Exam auto-submitted due to reaching ${maxViolations} violations.`
+      : `Warning ${newCount}/${maxViolations}: ${notes || violationType}.`,
+  });
+}
+
+/**
+ * GET /api/admin/attempts/:id/violations
+ * Phase 2: Returns candidate violation timeline with snapshot evidence
+ */
+export async function getAttemptViolations(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { data: attempt, error } = await supabase
+    .from('exam_code_attempts')
+    .select('id, exam_code, hall_ticket_no, student_name, violation_count, violation_timeline, status, created_at, end_time')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error || !attempt) {
+    res.status(404).json({ success: false, error: 'Attempt not found' });
+    return;
+  }
+
+  res.json({
+    success: true,
+    attempt: {
+      id: attempt.id,
+      exam_code: attempt.exam_code,
+      hall_ticket_no: attempt.hall_ticket_no,
+      student_name: attempt.student_name,
+      violation_count: attempt.violation_count || 0,
+      status: attempt.status,
+      timeline: attempt.violation_timeline || [],
+    },
+  });
+}
+
+/**
+ * PATCH /api/admin/attempts/:id/violations/:violationId/review
+ * Phase 2: False-positive review + override
+ */
+export async function reviewAttemptViolation(req: Request, res: Response): Promise<void> {
+  const { id, violationId } = req.params;
+  const { is_false_positive, review_notes } = req.body;
+  const adminUser = (req as any).admin?.sub || (req as any).admin?.name || 'admin';
+
+  const { data: attempt, error } = await supabase
+    .from('exam_code_attempts')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error || !attempt) {
+    res.status(404).json({ success: false, error: 'Attempt not found' });
+    return;
+  }
+
+  const timeline = Array.isArray(attempt.violation_timeline) ? [...attempt.violation_timeline] : [];
+  const targetIdx = timeline.findIndex((v: any) => v.id === violationId);
+  if (targetIdx === -1) {
+    res.status(404).json({ success: false, error: 'Violation record not found in candidate timeline' });
+    return;
+  }
+
+  timeline[targetIdx] = {
+    ...timeline[targetIdx],
+    is_false_positive: Boolean(is_false_positive),
+    review_notes: review_notes || (is_false_positive ? 'Marked as false positive by admin' : 'Confirmed by admin'),
+    reviewed_by: adminUser,
+    reviewed_at: new Date().toISOString(),
+  };
+
+  // Recalculate active (non-false-positive and non-grace) violations
+  const activeCount = timeline.filter((v: any) => !v.is_false_positive && !v.in_grace_period).length;
+
+  // Check if attempt was terminated for cheating and now qualifies for restoration
+  let newStatus = attempt.status;
+  let restored = false;
+  if (attempt.status === 'terminated_cheating' && activeCount < 5) {
+    newStatus = 'in_progress';
+    restored = true;
+  }
+
+  await supabase
+    .from('exam_code_attempts')
+    .update({
+      violation_count: activeCount,
+      violation_timeline: timeline,
+      status: newStatus,
+    })
+    .eq('id', id);
+
+  res.json({
+    success: true,
+    message: is_false_positive ? 'Violation marked as false positive.' : 'Violation confirmed.',
+    violation_count: activeCount,
+    status: newStatus,
+    restored,
+    timeline,
   });
 }
 

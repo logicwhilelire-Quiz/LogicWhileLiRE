@@ -8,6 +8,7 @@ import MagneticButton from '../../components/3d/MagneticButton'
 import FlightPathLines from '../../components/3d/FlightPathLines'
 import AltimeterDial from '../../components/3d/AltimeterDial'
 import ShimmerText from '../../components/3d/ShimmerText'
+import CandidateViolationTimelineModal from '../../components/CandidateViolationTimelineModal'
 
 interface ProctoringEvent {
   id: string
@@ -149,6 +150,7 @@ export default function AdminMonitorPage() {
   const [isSimulating, setIsSimulating] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [actionNotice, setActionNotice] = useState('')
+  const [timelineCandidate, setTimelineCandidate] = useState<StudentTile | null>(null)
 
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
@@ -781,20 +783,29 @@ export default function AdminMonitorPage() {
                     </div>
 
                     {/* Action buttons */}
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <MagneticButton
+                          className="btn btn-warning btn-sm w-full"
+                          onClick={() => handleSendWarning(selectedStudent)}
+                          style={{ fontSize: '0.74rem', padding: '6px 8px' }}
+                        >
+                          ⚠️ Warn Student
+                        </MagneticButton>
+                        <MagneticButton
+                          className="btn btn-danger btn-sm w-full"
+                          onClick={() => handleTerminateStudent(selectedStudent)}
+                          style={{ fontSize: '0.74rem', padding: '6px 8px' }}
+                        >
+                          🛑 Terminate
+                        </MagneticButton>
+                      </div>
                       <MagneticButton
-                        className="btn btn-warning btn-sm w-full"
-                        onClick={() => handleSendWarning(selectedStudent)}
-                        style={{ fontSize: '0.74rem', padding: '6px 8px' }}
+                        className="btn btn-ghost btn-sm w-full"
+                        onClick={() => setTimelineCandidate(selectedStudent)}
+                        style={{ fontSize: '0.74rem', padding: '6px 8px', border: '1px solid rgba(255,255,255,0.1)' }}
                       >
-                        ⚠️ Warn Student
-                      </MagneticButton>
-                      <MagneticButton
-                        className="btn btn-danger btn-sm w-full"
-                        onClick={() => handleTerminateStudent(selectedStudent)}
-                        style={{ fontSize: '0.74rem', padding: '6px 8px' }}
-                      >
-                        🛑 Terminate
+                        📋 View Violation Timeline & Overrides
                       </MagneticButton>
                     </div>
                   </GlowCard>
@@ -876,6 +887,14 @@ export default function AdminMonitorPage() {
           </div>
         </div>
       </main>
+
+      <CandidateViolationTimelineModal
+        isOpen={Boolean(timelineCandidate)}
+        onClose={() => setTimelineCandidate(null)}
+        attemptId={timelineCandidate?.id || timelineCandidate?.hallTicket || ''}
+        candidateName={timelineCandidate?.name}
+        hallTicket={timelineCandidate?.hallTicket}
+      />
     </div>
   )
 }

@@ -13,6 +13,8 @@ import {
   getExamCodeQR,
   importQuestionsForExamCode,
   getExamCodeReport,
+  getAttemptViolations,
+  reviewAttemptViolation,
 } from '../controllers/examCodeController';
 import {
   verifyExamEntry,
@@ -156,5 +158,9 @@ router.post(
   upload.single('file'),
   importQuestionsForExamCode
 );
+
+// Phase 2: Violation timeline & false-positive review
+router.get('/admin/attempts/:id/violations', adminAuth, getAttemptViolations);
+router.patch('/admin/attempts/:id/violations/:violationId/review', adminAuth, reviewAttemptViolation);
 
 export default router;

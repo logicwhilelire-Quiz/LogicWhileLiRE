@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-type FaceStatus = 'ok' | 'no_face' | 'multiple' | 'loading'
+type FaceStatus = 'ok' | 'no_face' | 'multiple' | 'looking_away' | 'loading'
 
 interface FaceMeshOrbProps {
   onStatusChange?: (status: FaceStatus) => void
@@ -10,13 +10,11 @@ interface FaceMeshOrbProps {
 }
 
 /**
- * FaceMeshOrb — face count detection using browser MediaPipe face detection
+ * FaceMeshOrb — face count and gaze detection using browser MediaPipe face detection
  * Green = 1 face detected (ok)
  * Yellow = 0 faces (no face in frame)
  * Red = 2+ faces (multiple faces — potential cheating)
- * 
- * Note: Uses a lightweight canvas-based simulation when MediaPipe isn't available.
- * For production, integrate @tensorflow-models/face-detection.
+ * Orange = Looking away from screen
  */
 export default function FaceMeshOrb({ onStatusChange, size = 100, className = '' }: FaceMeshOrbProps) {
   const videoRef  = useRef<HTMLVideoElement>(null)
@@ -26,13 +24,15 @@ export default function FaceMeshOrb({ onStatusChange, size = 100, className = ''
   const streamRef = useRef<MediaStream | null>(null)
   const animRef   = useRef<number | undefined>(undefined)
   const frameRef  = useRef(0)
+  const lastSampleTimeRef = useRef(0)
 
   const getStatusConfig = (s: FaceStatus) => {
     switch (s) {
-      case 'ok':       return { color: '#10B981', label: '1 Face ✓', glow: 'rgba(16,185,129,0.5)' }
-      case 'no_face':  return { color: '#F59E0B', label: 'No Face ⚠', glow: 'rgba(245,158,11,0.5)' }
-      case 'multiple': return { color: '#EF4444', label: '2+ Faces ✗', glow: 'rgba(239,68,68,0.5)' }
-      case 'loading':  return { color: '#2B7FFF', label: 'Initializing', glow: 'rgba(43,127,255,0.5)' }
+      case 'ok':           return { color: '#10B981', label: '1 Face ✓', glow: 'rgba(16,185,129,0.5)' }
+      case 'no_face':      return { color: '#F59E0B', label: 'No Face ⚠', glow: 'rgba(245,158,11,0.5)' }
+      case 'multiple':     return { color: '#EF4444', label: '2+ Faces ✗', glow: 'rgba(239,68,68,0.5)' }
+      case 'looking_away': return { color: '#F97316', label: 'Looking Away ⚠', glow: 'rgba(249,115,22,0.5)' }
+      case 'loading':      return { color: '#2B7FFF', label: 'Initializing', glow: 'rgba(43,127,255,0.5)' }
     }
   }
 
@@ -72,23 +72,40 @@ export default function FaceMeshOrb({ onStatusChange, size = 100, className = ''
         const detectLoop = async () => {
           if (cancelled) return
           frameRef.current++
+          const now = Date.now()
 
-          if (detector && videoRef.current && videoRef.current.readyState === 4) {
-            try {
-              const faces = await detector.estimateFaces(videoRef.current)
-              const count = faces.length
-              setFaceCount(count)
-              const newStatus: FaceStatus = count === 0 ? 'no_face' : count === 1 ? 'ok' : 'multiple'
-              setStatus(prev => {
-                if (prev !== newStatus) onStatusChange?.(newStatus)
-                return newStatus
-              })
-            } catch { /* ignore detection errors */ }
-          } else {
-            // Lightweight simulation: assume OK after camera loads
-            if (frameRef.current > 60) {
-              setStatus(s => { if (s === 'loading') { onStatusChange?.('ok'); return 'ok' } return s })
-              setFaceCount(1)
+          // Throttle heavy face detection to every 1.5s for low CPU usage
+          if (now - lastSampleTimeRef.current >= 1500) {
+            lastSampleTimeRef.current = now
+
+            if (detector && videoRef.current && videoRef.current.readyState === 4) {
+              try {
+                const faces = await detector.estimateFaces(videoRef.current)
+                const count = faces.length
+                setFaceCount(count)
+                let newStatus: FaceStatus = count === 0 ? 'no_face' : count === 1 ? 'ok' : 'multiple'
+
+                // Check looking away deviation
+                if (count === 1 && (faces[0] as any)?.box) {
+                  const box = (faces[0] as any).box
+                  const centerX = box.xMin + box.width / 2
+                  const videoWidth = videoRef.current.videoWidth || 320
+                  if (Math.abs(centerX - videoWidth / 2) > videoWidth * 0.35) {
+                    newStatus = 'looking_away'
+                  }
+                }
+
+                setStatus(prev => {
+                  if (prev !== newStatus) onStatusChange?.(newStatus)
+                  return newStatus
+                })
+              } catch { /* ignore detection errors */ }
+            } else {
+              // Lightweight simulation: assume OK after camera loads
+              if (frameRef.current > 60) {
+                setStatus(s => { if (s === 'loading') { onStatusChange?.('ok'); return 'ok' } return s })
+                setFaceCount(1)
+              }
             }
           }
 
