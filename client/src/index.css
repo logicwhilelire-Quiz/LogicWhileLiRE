@@ -1,41 +1,90 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 /* ============================================================
-   LOGICWHILE 4.0 ULTRA — DESIGN TOKENS
+   IARE TYPOGRAPHY ALIASES (DaxlinePro / Roboto)
+   ============================================================ */
+@font-face {
+  font-family: 'DaxlinePro';
+  font-weight: 400;
+  font-style: normal;
+  src: local('DaxlinePro'), local('DaxlinePro-Regular'), local('Roboto-Regular');
+}
+@font-face {
+  font-family: 'DaxlineProBold';
+  font-weight: 700;
+  font-style: normal;
+  src: local('DaxlineProBold'), local('DaxlinePro-Bold'), local('Roboto-Bold');
+}
+@font-face {
+  font-family: 'DaxlineProMedium';
+  font-weight: 500;
+  font-style: normal;
+  src: local('DaxlineProMedium'), local('DaxlinePro-Medium'), local('Roboto-Medium');
+}
+@font-face {
+  font-family: 'DaxlineProLight';
+  font-weight: 300;
+  font-style: normal;
+  src: local('DaxlineProLight'), local('DaxlinePro-Light'), local('Roboto-Light');
+}
+@font-face {
+  font-family: 'DaxlineProBlack';
+  font-weight: 900;
+  font-style: normal;
+  src: local('DaxlineProBlack'), local('DaxlinePro-Black'), local('Roboto-Black');
+}
+
+/* ============================================================
+   LOGICWHILE — IARE INSTITUTIONAL DESIGN TOKENS
+   Inspired by Institute of Aeronautical Engineering (https://www.iare.ac.in)
    ============================================================ */
 :root {
-  /* Brand Colors */
-  --color-bg:          #0B1220;
-  --color-surface:     #141C2F;
-  --color-surface-2:   #1A2540;
-  --color-surface-3:   #1F2D4E;
-  --color-border:      rgba(255,255,255,0.08);
-  --color-border-hover: rgba(255,255,255,0.18);
-  --color-border-glow: rgba(43,127,255,0.4);
+  /* IARE Core Brand Colors */
+  --color-iare-indigo:     #190F3B; /* IARE HeaderTop deep aeronautical purple-navy */
+  --color-iare-blue:       #064484; /* IARE Royal Navy Blue */
+  --color-iare-blue-dark:  #093569; /* IARE Deep Border Blue */
+  --color-iare-gold:       #bf9f62; /* IARE Signature Gold / Ochre */
+  --color-iare-gold-hover: #a28b40; /* IARE Gold Hover */
+  --color-iare-crimson:    #e45d5d; /* IARE Table Header Crimson */
+  --color-iare-brick:      #9c3a37; /* IARE Header Red Accent */
 
-  /* Accent Palette */
-  --color-primary:     #2B7FFF;
-  --color-primary-dark: #1B5FCC;
-  --color-primary-glow: rgba(43,127,255,0.25);
-  --color-primary-glow-strong: rgba(43,127,255,0.4);
+  /* Dark Theme Tokens (Default) */
+  --color-bg:          #0C0720; /* Deep IARE Aeronautical Night */
+  --color-surface:     #190F3B; /* IARE TopBar Indigo surface */
+  --color-surface-2:   #23164F; /* Elevated Card */
+  --color-surface-3:   #2E1D66;
+  --color-border:      rgba(191, 159, 98, 0.18); /* Subtle Gold border */
+  --color-border-hover: rgba(191, 159, 98, 0.45);
+  --color-border-glow: rgba(191, 159, 98, 0.35);
+
+  /* Primary Accent: IARE Gold */
+  --color-primary:     #bf9f62;
+  --color-primary-dark: #a28b40;
+  --color-primary-glow: rgba(191, 159, 98, 0.28);
+  --color-primary-glow-strong: rgba(191, 159, 98, 0.50);
+
+  /* Secondary: IARE Royal Blue */
+  --color-secondary:     #064484;
+  --color-secondary-dark: #093569;
+  --color-accent:        #e45d5d;
 
   /* Semantic */
   --color-success:     #10B981;
   --color-success-glow: rgba(16,185,129,0.25);
   --color-warning:     #F59E0B;
   --color-warning-glow: rgba(245,158,11,0.25);
-  --color-danger:      #EF4444;
-  --color-danger-glow: rgba(239,68,68,0.25);
+  --color-danger:      #e45d5d; /* IARE Crimson */
+  --color-danger-glow: rgba(228,93,93,0.30);
 
   /* Text */
   --color-text:        #F8F9FC;
-  --color-text-muted:  #8EA3C3;
-  --color-text-faint:  #4B6080;
+  --color-text-muted:  #A5B0C9;
+  --color-text-faint:  #677390;
 
-  /* Fonts */
-  --font-display: 'Space Grotesk', system-ui, sans-serif;
-  --font-body:    'Inter', system-ui, sans-serif;
-  --font-mono:    'JetBrains Mono', monospace;
+  /* IARE Typography */
+  --font-display: 'DaxlineProBold', 'DaxlinePro', 'Roboto', -apple-system, sans-serif;
+  --font-body:    'DaxlinePro', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:    'JetBrains Mono', Consolas, monospace;
   /* Legacy aliases */
   --font-heading: var(--font-display);
   --font-sans:    var(--font-body);
@@ -57,8 +106,8 @@
   --shadow-glass: 0 8px 32px rgba(0,0,0,0.12);
 
   /* Glass */
-  --glass-bg:     rgba(20,28,47,0.7);
-  --glass-border: rgba(255,255,255,0.10);
+  --glass-bg:     rgba(25, 15, 59, 0.75);
+  --glass-border: rgba(191, 159, 98, 0.20);
   --glass-blur:   16px;
 
   /* Transitions */
@@ -70,31 +119,37 @@
   --transition-slow:400ms var(--ease-spring);
 }
 
-/* Light Theme Tokens */
+/* Light Theme Tokens — Clean Academic IARE Campus Palette */
 [data-theme="light"],
 .theme-light {
-  --color-bg:          #F8FAFC;
-  --color-surface:     #FFFFFF;
-  --color-surface-2:   #F1F5F9;
-  --color-surface-3:   #E2E8F0;
-  --color-border:      rgba(0, 0, 0, 0.08);
-  --color-border-hover: rgba(0, 0, 0, 0.16);
-  --color-border-glow: rgba(43, 127, 255, 0.25);
+  --color-bg:          #F8F9FD; /* Soft Academic White */
+  --color-surface:     #FFFFFF; /* Pure White */
+  --color-surface-2:   #F1F4FA;
+  --color-surface-3:   #E3E8F4;
+  --color-border:      #DDE2EE;
+  --color-border-hover: #bf9f62; /* Gold hover */
+  --color-border-glow: rgba(6, 68, 132, 0.25);
 
-  --color-primary:     #2563EB;
-  --color-primary-dark: #1D4ED8;
-  --color-primary-glow: rgba(37, 99, 235, 0.15);
-  --color-primary-glow-strong: rgba(37, 99, 235, 0.3);
+  /* Primary in Light: IARE Royal Blue */
+  --color-primary:     #064484;
+  --color-primary-dark: #093569;
+  --color-primary-glow: rgba(6, 68, 132, 0.20);
+  --color-primary-glow-strong: rgba(6, 68, 132, 0.35);
 
-  --color-text:        #0F172A;
-  --color-text-muted:  #475569;
-  --color-text-faint:  #94A3B8;
+  /* Secondary in Light: IARE Gold */
+  --color-secondary:     #bf9f62;
+  --color-secondary-dark: #a28b40;
+  --color-accent:        #e45d5d;
 
-  --glass-bg:          rgba(255, 255, 255, 0.85);
-  --glass-border:      rgba(0, 0, 0, 0.08);
-  --shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.05);
-  --shadow-md:         0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg:         0 10px 25px rgba(0, 0, 0, 0.1);
+  --color-text:        #190F3B; /* IARE Header Deep Indigo for text */
+  --color-text-muted:  #4B5565;
+  --color-text-faint:  #8993A4;
+
+  --glass-bg:          rgba(255, 255, 255, 0.90);
+  --glass-border:      #DDE2EE;
+  --shadow-sm:         0 1px 3px rgba(25, 15, 59, 0.06);
+  --shadow-md:         0 4px 12px rgba(25, 15, 59, 0.08);
+  --shadow-lg:         0 10px 25px rgba(25, 15, 59, 0.12);
 }
 
 @keyframes skeletonWave {
@@ -309,15 +364,30 @@ img { max-width: 100%; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 
 .btn-primary {
-  background: linear-gradient(135deg, #2B7FFF 0%, #1B5FCC 100%);
+  background: linear-gradient(135deg, #bf9f62 0%, #a28b40 100%);
   color: #fff;
-  box-shadow: 0 4px 20px var(--color-primary-glow), inset 0 1px 0 rgba(255,255,255,0.2);
+  font-family: var(--font-display);
+  box-shadow: 0 4px 20px var(--color-primary-glow), inset 0 1px 0 rgba(255,255,255,0.25);
 }
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 32px var(--color-primary-glow-strong), inset 0 1px 0 rgba(255,255,255,0.25);
+  background: linear-gradient(135deg, #cfb073 0%, #b39b4f 100%);
+  box-shadow: 0 8px 32px var(--color-primary-glow-strong), inset 0 1px 0 rgba(255,255,255,0.3);
 }
 .btn-primary:active { transform: translateY(0); }
+
+.btn-navy {
+  background: linear-gradient(135deg, #064484 0%, #093569 100%);
+  color: #fff;
+  font-family: var(--font-display);
+  box-shadow: 0 4px 18px rgba(6, 68, 132, 0.4);
+}
+.btn-navy:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, #0855a4 0%, #0c4284 100%);
+  box-shadow: 0 8px 28px rgba(6, 68, 132, 0.55);
+}
+.btn-navy:active { transform: translateY(0); }
 
 .btn-secondary {
   background: var(--color-surface-2);
@@ -461,10 +531,11 @@ img { max-width: 100%; }
   transition: background var(--transition-md), backdrop-filter var(--transition-md);
 }
 .site-header.scrolled {
-  background: rgba(11,18,32,0.92);
+  background: rgba(25, 15, 59, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 2px solid #bf9f62;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
 }
 
 /* ============================================================
@@ -1162,8 +1233,8 @@ img { max-width: 100%; }
   box-shadow: 0 0 0 3px var(--color-primary-glow) !important;
 }
 @keyframes currentPulse {
-  0%,100% { box-shadow: 0 0 0 2px rgba(43,127,255,0.4); }
-  50%      { box-shadow: 0 0 0 4px rgba(43,127,255,0.7); }
+  0%,100% { box-shadow: 0 0 0 2px var(--color-primary-glow); }
+  50%      { box-shadow: 0 0 0 4px var(--color-primary-glow-strong); }
 }
 
 /* ============================================================
@@ -1202,8 +1273,8 @@ img { max-width: 100%; }
    ============================================================ */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(43,127,255,0.2); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(43,127,255,0.4); }
+::-webkit-scrollbar-thumb { background: rgba(191, 159, 98, 0.25); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(191, 159, 98, 0.5); }
 
 /* ============================================================
    RESPONSIVE

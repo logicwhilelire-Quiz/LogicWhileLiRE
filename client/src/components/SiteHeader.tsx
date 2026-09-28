@@ -42,16 +42,20 @@ export default function SiteHeader() {
           transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         >
           {/* Signature Logic Coil Logo Mark */}
-          <LogicCoil size={30} variant="mark" />
+          <LogicCoil size={32} variant="mark" color="#bf9f62" />
           <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.03em' }}>
             LogicWhile
           </span>
           <span style={{
-            background: 'linear-gradient(135deg, #2B7FFF, #60a5fa)',
+            background: 'linear-gradient(135deg, #bf9f62 0%, #e6c587 100%)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.08em',
-            alignSelf: 'flex-start', marginTop: 2,
-          }}>4.0 ULTRA</span>
+            fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.08em',
+            alignSelf: 'center',
+            border: '1px solid rgba(191,159,98,0.35)',
+            padding: '2px 6px',
+            borderRadius: 4,
+            backgroundClip: 'text',
+          }}>IARE 4.0 ULTRA</span>
         </motion.div>
       </Link>
 

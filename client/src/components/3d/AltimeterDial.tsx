@@ -17,7 +17,7 @@ export default function AltimeterDial({
   value,
   label,
   suffix = '+',
-  color = '#2B7FFF',
+  color = '#bf9f62',
   size = 120,
   duration = 2000,
 }: AltimeterDialProps) {

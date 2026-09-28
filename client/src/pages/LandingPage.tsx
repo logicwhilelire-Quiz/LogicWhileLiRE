@@ -17,10 +17,10 @@ const ParticleField = lazy(() => import('../components/3d/ParticleField'))
 const NodeNetwork   = lazy(() => import('../components/3d/NodeNetwork'))
 
 const STATS = [
-  { value: 50000,  label: 'Students Assessed', suffix: '+', color: '#2B7FFF' },
-  { value: 200,    label: 'Partner Colleges',  suffix: '+', color: '#10B981' },
-  { value: 99,     label: 'Uptime',            suffix: '%', color: '#F59E0B' },
-  { value: 5000,   label: 'Questions Bank',    suffix: '+', color: '#A78BFA' },
+  { value: 50000,  label: 'Students Assessed', suffix: '+', color: '#bf9f62' },
+  { value: 200,    label: 'Partner Colleges',  suffix: '+', color: '#064484' },
+  { value: 99,     label: 'Uptime',            suffix: '%', color: '#10B981' },
+  { value: 5000,   label: 'Questions Bank',    suffix: '+', color: '#bf9f62' },
 ]
 
 const FEATURES = [
@@ -28,7 +28,7 @@ const FEATURES = [
     icon: '🤖',
     title: 'AI Question Generator',
     desc: 'Generate 100 DBMS questions in seconds with GPT-4. Set difficulty, topic, and format. Human-review then publish.',
-    color: '#2B7FFF',
+    color: '#bf9f62',
   },
   {
     icon: '👁️',
@@ -40,31 +40,32 @@ const FEATURES = [
     icon: '💻',
     title: 'Code Execution Engine',
     desc: 'Monaco Editor + Piston API. Run code in 30+ languages with hidden test cases and instant verdict.',
-    color: '#F59E0B',
+    color: '#064484',
   },
   {
     icon: '📊',
     title: 'Real-time Analytics',
     desc: '3D radar charts, placement analysis, department rankings, and downloadable PDF certificates with QR verification.',
-    color: '#A78BFA',
+    color: '#bf9f62',
   },
   {
     icon: '🏆',
     title: '3D Leaderboard',
     desc: 'Live ranked leaderboard with animated 3D podium. PlasmaBall for 1st, CodeCube for 2nd, NeonGrid for 3rd.',
-    color: '#EF4444',
+    color: '#e45d5d',
   },
   {
     icon: '⚡',
     title: 'Bulk Enrollment',
     desc: 'Upload Excel with thousands of candidates. Auto-generate hall tickets. Send invites via email/SMS.',
-    color: '#06B6D4',
+    color: '#093569',
   },
 ]
 
 const COLLEGES = [
+  'IARE (Institute of Aeronautical Engineering)', 'IARE Autonomous', 'Samvidha Portal', 'BuildIT Arena',
   'VRSEC', 'KL University', 'GITAM', 'RVR & JC', 'VIT-AP', 'SRM', 'Amrita', 'BITS Pilani',
-  'NIT Warangal', 'JNTU', 'Andhra University', 'Vignan', 'Shri Vishnu', 'Centurion',
+  'NIT Warangal', 'JNTU Hyderabad', 'Andhra University', 'Vignan', 'Shri Vishnu', 'Centurion',
 ]
 
 const PROCTORING_PILLARS = [
@@ -103,6 +104,14 @@ const PROCTORING_PILLARS = [
 ]
 
 const COLLEGE_SPOTLIGHTS = [
+  {
+    name: 'Institute of Aeronautical Engineering',
+    short: 'IARE (Autonomous)',
+    city: 'Dundigal, Hyderabad, TS',
+    metric: '20,000+ Assessments',
+    desc: 'Autonomous engineering college ranked in NIRF Top 200 band with NAAC A++ accreditation. Deployed LogicWhile Ultra for high-stakes semester exams and campus placement pre-assessments.',
+    tag: 'Autonomous Flagship',
+  },
   {
     name: 'Velagapudi Ramakrishna Siddhartha Engineering College',
     short: 'VRSEC',
@@ -250,30 +259,94 @@ export default function LandingPage() {
     <div style={{ background: 'var(--color-bg)', minHeight: '100vh', overflow: 'hidden' }}>
       <SiteHeader />
 
+      {/* ─── IARE INSTITUTIONAL TICKERS (Official https://www.iare.ac.in) ─── */}
+      <div style={{ marginTop: 72, position: 'relative', zIndex: 10 }}>
+        {/* Placements Hot News Ticker */}
+        <div style={{
+          background: '#190F3B',
+          color: '#ffffff',
+          padding: '6px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+          borderBottom: '1px solid rgba(191,159,98,0.25)',
+          fontSize: '0.8rem',
+        }}>
+          <strong style={{
+            background: 'linear-gradient(135deg, #bf9f62, #a28b40)',
+            color: '#190F3B',
+            padding: '2px 10px',
+            borderRadius: 3,
+            fontWeight: 800,
+            whiteSpace: 'nowrap',
+            fontSize: '0.72rem',
+            letterSpacing: '0.04em',
+            fontFamily: 'var(--font-display)',
+          }}>
+            812 Campus Placements - 2026 :
+          </strong>
+          <div style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+            <motion.div
+              animate={{ x: ['0%', '-50%'] }}
+              transition={{ duration: 32, repeat: Infinity, ease: 'linear' }}
+              style={{ display: 'inline-block', whiteSpace: 'nowrap', color: '#E2E8F0', fontWeight: 500 }}
+            >
+              Microsoft (5) &nbsp;||&nbsp; Rubrik (1) &nbsp;||&nbsp; Juspay (7) &nbsp;||&nbsp; New Relic (2) &nbsp;||&nbsp; JPMorgan Chase & Co. (8) &nbsp;||&nbsp; FactSet (3) &nbsp;||&nbsp; TCS (65) &nbsp;||&nbsp; EPAM (4) &nbsp;||&nbsp; Lumen Technologies (21) &nbsp;||&nbsp; DeltaX (2) &nbsp;||&nbsp; Capgemini (124) &nbsp;||&nbsp; Cognizant (199) &nbsp;||&nbsp; Virtusa (57) &nbsp;||&nbsp; IBM (25) &nbsp;||&nbsp; LTI Mindtree (130) &nbsp;||&nbsp; Infosys (32) &nbsp;||&nbsp; Deloitte (5) &nbsp;||&nbsp; Microsoft (5) &nbsp;||&nbsp; Rubrik (1) &nbsp;||&nbsp; Juspay (7) &nbsp;||&nbsp; JPMorgan Chase & Co. (8) &nbsp;||&nbsp; TCS (65) &nbsp;||&nbsp; Capgemini (124) &nbsp;||&nbsp; Cognizant (199) &nbsp;||&nbsp; LTI Mindtree (130)
+            </motion.div>
+          </div>
+        </div>
+
+        {/* NIRF & Autonomous Accreditation Ticker */}
+        <div style={{
+          background: 'rgba(6, 68, 132, 0.95)',
+          color: '#ffffff',
+          padding: '4px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          fontSize: '0.74rem',
+          borderBottom: '2px solid #bf9f62',
+        }}>
+          <span style={{ fontWeight: 800, color: '#bf9f62', whiteSpace: 'nowrap', fontFamily: 'var(--font-display)' }}>
+            🏛️ IARE RECOGNITION :
+          </span>
+          <div style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+            <motion.div
+              animate={{ x: ['0%', '-50%'] }}
+              transition={{ duration: 38, repeat: Infinity, ease: 'linear' }}
+              style={{ display: 'inline-block', whiteSpace: 'nowrap', color: '#F8F9FC' }}
+            >
+              Institute of Aeronautical Engineering (IARE) — Autonomous Engineering College, Dundigal, Hyderabad • Ranked in 151–200 Band in Engineering Category under NIRF (MoE, Govt. of India) • NAAC 'A++' Grade Accreditation • NBA Accredited Programmes • Integrated with Samvidha, Akanksha & BuildIT Platforms • Institute of Aeronautical Engineering (IARE) — Ranked in 151–200 Band NIRF • NAAC 'A++' Grade
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
       {/* ─── FLIGHT PATH BACKGROUND (fixed) ─── */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <FlightPathLines color="#2B7FFF" opacity={0.06} count={16} className="" />
+        <FlightPathLines color="#bf9f62" opacity={0.08} count={16} className="" />
       </div>
 
       {/* ─── HERO SECTION ─── */}
       <motion.section
         style={{
           opacity: heroOpacity, y: heroY,
-          minHeight: '100vh',
+          minHeight: 'calc(100vh - 140px)',
           display: 'flex', alignItems: 'center',
           position: 'relative', zIndex: 1,
-          paddingTop: 80,
+          paddingTop: 36,
+          paddingBottom: 48,
         }}
       >
         {/* Hero Interactive 3D Node Network & Blob background */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
           <Suspense fallback={null}>
             <LiquidBlob />
-            <NodeNetwork nodeCount={36} maxDistance={140} lineColor="rgba(56, 189, 248, 0.22)" nodeColor="#38bdf8" />
+            <NodeNetwork nodeCount={36} maxDistance={140} lineColor="rgba(191, 159, 98, 0.22)" nodeColor="#bf9f62" />
           </Suspense>
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(43,127,255,0.08), transparent)',
+            background: 'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(191,159,98,0.10), transparent)',
           }} />
         </div>
 
@@ -283,7 +356,7 @@ export default function LandingPage() {
             gridTemplateColumns: '1fr 1fr',
             alignItems: 'center',
             gap: 64,
-            minHeight: 'calc(100vh - 80px)',
+            minHeight: 'calc(100vh - 160px)',
           }}>
             {/* Left: Text */}
             <motion.div
@@ -298,15 +371,15 @@ export default function LandingPage() {
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                   padding: '6px 16px',
-                  background: 'rgba(43,127,255,0.1)',
-                  border: '1px solid rgba(43,127,255,0.25)',
+                  background: 'rgba(191,159,98,0.12)',
+                  border: '1px solid rgba(191,159,98,0.35)',
                   borderRadius: 999, fontSize: '0.8rem', fontWeight: 600,
                   color: 'var(--color-primary)', marginBottom: 20,
                   letterSpacing: '0.04em',
                 }}
               >
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', animation: 'blink 2s infinite' }} />
-                NOW LIVE — LogicWhile 4.0 ULTRA
+                INSTITUTE OF AERONAUTICAL ENGINEERING (IARE) — AUTONOMOUS
               </motion.div>
 
               <h1 style={{

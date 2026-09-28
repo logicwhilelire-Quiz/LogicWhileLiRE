@@ -16,16 +16,16 @@ export default function LogicCoil({
   size = 36,
   className = '',
   variant = 'mark',
-  color = '#38BDF8',
+  color = '#bf9f62',
 }: LogicCoilProps) {
   if (variant === 'divider') {
     return (
       <div className={`w-full flex items-center justify-center my-12 relative overflow-hidden ${className}`}>
-        <div className="absolute inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-sky-500/20 to-transparent" />
+        <div className="absolute inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-[#bf9f62]/40 to-transparent" />
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
-          className="relative px-4 bg-slate-950 flex items-center justify-center"
+          className="relative px-4 bg-[#190F3B] flex items-center justify-center"
         >
           <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
             <motion.path
@@ -40,9 +40,9 @@ export default function LogicCoil({
             />
             <defs>
               <linearGradient id="logicCoilGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#38BDF8" />
-                <stop offset="0.5" stopColor="#6366F1" />
-                <stop offset="1" stopColor="#A855F7" />
+                <stop stopColor="#bf9f62" />
+                <stop offset="0.5" stopColor="#064484" />
+                <stop offset="1" stopColor="#190F3B" />
               </linearGradient>
             </defs>
           </svg>
@@ -58,7 +58,7 @@ export default function LogicCoil({
           {/* Subtle ambient halo */}
           <div
             className="absolute inset-0 rounded-full blur-md opacity-40 animate-pulse"
-            style={{ background: 'radial-gradient(circle, #38BDF8 0%, #6366F1 60%, transparent 100%)' }}
+            style={{ background: 'radial-gradient(circle, #bf9f62 0%, #064484 60%, transparent 100%)' }}
           />
           <motion.svg
             width={size}
@@ -79,9 +79,9 @@ export default function LogicCoil({
             />
             <defs>
               <linearGradient id="loaderCoilGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#38BDF8" />
-                <stop offset="0.6" stopColor="#818CF8" />
-                <stop offset="1" stopColor="#C084FC" />
+                <stop stopColor="#bf9f62" />
+                <stop offset="0.6" stopColor="#064484" />
+                <stop offset="1" stopColor="#190F3B" />
               </linearGradient>
             </defs>
           </motion.svg>

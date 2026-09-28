@@ -12,7 +12,7 @@ interface FlightPathLinesProps {
  * Recolored from NeonGrid concept to aerospace aesthetic
  */
 export default function FlightPathLines({
-  color = '#2B7FFF',
+  color = '#bf9f62',
   opacity = 0.06,
   count = 12,
   className = '',
