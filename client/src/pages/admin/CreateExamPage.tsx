@@ -234,19 +234,19 @@ function Step2({
 
   /* ── Download Sample CSV Template ── */
   const downloadSampleTemplate = () => {
-    const headers = 'Question,OptionA,OptionB,OptionC,OptionD,Correct,Marks,Topic,Difficulty,Type\n'
+    const headers = 'question_text,type,option1 | option2 | option3 | option4,correct_index,marks\n'
     const sampleRows = [
-      '"What is the time complexity of binary search?","O(N)","O(log N)","O(N^2)","O(1)","B",2,"Algorithms","Easy","mcq"',
-      '"Which ACID property guarantees transaction completeness?","Atomicity","Consistency","Isolation","Durability","A",2,"DBMS","Medium","mcq"',
-      '"Which protocol provides reliable byte stream delivery in IP networks?","UDP","TCP","ICMP","ARP","B",2,"Networks","Easy","mcq"',
-      '"⚡ CODING: Write a function to check if a string is a palindrome.","","","","","True",10,"Coding","Medium","code"',
+      '"What is the average time complexity of searching in a Hash Map?",mcq,"O(1) | O(N) | O(log N) | O(N log N)",0,2',
+      '"Which scheduling algorithm selects the process with the shortest execution time?",mcq,"Round Robin | Shortest Job First | Priority Scheduling | Multi-level Queue",1,2',
+      '"Which protocol provides reliable byte-stream transmission over IP?",mcq,"UDP | TCP | ICMP | ARP",1,2',
+      '"Write a function to check if an input string is a valid palindrome.",code,"Submission | - | - | -",0,10',
     ].join('\n')
 
     const blob = new Blob([headers + sampleRows], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', 'logicwhile_questions_template.csv')
+    link.setAttribute('download', 'growran_questions_template.csv')
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -277,23 +277,54 @@ function Step2({
       return result
     }
 
-    const headers = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[\s_]/g, ''))
+    const headers = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[\s_|]/g, ''))
     const parsed: ParsedQuestion[] = []
 
     for (let i = 1; i < lines.length; i++) {
       const vals = parseLine(lines[i])
       if (vals.length === 0 || !vals[0]) continue
 
-      const qText = vals[headers.indexOf('question')] || vals[0] || ''
-      const optA = vals[headers.indexOf('optiona')] || vals[1] || ''
-      const optB = vals[headers.indexOf('optionb')] || vals[2] || ''
-      const optC = vals[headers.indexOf('optionc')] || vals[3] || ''
-      const optD = vals[headers.indexOf('optiond')] || vals[4] || ''
-      const correct = (vals[headers.indexOf('correct')] || vals[headers.indexOf('correctanswer')] || vals[5] || 'A').toUpperCase()
-      const marks = Number(vals[headers.indexOf('marks')] || vals[6] || 1)
-      const topic = vals[headers.indexOf('topic')] || vals[7] || 'General'
-      const difficulty = vals[headers.indexOf('difficulty')] || vals[8] || 'Medium'
-      const type = (vals[headers.indexOf('type')] || vals[9] || (optA ? 'mcq' : 'code')).toLowerCase()
+      let qText = ''
+      let optA = ''
+      let optB = ''
+      let optC = ''
+      let optD = ''
+      let correct = 'A'
+      let marks = 1
+      let topic = 'General'
+      let difficulty = 'Medium'
+      let type = 'mcq'
+
+      // Check if 5-column pipe format
+      const pipeCol = vals[2] || ''
+      if (pipeCol.includes('|') || headers.some(h => h.includes('option1option2'))) {
+        qText = vals[0] || ''
+        type = (vals[1] || 'mcq').toLowerCase()
+        const parts = pipeCol.split('|').map(s => s.trim())
+        optA = parts[0] || ''
+        optB = parts[1] || ''
+        optC = parts[2] || ''
+        optD = parts[3] || ''
+        const rawCorr = (vals[3] || '0').trim().toUpperCase()
+        if (rawCorr === '0') correct = 'A'
+        else if (rawCorr === '1') correct = 'B'
+        else if (rawCorr === '2') correct = 'C'
+        else if (rawCorr === '3') correct = 'D'
+        else correct = rawCorr || 'A'
+        marks = Number(vals[4] || 1)
+      } else {
+        // Multi-column format
+        qText = vals[headers.indexOf('question')] || vals[0] || ''
+        optA = vals[headers.indexOf('optiona')] || vals[1] || ''
+        optB = vals[headers.indexOf('optionb')] || vals[2] || ''
+        optC = vals[headers.indexOf('optionc')] || vals[3] || ''
+        optD = vals[headers.indexOf('optiond')] || vals[4] || ''
+        correct = (vals[headers.indexOf('correct')] || vals[headers.indexOf('correctanswer')] || vals[5] || 'A').toUpperCase()
+        marks = Number(vals[headers.indexOf('marks')] || vals[6] || 1)
+        topic = vals[headers.indexOf('topic')] || vals[7] || 'General'
+        difficulty = vals[headers.indexOf('difficulty')] || vals[8] || 'Medium'
+        type = (vals[headers.indexOf('type')] || vals[9] || (optA ? 'mcq' : 'code')).toLowerCase()
+      }
 
       parsed.push({
         question_text: qText,
@@ -501,7 +532,7 @@ function Step2({
                       {dragging ? 'Drop file to import!' : 'Drag & drop Excel or CSV file here'}
                     </p>
                     <p style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', marginTop: 4, textAlign: 'center' }}>
-                      Supports .xlsx, .xls, .csv · Auto-maps Question, Options A-D, Correct, Marks, Difficulty, Type
+                      Supports .xlsx, .csv · 1-Click Format: question_text | type | option1 | option2 | option3 | option4 | correct_index | marks
                     </p>
                   </>
                 )}

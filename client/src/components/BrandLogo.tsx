@@ -65,8 +65,8 @@ export default function BrandLogo({
         width={dimensions.markW}
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className={`growthran-mark ${className}`}
-        aria-label="GROWTHRAN Logo Mark"
+        className={`growran-mark ${className}`}
+        aria-label="GROWRAN Logo Mark"
         style={{ flexShrink: 0, display: 'inline-block' }}
       >
         <path d="M20 72 V128 H180 V72" stroke={markStroke} strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
@@ -85,7 +85,7 @@ export default function BrandLogo({
 
   return (
     <div
-      className={`growthran-brand-lockup ${className}`}
+      className={`growran-brand-lockup ${className}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -93,7 +93,7 @@ export default function BrandLogo({
         textDecoration: 'none',
         userSelect: 'none',
       }}
-      aria-label="GROWTHRAN — Learn. Grow. Run."
+      aria-label="GROWRAN — Grow + Run"
     >
       {/* Official Mark */}
       <svg
@@ -118,29 +118,29 @@ export default function BrandLogo({
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', lineHeight: 1 }}>
         <span
           style={{
-            fontFamily: "var(--font-display, 'Montserrat', sans-serif)",
+            fontFamily: "var(--font-display, 'Space Grotesk', sans-serif)",
             fontSize: dimensions.fontSize,
             fontWeight: 800,
-            letterSpacing: '0.01em',
+            letterSpacing: '0.02em',
             color: wordmarkColor,
             lineHeight: 1.05,
           }}
         >
-          GROWTHRAN
+          GROWRAN
         </span>
         {effectiveShowTagline && (
           <span
             style={{
               fontFamily: "var(--font-body, 'Inter', sans-serif)",
               fontSize: dimensions.tagSize,
-              fontWeight: 500,
-              letterSpacing: '0.04em',
+              fontWeight: 600,
+              letterSpacing: '0.06em',
               color: taglineColor,
               marginTop: size === 'xs' ? 1 : 2,
               lineHeight: 1,
             }}
           >
-            Learn. Grow. Run.
+            Grow + Run
           </span>
         )}
       </div>

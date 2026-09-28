@@ -323,7 +323,7 @@ export default function LandingPage() {
                 letterSpacing: '-0.04em',
                 marginBottom: 8,
               }}>
-                <ShimmerText text="GROWTHRAN" shimmer stagger delay={0.3} className="section-title" />
+                <ShimmerText text="GROWRAN" shimmer stagger delay={0.3} className="section-title" />
               </h1>
 
               <motion.h2

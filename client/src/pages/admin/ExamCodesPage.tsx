@@ -435,7 +435,7 @@ export default function ExamCodesPage() {
             <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.94 }} className="modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
               <h3 style={{ fontWeight: 800, fontSize: '1.2rem', marginBottom: 4 }}>📥 Import Questions</h3>
               <p className="text-muted text-sm" style={{ marginBottom: 4 }}>for exam code: <strong style={{ color: '#a29bfe', fontFamily: 'monospace' }}>{importModal.exam_code}</strong></p>
-              <p className="text-muted text-xs" style={{ marginBottom: 20 }}>Upload an .xlsx file. Columns: Question, OptionA, OptionB, OptionC, OptionD, Correct (A/B/C/D), Marks, Topic, Difficulty, Explanation</p>
+              <p className="text-muted text-xs" style={{ marginBottom: 20 }}>Upload an .xlsx file. Supports 1-Click format (question_text, type, option1 | option2 | option3 | option4, correct_index, marks) or multi-column format.</p>
 
               {error && <div className="alert alert-error mb-2" style={{ fontSize: '0.88rem' }}>{error}</div>}
 

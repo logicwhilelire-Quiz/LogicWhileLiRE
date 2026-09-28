@@ -72,7 +72,7 @@
   --color-text-faint:  #94A3B8;
 
   /* Typography Stack */
-  --font-display: 'Montserrat', -apple-system, sans-serif;
+  --font-display: 'Space Grotesk', -apple-system, sans-serif;
   --font-body:    'Inter', system-ui, -apple-system, sans-serif;
   --font-mono:    'JetBrains Mono', Consolas, monospace;
   --font-heading: var(--font-display);
@@ -87,12 +87,12 @@
   --radius-2xl: 32px;
 
   /* Natural Subtle Shadows (No Neon) */
-  --shadow-sm:      0 1px 2px rgba(15, 23, 42, 0.05);
-  --shadow-md:      0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --shadow-lg:      0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
-  --shadow-glow:    0 0 16px rgba(27, 95, 181, 0.12);
-  --shadow-glow-lg: 0 0 28px rgba(10, 63, 143, 0.16);
-  --shadow-glass:   0 8px 30px rgba(15, 23, 42, 0.06);
+  --shadow-sm:      0 1px 2px rgba(5, 8, 20, 0.05);
+  --shadow-md:      0 4px 6px -1px rgba(5, 8, 20, 0.08), 0 2px 4px -2px rgba(5, 8, 20, 0.04);
+  --shadow-lg:      0 10px 15px -3px rgba(5, 8, 20, 0.08), 0 4px 6px -4px rgba(5, 8, 20, 0.03);
+  --shadow-glow:    0 0 16px rgba(43, 127, 255, 0.15);
+  --shadow-glow-lg: 0 0 28px rgba(43, 127, 255, 0.25);
+  --shadow-glass:   0 8px 30px rgba(5, 8, 20, 0.06);
 
   /* Glassmorphism */
   --glass-bg:     rgba(255, 255, 255, 0.85);
@@ -111,29 +111,29 @@
 /* ─── DARK THEME TOKENS (USER TOGGLE) ─── */
 [data-theme="dark"],
 .theme-dark {
-  --color-bg:           #080E1F; /* Deep midnight blue surface */
-  --color-bg-subtle:    #0B1329;
-  --color-surface:      #101D3F; /* Elevated midnight card */
-  --color-surface-2:    #162752;
-  --color-surface-3:    #1F3369;
-  --color-border:       rgba(255, 255, 255, 0.10);
-  --color-border-hover: rgba(255, 255, 255, 0.22);
-  --color-border-glow:  rgba(59, 130, 246, 0.25);
+  --color-bg:           #050814; /* Midnight Navy #050814 */
+  --color-bg-subtle:    #080E20;
+  --color-surface:      #0B1226; /* Elevated Aerospace Midnight */
+  --color-surface-2:    #111A36;
+  --color-surface-3:    #18244D;
+  --color-border:       rgba(255, 255, 255, 0.08);
+  --color-border-hover: rgba(255, 255, 255, 0.18);
+  --color-border-glow:  rgba(43, 127, 255, 0.25);
 
-  --color-primary:            #3B82F6;
-  --color-primary-dark:       #1D4ED8;
-  --color-primary-light:      rgba(59, 130, 246, 0.15);
-  --color-primary-hover:      #60A5FA;
-  --color-primary-glow:       rgba(59, 130, 246, 0.25);
-  --color-primary-glow-strong: rgba(59, 130, 246, 0.40);
+  --color-primary:            #2B7FFF; /* Aerospace Blue #2B7FFF */
+  --color-primary-dark:       #1B5FB5;
+  --color-primary-light:      rgba(43, 127, 255, 0.15);
+  --color-primary-hover:      #4D94FF;
+  --color-primary-glow:       rgba(43, 127, 255, 0.25);
+  --color-primary-glow-strong: rgba(43, 127, 255, 0.45);
 
-  --color-secondary:      #93C5FD;
-  --color-secondary-dark: #60A5FA;
-  --color-accent:         #60A5FA;
+  --color-secondary:      #60A5FA;
+  --color-secondary-dark: #2B7FFF;
+  --color-accent:         #38BDF8;
 
-  --color-text:        #F8FAFC;
-  --color-text-muted:  #94A3B8;
-  --color-text-faint:  #64748B;
+  --color-text:        #FFFFFF;
+  --color-text-muted:  #A1A1AA; /* Zinc 400 */
+  --color-text-faint:  #71717A; /* Zinc 500 */
 
   --glass-bg:          rgba(16, 29, 63, 0.85);
   --glass-border:      rgba(255, 255, 255, 0.12);

@@ -161,8 +161,36 @@ export default function ImportQuestionsPage() {
 
           {/* Template info */}
           <div className="card">
-            <h3 style={{ fontWeight: 700, marginBottom: 12 }}>📋 Required Format</h3>
-            <p className="text-muted text-sm mb-2">Your Excel file must have these columns (row 1 = headers):</p>
+            <h3 style={{ fontWeight: 700, marginBottom: 12 }}>📋 Supported Formats</h3>
+            <p className="text-muted text-sm mb-2"><strong>Option 1 (GROWRAN 1-Click Format):</strong> 5 columns:</p>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', marginBottom: 16 }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left', padding: '6px 0', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}>Column</th>
+                  <th style={{ textAlign: 'left', padding: '6px 0', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}>Format / Values</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['question_text', 'Question prompt / title text'],
+                  ['type', 'mcq or code'],
+                  ['options', 'option1 | option2 | option3 | option4 (pipe separated)'],
+                  ['correct_index', '0, 1, 2, 3 (or a, b, c, d)'],
+                  ['marks', 'Numeric marks (e.g. 1, 2, 5)'],
+                ].map(([col, note]) => (
+                  <tr key={col}>
+                    <td style={{ padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <code className="font-mono" style={{ background: 'rgba(43,127,255,0.1)', color: 'var(--color-primary)', padding: '2px 6px', borderRadius: 4, fontSize: '0.8rem' }}>
+                        {col}
+                      </code>
+                    </td>
+                    <td className="text-muted" style={{ padding: '6px 0 6px 12px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{note}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <p className="text-muted text-sm mb-2"><strong>Option 2 (Multi-Column Format):</strong></p>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr>
@@ -173,22 +201,22 @@ export default function ImportQuestionsPage() {
               <tbody>
                 {[
                   ['question', 'Non-empty text'],
-                  ['option_a', 'Non-empty text'],
-                  ['option_b', 'Non-empty text'],
-                  ['option_c', 'Non-empty text'],
-                  ['option_d', 'Non-empty text'],
-                  ['correct_option', 'Must be: a, b, c, or d'],
-                  ['marks', 'Positive number (e.g. 1, 2)'],
+                  ['option_a', 'Option A text'],
+                  ['option_b', 'Option B text'],
+                  ['option_c', 'Option C text'],
+                  ['option_d', 'Option D text'],
+                  ['correct_option', 'a, b, c, or d'],
+                  ['marks', 'Positive number'],
                   ['topic', 'Optional (default: General)'],
-                  ['set', 'Optional: 1, 2 or A, B (auto-distributes across sets if omitted)'],
+                  ['set', 'Optional: 1, 2 or A, B (auto-distributes if omitted)'],
                 ].map(([col, note]) => (
                   <tr key={col}>
-                    <td style={{ padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                       <code className="font-mono" style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: 4, fontSize: '0.8rem' }}>
                         {col}
                       </code>
                     </td>
-                    <td className="text-muted" style={{ padding: '7px 0 7px 12px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{note}</td>
+                    <td className="text-muted" style={{ padding: '5px 0 5px 12px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{note}</td>
                   </tr>
                 ))}
               </tbody>

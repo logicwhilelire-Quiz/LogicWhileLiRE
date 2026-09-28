@@ -52,6 +52,14 @@ interface ParseResult {
 
 /**
  * Parse an Excel buffer and validate every row.
+ * Supports:
+ * 1. GROWRAN 1-Click 5-Column Format:
+ *    Column A: question_text
+ *    Column B: type (mcq/code)
+ *    Column C: option1 | option2 | option3 | option4
+ *    Column D: correct_index (0, 1, 2, 3 or A, B, C, D)
+ *    Column E: marks
+ * 2. Multi-column format (question, option_a..d, correct_option, marks, topic, set)
  * Returns all rows on success, or row-indexed errors on any failure.
  * Does NOT partially import — all-or-nothing.
  */
@@ -69,29 +77,130 @@ export function parseAndValidateXlsx(buffer: Buffer): ParseResult {
   }
 
   const sheet = workbook.Sheets[sheetName];
-  const rawRows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-
-  if (rawRows.length === 0) {
+  const matrix: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+  if (matrix.length === 0) {
     return { valid: false, rows: [], errors: [{ row: 0, errors: ['The sheet is empty. Please add question rows.'] }] };
   }
 
+  const rawRows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+  // Detect whether row 0 is a header row
+  const firstRow = matrix[0] || [];
+  const firstRowStr = firstRow.map(c => String(c).toLowerCase().trim()).join(' ');
+  const hasHeader = firstRowStr.includes('question') ||
+                    firstRowStr.includes('option') ||
+                    firstRowStr.includes('type') ||
+                    firstRowStr.includes('marks') ||
+                    firstRowStr.includes('correct');
+
+  const dataRows = hasHeader ? rawRows : matrix;
   const validRows: QuestionRow[] = [];
   const rowErrors: RowError[] = [];
 
-  for (let i = 0; i < rawRows.length; i++) {
-    const rowNum = i + 2; // 1-indexed + header row
-    const raw = rawRows[i];
+  for (let i = 0; i < dataRows.length; i++) {
+    const rowNum = hasHeader ? i + 2 : i + 1;
+    const raw = dataRows[i];
 
-    // Normalize column names: trim whitespace, lowercase
-    const normalized: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(raw)) {
-      const cleanKey = key.trim().toLowerCase().replace(/\s+/g, '_');
-      if (['set', 'set_number', 'question_set', 'questionset', 'set_no'].includes(cleanKey)) {
-        normalized['set'] = value;
-      } else {
-        normalized[cleanKey] = value;
+    let qText = '';
+    let optA = '';
+    let optB = '';
+    let optC = '';
+    let optD = '';
+    let correctRaw = '';
+    let marksRaw: unknown = 1;
+    let topicRaw = 'General';
+    let setRaw: unknown = undefined;
+    let qType = 'mcq';
+
+    if (Array.isArray(raw)) {
+      // Positional array
+      qText = String(raw[0] || '').trim();
+      qType = String(raw[1] || 'mcq').trim().toLowerCase();
+      const colC = String(raw[2] || '').trim();
+      correctRaw = String(raw[3] !== undefined ? raw[3] : '').trim();
+      marksRaw = raw[4] !== undefined && raw[4] !== '' ? raw[4] : 1;
+
+      if (colC.includes('|')) {
+        const parts = colC.split('|').map(s => s.trim());
+        optA = parts[0] || '';
+        optB = parts[1] || '';
+        optC = parts[2] || '';
+        optD = parts[3] || '';
+      } else if (raw.length >= 6) {
+        optA = colC;
+        optB = String(raw[3] || '').trim();
+        optC = String(raw[4] || '').trim();
+        optD = String(raw[5] || '').trim();
+        correctRaw = String(raw[6] || '').trim();
+        marksRaw = raw[7] !== undefined && raw[7] !== '' ? raw[7] : 1;
       }
+    } else {
+      // Object with headers
+      const normObj: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(raw)) {
+        normObj[k.trim().toLowerCase().replace(/[\s_]/g, '')] = v;
+      }
+
+      qText = String(
+        normObj['questiontext'] ?? normObj['question'] ?? normObj['title'] ?? normObj['q'] ?? ''
+      ).trim();
+
+      qType = String(normObj['type'] ?? normObj['questiontype'] ?? 'mcq').trim().toLowerCase();
+
+      // Check pipe options (Col C: option1 | option2 | option3 | option4)
+      const optionsPipe = String(
+        normObj['options'] ?? normObj['option1option2option3option4'] ?? normObj['optionslist'] ?? normObj['optionspipe'] ?? ''
+      ).trim();
+
+      if (optionsPipe && optionsPipe.includes('|')) {
+        const parts = optionsPipe.split('|').map(s => s.trim());
+        optA = parts[0] || '';
+        optB = parts[1] || '';
+        optC = parts[2] || '';
+        optD = parts[3] || '';
+      } else {
+        optA = String(normObj['optiona'] ?? normObj['option1'] ?? normObj['opta'] ?? '').trim();
+        optB = String(normObj['optionb'] ?? normObj['option2'] ?? normObj['optb'] ?? '').trim();
+        optC = String(normObj['optionc'] ?? normObj['option3'] ?? normObj['optc'] ?? '').trim();
+        optD = String(normObj['optiond'] ?? normObj['option4'] ?? normObj['optd'] ?? '').trim();
+      }
+
+      correctRaw = String(
+        normObj['correctindex'] ?? normObj['correctoption'] ?? normObj['correctanswer'] ?? normObj['correct'] ?? ''
+      ).trim();
+
+      marksRaw = normObj['marks'] ?? normObj['mark'] ?? normObj['points'] ?? 1;
+      topicRaw = String(normObj['topic'] ?? normObj['subject'] ?? 'General').trim();
+      setRaw = normObj['set'] ?? normObj['setnumber'] ?? normObj['questionset'] ?? undefined;
     }
+
+    // Convert correct_index: 0->a, 1->b, 2->c, 3->d (or A, B, C, D)
+    let correctOption = correctRaw.toLowerCase();
+    if (correctOption === '0') correctOption = 'a';
+    else if (correctOption === '1') correctOption = 'b';
+    else if (correctOption === '2') correctOption = 'c';
+    else if (correctOption === '3') correctOption = 'd';
+
+    // Handle code question type where options may be blank
+    if (qType === 'code' && (!optA || !optB)) {
+      optA = 'Submission';
+      optB = '-';
+      optC = '-';
+      optD = '-';
+      correctOption = 'a';
+    }
+
+    const normalized = {
+      question: qText,
+      option_a: optA,
+      option_b: optB,
+      option_c: optC,
+      option_d: optD,
+      correct_option: correctOption,
+      marks: marksRaw,
+      topic: topicRaw || 'General',
+      set: setRaw,
+    };
 
     const result = questionRowSchema.safeParse(normalized);
     if (result.success) {
@@ -110,6 +219,7 @@ export function parseAndValidateXlsx(buffer: Buffer): ParseResult {
 
   return { valid: true, rows: validRows, errors: [] };
 }
+
 
 /**
  * Bulk-insert validated question rows into the questions table.

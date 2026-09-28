@@ -1108,18 +1108,63 @@ export async function importQuestionsForExamCode(req: Request, res: Response): P
     const row = rows[i];
     const rowNum = i + 2; // Excel row (header=1)
 
-    const question = String(row['Question'] || row['question'] || '').trim();
-    const optA = String(row['OptionA'] || row['Option A'] || row['option_a'] || '').trim();
-    const optB = String(row['OptionB'] || row['Option B'] || row['option_b'] || '').trim();
-    const optC = String(row['OptionC'] || row['Option C'] || row['option_c'] || '').trim();
-    const optD = String(row['OptionD'] || row['Option D'] || row['option_d'] || '').trim();
-    const correct = String(row['Correct'] || row['correct'] || row['CorrectAnswer'] || '').trim().toUpperCase();
-    const marks = parseFloat(String(row['Marks'] || row['marks'] || '1'));
-    const topic = String(row['Topic'] || row['topic'] || 'General').trim();
-    const section = String(row['Section'] || row['section'] || topic).trim();
-    const tags = String(row['Tags'] || row['tags'] || '').trim();
-    const difficulty = String(row['Difficulty'] || row['difficulty'] || 'Medium').trim();
-    const explanation = String(row['Explanation'] || row['explanation'] || '').trim();
+    // Normalize keys
+    const norm: Record<string, string> = {};
+    for (const [k, v] of Object.entries(row)) {
+      norm[k.trim().toLowerCase().replace(/[\s_]/g, '')] = String(v ?? '').trim();
+    }
+
+    const question = String(
+      norm['questiontext'] || norm['question'] || row['Question'] || row['question'] || ''
+    ).trim();
+
+    // Check pipe options (Col C: option1 | option2 | option3 | option4)
+    const optionsPipe = String(
+      norm['options'] || norm['option1option2option3option4'] || norm['optionslist'] || ''
+    ).trim();
+
+    let optA = '';
+    let optB = '';
+    let optC = '';
+    let optD = '';
+
+    if (optionsPipe && optionsPipe.includes('|')) {
+      const parts = optionsPipe.split('|').map((s) => s.trim());
+      optA = parts[0] || '';
+      optB = parts[1] || '';
+      optC = parts[2] || '';
+      optD = parts[3] || '';
+    } else {
+      optA = String(norm['optiona'] || row['OptionA'] || row['Option A'] || row['option_a'] || '').trim();
+      optB = String(norm['optionb'] || row['OptionB'] || row['Option B'] || row['option_b'] || '').trim();
+      optC = String(norm['optionc'] || row['OptionC'] || row['Option C'] || row['option_c'] || '').trim();
+      optD = String(norm['optiond'] || row['OptionD'] || row['Option D'] || row['option_d'] || '').trim();
+    }
+
+    const qType = String(norm['type'] || norm['questiontype'] || 'mcq').toLowerCase();
+    if (qType === 'code' && (!optA || !optB)) {
+      optA = 'Submission';
+      optB = '-';
+      optC = '-';
+      optD = '-';
+    }
+
+    let correctRaw = String(
+      norm['correctindex'] || norm['correct'] || norm['correctoption'] || norm['correctanswer'] || row['Correct'] || row['correct'] || row['CorrectAnswer'] || ''
+    ).trim().toUpperCase();
+
+    if (correctRaw === '0') correctRaw = 'A';
+    else if (correctRaw === '1') correctRaw = 'B';
+    else if (correctRaw === '2') correctRaw = 'C';
+    else if (correctRaw === '3') correctRaw = 'D';
+
+    const correct = correctRaw;
+    const marks = parseFloat(String(norm['marks'] || row['Marks'] || row['marks'] || '1'));
+    const topic = String(norm['topic'] || row['Topic'] || row['topic'] || 'General').trim();
+    const section = String(norm['section'] || row['Section'] || row['section'] || topic).trim();
+    const tags = String(norm['tags'] || row['Tags'] || row['tags'] || '').trim();
+    const difficulty = String(norm['difficulty'] || row['Difficulty'] || row['difficulty'] || 'Medium').trim();
+    const explanation = String(norm['explanation'] || row['Explanation'] || row['explanation'] || '').trim();
 
     if (!question) { errors.push(`Row ${rowNum}: Question is empty`); continue; }
     if (!optA || !optB || !optC || !optD) { errors.push(`Row ${rowNum}: Missing options`); continue; }

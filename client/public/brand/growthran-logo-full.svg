@@ -11,9 +11,9 @@
     <polygon points="182,16 150,22 176,48" fill="#1B5FB5" stroke="#1B5FB5" stroke-width="4" stroke-linejoin="round"/>
   </g>
 
-  <!-- Wordmark GROWTHRAN -->
-  <text x="215" y="102" font-family="'Montserrat', 'Poppins', 'Inter', -apple-system, sans-serif" font-size="64" font-weight="800" fill="#0A3F8F" letter-spacing="0.02em">GROWTHRAN</text>
+  <!-- Wordmark GROWRAN -->
+  <text x="215" y="102" font-family="'Space Grotesk', 'Montserrat', 'Inter', -apple-system, sans-serif" font-size="68" font-weight="800" fill="#0A3F8F" letter-spacing="0.03em">GROWRAN</text>
 
-  <!-- Tagline Learn. Grow. Run. -->
-  <text x="218" y="146" font-family="'Poppins', 'Montserrat', 'Inter', -apple-system, sans-serif" font-size="34" font-weight="400" fill="#4A7DBE" letter-spacing="0.03em">Learn. Grow. Run.</text>
+  <!-- Tagline Grow + Run -->
+  <text x="218" y="146" font-family="'Inter', -apple-system, sans-serif" font-size="34" font-weight="600" fill="#4A7DBE" letter-spacing="0.06em">Grow + Run</text>
 </svg>
