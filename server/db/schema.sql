@@ -264,6 +264,11 @@ CREATE INDEX IF NOT EXISTS idx_participants_hall_ticket ON participants(hall_tic
 CREATE INDEX IF NOT EXISTS idx_suspicious_activity_exam ON suspicious_activity(exam_id);
 CREATE INDEX IF NOT EXISTS idx_suspicious_activity_status ON suspicious_activity(status);
 CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_students_college_id ON students(college_id);
+CREATE INDEX IF NOT EXISTS idx_students_roll_number ON students(roll_number);
+CREATE INDEX IF NOT EXISTS idx_students_email ON students(email);
+CREATE INDEX IF NOT EXISTS idx_participants_exam_id ON participants(exam_id);
+CREATE INDEX IF NOT EXISTS idx_participants_email ON participants(email);
 
 -- ============================================================
 -- MATERIALIZED VIEW: mv_question_analytics (For High-Volume Exams)

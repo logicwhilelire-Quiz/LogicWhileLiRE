@@ -4,6 +4,7 @@ import http from 'http';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import compression from 'compression';
 import { runProductionBootGuard } from './middleware/productionBootGuard';
 import { generalRateLimit } from './middleware/rateLimiter';
 import { sanitizeInput } from './middleware/sanitize';
@@ -25,8 +26,9 @@ const app = express();
 const httpServer = http.createServer(app);
 const PORT = parseInt(process.env.PORT || '3001');
 
-// ------- Security headers -------
+// ------- Performance & Security middleware -------
 app.use(helmet());
+app.use(compression());
 
 // Trust proxy (needed for rate limiting by real IP when behind Render/Railway/Nginx)
 app.set('trust proxy', 1);
@@ -125,8 +127,8 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 // ------- Socket.io (Phase 1d: server-authoritative timer) -------
 initSocketIO(httpServer);
 
-// ------- Start server -------
-httpServer.listen(PORT, () => {
+// ------- Start server with high-capacity connection backlog -------
+httpServer.listen(PORT, '0.0.0.0', 2048, () => {
   console.log(`[Server] Running on port ${PORT} (${process.env.NODE_ENV})`);
   console.log(`[Socket.io] WebSocket server ready on port ${PORT}`);
   startSessionCron();

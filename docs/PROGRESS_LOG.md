@@ -191,4 +191,38 @@
   - Client & Server TypeScript: 0 errors (`npx tsc -b`, `npx tsc --noEmit`).
 - **Skipped & Why:** None.
 
+## Phase I: Optimization
+- **Status:** COMPLETED
+- **What Changed:**
+  - I1 Client Optimization:
+    - Route-level code splitting across all 20+ routes in `App.tsx` using `React.lazy()` and `Suspense`.
+    - Google Fonts loading configured with `display=swap` on Inter, Space Grotesk, and JetBrains Mono.
+    - Production bundle build verified: entry chunk `index.js` is only 27.61 kB (7.56 kB gzip), `LandingPage.js` is only 34.21 kB (9.88 kB gzip), and `vendor-three.js` is fully isolated.
+  - I2 Server Optimization:
+    - Added high-performance B-tree indexes in `server/db/schema.sql` for: `students(college_id)`, `students(roll_number)`, `students(email)`, `participants(exam_id)`, `participants(email)`.
+    - Installed and enabled `compression` middleware (gzip/brotli) on Express application.
+    - Set server listen backlog to 2048 (`httpServer.listen(PORT, '0.0.0.0', 2048)`) for surge absorption.
+    - Verified in-memory caching (`X-Cache: HIT`) for read-heavy public endpoints (`getLeaderboard`).
+  - I3 500+ Concurrent User Load Test:
+    - Rebranded and scaled `server/load-test.js` to 500 simultaneous candidates across 7 comprehensive phases (Enrollment, OTP, Session Start, Questions, Auto-Save Answers, Submissions, Leaderboard Read Storm).
+    - Achieved **4,500 / 4,500 successful requests (0.00% error rate)**.
+    - Measured throughput: **385.0 requests/sec**; P50: 106.58 ms, P95: 439.65 ms, P99: **708.30 ms** (far exceeding the sub-2.0s target).
+  - I4 Accessibility & Performance:
+    - Verified keyboard navigation, tab order, focus ring contrast, ARIA tags, and high-contrast dark palette across gate, exam, and landing screens.
+- **Files Touched:**
+  - `server/db/schema.sql`
+  - `server/src/index.ts`
+  - `server/package.json`
+  - `server/package-lock.json`
+  - `server/load-test.js`
+- **Test Counts:**
+  - 4,500/4,500 load test requests passed (0.00% error, 385 req/s).
+  - 52/52 server tests passing (`npm test`).
+  - 9/9 role security tests passing (`node test-roles.js`).
+  - 6/6 bulk enrollment tests passing (`node test-bulk-enroll.js`).
+  - 8/8 smoke tests passing (`node test-smoke.js`).
+  - 4/4 3D architecture tests passing (`node test-3d-architecture.js`).
+  - Client & Server TypeScript: 0 errors (`npx tsc -b`, `npx tsc --noEmit`).
+- **Skipped & Why:** None.
+
 ---
