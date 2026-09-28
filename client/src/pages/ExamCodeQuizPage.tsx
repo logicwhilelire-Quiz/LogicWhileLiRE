@@ -14,6 +14,13 @@ import BrandLogo from '../components/BrandLogo'
 import FullscreenEnforcementOverlay from '../components/exam/FullscreenEnforcementOverlay'
 import ScreenShareWarningOverlay from '../components/exam/ScreenShareWarningOverlay'
 import { useAudioProctor } from '../hooks/useAudioProctor'
+import {
+  bufferAnswer,
+  getPendingAnswers,
+  getAllCachedAnswers,
+  markAnswersSynced,
+  clearAnswerBuffer,
+} from '../lib/offlineAnswerStore'
 
 const FaceMeshOrb = lazy(() => import('../components/3d/FaceMeshOrb'))
 const CircularProgress3D = lazy(() => import('../components/3d/CircularProgress3D'))
@@ -84,6 +91,39 @@ export default function QuizPage() {
   const sessionIdRef = useRef<string | undefined>(undefined)
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
+  /* ── 1.4 Offline Resilience & Sync Queue ── */
+  const [isOffline, setIsOffline] = useState(!navigator.onLine)
+  const [showReconnectedAlert, setShowReconnectedAlert] = useState(false)
+  const [pendingSyncCount, setPendingSyncCount] = useState(0)
+
+  const syncPendingAnswers = useCallback(async () => {
+    if (!examCode || !hallTicket || !navigator.onLine) return
+    try {
+      const pending = await getPendingAnswers(examCode, hallTicket)
+      if (pending.length === 0) {
+        setPendingSyncCount(0)
+        return
+      }
+      setPendingSyncCount(pending.length)
+      const items = pending.map(p => ({
+        question_id: p.questionId,
+        answer: p.answer,
+        type: p.type,
+      }))
+      const { data } = await axios.post(`${BASE}/api/exam-code/${examCode}/save-answer`, {
+        examCode,
+        candidateId: hallTicket,
+        items,
+      })
+      if (data?.success) {
+        await markAnswersSynced(pending.map(p => p.id))
+        setPendingSyncCount(0)
+      }
+    } catch (err) {
+      console.warn('[SyncQueue] Sync deferred:', err)
+    }
+  }, [examCode, hallTicket])
+
   /* ── Load session ── */
   useEffect(() => {
     const init = async () => {
@@ -118,6 +158,37 @@ export default function QuizPage() {
           proctoringMode,
         })
         setTimeLeft((exam?.duration_minutes || 60) * 60)
+
+        // ── 1.4 Offline answer restoration ──
+        try {
+          const cached = await getAllCachedAnswers(examCode, hallTicket)
+          const restoredAnswers: Record<string, number | string> = {}
+          const restoredCode: Record<string, string> = {}
+
+          try {
+            const { data: resumeData } = await axios.get(`${BASE}/api/exam-code/${examCode}/resume-state`, {
+              params: { candidateId: hallTicket }
+            })
+            if (resumeData?.partial_answers) {
+              for (const [qid, val] of Object.entries(resumeData.partial_answers)) {
+                restoredAnswers[qid] = val as string
+              }
+            }
+          } catch {}
+
+          for (const [qid, entry] of Object.entries(cached)) {
+            if (entry.type === 'code') {
+              restoredCode[qid] = String(entry.answer)
+            } else {
+              restoredAnswers[qid] = entry.answer
+            }
+          }
+
+          if (Object.keys(restoredAnswers).length > 0) setAnswers(prev => ({ ...prev, ...restoredAnswers }))
+          if (Object.keys(restoredCode).length > 0) setCodeAnswers(prev => ({ ...prev, ...restoredCode }))
+        } catch (restoreErr) {
+          console.warn('[OfflineDB] Could not restore cached answers:', restoreErr)
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load exam')
       } finally {
@@ -133,6 +204,9 @@ export default function QuizPage() {
     setSubmitting(true)
     if (timerRef.current) clearInterval(timerRef.current)
     try {
+      try {
+        await syncPendingAnswers()
+      } catch {}
       const payload = {
         sessionId: sessionIdRef.current,
         examCode,
@@ -141,11 +215,43 @@ export default function QuizPage() {
         codeAnswers: { ...codeAnswers },
       }
       const { data } = await axios.post(`${BASE}/api/exam-code/${examCode}/submit`, payload)
+      if (examCode && hallTicket) {
+        await clearAnswerBuffer(examCode, hallTicket)
+      }
       navigate(`/result-ec/${examCode}`, { state: { result: data, hallTicket } })
     } catch {
       navigate(`/result-ec/${examCode}`, { state: { hallTicket, error: true } })
     }
-  }, [submitting, examCode, hallTicket, answers, codeAnswers, navigate])
+  }, [submitting, examCode, hallTicket, answers, codeAnswers, navigate, syncPendingAnswers])
+
+  /* ── 1.4 Background Sync & Network Listeners ── */
+  useEffect(() => {
+    if (!session || submitting) return
+    const syncInterval = setInterval(() => {
+      syncPendingAnswers()
+    }, 5000)
+    return () => clearInterval(syncInterval)
+  }, [session, submitting, syncPendingAnswers])
+
+  useEffect(() => {
+    const onOnline = () => {
+      setIsOffline(false)
+      syncPendingAnswers().then(() => {
+        setShowReconnectedAlert(true)
+        setTimeout(() => setShowReconnectedAlert(false), 3500)
+      })
+    }
+    const onOffline = () => {
+      setIsOffline(true)
+    }
+
+    window.addEventListener('online', onOnline)
+    window.addEventListener('offline', onOffline)
+    return () => {
+      window.removeEventListener('online', onOnline)
+      window.removeEventListener('offline', onOffline)
+    }
+  }, [syncPendingAnswers])
 
   /* ── Supabase Realtime Telemetry Broadcast ── */
   useEffect(() => {
@@ -467,11 +573,17 @@ export default function QuizPage() {
   const handleAnswer = (optionIdx: number) => {
     if (!currentQuestion) return
     setAnswers(prev => ({ ...prev, [currentQuestion.id]: optionIdx }))
+    if (examCode && hallTicket) {
+      bufferAnswer(examCode, hallTicket, currentQuestion.id, optionIdx, 'mcq')
+    }
   }
 
   const handleCodeAnswer = (code: string) => {
     if (!currentQuestion) return
     setCodeAnswers(prev => ({ ...prev, [currentQuestion.id]: code }))
+    if (examCode && hallTicket) {
+      bufferAnswer(examCode, hallTicket, currentQuestion.id, code, 'code')
+    }
   }
 
   const handleRunCode = async () => {
@@ -644,6 +756,45 @@ export default function QuizPage() {
                 <span>🎙️ Mic Guard</span>
               </div>
             )}
+            {isOffline ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: 999,
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  background: 'rgba(234, 88, 12, 0.15)',
+                  border: '1px solid rgba(234, 88, 12, 0.4)',
+                  color: '#FB923C',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <span>📡 Offline (Buffered)</span>
+              </div>
+            ) : pendingSyncCount > 0 ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: 999,
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  background: 'rgba(168, 85, 247, 0.15)',
+                  border: '1px solid rgba(168, 85, 247, 0.4)',
+                  color: '#C084FC',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <span>🔄 Syncing ({pendingSyncCount})</span>
+              </div>
+            ) : null}
             <Suspense fallback={
               <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(43,127,255,0.1)', border: '2px solid rgba(43,127,255,0.2)' }} />
             }>
@@ -712,6 +863,56 @@ export default function QuizPage() {
             }}
           >
             <span>🎙️ Audio spike detected ({lastAudioSpikeDb} dB)! Please maintain silence.</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── OFFLINE RESILIENCE BANNER ─── */}
+      <AnimatePresence>
+        {isOffline && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            style={{
+              position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)',
+              zIndex: 350, maxWidth: 540, width: '92%',
+              background: 'rgba(234, 88, 12, 0.98)', backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(254, 215, 170, 0.6)', borderRadius: 'var(--radius-md)',
+              padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 12,
+              boxShadow: '0 8px 32px rgba(234, 88, 12, 0.4)',
+              color: '#fff', fontSize: '0.88rem', fontWeight: 600,
+            }}
+          >
+            <span style={{ fontSize: '1.4rem' }}>⚠️</span>
+            <div>
+              <div style={{ fontWeight: 800 }}>Network Disconnected</div>
+              <div style={{ fontSize: '0.78rem', opacity: 0.95 }}>
+                Your answers are safely buffered locally. Do not close or refresh this tab.
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── RECONNECTED BANNER ─── */}
+      <AnimatePresence>
+        {showReconnectedAlert && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            style={{
+              position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)',
+              zIndex: 350,
+              background: 'rgba(16, 185, 129, 0.96)', backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(167, 243, 208, 0.6)', borderRadius: 'var(--radius-md)',
+              padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8,
+              boxShadow: '0 8px 32px rgba(16, 185, 129, 0.35)',
+              color: '#fff', fontSize: '0.86rem', fontWeight: 700,
+            }}
+          >
+            <span>✅ Reconnected. All local answers synchronized with server.</span>
           </motion.div>
         )}
       </AnimatePresence>

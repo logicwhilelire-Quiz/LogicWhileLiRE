@@ -483,22 +483,45 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
  * Grades and saves the final attempt
  */
 export async function submitExamCodeAttempt(req: Request, res: Response): Promise<void> {
-  const { code } = req.params;
-  const { attemptId, answers, timeTakenSeconds, violationCount, session_token } = req.body;
+  const code = String(req.params.code || req.body?.examCode || '').toUpperCase();
+  const { attemptId, answers, codeAnswers, timeTakenSeconds, violationCount, session_token } = req.body;
+  const candidateId = req.body.candidateId || req.body.hallTicket;
 
-  // ── 1a: verify session token (concurrent-session guard) ──
-  const tokenCheck = await verifyAttemptToken(String(attemptId ?? ""), String(code), session_token ? String(session_token) : undefined);
-  if (!tokenCheck.valid) {
-    if (tokenCheck.evicted) {
-      res.status(409).json({ success: false, error: 'Your session was taken over from another device.', code: 'SESSION_EVICTED' });
-      return;
+  let attempt: any = null;
+
+  // ── 1a & 1.4: verify session token or locate attempt by candidateId ──
+  if (attemptId && session_token) {
+    const tokenCheck = await verifyAttemptToken(String(attemptId ?? ""), String(code), session_token ? String(session_token) : undefined);
+    if (!tokenCheck.valid) {
+      if (tokenCheck.evicted) {
+        res.status(409).json({ success: false, error: 'Your session was taken over from another device.', code: 'SESSION_EVICTED' });
+        return;
+      }
+      if (!tokenCheck.terminated && !tokenCheck.attempt) {
+        res.status(404).json({ success: false, error: 'Attempt not found' });
+        return;
+      }
     }
-    if (!tokenCheck.terminated && !tokenCheck.attempt) {
-      res.status(404).json({ success: false, error: 'Attempt not found' });
-      return;
-    }
+    attempt = tokenCheck.attempt;
+  } else if (attemptId) {
+    const { data } = await supabase
+      .from('exam_code_attempts')
+      .select('*')
+      .eq('id', attemptId)
+      .maybeSingle();
+    attempt = data;
+  } else if (candidateId) {
+    const { data } = await supabase
+      .from('exam_code_attempts')
+      .select('*')
+      .eq('exam_code', code)
+      .or(`hall_ticket.eq.${candidateId},hall_ticket_no.eq.${candidateId}`)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    attempt = data;
   }
-  const attempt = tokenCheck.attempt;
+
   if (!attempt) {
     res.status(404).json({ success: false, error: 'Attempt not found' });
     return;
@@ -508,10 +531,30 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
     return;
   }
 
-  // Fetch questions with correct answers for grading
+  // ── 1.5 Server-Authoritative Timer & Grace Period (30s) Enforcement ──
+  const { data: examData } = await supabase
+    .from('exam_codes')
+    .select('duration_minutes, total_marks')
+    .eq('exam_code', code)
+    .maybeSingle();
+
+  const durationMinutes = examData?.duration_minutes || 60;
+  const extraTime = attempt.extra_time_seconds || 0;
+  const totalAllowedSec = durationMinutes * 60 + extraTime;
+  const startTime = attempt.created_at ? new Date(attempt.created_at).getTime() : Date.now();
+  const allowedEndTime = startTime + (totalAllowedSec * 1000) + (30 * 1000); // 30s grace window
+  const isGraceExpired = Date.now() > allowedEndTime;
+
+  // Merge buffered partial answers from server with final submitted answers
+  const finalAnswers: Record<string, any> = {
+    ...((attempt.partial_answers as Record<string, any>) || {}),
+    ...(answers || {}),
+  };
+
+  // Fetch questions with correct answers for server-authoritative grading
   const { data: questions } = await supabase
     .from('questions_ec')
-    .select('id, correct_answer, marks, topic')
+    .select('id, correct_answer, marks, topic, option_a, option_b, option_c, option_d')
     .eq('exam_code', String(code).toUpperCase());
 
   if (!questions) {
@@ -519,28 +562,51 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
     return;
   }
 
-  // Grade
+  // ── 1.5 Pure Server-Authoritative Scoring ──
   let totalScore = 0;
   let maxScore = 0;
   let correctCount = 0;
   let wrongCount = 0;
   const topicBreakdown: Record<string, { correct: number; wrong: number; score: number; maxScore: number }> = {};
+  const optLetters = ['A', 'B', 'C', 'D'];
 
   for (const q of questions) {
-    maxScore += Number(q.marks);
+    const qMarks = Number(q.marks || 1);
+    maxScore += qMarks;
     const topic = q.topic || 'General';
     if (!topicBreakdown[topic]) {
       topicBreakdown[topic] = { correct: 0, wrong: 0, score: 0, maxScore: 0 };
     }
-    topicBreakdown[topic].maxScore += Number(q.marks);
+    topicBreakdown[topic].maxScore += qMarks;
 
-    const studentAnswer = (answers as Record<string, string>)[q.id];
-    if (studentAnswer) {
-      if (studentAnswer.toUpperCase() === q.correct_answer.toUpperCase()) {
-        totalScore += Number(q.marks);
+    const studentAnswer = finalAnswers[q.id];
+    if (studentAnswer !== undefined && studentAnswer !== null) {
+      let studentLetter = '';
+      if (typeof studentAnswer === 'number') {
+        studentLetter = optLetters[studentAnswer] || '';
+      } else if (typeof studentAnswer === 'string') {
+        const trimmed = studentAnswer.trim();
+        if (/^[0-3]$/.test(trimmed)) {
+          studentLetter = optLetters[parseInt(trimmed, 10)] || '';
+        } else if (/^[A-D]$/i.test(trimmed)) {
+          studentLetter = trimmed.toUpperCase();
+        } else if (trimmed.toLowerCase() === String(q.option_a || '').trim().toLowerCase()) {
+          studentLetter = 'A';
+        } else if (trimmed.toLowerCase() === String(q.option_b || '').trim().toLowerCase()) {
+          studentLetter = 'B';
+        } else if (trimmed.toLowerCase() === String(q.option_c || '').trim().toLowerCase()) {
+          studentLetter = 'C';
+        } else if (trimmed.toLowerCase() === String(q.option_d || '').trim().toLowerCase()) {
+          studentLetter = 'D';
+        }
+      }
+
+      const expectedLetter = String(q.correct_answer || 'A').trim().toUpperCase();
+      if (studentLetter && studentLetter === expectedLetter) {
+        totalScore += qMarks;
         correctCount++;
         topicBreakdown[topic].correct++;
-        topicBreakdown[topic].score += Number(q.marks);
+        topicBreakdown[topic].score += qMarks;
       } else {
         wrongCount++;
         topicBreakdown[topic].wrong++;
@@ -548,22 +614,30 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
     }
   }
 
+  const vCount = violationCount !== undefined ? violationCount : (attempt.violation_count || 0);
+  const finalStatus = vCount >= 5
+    ? 'terminated_cheating'
+    : isGraceExpired
+    ? 'auto_submitted_expired'
+    : 'completed';
+
   // Update attempt record
   const { error: updateError } = await supabase
     .from('exam_code_attempts')
     .update({
-      status: violationCount >= 3 ? 'terminated_cheating' : 'completed',
+      status: finalStatus,
       end_time: new Date().toISOString(),
       score: totalScore,
       max_score: maxScore,
       correct_count: correctCount,
       wrong_count: wrongCount,
-      answers,
-      time_taken_seconds: timeTakenSeconds || 0,
+      answers: finalAnswers,
+      code_answers: codeAnswers || {},
+      time_taken_seconds: timeTakenSeconds || Math.round((Date.now() - startTime) / 1000),
       topic_breakdown: topicBreakdown,
-      violation_count: violationCount || 0,
+      violation_count: vCount,
     })
-    .eq('id', attemptId);
+    .eq('id', attempt.id);
 
   if (updateError) { res.status(500).json({ success: false, error: updateError.message }); return; }
 
@@ -576,7 +650,8 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
       wrong_count: wrongCount,
       percentage: maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0,
       topic_breakdown: topicBreakdown,
-      status: violationCount >= 3 ? 'terminated_cheating' : 'completed',
+      status: finalStatus,
+      expired_grace: isGraceExpired,
     },
   });
 }
@@ -796,60 +871,140 @@ export async function reviewAttemptViolation(req: Request, res: Response): Promi
 
 /**
  * POST /api/exam-code/:code/save-answer
- * 1b: Per-question autosave with session-token guard.
+ * 1b & 1.4: Per-question autosave and batch offline buffer sync with session-token and candidateId guards.
  */
 export async function saveExamCodeAnswer(req: Request, res: Response): Promise<void> {
-  const { code } = req.params;
-  const { attemptId, question_id, answer, current_question_index, session_token } = req.body;
-  if (!attemptId || !session_token) {
-    res.status(400).json({ success: false, error: 'attemptId and session_token are required' });
+  const code = String(req.params.code || req.body?.examCode || '').toUpperCase();
+  const { attemptId, question_id, answer, answers, items, current_question_index, session_token } = req.body;
+  const candidateId = req.body.candidateId || req.body.hallTicket;
+
+  let attempt: any = null;
+
+  if (attemptId && session_token) {
+    const tokenCheck = await verifyAttemptToken(String(attemptId), String(code), String(session_token));
+    if (!tokenCheck.valid) {
+      const errCode = tokenCheck.evicted ? 'SESSION_EVICTED' : tokenCheck.terminated ? 'SESSION_ENDED' : 'INVALID_ATTEMPT';
+      res.status(tokenCheck.evicted ? 409 : 403).json({ success: false, code: errCode });
+      return;
+    }
+    attempt = tokenCheck.attempt;
+  } else if (attemptId) {
+    const { data } = await supabase
+      .from('exam_code_attempts')
+      .select('*')
+      .eq('id', attemptId)
+      .maybeSingle();
+    attempt = data;
+  } else if (candidateId) {
+    const { data } = await supabase
+      .from('exam_code_attempts')
+      .select('*')
+      .eq('exam_code', code)
+      .or(`hall_ticket.eq.${candidateId},hall_ticket_no.eq.${candidateId}`)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    attempt = data;
+  } else {
+    res.status(400).json({ success: false, error: 'attemptId or candidateId required' });
     return;
   }
-  const tokenCheck = await verifyAttemptToken(String(attemptId ?? ""), String(code), session_token ? String(session_token) : undefined);
-  if (!tokenCheck.valid) {
-    const errCode = tokenCheck.evicted ? 'SESSION_EVICTED' : tokenCheck.terminated ? 'SESSION_ENDED' : 'INVALID_ATTEMPT';
-    res.status(tokenCheck.evicted ? 409 : 403).json({ success: false, code: errCode });
+
+  if (!attempt) {
+    res.status(404).json({ success: false, error: 'Attempt not found or session expired', code: 'INVALID_ATTEMPT' });
     return;
   }
-  const { data: row } = await supabase
-    .from('exam_code_attempts')
-    .select('partial_answers')
-    .eq('id', attemptId)
-    .maybeSingle();
-  const existing = (row?.partial_answers as Record<string, string>) || {};
-  if (question_id && answer !== undefined) existing[String(question_id)] = String(answer);
+
+  const existing = (attempt.partial_answers as Record<string, string>) || {};
+
+  // Single answer
+  if (question_id && answer !== undefined && answer !== null) {
+    existing[String(question_id)] = String(answer);
+  }
+
+  // Batch map
+  if (answers && typeof answers === 'object') {
+    for (const [qId, ans] of Object.entries(answers)) {
+      if (ans !== undefined && ans !== null) {
+        existing[String(qId)] = String(ans);
+      }
+    }
+  }
+
+  // Batch array of items
+  if (Array.isArray(items)) {
+    for (const item of items) {
+      const qId = item.question_id || item.questionId;
+      const ans = item.answer;
+      if (qId && ans !== undefined && ans !== null) {
+        existing[String(qId)] = String(ans);
+      }
+    }
+  }
+
   const upd: Record<string, unknown> = { partial_answers: existing };
   if (current_question_index !== undefined && Number.isInteger(Number(current_question_index))) {
     upd.last_question_index = Number(current_question_index);
   }
-  await supabase.from('exam_code_attempts').update(upd).eq('id', attemptId);
-  res.json({ success: true, saved: true, total_saved: Object.keys(existing).length });
+
+  await supabase.from('exam_code_attempts').update(upd).eq('id', attempt.id);
+
+  res.json({
+    success: true,
+    saved: true,
+    total_saved: Object.keys(existing).length,
+    partial_answers: existing,
+  });
 }
 
 /**
  * GET /api/exam-code/:code/resume-state
- * 1b: Returns partial_answers + last_question_index for crash/refresh recovery.
+ * 1b & 1.4: Returns partial_answers + last_question_index for crash/refresh recovery.
  */
 export async function getExamCodeResumeState(req: Request, res: Response): Promise<void> {
-  const { code } = req.params;
-  const { attemptId, session_token } = req.query as { attemptId: string; session_token: string };
-  const tokenCheck = await verifyAttemptToken(String(attemptId ?? ""), String(code), session_token ? String(session_token) : undefined);
-  if (!tokenCheck.valid) {
-    res.status(tokenCheck.evicted ? 409 : 403).json({
-      success: false,
-      code: tokenCheck.evicted ? 'SESSION_EVICTED' : 'INVALID_ATTEMPT',
-    });
+  const code = String(req.params.code || '').toUpperCase();
+  const { attemptId, session_token } = req.query as { attemptId?: string; session_token?: string };
+  const candidateId = req.query.candidateId || req.query.hallTicket;
+
+  let attempt: any = null;
+
+  if (attemptId && session_token) {
+    const tokenCheck = await verifyAttemptToken(String(attemptId), String(code), String(session_token));
+    if (!tokenCheck.valid) {
+      res.status(tokenCheck.evicted ? 409 : 403).json({
+        success: false,
+        code: tokenCheck.evicted ? 'SESSION_EVICTED' : 'INVALID_ATTEMPT',
+      });
+      return;
+    }
+    attempt = tokenCheck.attempt;
+  } else if (attemptId) {
+    const { data } = await supabase.from('exam_code_attempts').select('*').eq('id', attemptId).maybeSingle();
+    attempt = data;
+  } else if (candidateId) {
+    const { data } = await supabase
+      .from('exam_code_attempts')
+      .select('*')
+      .eq('exam_code', code)
+      .or(`hall_ticket.eq.${candidateId},hall_ticket_no.eq.${candidateId}`)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    attempt = data;
+  } else {
+    res.status(400).json({ success: false, error: 'attemptId or candidateId required' });
     return;
   }
-  const { data: row } = await supabase
-    .from('exam_code_attempts')
-    .select('partial_answers, last_question_index')
-    .eq('id', attemptId)
-    .maybeSingle();
+
+  if (!attempt) {
+    res.status(404).json({ success: false, error: 'Attempt not found' });
+    return;
+  }
+
   res.json({
     success: true,
-    partial_answers: row?.partial_answers || {},
-    last_question_index: row?.last_question_index ?? 0,
+    partial_answers: attempt.partial_answers || {},
+    last_question_index: attempt.last_question_index ?? 0,
   });
 }
 
