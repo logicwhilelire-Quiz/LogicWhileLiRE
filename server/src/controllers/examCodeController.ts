@@ -814,17 +814,30 @@ export async function getExamCodeResumeState(req: Request, res: Response): Promi
   });
 }
 
+// ─────────────────────────────────────────────
+// LEADERBOARD CACHE (read-heavy scaling)
+// ─────────────────────────────────────────────
+const leaderboardCache = new Map<string, { timestamp: number; payload: any }>();
+const LEADERBOARD_CACHE_TTL_MS = 5000;
+
 /**
  * GET /api/exam-code/:code/leaderboard
  * Public leaderboard for an exam code (college-scoped)
  */
 export async function getExamCodeLeaderboard(req: Request, res: Response): Promise<void> {
   const { code } = req.params;
+  const cacheKey = String(code).toUpperCase();
+
+  const cached = leaderboardCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < LEADERBOARD_CACHE_TTL_MS) {
+    res.json(cached.payload);
+    return;
+  }
 
   const { data, error } = await supabase
     .from('exam_code_attempts')
     .select('hall_ticket_no, student_name, score, max_score, correct_count, wrong_count, time_taken_seconds, topic_breakdown, status, created_at')
-    .eq('exam_code', String(code).toUpperCase())
+    .eq('exam_code', cacheKey)
     .in('status', ['completed', 'terminated_cheating'])
     .order('score', { ascending: false })
     .order('time_taken_seconds', { ascending: true });
@@ -845,7 +858,10 @@ export async function getExamCodeLeaderboard(req: Request, res: Response): Promi
     status: row.status,
   }));
 
-  res.json({ success: true, leaderboard, total: leaderboard.length });
+  const payload = { success: true, leaderboard, total: leaderboard.length };
+  leaderboardCache.set(cacheKey, { timestamp: Date.now(), payload });
+
+  res.json(payload);
 }
 
 /**

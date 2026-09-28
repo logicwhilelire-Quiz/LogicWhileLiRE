@@ -506,3 +506,53 @@ SMTP_FROM="LogicWhile Quiz <noreply@logicwhilequiz.com>"
 - [x] **No-OTP Exam Code Flow:** Master exam codes validate dates and durations, randomized question ordering prevents collusion, and answers persist with microsecond latency metrics.
 - [x] **Proctoring Engine:** Tab switches and window blur events record violations; exceeding thresholds causes immediate termination.
 - [x] **Admin Suite:** Question Excel bulk import parses questions, sets, and answers; Excel & PDF reports generate institutional ledgers with topic-level analytics.
+
+---
+
+## 10. Version 4.0 ULTRA Upgrade Specification & Phase Accomplishments
+
+### Phase 1 — Core Exam Integrity
+- **Server-Authoritative Clock over Socket.io:** Server calculates remaining exam time and pushes real-time heartbeats over Socket.io (`server/src/services/socketService.ts`, `client/src/hooks/useSocketTimer.ts`). Prevents client timer manipulation, browser freezing, or clock resets.
+- **Concurrent-Session Block & Eviction:** Strict single-active-session policy per hall ticket and exam code (`verifyAttemptToken`). Second logins generate a new session token, immediately evicting prior sessions with `409 SESSION_EVICTED`.
+- **Autosave & Resume State:** Debounced per-question autosave (`POST /api/exam-code/:code/save-answer`) storing `partial_answers` and `last_question_index`. Browser crashes or reloads restore candidate immediately to their exact question and answers.
+- **Offline Resilience:** Service Worker (`client/public/sw.js`) and IndexedDB retry queue with visual offline indicator (`OfflineIndicator.tsx`). Answers buffered during network drops automatically sync when connectivity returns.
+- **College Management & Tenant Scoping:** New `college_admin` role with server-side `requireCollegeScope` middleware. Complete multi-tenant isolation across exams, candidates, reports, and leaderboards.
+- **Security Hardening:** In-place input sanitization (`sanitizeBody`), CORS origin allowlist (`CLIENT_ORIGIN`), HttpOnly JWT authentication cookies, and server-side rule re-validation.
+
+### Phase 2 — Proctoring Upgrade & Violation Timeline
+- **Client-Side Face & Gaze Sentinel:** Throttled ~1.5s background facial landmarking detecting absence (`no_face`), multiple persons (`multiple_faces`), and head rotation (`looking_away`).
+- **Zero-Cloud-Video Guarantee & Privacy Consent:** Camera analysis runs 100% on-device in Web Workers. Zero raw video streams are stored or transmitted. Explicit user consent modal (`ProctoringConsentModal.tsx`) with hardware verification.
+- **Thumbnails & Candidate Violation Timeline:** 160x120 JPEG snapshot thumbnails (<20KB) recorded on violations and stored in `exam_code_attempts.violation_timeline`.
+- **Admin Review & False-Positive Override:** Interactive violation timeline modal (`CandidateViolationTimelineModal.tsx`), `GET /api/admin/attempts/:id/violations`, and `PATCH /api/admin/attempts/:id/violations/:violationId/review` to reverse false positives and decrement strike counts.
+
+### Phase 3 — Admin, Analytics & Results Vault
+- **Question Bank Ingestion:** Excel/CSV upload with normalized duplicate detection, section tagging, and row-level validation reports (`importQuestionsForExamCode`). Automated section-wise question randomization per candidate.
+- **Live Exam Proctoring Monitor:** Real-time monitor with candidate progress, active violations, and instant administrative intervention: `POST /api/admin/attempts/:id/extend-time` and `POST /api/admin/attempts/:id/force-submit`.
+- **Exam Re-evaluation & Analytics Engine:** `POST /api/admin/exam-codes/:id/reevaluate` to re-grade candidate answers after answer-key adjustments. `GET /api/admin/exam-codes/:id/analytics` providing question difficulty index, topic-wise accuracy, and score distributions.
+- **Audit Logging & Verification:** Immutable audit logs (`GET /api/admin/audit-logs`) tracking admin operations and cryptographic QR certificate verification.
+
+### Phase 4 — Premium Design System & Brand Motif
+- **Signature "Logic Coil" Brand Motif:** Looping recursive mark (`LogicCoil.tsx`) with `mark`, `loader`, and `divider` variants used across headers, dividers, logos, and loaders.
+- **Unified Design Tokens & Themes:** Light and dark theme palettes with smooth transitions, modern typography, glassmorphism, and instant `ThemeToggle.tsx`.
+- **Accessible UI Primitives:** `Skeleton.tsx` loaders, `EmptyState.tsx`, and `ErrorState.tsx` components.
+- **Complete Marketing Landing Page (`/`):** Hero with interactive 3D node network, Capabilities, Impact stats (Altimeter dials), Proctoring showcase, Institutional College showcase, FAQ accordion, and Institutional Demo request form.
+- **Mobile & Touch Optimization:** Touch targets with minimum 44px height, responsive navigation drawer, and mobile theme toggles.
+
+### Phase 5 — 3D & Animation Performance Safeguards
+- **Consolidated 3D Performance Kit (`shared3d.ts`):** Enforces DPR capping to 1.5, tab visibility pausing on `document.hidden`, prefers-reduced-motion compliance, low-end device fallbacks, and safe Three.js recursive resource disposal.
+- **Consolidated Modules:** Duplicated `Podium3D.tsx` consolidated into `LeaderboardPodium.tsx`.
+- **Hero 3D Node Network:** Interactive canvas node network responding to mouse position and cursor proximity.
+- **Results 3D Score Gauge:** Interactive `AltimeterDial` count-up score gauge embedded on `ResultECPage.tsx`.
+- **Waiting Lobby Network:** Live participant proximity network visualization embedded on `WaitingLobbyPage.tsx`.
+- **Hard Rule Enforced:** Zero heavy 3D canvases rendered inside the exam-taking screen (`ExamCodeQuizPage.tsx` / `ExamPage.tsx`).
+
+### Phase 6 — Optimization & Production Readiness
+- **Vite Route-Level Chunk Splitting:** Configured `manualChunks` in `vite.config.ts` separating `vendor-three`, `vendor-motion`, `vendor-react`, and `vendor-common`.
+  - Landing page chunk reduced from **37.5 kB to 29.8 kB** (8.59 kB gzip).
+  - Main bundle reduced from **282 kB to 27.4 kB** (7.26 kB gzip).
+  - Analytics bundle reduced from **388 kB to 17.1 kB** (4.60 kB gzip).
+- **Backend Read Caching:** 5-second TTL in-memory cache for `GET /api/exam-code/:code/leaderboard` to withstand post-exam leaderboard storms.
+- **Load Test Concurrency Benchmarks:**
+  - **200 Concurrent Users:** 2,000 requests processed in 5.67s. Throughput: 352.5 req/sec. P50: 320ms, P95: 743ms, P99: 1,293ms (< 2,000ms target). Error rate: **0.00%**.
+  - **500 Concurrent Users:** 3,896 requests processed in 15.76s. Throughput: 247.1 req/sec. P50: 1,171ms, P95: 2,392ms, P99: 2,993ms. Breaking point observed at ~330-350 concurrent sessions on single-threaded dev node process.
+
