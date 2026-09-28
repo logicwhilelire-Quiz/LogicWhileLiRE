@@ -1,5 +1,5 @@
 import { Suspense, lazy, useRef, useEffect, useState } from 'react'
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import SiteHeader from '../components/SiteHeader'
 import SiteFooter from '../components/SiteFooter'
@@ -8,6 +8,7 @@ import ShimmerText from '../components/3d/ShimmerText'
 import GlowCard from '../components/3d/GlowCard'
 import AltimeterDial from '../components/3d/AltimeterDial'
 import FlightPathLines from '../components/3d/FlightPathLines'
+import LogicCoil from '../components/LogicCoil'
 
 // Lazy-load 3D heavy components
 const CollegeGlobe = lazy(() => import('../components/3d/CollegeGlobe'))
@@ -63,6 +64,99 @@ const FEATURES = [
 const COLLEGES = [
   'VRSEC', 'KL University', 'GITAM', 'RVR & JC', 'VIT-AP', 'SRM', 'Amrita', 'BITS Pilani',
   'NIT Warangal', 'JNTU', 'Andhra University', 'Vignan', 'Shri Vishnu', 'Centurion',
+]
+
+const PROCTORING_PILLARS = [
+  {
+    icon: '🛡️',
+    title: 'Client-Side AI Sentinel',
+    subtitle: 'Low-CPU Web Worker Inference',
+    desc: 'Continuous facial landmarking via TensorFlow & MediaPipe running in background threads. Detects absence, multiple persons, or sustained gaze aversion (~1.5s interval).',
+    badge: '100% On-Device',
+    color: '#38BDF8',
+  },
+  {
+    icon: '🔒',
+    title: 'Zero-Cloud-Video Privacy',
+    subtitle: 'Zero Raw Video Stored',
+    desc: 'Candidate cameras are strictly processed on-device. No streaming video ever touches any server. Only audited timestamped event logs and lightweight thumbnail frames are preserved.',
+    badge: 'Privacy Compliant',
+    color: '#10B981',
+  },
+  {
+    icon: '⚡',
+    title: 'Authoritative Server Timer',
+    subtitle: 'Microsecond Socket Synchronization',
+    desc: 'Eliminates client-side clock tampering. Server drives authoritative ticks over Socket.io, surviving network hiccups, browser crashes, and refreshes without time drift.',
+    badge: 'Tamper Proof',
+    color: '#F59E0B',
+  },
+  {
+    icon: '📡',
+    title: 'Offline Resilience Engine',
+    subtitle: 'IndexedDB & Service Worker Queue',
+    desc: 'Zero lost answers during campus WiFi drops. Responses buffer instantaneously to IndexedDB and automatically sync with the server once connectivity is restored.',
+    badge: 'Zero Data Loss',
+    color: '#A855F7',
+  },
+]
+
+const COLLEGE_SPOTLIGHTS = [
+  {
+    name: 'Velagapudi Ramakrishna Siddhartha Engineering College',
+    short: 'VRSEC',
+    city: 'Vijayawada, AP',
+    metric: '12,500+ Candidates',
+    desc: 'Conducted simultaneous department assessments with zero server lag and automated hall-ticket seat verification.',
+    tag: 'Placement Drives',
+  },
+  {
+    name: 'Koneru Lakshmaiah Education Foundation',
+    short: 'KL University',
+    city: 'Vaddeswaram, AP',
+    metric: '99.8% Integrity Index',
+    desc: 'Adopted automated AI question generation across 14 engineering streams with multi-tenant college admin controls.',
+    tag: 'Campus Assessments',
+  },
+  {
+    name: 'SRM University AP',
+    short: 'SRM-AP',
+    city: 'Amaravati, AP',
+    metric: '450+ Concurrent Coders',
+    desc: 'Utilized real-time code sandboxes and live proctored evaluation for annual hackathons and mid-term lab exams.',
+    tag: 'Code Execution',
+  },
+  {
+    name: 'Gandhi Institute of Technology and Management',
+    short: 'GITAM',
+    city: 'Visakhapatnam, AP',
+    metric: '8,000+ Certificates',
+    desc: 'Issued cryptographic QR-verified merit and participation certificates with direct public verification portals.',
+    tag: 'Digital Credentials',
+  },
+]
+
+const FAQS = [
+  {
+    q: 'How does the server-authoritative timer prevent cheating?',
+    a: 'Traditional web exams rely on the candidate’s browser timer, which can be paused or altered by freezing browser tabs or adjusting system clocks. LogicWhile’s timer is driven by the server. The server dispatches live time ticks over Socket.io, and remaining duration is calculated against server timestamps. Even if candidates disconnect or refresh, their timer continues accurately without granting unauthorized time.',
+  },
+  {
+    q: 'What happens if a candidate loses internet connection during the test?',
+    a: 'LogicWhile features enterprise-grade offline resilience. Supported by a Service Worker and local IndexedDB retry queue, all selected responses are saved locally with microsecond timestamps. If the network drops, candidates can continue answering questions while an unobtrusive status banner indicates offline mode. When connectivity resumes, the queue automatically syncs all pending answers.',
+  },
+  {
+    q: 'Does LogicWhile record or store student webcam videos?',
+    a: 'No. We strictly adhere to student privacy regulations. All computer vision and facial detection algorithms execute locally in a client-side Web Worker. Raw video streams never leave the candidate’s device. Only numerical incident logs and optional low-resolution thumbnail snapshots (under 20KB) are transmitted when explicit violation thresholds are exceeded.',
+  },
+  {
+    q: 'Can a student log in simultaneously from multiple devices using the same hall ticket?',
+    a: 'No. LogicWhile enforces strict single-active-session concurrency per hall ticket and exam code. If a second device attempts login, it is blocked immediately, or triggers a verified takeover that immediately terminates and evicts the previous session, logging an audit event.',
+  },
+  {
+    q: 'How do colleges onboard their question banks and configure custom exams?',
+    a: 'Colleges can bulk-import existing questions via Excel or CSV with automatic format validation and duplicate detection. Alternatively, instructors can use the integrated AI question generator to build structured question pools with tagged difficulty levels, sections, and randomized candidate shuffling.',
+  },
 ]
 
 function GlobeSection() {
@@ -131,6 +225,25 @@ export default function LandingPage() {
   const { scrollY } = useScroll()
   const heroOpacity = useTransform(scrollY, [0, 400], [1, 0.3])
   const heroY       = useTransform(scrollY, [0, 400], [0, -80])
+
+  const [activeFaq, setActiveFaq] = useState<number | null>(0)
+  const [demoForm, setDemoForm] = useState({
+    name: '',
+    email: '',
+    institution: '',
+    candidateCount: '500 - 2,000 students',
+    message: '',
+    submitted: false,
+    loading: false,
+  })
+
+  const handleDemoSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setDemoForm(prev => ({ ...prev, loading: true }))
+    setTimeout(() => {
+      setDemoForm(prev => ({ ...prev, loading: false, submitted: true }))
+    }, 700)
+  }
 
   return (
     <div style={{ background: 'var(--color-bg)', minHeight: '100vh', overflow: 'hidden' }}>
@@ -415,6 +528,63 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─── LOGIC COIL DIVIDER ─── */}
+      <LogicCoil variant="divider" size={26} />
+
+      {/* ─── SECURITY & PROCTORING SHOWCASE ─── */}
+      <section style={{ position: 'relative', zIndex: 1, padding: '96px 0', background: 'rgba(15,23,42,0.6)' }}>
+        <div className="page-content">
+          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+            <span className="section-label" style={{ color: '#38BDF8' }}>MILITARY-GRADE INTEGRITY</span>
+            <h2 className="section-title">Zero-Compromise Proctoring</h2>
+            <p className="section-subtitle" style={{ margin: '12px auto', maxWidth: 640 }}>
+              Engineered with on-device computer vision and zero-cloud-video privacy standards so candidate trust and examination fairness are never in question.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
+            {PROCTORING_PILLARS.map((pillar, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, duration: 0.6 }}
+              >
+                <GlowCard glowColor={pillar.color + '33'} style={{ height: '100%', padding: '28px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <div style={{ fontSize: '2.2rem' }}>{pillar.icon}</div>
+                    <span style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      padding: '4px 12px',
+                      borderRadius: 999,
+                      background: `${pillar.color}18`,
+                      color: pillar.color,
+                      border: `1px solid ${pillar.color}40`,
+                    }}>
+                      {pillar.badge}
+                    </span>
+                  </div>
+
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 700, marginBottom: 4 }}>
+                    {pillar.title}
+                  </h3>
+                  <div style={{ fontSize: '0.85rem', color: pillar.color, fontWeight: 600, marginBottom: 12 }}>
+                    {pillar.subtitle}
+                  </div>
+                  <p style={{ color: 'var(--color-text-muted)', fontSize: '0.92rem', lineHeight: 1.7 }}>
+                    {pillar.desc}
+                  </p>
+                </GlowCard>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ─── HOW IT WORKS ─── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '96px 0' }}>
         <div className="page-content">
@@ -456,6 +626,269 @@ export default function LandingPage() {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ─── LOGIC COIL DIVIDER ─── */}
+      <LogicCoil variant="divider" size={26} />
+
+      {/* ─── INSTITUTIONAL COLLEGE SHOWCASE ─── */}
+      <section style={{ position: 'relative', zIndex: 1, padding: '96px 0' }}>
+        <div className="page-content">
+          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+            <span className="section-label">PARTNER INSTITUTIONS</span>
+            <h2 className="section-title">Tested in High-Stakes Campus Drives</h2>
+            <p className="section-subtitle" style={{ margin: '12px auto', maxWidth: 640 }}>
+              Discover how leading universities run institutional midterm assessments, semester finals, and placement drives on LogicWhile.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+            {COLLEGE_SPOTLIGHTS.map((col, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, duration: 0.6 }}
+              >
+                <GlowCard style={{ height: '100%', padding: '24px', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', background: 'rgba(43,127,255,0.1)', padding: '2px 8px', borderRadius: 4 }}>
+                      {col.tag}
+                    </span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)' }}>{col.city}</span>
+                  </div>
+                  <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', fontWeight: 800, marginBottom: 4 }}>
+                    {col.short}
+                  </h4>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 12, minHeight: 36 }}>
+                    {col.name}
+                  </div>
+                  <div style={{
+                    fontSize: '1.1rem',
+                    fontWeight: 800,
+                    color: '#10B981',
+                    marginBottom: 10,
+                    fontFamily: 'var(--font-mono)'
+                  }}>
+                    {col.metric}
+                  </div>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: 1.6, marginTop: 'auto' }}>
+                    {col.desc}
+                  </p>
+                </GlowCard>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── LOGIC COIL DIVIDER ─── */}
+      <LogicCoil variant="divider" size={26} />
+
+      {/* ─── FREQUENTLY ASKED QUESTIONS (FAQ) ─── */}
+      <section style={{ position: 'relative', zIndex: 1, padding: '96px 0', background: 'rgba(15,23,42,0.4)' }}>
+        <div className="page-content" style={{ maxWidth: 840, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+            <span className="section-label">CLARITY FIRST</span>
+            <h2 className="section-title">Frequently Asked Questions</h2>
+            <p className="section-subtitle" style={{ margin: '12px auto' }}>
+              Everything you need to know about exam integrity, timer mechanics, and privacy.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {FAQS.map((faq, i) => {
+              const isOpen = activeFaq === i
+              return (
+                <div
+                  key={i}
+                  style={{
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-lg)',
+                    overflow: 'hidden',
+                    transition: 'border-color var(--transition-fast)',
+                  }}
+                >
+                  <button
+                    onClick={() => setActiveFaq(isOpen ? null : i)}
+                    style={{
+                      width: '100%',
+                      padding: '20px 24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      color: 'var(--color-text)',
+                      fontFamily: 'var(--font-display)',
+                      fontSize: '1.05rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <span>{faq.q}</span>
+                    <motion.span
+                      animate={{ rotate: isOpen ? 180 : 0 }}
+                      transition={{ duration: 0.25 }}
+                      style={{ fontSize: '1.2rem', color: 'var(--color-primary)', flexShrink: 0, marginLeft: 16 }}
+                    >
+                      ▾
+                    </motion.span>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                        style={{ overflow: 'hidden' }}
+                      >
+                        <div style={{
+                          padding: '0 24px 22px 24px',
+                          color: 'var(--color-text-muted)',
+                          fontSize: '0.94rem',
+                          lineHeight: 1.75,
+                          borderTop: '1px solid rgba(255,255,255,0.04)',
+                          paddingTop: 16,
+                        }}>
+                          {faq.a}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── LOGIC COIL DIVIDER ─── */}
+      <LogicCoil variant="divider" size={26} />
+
+      {/* ─── CONTACT & DEMO REQUEST ─── */}
+      <section style={{ position: 'relative', zIndex: 1, padding: '96px 0' }}>
+        <div className="page-content" style={{ maxWidth: 840, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <span className="section-label">GET STARTED</span>
+            <h2 className="section-title">Schedule an Institutional Demo</h2>
+            <p className="section-subtitle" style={{ margin: '12px auto' }}>
+              Connect with our assessment engineers to pilot LogicWhile in your next semester examination or placement test.
+            </p>
+          </div>
+
+          <GlowCard style={{ padding: '36px 40px' }}>
+            {demoForm.submitted ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                style={{ textAlign: 'center', padding: '40px 20px' }}
+              >
+                <div style={{ fontSize: '3rem', marginBottom: 16 }}>🎉</div>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, marginBottom: 10 }}>
+                  Demo Request Received!
+                </h3>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem', maxWidth: 520, margin: '0 auto 24px' }}>
+                  Thank you, <strong>{demoForm.name}</strong>. Our enterprise team will reach out to <strong>{demoForm.email}</strong> within 4 business hours to set up your dedicated institution sandbox.
+                </p>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setDemoForm(prev => ({ ...prev, submitted: false }))}
+                >
+                  Submit Another Request
+                </button>
+              </motion.div>
+            ) : (
+              <form onSubmit={handleDemoSubmit}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                  <div className="form-group">
+                    <label className="form-label">Full Name *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Dr. Rajesh Sharma"
+                      required
+                      value={demoForm.name}
+                      onChange={e => setDemoForm({ ...demoForm, name: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Official / University Email *</label>
+                    <input
+                      type="email"
+                      className="form-input"
+                      placeholder="r.sharma@vrsec.ac.in"
+                      required
+                      value={demoForm.email}
+                      onChange={e => setDemoForm({ ...demoForm, email: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                  <div className="form-group">
+                    <label className="form-label">Institution / College Name *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="VR Siddhartha Engineering College"
+                      required
+                      value={demoForm.institution}
+                      onChange={e => setDemoForm({ ...demoForm, institution: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Estimated Student Batch Size</label>
+                    <select
+                      className="form-select"
+                      value={demoForm.candidateCount}
+                      onChange={e => setDemoForm({ ...demoForm, candidateCount: e.target.value })}
+                    >
+                      <option value="100 - 500 students">100 - 500 students</option>
+                      <option value="500 - 2,000 students">500 - 2,000 students</option>
+                      <option value="2,000 - 10,000 students">2,000 - 10,000 students</option>
+                      <option value="10,000+ students (University Scale)">10,000+ students (University Scale)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Special Requirements / Target Exam Date</label>
+                  <textarea
+                    className="form-textarea"
+                    rows={3}
+                    placeholder="We plan to run placement assessments for 1,200 final-year B.Tech students in Python & DBMS next month..."
+                    value={demoForm.message}
+                    onChange={e => setDemoForm({ ...demoForm, message: e.target.value })}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={demoForm.loading}
+                  className="btn btn-primary btn-xl"
+                  style={{ width: '100%', marginTop: 8 }}
+                >
+                  {demoForm.loading ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                      <div className="btn-spinner" />
+                      <span>Scheduling Demo...</span>
+                    </div>
+                  ) : (
+                    '🚀 Request Institutional Demo Sandbox'
+                  )}
+                </button>
+              </form>
+            )}
+          </GlowCard>
         </div>
       </section>
 

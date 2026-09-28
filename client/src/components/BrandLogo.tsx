@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
+import LogicCoil from './LogicCoil';
 
 interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -17,10 +19,10 @@ export default function BrandLogo({
 
   // Proportional sizing matching 222:174 logo aspect ratio (~1.276)
   const dims = {
-    sm: { h: 32, w: 41, title: '1.05rem', scriptH: 28, tag: '0.62rem', gap: 10, radius: 7 },
-    md: { h: 42, w: 54, title: '1.35rem', scriptH: 36, tag: '0.72rem', gap: 12, radius: 10 },
-    lg: { h: 60, w: 76, title: '1.85rem', scriptH: 54, tag: '0.84rem', gap: 16, radius: 12 },
-    xl: { h: 84, w: 108, title: '2.4rem', scriptH: 74, tag: '0.98rem', gap: 18, radius: 14 },
+    sm: { h: 32, w: 41, title: '1.05rem', scriptH: 28, tag: '0.62rem', gap: 10, radius: 7, coil: 18 },
+    md: { h: 42, w: 54, title: '1.35rem', scriptH: 36, tag: '0.72rem', gap: 12, radius: 10, coil: 22 },
+    lg: { h: 60, w: 76, title: '1.85rem', scriptH: 54, tag: '0.84rem', gap: 16, radius: 12, coil: 28 },
+    xl: { h: 84, w: 108, title: '2.4rem', scriptH: 74, tag: '0.98rem', gap: 18, radius: 14, coil: 34 },
   }[size];
 
   if (variant === 'badge-only') {
@@ -53,7 +55,10 @@ export default function BrandLogo({
 
   if (variant === 'hero') {
     return (
-      <div
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: -8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -62,29 +67,34 @@ export default function BrandLogo({
           gap: 12,
         }}
       >
-        {/* Main Logo Card Badge */}
-        <div
-          className="brand-logo-badge"
-          style={{
-            width: dims.w * 1.35,
-            height: dims.h * 1.35,
-            borderRadius: dims.radius + 3,
-            overflow: 'hidden',
-            boxShadow: '0 8px 32px rgba(245, 158, 11, 0.45), 0 0 16px rgba(234, 88, 12, 0.25)',
-            border: '2px solid rgba(245, 158, 11, 0.85)',
-            background: '#ffffff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 4,
-            transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-          }}
-        >
-          <img
-            src="/logo.png"
-            alt="LogicWhile Logo"
-            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-          />
+        {/* Main Logo Card Badge with Logic Coil Accent */}
+        <div style={{ position: 'relative' }}>
+          <div
+            className="brand-logo-badge"
+            style={{
+              width: dims.w * 1.35,
+              height: dims.h * 1.35,
+              borderRadius: dims.radius + 3,
+              overflow: 'hidden',
+              boxShadow: '0 8px 32px rgba(245, 158, 11, 0.45), 0 0 16px rgba(234, 88, 12, 0.25)',
+              border: '2px solid rgba(245, 158, 11, 0.85)',
+              background: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 4,
+              transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            }}
+          >
+            <img
+              src="/logo.png"
+              alt="LogicWhile Logo"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            />
+          </div>
+          <div style={{ position: 'absolute', bottom: -6, right: -6 }}>
+            <LogicCoil size={dims.coil} variant="mark" />
+          </div>
         </div>
 
         {/* Combined Brand Name: LogicWhile + Calligraphic Quiz Script */}
@@ -158,13 +168,16 @@ export default function BrandLogo({
             </span>
           )}
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   // Standard horizontal variant
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, x: -6 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
       style={{
         display: inline ? 'inline-flex' : 'flex',
         alignItems: 'center',
@@ -268,6 +281,6 @@ export default function BrandLogo({
           </span>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
