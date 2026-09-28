@@ -124,6 +124,9 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
           <span>🚪</span>
           <span>Logout Portal</span>
         </button>
+        <div style={{ fontSize: '0.68rem', color: 'var(--color-text-faint, #64748b)', textAlign: 'center', marginTop: 12, lineHeight: 1.4 }}>
+          GROWTHRAN<br />Developed by R. Charan Sai
+        </div>
       </div>
     </aside>
   );

@@ -96,3 +96,42 @@
 - **Skipped & Why:** Working code in D1-D5 preserved per Ground Rule 0.5; gaps filled cleanly.
 
 ---
+
+## Phase E: Proctoring
+- **Status:** COMPLETED
+- **What Changed:**
+  - Audited E1-E5 against current proctoring modules and confirmed active enforcement.
+  - Verified `useProctor.ts`: tab-switch detection (`visibilitychange`), window blur, fullscreen exit lockdown with 3-strike escalation, devtools keyboard detection, and `navigator.sendBeacon` for reliable violation transmission.
+  - Verified `useAudioProctor.ts`: real-time RMS microphone decibel sampling, background spike detection with cooldown, and timestamped telemetry.
+  - Verified `ProctoringConsentModal.tsx`: pre-exam hardware diagnostic check, live camera feed verification, and explicit privacy disclosure ("Never store video; store event logs and telemetry only").
+  - Verified `CandidateViolationTimelineModal.tsx`: chronological candidate violation playback, thumbnail snapshots, and admin false-positive override.
+  - Verified `reviewAttemptViolation` endpoint in `examCodeController.ts`: recalculates active strikes, logs reviewer identity, and restores status if false-positive review reduces strikes below threshold.
+- **Files Touched:**
+  - `client/src/hooks/useProctor.ts`
+  - `client/src/hooks/useAudioProctor.ts`
+  - `client/src/components/ProctoringConsentModal.tsx`
+  - `client/src/components/CandidateViolationTimelineModal.tsx`
+  - `server/src/controllers/examCodeController.ts`
+- **Test Counts:** 52/52 server tests passing, 9/9 role security tests passing, 6/6 bulk enrollment tests passing, 8/8 smoke tests passing. Both TypeScript builds clean.
+- **Skipped & Why:** None.
+
+---
+
+## Phase F: Admin Control and Analytics
+- **Status:** COMPLETED
+- **What Changed:**
+  - Audited and verified all 7 authoritative Admin Control modules:
+    - F1 (Question Bank): Excel upload with duplicate detection, MCQ/coding/aptitude support, difficulty and topic tags, and test cases.
+    - F2 (Live Monitor Wall): Grid view of active candidates, telemetry metrics, force-submit, time extension, and broadcast alerts.
+    - F3 (Exam Builder): Full exam lifecycle, 1-click launch control, negative marking, proctoring toggles, and window scheduling.
+    - F4 (Student Roster): Bulk enrollment with validation reporting, live exam block/unblock, and attempt resets with reason audit logging.
+    - F5 (Analytics): Cohort item difficulty, topic performance distribution, and growth telemetry.
+    - F6 (Results Vault): Branded executive PDF exports (`exportPdfReport`) and multi-sheet Excel reports with official GROWTHRAN seal and developer credit.
+    - F7 (Admin UI): Standardized brand headers, sidebar navigation, developer credit ("GROWTHRAN • Developed by R. Charan Sai"), and WCAG AA contrast.
+- **Files Touched:**
+  - `client/src/components/layout/AdminSidebar.tsx`
+  - `client/src/pages/admin/AdminLoginPage.tsx`
+- **Test Counts:** 52/52 server tests passing, 9/9 role security tests passing, 6/6 bulk enrollment tests passing, 8/8 smoke tests passing. Both TypeScript builds clean.
+- **Skipped & Why:** None.
+
+---
