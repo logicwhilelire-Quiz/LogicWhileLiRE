@@ -12,6 +12,7 @@ import FlightPathLines from '../components/3d/FlightPathLines'
 import ProctoringConsentModal from '../components/ProctoringConsentModal'
 import BrandLogo from '../components/BrandLogo'
 import FullscreenEnforcementOverlay from '../components/exam/FullscreenEnforcementOverlay'
+import ScreenShareWarningOverlay from '../components/exam/ScreenShareWarningOverlay'
 
 const FaceMeshOrb = lazy(() => import('../components/3d/FaceMeshOrb'))
 const CircularProgress3D = lazy(() => import('../components/3d/CircularProgress3D'))
@@ -35,6 +36,7 @@ interface ExamSession {
   totalMarks: number
   duration: number   // seconds
   questions: ExamQuestion[]
+  proctoringMode?: 'webcam' | 'screen' | 'dual'
 }
 
 type FaceStatus = 'ok' | 'no_face' | 'multiple' | 'looking_away' | 'loading'
@@ -105,12 +107,14 @@ export default function QuizPage() {
           test_cases: (q.test_cases as ExamQuestion['test_cases']) || [],
         }))
         sessionIdRef.current = data.sessionId || data.session_id
+        const proctoringMode: 'webcam' | 'screen' | 'dual' = exam?.proctoring_mode || 'dual'
         setSession({
           candidateId: data.candidateId || hallTicket,
           examName: exam?.exam_name || exam?.name || 'Exam',
           totalMarks: exam?.total_marks || 100,
           duration: (exam?.duration_minutes || 60) * 60,
           questions,
+          proctoringMode,
         })
         setTimeLeft((exam?.duration_minutes || 60) * 60)
       } catch (e) {
@@ -340,6 +344,87 @@ export default function QuizPage() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [session, submitting, consentGiven, logViolation, handleSubmit])
 
+  /* ── 1.2 Screen Share Proctoring ── */
+  const [screenShareActive, setScreenShareActive] = useState(false)
+  const [showScreenWarning, setShowScreenWarning] = useState(false)
+  const screenStreamRef = useRef<MediaStream | null>(null)
+  const screenCaptureIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
+
+  const startScreenShare = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { displaySurface: 'monitor' },
+        audio: false,
+      })
+      screenStreamRef.current = stream
+      setScreenShareActive(true)
+      setShowScreenWarning(false)
+
+      const track = stream.getVideoTracks()[0]
+      if (track) {
+        track.onended = () => {
+          setScreenShareActive(false)
+          setShowScreenWarning(true)
+          logViolation('screen_share_stopped', 'Candidate stopped sharing screen')
+        }
+      }
+    } catch {
+      setScreenShareActive(false)
+      setShowScreenWarning(true)
+      logViolation('screen_share_denied', 'Candidate refused or closed screen share dialog')
+    }
+  }, [logViolation])
+
+  // Periodic 30-second screen capture to server & realtime channel
+  useEffect(() => {
+    if (!screenShareActive || !examCode || !hallTicket) return
+
+    screenCaptureIntervalRef.current = setInterval(() => {
+      try {
+        const stream = screenStreamRef.current
+        if (!stream || !stream.active) return
+        const videoTrack = stream.getVideoTracks()[0]
+        if (!videoTrack) return
+
+        const offscreenVideo = document.createElement('video')
+        offscreenVideo.srcObject = stream
+        offscreenVideo.muted = true
+        offscreenVideo.play().then(() => {
+          const canvas = document.createElement('canvas')
+          canvas.width = 240
+          canvas.height = 135
+          const ctx = canvas.getContext('2d')
+          if (ctx) {
+            ctx.drawImage(offscreenVideo, 0, 0, 240, 135)
+            const thumb = canvas.toDataURL('image/jpeg', 0.45)
+            axios.post(`${BASE}/api/exam-code/${examCode}/screen-thumbnail`, {
+              examCode,
+              candidateId: hallTicket,
+              thumbnail: thumb,
+              timestamp: new Date().toISOString(),
+            }).catch(() => {})
+
+            if (realtimeChannelRef.current) {
+              realtimeChannelRef.current.send({
+                type: 'broadcast',
+                event: 'screen_thumbnail',
+                payload: { hallTicket, thumbnail: thumb, timestamp: Date.now() },
+              })
+            }
+          }
+          offscreenVideo.pause()
+          offscreenVideo.srcObject = null
+        }).catch(() => {})
+      } catch {
+        /* Non-blocking capture */
+      }
+    }, 30000)
+
+    return () => {
+      if (screenCaptureIntervalRef.current) clearInterval(screenCaptureIntervalRef.current)
+    }
+  }, [screenShareActive, examCode, hallTicket])
+
   /* ── Helpers ── */
   const currentQuestion = session?.questions[currentQ]
   const answeredCount = Object.keys(answers).length + Object.keys(codeAnswers).length
@@ -496,7 +581,27 @@ export default function QuizPage() {
             Submit Exam
           </MagneticButton>
 
-          <div style={{ position: 'relative', paddingBottom: 28 }}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 28 }}>
+            {session?.proctoringMode !== 'webcam' && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: 999,
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  background: screenShareActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  border: `1px solid ${screenShareActive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}`,
+                  color: screenShareActive ? '#10B981' : '#EF4444',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <span>{screenShareActive ? '🖥️ Screen Live' : '⚠️ Screen Off'}</span>
+              </div>
+            )}
             <Suspense fallback={
               <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(43,127,255,0.1)', border: '2px solid rgba(43,127,255,0.2)' }} />
             }>
@@ -858,6 +963,10 @@ export default function QuizPage() {
           setConsentGiven(true);
           sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
           document.documentElement.requestFullscreen().catch(() => {});
+          const mode = session?.proctoringMode || 'dual';
+          if (mode === 'screen' || mode === 'dual') {
+            startScreenShare();
+          }
         }}
         examName={session?.examName || examCode}
       />
@@ -874,6 +983,12 @@ export default function QuizPage() {
           logViolation('excessive_fullscreen_exits', 'Exam auto-submitted: 10s fullscreen return countdown expired');
           handleSubmit();
         }}
+      />
+
+      {/* ─── SCREEN SHARE WARNING OVERLAY (1.2) ─── */}
+      <ScreenShareWarningOverlay
+        isOpen={showScreenWarning}
+        onReconnect={startScreenShare}
       />
     </div>
   )

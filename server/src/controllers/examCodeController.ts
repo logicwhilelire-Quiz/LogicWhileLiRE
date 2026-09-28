@@ -671,6 +671,32 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
 }
 
 /**
+ * POST /api/exam-code/:code/screen-thumbnail
+ * Phase 1.2: Records periodic (30s) screen capture thumbnail for proctoring audit
+ */
+export async function saveScreenThumbnail(req: Request, res: Response): Promise<void> {
+  const code = (req.params.code || req.body.examCode || '').toUpperCase();
+  const candidateId = req.body.candidateId || req.body.hallTicket;
+  const thumbnail = req.body.thumbnail || req.body.screen_thumb;
+  const timestamp = req.body.timestamp || new Date().toISOString();
+
+  if (!candidateId || !thumbnail) {
+    res.status(400).json({ success: false, error: 'candidateId and thumbnail required' });
+    return;
+  }
+
+  await supabase
+    .from('exam_code_attempts')
+    .update({
+      latest_screen_thumb: String(thumbnail).slice(0, 50000),
+      screen_thumb_updated_at: timestamp,
+    })
+    .or(`hall_ticket.eq.${candidateId},hall_ticket_no.eq.${candidateId}`);
+
+  res.json({ success: true, timestamp });
+}
+
+/**
  * GET /api/admin/attempts/:id/violations
  * Phase 2: Returns candidate violation timeline with snapshot evidence
  */

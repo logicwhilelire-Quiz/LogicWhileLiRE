@@ -28,6 +28,7 @@ import {
   getExamCodeLeaderboard,
   saveExamCodeAnswer,
   getExamCodeResumeState,
+  saveScreenThumbnail,
 } from '../controllers/examCodeController';
 import { enrollRateLimit, answerRateLimit } from '../middleware/rateLimiter';
 
@@ -135,6 +136,7 @@ router.post('/exam-code/:code/submit', submitExamCodeAttempt);
 router.post('/exam-code/:code/violation', logExamCodeViolation);
 router.post('/proctor/violation', logExamCodeViolation);
 router.post('/proctor/log', logExamCodeViolation);
+router.post('/exam-code/:code/screen-thumbnail', saveScreenThumbnail);
 
 // Public leaderboard per exam code
 router.get('/exam-code/:code/leaderboard', getExamCodeLeaderboard);

@@ -821,6 +821,33 @@ router.get('/exam-code/:code/start', async (req: Request, res: Response) => {
   }
 });
 
+// ─── SCREEN SHARE THUMBNAIL (POST) ───────────────────────────
+router.post('/exam-code/:code/screen-thumbnail', async (req: Request, res: Response) => {
+  try {
+    const code = (req.params.code || req.body.examCode || '').toUpperCase();
+    const candidateId = req.body.candidateId || req.body.hallTicket;
+    const thumbnail = req.body.thumbnail || req.body.screen_thumb;
+    const timestamp = req.body.timestamp || new Date().toISOString();
+
+    if (!candidateId || !thumbnail) {
+      res.status(400).json({ success: false, error: 'candidateId and thumbnail required' });
+      return;
+    }
+
+    await supabase
+      .from('exam_code_attempts')
+      .update({
+        latest_screen_thumb: String(thumbnail).slice(0, 50000),
+        screen_thumb_updated_at: timestamp,
+      })
+      .or(`hall_ticket.eq.${candidateId},hall_ticket_no.eq.${candidateId}`);
+
+    res.json({ success: true, timestamp });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to save screen thumbnail' });
+  }
+});
+
 // ─── RESULT (GET) ─────────────────────────────────────────────
 router.get('/exam-code/:code/result', async (req: Request, res: Response) => {
   try {
