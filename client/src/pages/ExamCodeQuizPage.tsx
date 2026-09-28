@@ -10,6 +10,7 @@ import TypingDots from '../components/3d/TypingDots'
 import HoloScan from '../components/3d/HoloScan'
 import FlightPathLines from '../components/3d/FlightPathLines'
 import ProctoringConsentModal from '../components/ProctoringConsentModal'
+import BrandLogo from '../components/BrandLogo'
 
 const FaceMeshOrb = lazy(() => import('../components/3d/FaceMeshOrb'))
 const CircularProgress3D = lazy(() => import('../components/3d/CircularProgress3D'))
@@ -377,6 +378,7 @@ export default function QuizPage() {
       <div className="exam-header" style={{ zIndex: 100 }}>
         {/* Left: Exam info */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <BrandLogo size="xs" variant="mark" />
           <div>
             <div className="exam-title">{session.examName}</div>
             <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', marginTop: 2 }}>

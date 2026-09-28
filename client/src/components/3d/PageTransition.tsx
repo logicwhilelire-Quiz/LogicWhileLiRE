@@ -1,26 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 interface PageTransitionProps {
   children?: React.ReactNode;
   isActive?: boolean;
   onTransitionComplete?: () => void;
-  duration?: number; // default 0.8s
+  duration?: number;
 }
 
 export default function PageTransition({
   children,
   isActive = false,
   onTransitionComplete,
-  duration = 0.8,
+  duration = 0.5,
 }: PageTransitionProps) {
-  const [wiping, setWiping] = useState(isActive);
+  const shouldReduceMotion = useReducedMotion();
+  const [sweeping, setSweeping] = useState(isActive);
 
   useEffect(() => {
     if (isActive) {
-      setWiping(true);
+      setSweeping(true);
       const timer = setTimeout(() => {
-        setWiping(false);
+        setSweeping(false);
         if (onTransitionComplete) onTransitionComplete();
       }, duration * 1000);
       return () => clearTimeout(timer);
@@ -32,73 +33,45 @@ export default function PageTransition({
       {children}
 
       <AnimatePresence>
-        {wiping && (
+        {sweeping && !shouldReduceMotion && (
           <div
             style={{
               position: 'fixed',
-              inset: 0,
-              zIndex: 99999,
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 3.5,
+              zIndex: 999999,
               pointerEvents: 'none',
               overflow: 'hidden',
+              background: 'transparent',
             }}
           >
-            {/* Layer 1: Red Chromatic Aberration Fringe */}
+            {/* Thin Brand-Blue Progress Track */}
             <motion.div
               initial={{ scaleX: 0, originX: 0 }}
-              animate={{ scaleX: [0, 1, 1, 0], originX: [0, 0, 1, 1] }}
-              transition={{ duration, times: [0, 0.45, 0.55, 1], ease: [0.65, 0, 0.35, 1] }}
+              animate={{ scaleX: [0, 0.7, 1] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration, ease: [0.16, 1, 0.3, 1] }}
               style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'linear-gradient(90deg, #EF4444 0%, #dc2626 100%)',
-                opacity: 0.85,
-                mixBlendMode: 'screen',
-              }}
-            />
-
-            {/* Layer 2: Cyan Chromatic Fringe */}
-            <motion.div
-              initial={{ scaleX: 0, originX: 0 }}
-              animate={{ scaleX: [0, 1, 1, 0], originX: [0, 0, 1, 1] }}
-              transition={{ duration, delay: 0.04, times: [0, 0.45, 0.55, 1], ease: [0.65, 0, 0.35, 1] }}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'linear-gradient(90deg, #06B6D4 0%, #0284c7 100%)',
-                opacity: 0.85,
-                mixBlendMode: 'screen',
-              }}
-            />
-
-            {/* Layer 3: Main Purple Liquid Surface with Waves */}
-            <motion.div
-              initial={{ scaleX: 0, originX: 0 }}
-              animate={{ scaleX: [0, 1, 1, 0], originX: [0, 0, 1, 1] }}
-              transition={{ duration, delay: 0.08, times: [0, 0.45, 0.55, 1], ease: [0.65, 0, 0.35, 1] }}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'linear-gradient(135deg, #0A1931 0%, #6C5CE7 50%, #0A1931 100%)',
-                boxShadow: '0 0 80px rgba(108, 92, 231, 0.8)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                height: '100%',
+                background: 'linear-gradient(90deg, #0A3F8F 0%, #1B5FB5 60%, #4A7DBE 100%)',
+                position: 'relative',
               }}
             >
+              {/* Arrow Sweep Head */}
               <div
                 style={{
-                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
-                  fontWeight: 800,
-                  fontSize: '1.4rem',
-                  letterSpacing: '0.15em',
-                  color: '#ffffff',
-                  textTransform: 'uppercase',
-                  opacity: 0.7,
-                  filter: 'drop-shadow(0 0 16px #06B6D4)',
+                  position: 'absolute',
+                  right: 0,
+                  top: -3,
+                  width: 10,
+                  height: 10,
+                  borderTop: '2px solid #60A5FA',
+                  borderRight: '2px solid #60A5FA',
+                  transform: 'rotate(45deg)',
                 }}
-              >
-                GROWTHRAN · SYNCING
-              </div>
+              />
             </motion.div>
           </div>
         )}

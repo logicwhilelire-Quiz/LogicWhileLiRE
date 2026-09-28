@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import axios from 'axios'
 import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
 import GlowCard from '../components/3d/GlowCard'
 import MagneticButton from '../components/3d/MagneticButton'
 import LeaderboardPodium from '../components/3d/LeaderboardPodium'
@@ -349,6 +350,7 @@ export default function ResultECPage() {
           </Link>
         </motion.div>
       </div>
+      <SiteFooter />
     </div>
   )
 }

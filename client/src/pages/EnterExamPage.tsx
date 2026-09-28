@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
 import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
 import GlowCard from '../components/3d/GlowCard'
 import MagneticButton from '../components/3d/MagneticButton'
 import HoloScan from '../components/3d/HoloScan'
@@ -285,6 +286,7 @@ export default function EnterExamPage() {
           </motion.div>
         </motion.div>
       </div>
+      <SiteFooter />
     </div>
   )
 }

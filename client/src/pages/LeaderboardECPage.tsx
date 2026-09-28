@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import BrandLogo from '../components/BrandLogo';
+import SiteFooter from '../components/SiteFooter';
 import LeaderboardPodium from '../components/3d/LeaderboardPodium';
 import PageTransition from '../components/3d/PageTransition';
 import FlightPathLines from '../components/3d/FlightPathLines';
@@ -539,6 +540,7 @@ export default function LeaderboardECPage() {
           </button>
         </div>
       </div>
+      <SiteFooter />
     </div>
   );
 }

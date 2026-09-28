@@ -1,9 +1,11 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, MotionConfig } from 'framer-motion';
 import ErrorBoundary from './components/ErrorBoundary';
 import PageLoader from './components/PageLoader';
 import CustomCursor from './components/CustomCursor';
+import GrowthranIntro from './components/GrowthranIntro';
+import PageTransition from './components/3d/PageTransition';
 
 // Code-split routes for optimal performance and smaller initial bundles
 const StudentLoginPage = lazy(() => import('./pages/StudentLoginPage'));
@@ -33,6 +35,8 @@ const ResultECPage = lazy(() => import('./pages/ResultECPage'));
 const LeaderboardECPage = lazy(() => import('./pages/LeaderboardECPage'));
 const VerifyCertificatePage = lazy(() => import('./pages/VerifyCertificatePage'));
 const PracticeArenaPage = lazy(() => import('./pages/PracticeArenaPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // ── NEW: Admin pages ─────────────────────────────────────────────
 const CollegesPage = lazy(() => import('./pages/admin/CollegesPage'));
@@ -105,11 +109,27 @@ function AnimatedRoutes() {
         <Route path="/admin/monitor/:examId" element={<AdminMonitorPage />} />
         <Route path="/admin/questions" element={<AdminMonitorPage />} />
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* ── About & Philosophy ── */}
+        <Route path="/about" element={<AboutPage />} />
+
+        {/* 404 Fallback */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AnimatePresence>
   );
+}
+
+function RouteSweep() {
+  const location = useLocation();
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    setActive(true);
+    const timer = setTimeout(() => setActive(false), 450);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
+  return <PageTransition isActive={active} duration={0.45} />;
 }
 
 // PERFORMANCE RULE - TO KEEP 60FPS:
@@ -121,6 +141,8 @@ export default function App() {
     <ErrorBoundary>
       <MotionConfig reducedMotion="user">
         <BrowserRouter>
+          <GrowthranIntro />
+          <RouteSweep />
           <CustomCursor />
           <Suspense fallback={<PageLoader />}>
             <AnimatedRoutes />
