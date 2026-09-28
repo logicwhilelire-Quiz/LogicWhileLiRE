@@ -44,3 +44,6 @@ Thumbs.db
 *.sql.gz
 *.dump
 backups/
+*.db
+scratch/
+scratch*

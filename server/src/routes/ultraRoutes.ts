@@ -497,9 +497,11 @@ router.get('/certificate/verify/:token', async (req: Request, res: Response) => 
 
       if (attempt) {
         const hash = crypto.createHash('sha256').update(cleanToken + (attempt.hall_ticket || '')).digest('hex');
+        const isLegacyLW = cleanToken.toUpperCase().startsWith('LW-');
+        const certPrefix = isLegacyLW ? 'LW' : 'GR';
         const cert = {
           qr_token: cleanToken,
-          certificate_id: `GR-${(attempt.hall_ticket || '2026').toUpperCase()}-${hash.substring(0, 8).toUpperCase()}`,
+          certificate_id: `${certPrefix}-${(attempt.hall_ticket || '2026').toUpperCase()}-${hash.substring(0, 8).toUpperCase()}`,
           candidate_name: attempt.candidate_name || `Candidate ${attempt.hall_ticket}`,
           hall_ticket: attempt.hall_ticket || '2201A0501',
           exam_name: attempt.exam_name || 'Aerospace & Systems Engineering Examination',
@@ -527,7 +529,9 @@ router.get('/certificate/verify/:token', async (req: Request, res: Response) => 
     } catch {}
 
     // 3. Fallback / Universal Decoded Certificate for demo tokens & QR codes
-    // Matches e.g. token_DEMO123_2201A0501 or CERT-2026 or any valid token
+    // Matches e.g. token_DEMO123_2201A0501, LW-CERT-XXXXX, GR-CERT-XXXXX or any valid token
+    const isLegacyLW = cleanToken.toUpperCase().startsWith('LW-') || cleanToken.includes('LW_');
+    const certPrefix = isLegacyLW ? 'LW' : 'GR';
     const parts = cleanToken.split('_');
     const hallTicket = parts.length >= 3 ? parts[2] : (cleanToken.includes('-') ? cleanToken.split('-')[1] : '2201A0501');
     const examCode = parts.length >= 2 ? parts[1] : 'DEMO123';
@@ -535,7 +539,7 @@ router.get('/certificate/verify/:token', async (req: Request, res: Response) => 
 
     const syntheticCert = {
       qr_token: cleanToken,
-      certificate_id: `GR-CERT-${hash.substring(0, 10).toUpperCase()}`,
+      certificate_id: `${certPrefix}-CERT-${hash.substring(0, 10).toUpperCase()}`,
       candidate_name: `Aarav Sharma`,
       hall_ticket: hallTicket || '2201A0501',
       exam_name: 'Aerospace & Distributed Systems Engineering Assessment',
