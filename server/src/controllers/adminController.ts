@@ -114,7 +114,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     } else {
       staffRecord = {
         id: 'st000000-0000-0000-0000-000000000001',
-        name: 'LogicWhile Super Admin',
+        name: 'GROWTHRAN Super Admin',
         email: 'admin@logicwhilequiz.com',
         role: 'super_admin',
         is_active: true,
@@ -549,7 +549,7 @@ export async function exportExcelReport(req: Request, res: Response): Promise<vo
       Wrong: r.wrong_count,
       'Time (s)': r.time_taken_seconds,
       'Graded At': r.graded_at,
-      Platform: 'LogicWhile QUIZ',
+      Platform: 'GROWTHRAN',
     };
   });
 

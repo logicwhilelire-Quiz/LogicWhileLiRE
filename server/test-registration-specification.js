@@ -19,7 +19,7 @@ const { supabase } = require('./dist/db/supabase');
 
 async function runGateSpecificationTests() {
   console.log('================================================================');
-  console.log('🏛️  LogicWhile Assessment Suite — Gate Module Specification (AL-SPEC-2026-REG)');
+  console.log('🏛️  GROWTHRAN Assessment Suite — Gate Module Specification (AL-SPEC-2026-REG)');
   console.log('================================================================\n');
 
   // Test 1: Verify Schema validation with exact Section 4 payload

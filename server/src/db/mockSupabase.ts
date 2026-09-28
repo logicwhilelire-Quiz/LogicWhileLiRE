@@ -24,7 +24,7 @@ const store: MockTableData = {
   staff: [
     {
       id: 'st000000-0000-0000-0000-000000000001',
-      name: 'LogicWhile Super Admin',
+      name: 'GROWTHRAN Super Admin',
       email: 'admin@logicwhilequiz.com',
       password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
       role: 'super_admin',
@@ -118,7 +118,7 @@ const store: MockTableData = {
   exams: [
     {
       id: DEMO_EXAM_ID,
-      title: 'LogicWhile — Full-Stack & System Design Assessment 2026',
+      title: 'GROWTHRAN — Full-Stack & System Design Assessment 2026',
       duration_minutes: 30,
       start_time: new Date(Date.now() - 3600000).toISOString(),
       end_time: new Date(Date.now() + 86400000 * 7).toISOString(),
@@ -473,7 +473,7 @@ const store: MockTableData = {
       id: 99,
       exam_code: 'CS2026',
       college_id: 1,
-      exam_name: 'LogicWhile 4.0 ULTRA - Computer Science & Coding Qualifier 2026',
+      exam_name: 'GROWTHRAN 4.0 ULTRA - Computer Science & Coding Qualifier 2026',
       subject: 'Aptitude, Core CS, DSA & Python/JS Coding',
       total_questions: 15,
       duration_minutes: 45,
@@ -487,7 +487,7 @@ const store: MockTableData = {
       id: 100,
       exam_code: 'DEMO100',
       college_id: 1,
-      exam_name: 'LogicWhile 4.0 ULTRA - Instant Interactive Demonstration',
+      exam_name: 'GROWTHRAN 4.0 ULTRA - Instant Interactive Demonstration',
       subject: 'General Aptitude & Rapid Logic',
       total_questions: 15,
       duration_minutes: 30,
@@ -868,7 +868,7 @@ if (!store.exam_codes.find(e => e.exam_code === 'DEMO123')) {
     exam_code: 'DEMO123',
     code: 'DEMO123',
     college_id: 1,
-    exam_name: 'LogicWhile 4.0 ULTRA - National Engineering Qualifier',
+    exam_name: 'GROWTHRAN 4.0 ULTRA - National Engineering Qualifier',
     subject: 'Aptitude, Core CS, DSA & Live Coding Sandbox',
     total_questions: 15,
     duration_minutes: 60,

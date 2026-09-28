@@ -209,7 +209,7 @@ export async function getLobbyStatus(req: Request, res: Response): Promise<void>
     success: true,
     contest: {
       id: contestId,
-      title: 'LogicWhile 2026 Live Assessment Gate',
+      title: 'GROWTHRAN 2026 Live Assessment Gate',
       status: 'waiting_lobby',
       scheduled_start: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
     },

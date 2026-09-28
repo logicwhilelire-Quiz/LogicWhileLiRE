@@ -996,7 +996,7 @@ export default function CreateExamWizardPage() {
         <aside className="admin-sidebar" style={{ background: 'rgba(20,28,47,0.95)', backdropFilter: 'blur(20px)', borderRight: '1px solid var(--color-border)' }}>
           <div style={{ marginBottom: 24, padding: '0 4px' }}>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em', background: 'linear-gradient(135deg, var(--color-text), var(--color-primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              ⚡ LogicWhile
+              ⚡ GROWTHRAN
             </div>
             <div style={{ fontSize: '0.65rem', color: 'var(--color-primary)', fontWeight: 700, letterSpacing: '0.1em', marginTop: 2 }}>4.0 ULTRA ADMIN</div>
           </div>

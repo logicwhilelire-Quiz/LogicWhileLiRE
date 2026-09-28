@@ -51,7 +51,7 @@ function buildMultipartFormData(boundary, fieldName, filename, fileContent, cont
 
 async function runTests() {
   console.log('================================================================');
-  console.log('📋 LogicWhile QUIZ — BULK ENROLLMENT TEST SUITE');
+  console.log('📋 GROWTHRAN — BULK ENROLLMENT TEST SUITE');
   console.log('Target:', BASE_URL);
   console.log('================================================================\n');
 

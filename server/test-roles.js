@@ -54,7 +54,7 @@ function request(method, path, headers = {}, body = null) {
 
 async function runRoleSecurityTests() {
   console.log('================================================================');
-  console.log('🛡️ LogicWhile QUIZ — ROLE & OWNERSHIP SECURITY TESTS');
+  console.log('🛡️ GROWTHRAN — ROLE & OWNERSHIP SECURITY TESTS');
   console.log(`Target: ${BASE_URL}`);
   console.log('================================================================\n');
 

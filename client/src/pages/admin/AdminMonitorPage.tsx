@@ -55,7 +55,7 @@ function AdminSidebar({ active = '' }: { active?: string }) {
       {/* Brand */}
       <div style={{ marginBottom: 24, padding: '0 4px' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em', background: 'linear-gradient(135deg, var(--color-text), var(--color-primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-          ⚡ LogicWhile
+          ⚡ GROWTHRAN
         </div>
         <div style={{ fontSize: '0.65rem', color: 'var(--color-primary)', fontWeight: 700, letterSpacing: '0.1em', marginTop: 2 }}>4.0 ULTRA ADMIN</div>
       </div>

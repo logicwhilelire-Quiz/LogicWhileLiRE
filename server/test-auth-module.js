@@ -28,7 +28,7 @@ const { supabase } = require('./dist/db/supabase');
 
 async function runAuthModuleTests() {
   console.log('================================================================');
-  console.log('🔒 LogicWhile QUIZ — MODULE 1 AUTH & SECURITY TEST SUITE');
+  console.log('🔒 GROWTHRAN — MODULE 1 AUTH & SECURITY TEST SUITE');
   console.log('================================================================\n');
 
   // Test 1: Password Hashing
