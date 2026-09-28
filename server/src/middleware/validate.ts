@@ -175,7 +175,8 @@ export const createStaffSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100).trim(),
   email: z.string().email('Invalid email address').toLowerCase().trim(),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  role: z.enum(['super_admin', 'faculty']),
+  role: z.enum(['super_admin', 'faculty', 'college_admin']),
+  college_id: z.union([z.number(), z.string()]).optional(),
 });
 
 export const updateStaffStatusSchema = z.object({

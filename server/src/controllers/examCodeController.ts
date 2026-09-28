@@ -138,16 +138,20 @@ export async function deleteCollege(req: Request, res: Response): Promise<void> 
 
 /**
  * GET /api/admin/exam-codes
+ * 1e: super_admin sees all; college_admin/faculty see only their college's codes.
  */
 export async function listExamCodes(req: Request, res: Response): Promise<void> {
-  const { data, error } = await supabase
+  const admin = (req as any).admin;
+  const isSuperAdmin = admin?.role === 'super_admin' || admin?.role === 'admin';
+  const callerCollegeId = admin?.college_id;
+  let query = supabase
     .from('exam_codes')
-    .select(`
-      *,
-      college:college_id ( college_name, college_code )
-    `)
+    .select('*, college:college_id ( college_name, college_code )')
     .order('created_at', { ascending: false });
-
+  if (!isSuperAdmin && callerCollegeId) {
+    query = (query as any).eq('college_id', callerCollegeId);
+  }
+  const { data, error } = await query;
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
   res.json({ success: true, exam_codes: data });
 }
@@ -823,4 +827,5 @@ export async function getExamCodeReport(req: Request, res: Response): Promise<vo
     })),
   });
 }
+
 

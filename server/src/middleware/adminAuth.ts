@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { supabase } from '../db/supabase';
 
-export type StaffRole = 'super_admin' | 'faculty';
+export type StaffRole = 'super_admin' | 'faculty' | 'college_admin';
 
 export interface AdminJWTPayload {
   sub: string;  // admin username or staff email
@@ -41,7 +41,7 @@ export function adminAuth(req: Request, res: Response, next: NextFunction): void
     if (payload.role === 'admin') {
       payload.role = 'super_admin';
     }
-    if (payload.role !== 'super_admin' && payload.role !== 'faculty') {
+    if (payload.role !== 'super_admin' && payload.role !== 'faculty' && payload.role !== 'college_admin') {
       res.status(403).json({ success: false, error: 'Insufficient privileges' });
       return;
     }
@@ -71,6 +71,63 @@ export function requireRole(...roles: StaffRole[]) {
         error: `Insufficient privileges: Action requires ${roles.join(' or ')} permission`,
       });
       return;
+    }
+    next();
+  };
+}
+
+/**
+ * 1e: College scoping middleware.
+ * super_admin: unrestricted. college_admin/faculty: may only access exam codes
+ * that belong to their assigned college_id (stored in the JWT as college_id).
+ * If college_id is missing from the token, treat as unscoped (faculty legacy).
+ */
+export function requireCollegeScope() {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.admin) {
+      res.status(401).json({ success: false, error: 'Admin authentication required' });
+      return;
+    }
+    if (req.admin.role === 'super_admin' || req.admin.role === 'admin') {
+      next();
+      return;
+    }
+    // For college_admin and faculty: enforce college_id in the body or check
+    // the exam code's college_id matches the caller's college_id.
+    const callerCollegeId = (req.admin as any).college_id;
+    if (!callerCollegeId) {
+      // Legacy faculty with no college_id — allow for now, flag in audit
+      next();
+      return;
+    }
+    // If creating: ensure the supplied college_id matches
+    if (req.method === 'POST' && req.body?.college_id) {
+      if (String(req.body.college_id) !== String(callerCollegeId)) {
+        res.status(403).json({
+          success: false,
+          error: 'Forbidden: You can only create resources for your own college.',
+          code: 'CROSS_COLLEGE_FORBIDDEN',
+        });
+        return;
+      }
+    }
+    // If updating/reading a specific exam code: look up its college_id
+    const examCodeId = req.params.id;
+    if (examCodeId && req.method !== 'POST') {
+      const { supabase } = await import('../db/supabase');
+      const { data: ec } = await supabase
+        .from('exam_codes')
+        .select('college_id')
+        .eq('id', examCodeId)
+        .maybeSingle();
+      if (ec && String(ec.college_id) !== String(callerCollegeId)) {
+        res.status(403).json({
+          success: false,
+          error: 'Forbidden: This exam code belongs to a different college.',
+          code: 'CROSS_COLLEGE_FORBIDDEN',
+        });
+        return;
+      }
     }
     next();
   };

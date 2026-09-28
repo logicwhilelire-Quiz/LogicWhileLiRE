@@ -183,6 +183,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       role: staffRecord.role,
       staff_id: staffRecord.id,
       name: staffRecord.name,
+      college_id: staffRecord.college_id || null,
     },
     process.env.ADMIN_JWT_SECRET!,
     {
@@ -208,6 +209,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       name: staffRecord.name,
       email: staffRecord.email,
       role: staffRecord.role,
+      college_id: staffRecord.college_id || null,
     },
   });
 }
@@ -985,7 +987,7 @@ export async function listStaff(_req: Request, res: Response): Promise<void> {
  * POST /api/admin/staff
  */
 export async function createStaff(req: Request, res: Response): Promise<void> {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, college_id } = req.body;
   const normalizedEmail = (email || '').toLowerCase().trim();
 
   // Check duplicate email
@@ -1011,6 +1013,7 @@ export async function createStaff(req: Request, res: Response): Promise<void> {
       email: normalizedEmail,
       password_hash: passwordHash,
       role: role || 'faculty',
+      college_id: college_id ? parseInt(String(college_id), 10) : null,
       created_by: req.admin?.staff_id || null,
       is_active: true,
       created_at: new Date().toISOString(),

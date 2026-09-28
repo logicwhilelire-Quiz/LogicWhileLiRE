@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { adminAuth } from '../middleware/adminAuth';
+import { adminAuth, requireCollegeScope } from '../middleware/adminAuth';
 import { supabase } from '../db/supabase';
 import {
   listColleges,
@@ -143,15 +143,16 @@ router.delete('/admin/colleges/:id', adminAuth, deleteCollege);
 
 // Exam codes management
 router.get('/admin/exam-codes', adminAuth, listExamCodes);
-router.post('/admin/exam-codes', adminAuth, createExamCode);
-router.patch('/admin/exam-codes/:id/toggle', adminAuth, toggleExamCode);
-router.get('/admin/exam-codes/:id/qr', adminAuth, getExamCodeQR);
-router.get('/admin/exam-codes/:id/report', adminAuth, getExamCodeReport);
+router.post('/admin/exam-codes', adminAuth, requireCollegeScope(), createExamCode);
+router.patch('/admin/exam-codes/:id/toggle', adminAuth, requireCollegeScope(), toggleExamCode);
+router.get('/admin/exam-codes/:id/qr', adminAuth, requireCollegeScope(), getExamCodeQR);
+router.get('/admin/exam-codes/:id/report', adminAuth, requireCollegeScope(), getExamCodeReport);
 
 // Question import for exam codes
 router.post(
   '/admin/exam-codes/:id/import-questions',
   adminAuth,
+  requireCollegeScope(),
   upload.single('file'),
   importQuestionsForExamCode
 );
