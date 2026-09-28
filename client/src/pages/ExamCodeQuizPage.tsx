@@ -13,6 +13,7 @@ import ProctoringConsentModal from '../components/ProctoringConsentModal'
 import BrandLogo from '../components/BrandLogo'
 import FullscreenEnforcementOverlay from '../components/exam/FullscreenEnforcementOverlay'
 import ScreenShareWarningOverlay from '../components/exam/ScreenShareWarningOverlay'
+import { useAudioProctor } from '../hooks/useAudioProctor'
 
 const FaceMeshOrb = lazy(() => import('../components/3d/FaceMeshOrb'))
 const CircularProgress3D = lazy(() => import('../components/3d/CircularProgress3D'))
@@ -232,7 +233,7 @@ export default function QuizPage() {
     }
   }, [])
 
-  const logViolation = useCallback(async (type: string, msg: string, metadata?: { duration_seconds?: number; exitCount?: number }) => {
+  const logViolation = useCallback(async (type: string, msg: string, metadata?: { duration_seconds?: number; exitCount?: number; peak_db?: number }) => {
     violationRef.current++
     setViolationCount(violationRef.current)
     setViolationMsg(msg)
@@ -281,6 +282,7 @@ export default function QuizPage() {
         snapshot_thumb: snapshotThumb,
         duration_seconds: metadata?.duration_seconds,
         exitCount: metadata?.exitCount,
+        peak_db: metadata?.peak_db,
       })
     } catch { /* non-blocking */ }
 
@@ -424,6 +426,26 @@ export default function QuizPage() {
       if (screenCaptureIntervalRef.current) clearInterval(screenCaptureIntervalRef.current)
     }
   }, [screenShareActive, examCode, hallTicket])
+
+  /* ── 1.3 Audio Proctoring ── */
+  const [showAudioWarning, setShowAudioWarning] = useState(false)
+  const [lastAudioSpikeDb, setLastAudioSpikeDb] = useState(0)
+
+  const handleAudioSpike = useCallback((peakDb: number) => {
+    setLastAudioSpikeDb(peakDb)
+    logViolation('audio_spike', `Audio spike detected: ${peakDb} dB`, {
+      peak_db: peakDb,
+    })
+    setShowAudioWarning(true)
+    setTimeout(() => setShowAudioWarning(false), 3500)
+  }, [logViolation])
+
+  const { isListening: isAudioListening } = useAudioProctor({
+    enabled: consentGiven && !submitting,
+    thresholdDb: -24,
+    cooldownMs: 8000,
+    onAudioSpike: handleAudioSpike,
+  })
 
   /* ── Helpers ── */
   const currentQuestion = session?.questions[currentQ]
@@ -602,6 +624,26 @@ export default function QuizPage() {
                 <span>{screenShareActive ? '🖥️ Screen Live' : '⚠️ Screen Off'}</span>
               </div>
             )}
+            {isAudioListening && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: 999,
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  background: 'rgba(59, 130, 246, 0.15)',
+                  border: '1px solid rgba(59, 130, 246, 0.35)',
+                  color: '#60A5FA',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <span>🎙️ Mic Guard</span>
+              </div>
+            )}
             <Suspense fallback={
               <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(43,127,255,0.1)', border: '2px solid rgba(43,127,255,0.2)' }} />
             }>
@@ -648,6 +690,28 @@ export default function QuizPage() {
             }}
           >
             {faceStatus === 'multiple' ? '🚨 Multiple faces detected!' : '⚠️ Face not visible!'}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── AUDIO SPIKE ALERT ─── */}
+      <AnimatePresence>
+        {showAudioWarning && (
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 24 }}
+            style={{
+              position: 'fixed', top: 168, right: 24, zIndex: 200,
+              background: 'rgba(234, 88, 12, 0.95)',
+              backdropFilter: 'blur(8px)',
+              borderRadius: 'var(--radius-md)', padding: '10px 16px',
+              fontSize: '0.85rem', fontWeight: 600, color: '#fff',
+              boxShadow: '0 0 20px rgba(234, 88, 12, 0.4)',
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}
+          >
+            <span>🎙️ Audio spike detected ({lastAudioSpikeDb} dB)! Please maintain silence.</span>
           </motion.div>
         )}
       </AnimatePresence>
