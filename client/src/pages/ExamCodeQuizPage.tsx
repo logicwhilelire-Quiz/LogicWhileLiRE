@@ -11,6 +11,7 @@ import HoloScan from '../components/3d/HoloScan'
 import FlightPathLines from '../components/3d/FlightPathLines'
 import ProctoringConsentModal from '../components/ProctoringConsentModal'
 import BrandLogo from '../components/BrandLogo'
+import FullscreenEnforcementOverlay from '../components/exam/FullscreenEnforcementOverlay'
 
 const FaceMeshOrb = lazy(() => import('../components/3d/FaceMeshOrb'))
 const CircularProgress3D = lazy(() => import('../components/3d/CircularProgress3D'))
@@ -71,6 +72,10 @@ export default function QuizPage() {
   const [showAdminWarning, setShowAdminWarning] = useState(false)
   const [runResult, setRunResult] = useState<{ output: string; error?: string } | null>(null)
   const [running, setRunning] = useState(false)
+  const [showFullscreenOverlay, setShowFullscreenOverlay] = useState(false)
+  const [fullscreenExitCount, setFullscreenExitCount] = useState(0)
+  const fullscreenExitCountRef = useRef(0)
+  const exitTimestampRef = useRef<number | null>(null)
   const violationRef = useRef(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
   const sessionIdRef = useRef<string | undefined>(undefined)
@@ -223,7 +228,7 @@ export default function QuizPage() {
     }
   }, [])
 
-  const logViolation = useCallback(async (type: string, msg: string) => {
+  const logViolation = useCallback(async (type: string, msg: string, metadata?: { duration_seconds?: number; exitCount?: number }) => {
     violationRef.current++
     setViolationCount(violationRef.current)
     setViolationMsg(msg)
@@ -257,6 +262,7 @@ export default function QuizPage() {
           message: msg,
           violationCount: violationRef.current,
           snapshotThumb,
+          metadata,
           timestamp: Date.now(),
         },
       })
@@ -269,6 +275,8 @@ export default function QuizPage() {
         violationType: type,
         notes: msg,
         snapshot_thumb: snapshotThumb,
+        duration_seconds: metadata?.duration_seconds,
+        exitCount: metadata?.exitCount,
       })
     } catch { /* non-blocking */ }
 
@@ -276,6 +284,61 @@ export default function QuizPage() {
       handleSubmit()
     }
   }, [session, examCode, hallTicket, handleSubmit])
+
+  /* ── 1.1 Fullscreen Enforcement Listener ── */
+  const handleReturnToFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen()
+      }
+      setShowFullscreenOverlay(false)
+    } catch {
+      /* Handled */
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!session || submitting) return
+
+    // Auto-request fullscreen if consent already given
+    if (!document.fullscreenElement && consentGiven) {
+      document.documentElement.requestFullscreen().catch(() => {})
+    }
+
+    const handleFullscreenChange = () => {
+      const isFs = !!document.fullscreenElement
+      if (!isFs && !submitting) {
+        exitTimestampRef.current = Date.now()
+        fullscreenExitCountRef.current += 1
+        const count = fullscreenExitCountRef.current
+        setFullscreenExitCount(count)
+        setShowFullscreenOverlay(true)
+
+        logViolation('fullscreen_exit', `Candidate exited fullscreen mode (Strike ${count}/3)`, {
+          exitCount: count,
+        })
+
+        if (count >= 3) {
+          setTimeout(() => {
+            setShowFullscreenOverlay(false)
+            handleSubmit()
+          }, 800)
+        }
+      } else if (isFs) {
+        if (exitTimestampRef.current) {
+          const durationSec = Math.max(1, Math.round((Date.now() - exitTimestampRef.current) / 1000))
+          exitTimestampRef.current = null
+          logViolation('fullscreen_restored', `Fullscreen restored after ${durationSec}s outside test window`, {
+            duration_seconds: durationSec,
+          })
+        }
+        setShowFullscreenOverlay(false)
+      }
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [session, submitting, consentGiven, logViolation, handleSubmit])
 
   /* ── Helpers ── */
   const currentQuestion = session?.questions[currentQ]
@@ -794,8 +857,23 @@ export default function QuizPage() {
         onConsent={() => {
           setConsentGiven(true);
           sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
+          document.documentElement.requestFullscreen().catch(() => {});
         }}
         examName={session?.examName || examCode}
+      />
+
+      {/* ─── FULLSCREEN ENFORCEMENT OVERLAY (1.1) ─── */}
+      <FullscreenEnforcementOverlay
+        isOpen={showFullscreenOverlay}
+        exitCount={fullscreenExitCount}
+        maxExits={3}
+        countdownSeconds={10}
+        onReturnToFullscreen={handleReturnToFullscreen}
+        onTimeoutSubmit={() => {
+          setShowFullscreenOverlay(false);
+          logViolation('excessive_fullscreen_exits', 'Exam auto-submitted: 10s fullscreen return countdown expired');
+          handleSubmit();
+        }}
       />
     </div>
   )

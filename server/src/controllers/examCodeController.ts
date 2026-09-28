@@ -596,14 +596,14 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
   // 1. Look up attempt
   let query = supabase.from('exam_code_attempts').select('*');
   if (attemptId) {
-    query = (query as any).or(`id.eq.${attemptId},hall_ticket_no.eq.${attemptId}`);
+    query = (query as any).or(`id.eq.${attemptId},hall_ticket_no.eq.${attemptId},hall_ticket.eq.${attemptId}`);
   }
   if (code) {
     query = (query as any).eq('exam_code', code);
   }
   const { data: attempt } = await query.maybeSingle();
 
-  if (!attempt || attempt.status !== 'in_progress') {
+  if (!attempt || (attempt.status !== 'in_progress' && attempt.status !== 'active')) {
     res.status(403).json({ success: false, error: 'Invalid attempt or session closed' });
     return;
   }
@@ -636,6 +636,8 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
     timestamp: new Date().toISOString(),
     snapshot_thumb: snapshot_thumb ? String(snapshot_thumb).slice(0, 30000) : null,
     count: newCount,
+    duration_seconds: req.body.duration_seconds || req.body.duration || null,
+    exit_number: req.body.exitCount || req.body.exit_count || null,
     in_grace_period: isGrace,
     is_false_positive: false,
     reviewed_by: null,

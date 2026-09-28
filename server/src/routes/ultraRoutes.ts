@@ -797,8 +797,10 @@ router.get('/exam-code/:code/start', async (req: Request, res: Response) => {
     // Record or update attempt in exam_code_attempts
     try {
       await supabase.from('exam_code_attempts').upsert({
+        id: `att_${code}_${hallTicket}`,
         exam_code: code,
         hall_ticket: hallTicket,
+        hall_ticket_no: hallTicket,
         student_name: hallTicket,
         started_at: new Date().toISOString(),
         start_time: new Date().toISOString(),
