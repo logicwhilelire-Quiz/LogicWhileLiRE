@@ -39,7 +39,7 @@ export const ALL_COLLEGES: CollegeInfo[] = [
   { id: 'COL-KMIT-012', name: 'Keshav Memorial Institute of Technology (KMIT)' },
   { id: 'COL-MREC-013', name: 'Malla Reddy Engineering College' },
   { id: 'COL-GCET-014', name: 'Geethanjali College of Engineering and Technology' },
-  { id: 'COL-IARE-015', name: 'Institute of Aeronautical Engineering (IARE)' },
+  { id: 'COL-CMRK-015', name: 'CMR College of Engineering & Technology' },
   { id: 'COL-SPEC-016', name: "St. Peter's Engineering College" },
   { id: 'COL-STAN-017', name: 'Stanley College of Engineering & Technology' },
   { id: 'COL-ANUR-018', name: 'Anurag University' },

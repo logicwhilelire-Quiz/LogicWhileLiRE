@@ -69,10 +69,10 @@ function AnimatedRoutes() {
         <Route path="/leaderboard-ec/:examCode" element={<LeaderboardECPage />} />
         <Route path="/leaderboard/:examCode" element={<LeaderboardECPage />} />
 
-        {/* ── CERTIFICATE VERIFICATION & PRACTICE ARENA ── */}
-        <Route path="/verify/:token" element={<VerifyCertificatePage />} />
-        <Route path="/certificate/verify/:token" element={<VerifyCertificatePage />} />
-        <Route path="/verify" element={<VerifyCertificatePage />} />
+        {/* ── PRACTICE ARENA ── */}
+        <Route path="/verify/:token" element={<Navigate to="/enter-exam" replace />} />
+        <Route path="/certificate/verify/:token" element={<Navigate to="/enter-exam" replace />} />
+        <Route path="/verify" element={<Navigate to="/enter-exam" replace />} />
         <Route path="/practice" element={<PracticeArenaPage />} />
         <Route path="/arena" element={<PracticeArenaPage />} />
 

@@ -20,7 +20,7 @@ console.log('  ✅ New exam code generated with GR- prefix.\n');
 // Test 2: Validates new GR- format
 console.log('[2/4] Testing validator accepts GR- format...');
 assert.strictEqual(isValidExamCodeFormat('GR-VRSEC-8X9P2Q'), true, 'GR-VRSEC-8X9P2Q must be valid');
-assert.strictEqual(isValidExamCodeFormat('GR-IARE-2026'), true, 'GR-IARE-2026 must be valid');
+assert.strictEqual(isValidExamCodeFormat('GR-TECH-2026'), true, 'GR-TECH-2026 must be valid');
 console.log('  ✅ Validator cleanly accepts GR- exam codes.\n');
 
 // Test 3: Backward compatibility — validator MUST keep accepting existing LW- codes
