@@ -51,6 +51,16 @@ services:
         sync: false
       - key: SMTP_PASS
         sync: false
+      - key: DEMO_MODE
+        value: "false"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: INITIAL_ADMIN_EMAIL
+        sync: false
+      - key: EMAIL_FROM
+        value: noreply@growthran.com
+      - key: EMAIL_FROM_NAME
+        value: GROWTHRAN Platform
       - key: OTP_FROM_EMAIL
         sync: false
       - key: ADMIN_ALERT_EMAIL
@@ -74,6 +84,8 @@ services:
         value: staging
       - key: PORT
         value: 3001
+      - key: DEMO_MODE
+        value: "false"
       - key: VIOLATION_THRESHOLD
         value: 2
       - key: JWT_EXPIRY
@@ -92,7 +104,11 @@ services:
         generateValue: true
       - key: ADMIN_JWT_SECRET
         generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
       - key: ADMIN_USERNAME
+        sync: false
+      - key: INITIAL_ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD_HASH
         sync: false
@@ -104,6 +120,10 @@ services:
         sync: false
       - key: SMTP_PASS
         sync: false
+      - key: EMAIL_FROM
+        value: noreply@growthran.com
+      - key: EMAIL_FROM_NAME
+        value: GROWTHRAN Platform (Staging)
       - key: OTP_FROM_EMAIL
         sync: false
       - key: ADMIN_ALERT_EMAIL

@@ -48,9 +48,17 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'x-load-test'],
   })
 );
+
+// ------- Request ID tracking (Phase J1) -------
+app.use((req, res, next) => {
+  const reqId = req.headers['x-request-id'] || `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  req.headers['x-request-id'] = reqId as string;
+  res.setHeader('X-Request-Id', reqId as string);
+  next();
+});
 
 // ------- Body parsing -------
 app.use(express.json({ limit: '1mb' }));
@@ -79,6 +87,17 @@ app.get('/api/health', (_req, res) => {
     environment: process.env.NODE_ENV || 'development',
     demo_mode: isDemo,
     demo_banner: isDemo ? 'Running on in-memory demo data. Connect Supabase to enable production persistence.' : null,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Readiness check (Phase J1)
+app.get('/api/ready', (_req, res) => {
+  res.json({
+    status: 'ready',
+    ready: true,
+    service: 'GROWTHRAN Assessment Engine',
+    database: isDemo ? 'in_memory_ready' : 'connected',
     timestamp: new Date().toISOString(),
   });
 });
@@ -134,5 +153,20 @@ httpServer.listen(PORT, '0.0.0.0', 2048, () => {
   startSessionCron();
 });
 
+// ------- Graceful shutdown handlers (Phase J1) -------
+const handleGracefulShutdown = (signal: string) => {
+  console.log(`[Server] Received ${signal}. Starting graceful shutdown...`);
+  httpServer.close(() => {
+    console.log('[Server] HTTP and WebSocket server closed cleanly.');
+    process.exit(0);
+  });
+  setTimeout(() => {
+    console.error('[Server] Forcing shutdown after timeout.');
+    process.exit(1);
+  }, 10000).unref();
+};
+
+process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => handleGracefulShutdown('SIGINT'));
 
 export default app;

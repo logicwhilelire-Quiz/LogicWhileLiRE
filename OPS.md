@@ -1,17 +1,20 @@
-# LOGICWHILE QUIZ — Production Operations Manual (OPS.md)
+# GROWTHRAN — Production Operations Manual (OPS.md)
 
-**Official Assessment Platform:** **LOGICWHILE QUIZ**  
-**Brand Motto:** *"Elevating Coding Knowledge"*  
-**Authoritative Engine:** Server-Timed, Anti-Tamper Proctoring, Real-Time Leaderboards
+**Official Platform:** **GROWTHRAN**  
+**Tagline:** *"Learn. Grow. Run."*  
+**Developed by:** R. Charan Sai  
+**Authoritative Engine:** Server-Timed, Anti-Tamper Proctoring, Sandboxed Code Execution, Real-Time Leaderboards
 
 ---
 
 ## Table of Contents
 1. [Database Backups & Point-in-Time Recovery](#1-database-backups--point-in-time-recovery)
-2. [Staging Environment & Promotion Workflow](#2-staging-environment--promotion-workflow)
-3. [CI Pipeline (GitHub Actions)](#3-ci-pipeline-github-actions)
-4. [Secrets Audit & Credential Rotation](#4-secrets-audit--credential-rotation)
-5. [Manual Setup Checklist Outside Codebase](#5-manual-setup-checklist-outside-codebase)
+2. [Migration & Rollback Guide](#2-migration--rollback-guide)
+3. [Staging Environment & Promotion Workflow](#3-staging-environment--promotion-workflow)
+4. [CI Pipeline (GitHub Actions)](#4-ci-pipeline-github-actions)
+5. [Secrets Audit & Credential Rotation](#5-secrets-audit--credential-rotation)
+6. [Incident Runbook & Triage Checklist](#6-incident-runbook--triage-checklist)
+7. [Manual Setup Checklist Outside Codebase](#7-manual-setup-checklist-outside-codebase)
 
 ---
 
@@ -48,7 +51,6 @@ npx supabase db dump --project-ref <your-project-ref> -f pre_migration_backup_$(
 ```
 
 #### Method C: Automated Offsite Backup Script (`server/scripts/backup-db.sh`)
-We provide a standalone, production-ready backup script with `gzip -9` compression and automatic 14-day retention pruning:
 ```bash
 cd server
 export DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres"
@@ -60,8 +62,28 @@ chmod +x scripts/backup-db.sh
 To restore from a backup:
 ```bash
 # Decompress and restore into target database
-gunzip -c backups/logicwhile_quiz_backup_TIMESTAMP.sql.gz | psql "$DATABASE_URL"
+gunzip -c backups/growthran_backup_TIMESTAMP.sql.gz | psql "$DATABASE_URL"
 ```
+
+---
+
+## 2. Migration & Rollback Guide
+
+### Migration Inventory
+All SQL migrations are organized in `server/db/`:
+1. `schema.sql`: Core schema (students, exams, questions, sessions, answers, violations, results, audit log).
+2. `growthran_v1_admin_control.sql`: Multi-campus college tables, exam codes, staff roles (`super_admin`, `faculty`), and ownership.
+3. `migration_exam_codes.sql`: GR- & LW- dual prefix support and attempt tracking.
+4. `migration_remove_certificates.sql`: Safe certificate table retirement migration with full rollback script.
+
+> [!CAUTION]
+> **Ground Rule 14.7**: Never execute destructive DROP TABLE migrations on live production databases without explicit owner confirmation. The script is safely isolated in `migration_remove_certificates.sql`.
+
+### Rollback Procedure
+If a migration fails or must be reverted:
+1. Execute the rollback SQL block provided at the bottom of the migration file.
+2. Verify integrity by running: `node test-roles.js && npm test`.
+3. Clear application-level cache: restart the server process.
 
 ---
 

@@ -1,8 +1,8 @@
 -- ============================================================
--- GROWRAN 1.0 — Unified Clean Production Database Schema
--- Architecture: GROWRAN Clean Portal Architecture
+-- GROWTHRAN 1.0 — Unified Clean Production Database Schema
+-- Architecture: GROWTHRAN Clean Portal Architecture
 -- Author: R. Charan Sai
--- Target: growran-prod / Supabase SQL Editor
+-- Target: growthran-prod / Supabase SQL Editor
 -- ============================================================
 
 -- ─── 0. EXTENSIONS ───────────────────────────────────────────
