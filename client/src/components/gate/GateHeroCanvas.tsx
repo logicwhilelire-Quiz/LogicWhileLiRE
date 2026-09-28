@@ -405,28 +405,19 @@ export default function GateHeroCanvas({ wsLatency = 18 }: GateHeroCanvasProps) 
                 gap: 8,
               }}
             >
-              <span>LOGIC WHILE</span>
-              <span
-                style={{
-                  background: 'linear-gradient(135deg, #f59e0b 0%, #06b6d4 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                QUIZ
-              </span>
+              <span>GROWTHRAN</span>
             </div>
             <div
               style={{
                 fontSize: '0.72rem',
-                color: '#f59e0b',
+                color: '#4A7DBE',
                 fontWeight: 700,
-                letterSpacing: '0.1em',
+                letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 marginTop: 2,
               }}
             >
-              Elevating Coding Knowledge
+              Learn. Grow. Run.
             </div>
           </div>
 

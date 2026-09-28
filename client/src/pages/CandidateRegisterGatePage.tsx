@@ -1160,20 +1160,20 @@ export default function CandidateRegisterGatePage() {
                 letterSpacing: '-0.02em',
               }}
             >
-              LOGIC WHILE QUIZ
+              GROWTHRAN
             </h1>
           </div>
           <div
             style={{
-              fontSize: '0.8rem',
-              color: '#64748b',
+              fontSize: '0.85rem',
+              color: '#4A7DBE',
               fontFamily: "'JetBrains Mono', monospace",
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
-              fontWeight: 600,
+              fontWeight: 700,
             }}
           >
-            Elevating Coding Knowledge
+            Learn. Grow. Run.
           </div>
         </header>
 

@@ -97,7 +97,7 @@ export default function PageTransition({
                   filter: 'drop-shadow(0 0 16px #06B6D4)',
                 }}
               >
-                LOGICWHILE · SYNCING
+                GROWTHRAN · SYNCING
               </div>
             </motion.div>
           </div>

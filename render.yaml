@@ -1,5 +1,5 @@
 # ==============================================================================
-# LOGICWHILE QUIZ — Render Infrastructure as Code Blueprint
+# GROWTHRAN — Render Infrastructure as Code Blueprint
 # Defines separate Production and Staging backend services
 # ==============================================================================
 services:

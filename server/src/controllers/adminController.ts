@@ -611,18 +611,17 @@ export async function exportPdfReport(req: Request, res: Response): Promise<void
     }
   }
 
-  // Executive Brand Header: LogicWhile in deep navy, QUIZ in brand amber
-  doc.fontSize(23).font('Helvetica-Bold').fillColor('#0f172a').text('LogicWhile ', { continued: true, align: 'center' });
-  doc.fillColor('#d97706').text('QUIZ');
+  // Executive Brand Header: GROWTHRAN in deep blue
+  doc.fontSize(24).font('Helvetica-Bold').fillColor('#0A3F8F').text('GROWTHRAN', { align: 'center' });
   
   // Official Tagline
-  doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#ea580c').text('ELEVATING CODING KNOWLEDGE', { align: 'center', characterSpacing: 2 });
+  doc.fontSize(9).font('Helvetica-Bold').fillColor('#4A7DBE').text('LEARN. GROW. RUN.', { align: 'center', characterSpacing: 2 });
   doc.moveDown(0.6);
 
   // Brand Accent Divider Rule
   const startX = 60;
   const endX = doc.page.width - 60;
-  doc.strokeColor('#f59e0b').lineWidth(1.5).moveTo(startX, doc.y).lineTo(endX, doc.y).stroke();
+  doc.strokeColor('#1B5FB5').lineWidth(1.5).moveTo(startX, doc.y).lineTo(endX, doc.y).stroke();
   doc.moveDown(0.8);
 
   // Exam Details
@@ -650,6 +649,9 @@ export async function exportPdfReport(req: Request, res: Response): Promise<void
     }
     doc.moveDown(0.5);
   });
+
+  doc.moveDown(1.5);
+  doc.fontSize(8).font('Helvetica').fillColor('#64748b').text('GROWTHRAN Autonomous Assessment Engine • Developed by R. Charan Sai • © 2026 R. Charan Sai. All rights reserved.', { align: 'center' });
 
   doc.end();
 }

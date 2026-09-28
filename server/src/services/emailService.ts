@@ -87,7 +87,8 @@ export async function logDeliverableFailure(
  * Strictly gates console-log fallback behind NODE_ENV !== 'production'.
  */
 export async function sendWithRetry(payload: EmailPayload, maxAttempts: number = 3): Promise<boolean> {
-  const from = process.env.OTP_FROM_EMAIL || process.env.SMTP_USER || 'noreply@logicwhilequiz.com';
+  const from = process.env.EMAIL_FROM || process.env.OTP_FROM_EMAIL || process.env.SMTP_USER || 'noreply@logicwhilequiz.com';
+  const fromName = process.env.EMAIL_FROM_NAME || 'GROWTHRAN';
   const t = getTransporter();
 
   // If in dev and no SMTP credentials configured, gate console log fallback
@@ -107,11 +108,11 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
     try {
       const logoPath = path.resolve(__dirname, '../../logo.png');
       const attachments = fs.existsSync(logoPath)
-        ? [{ filename: 'logo.png', path: logoPath, cid: 'logicwhilelogo' }]
+        ? [{ filename: 'logo.png', path: logoPath, cid: 'growthranlogo' }]
         : [];
 
       await t.sendMail({
-        from: `"LOGICWHILE QUIZ" <${from}>`,
+        from: `"${fromName}" <${from}>`,
         to: payload.to,
         subject: payload.subject,
         text: payload.text,
@@ -144,7 +145,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
 }
 
 /**
- * Brand email wrapper for LOGICWHILE QUIZ matching PDF report and system branding
+ * Brand email wrapper for GROWTHRAN matching PDF report and system branding
  */
 export function wrapBrandTemplate(title: string, innerHtml: string): string {
   const logoPath = path.resolve(__dirname, '../../logo.png');
@@ -158,29 +159,29 @@ export function wrapBrandTemplate(title: string, innerHtml: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
 </head>
-<body style="margin:0; padding:0; background-color:#0a0a0f; font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#f0f0f8;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#0a0a0f; padding:40px 16px;">
+<body style="margin:0; padding:0; background-color:#0b1329; font-family:'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#f0f4f8;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#0b1329; padding:40px 16px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" style="max-width:600px; background-color:#111118; border:1px solid rgba(255,255,255,0.08); border-radius:16px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.6);" cellspacing="0" cellpadding="0" border="0">
+        <table role="presentation" width="100%" style="max-width:600px; background-color:#101d3f; border:1px solid rgba(255,255,255,0.08); border-radius:16px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.6);" cellspacing="0" cellpadding="0" border="0">
           
           <!-- Brand Header -->
           <tr>
-            <td style="padding:32px 32px 24px; text-align:center; background:linear-gradient(180deg, rgba(124,58,237,0.15) 0%, rgba(17,17,24,0) 100%); border-bottom:1px solid rgba(255,255,255,0.06);">
+            <td style="padding:32px 32px 24px; text-align:center; background:linear-gradient(180deg, rgba(27,95,181,0.2) 0%, rgba(16,29,63,0) 100%); border-bottom:1px solid rgba(255,255,255,0.06);">
               ${hasLogoImage ? `
                 <div style="margin-bottom:12px;">
-                  <img src="cid:logicwhilelogo" alt="LogicWhile Logo" width="56" height="56" style="display:inline-block; border-radius:12px; border:1px solid rgba(245,158,11,0.4);" />
+                  <img src="cid:growthranlogo" alt="GROWTHRAN Logo" width="56" height="56" style="display:inline-block; border-radius:12px; border:1px solid rgba(27,95,181,0.4);" />
                 </div>
               ` : `
-                <div style="display:inline-block; padding:8px 16px; background:rgba(124,58,237,0.2); border:1px solid #7c3aed; border-radius:999px; margin-bottom:12px;">
-                  <span style="font-size:12px; font-weight:700; letter-spacing:2px; color:#c4b5fd; text-transform:uppercase;">OFFICIAL ASSESSMENT</span>
+                <div style="display:inline-block; padding:8px 16px; background:rgba(27,95,181,0.2); border:1px solid #1B5FB5; border-radius:999px; margin-bottom:12px;">
+                  <span style="font-size:12px; font-weight:700; letter-spacing:2px; color:#93c5fd; text-transform:uppercase;">OFFICIAL ASSESSMENT</span>
                 </div>
               `}
-              <h1 style="margin:0 0 6px; font-size:26px; font-weight:800; color:#f0f0f8; letter-spacing:-0.5px;">
-                LOGICWHILE <span style="color:#f59e0b; text-shadow:0 0 10px rgba(245,158,11,0.5);">QUIZ</span>
+              <h1 style="margin:0 0 6px; font-size:26px; font-weight:800; color:#f0f4f8; letter-spacing:-0.5px;">
+                GROWTHRAN
               </h1>
-              <p style="margin:0; font-size:11px; font-weight:700; letter-spacing:2px; color:#8888aa; text-transform:uppercase;">
-                Elevating Coding Knowledge
+              <p style="margin:0; font-size:12px; font-weight:700; letter-spacing:2px; color:#4A7DBE; text-transform:uppercase;">
+                Learn. Grow. Run.
               </p>
             </td>
           </tr>
@@ -194,12 +195,15 @@ export function wrapBrandTemplate(title: string, innerHtml: string): string {
 
           <!-- Footer -->
           <tr>
-            <td style="padding:22px 32px; background-color:#0e0e14; border-top:1px solid rgba(255,255,255,0.06); text-align:center;">
-              <p style="margin:0 0 6px; font-size:12px; color:#8888aa;">
-                Automated security transmission from <strong>LOGICWHILE QUIZ</strong> platform.
+            <td style="padding:22px 32px; background-color:#080e1f; border-top:1px solid rgba(255,255,255,0.06); text-align:center;">
+              <p style="margin:0 0 6px; font-size:12px; color:#94a3b8;">
+                Automated transmission from <strong>GROWTHRAN</strong> assessment engine.
               </p>
-              <p style="margin:0; font-size:11px; color:#55556e;">
-                Server-Authoritative Timing • Anti-Tamper Proctoring • Rotating Question Sets
+              <p style="margin:0 0 4px; font-size:11px; color:#64748b;">
+                Developed by R. Charan Sai • © 2026 R. Charan Sai. All rights reserved.
+              </p>
+              <p style="margin:0; font-size:11px; color:#475569;">
+                Server-Authoritative Timing • Autonomous AI Proctoring • Code Execution
               </p>
             </td>
           </tr>
@@ -247,7 +251,7 @@ export async function sendOtpEmail(
   await sendWithRetry({
     to: toEmail,
     subject: `🔐 Your OTP Code: ${otp} — ${examTitle}`,
-    text: `Hello ${recipientName},\n\nYour one-time passcode for "${examTitle}" is: ${otp}\n\nThis code expires in 10 minutes.\n\nLOGICWHILE QUIZ — Elevating Coding Knowledge`,
+    text: `Hello ${recipientName},\n\nYour one-time passcode for "${examTitle}" is: ${otp}\n\nThis code expires in 10 minutes.\n\nGROWTHRAN — Learn. Grow. Run.`,
     html: wrapBrandTemplate('Exam OTP Verification', innerHtml),
     emailType: 'otp',
     examId,
@@ -270,30 +274,30 @@ export async function sendPasswordResetEmail(
       Hello <strong style="color:#f8fafc;">${recipientName || 'User'}</strong>,
     </p>
     <p style="margin:0 0 24px; font-size:14px; line-height:1.6; color:#cbd5e1;">
-      We received a request to reset the password for your <strong>LogicWhile QUIZ</strong> account. Click the button below to choose a new, secure password:
+      We received a request to reset the password for your <strong>GROWTHRAN</strong> account. Click the button below to choose a new, secure password:
     </p>
     <div style="text-align:center; margin:30px 0;">
-      <a href="${resetLink}" style="display:inline-block; padding:14px 32px; background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color:#ffffff; font-size:15px; font-weight:700; text-decoration:none; border-radius:8px; box-shadow:0 4px 14px rgba(245, 158, 11, 0.4); letter-spacing:0.5px;">
+      <a href="${resetLink}" style="display:inline-block; padding:14px 32px; background:linear-gradient(135deg, #1B5FB5 0%, #0A3F8F 100%); color:#ffffff; font-size:15px; font-weight:700; text-decoration:none; border-radius:8px; box-shadow:0 4px 14px rgba(27, 95, 181, 0.4); letter-spacing:0.5px;">
         🔑 Reset Your Password
       </a>
     </div>
-    <div style="background:rgba(245,158,11,0.08); border-left:3px solid #f59e0b; padding:12px 16px; border-radius:4px; margin-bottom:24px;">
-      <p style="margin:0; font-size:12px; color:#fbbf24; line-height:1.5;">
+    <div style="background:rgba(27,95,181,0.08); border-left:3px solid #1B5FB5; padding:12px 16px; border-radius:4px; margin-bottom:24px;">
+      <p style="margin:0; font-size:12px; color:#93c5fd; line-height:1.5;">
         ⏳ <strong>Security Notice:</strong> This link is strictly valid for <strong>1 hour</strong>. If you did not request a password reset, no action is needed — your account remains safe and secure.
       </p>
     </div>
     <p style="margin:0; font-size:12px; color:#64748b; line-height:1.5; word-break:break-all;">
       Or copy and paste this URL into your browser:<br />
-      <a href="${resetLink}" style="color:#f59e0b;">${resetLink}</a>
+      <a href="${resetLink}" style="color:#1B5FB5;">${resetLink}</a>
     </p>
   `;
 
-  const html = wrapBrandTemplate('Reset Your Password — LogicWhile QUIZ', innerHtml);
-  const text = `Hello ${recipientName || 'User'},\n\nWe received a request to reset your password for LogicWhile QUIZ.\nPlease use this link within 1 hour to set a new password:\n\n${resetLink}\n\nIf you did not request this, you can safely ignore this email.`;
+  const html = wrapBrandTemplate('Reset Your Password — GROWTHRAN', innerHtml);
+  const text = `Hello ${recipientName || 'User'},\n\nWe received a request to reset your password for GROWTHRAN.\nPlease use this link within 1 hour to set a new password:\n\n${resetLink}\n\nIf you did not request this, you can safely ignore this email.`;
 
   return sendWithRetry({
     to: toEmail,
-    subject: '🔑 Password Reset Request — LogicWhile QUIZ',
+    subject: '🔑 Password Reset Request — GROWTHRAN',
     text,
     html,
     emailType: 'password_reset',
@@ -412,7 +416,7 @@ export async function sendResultEmail(
   await sendWithRetry({
     to: toEmail,
     subject: `🏆 Your Exam Results: ${examTitle} — Score ${result.totalScore}/${result.maxScore}`,
-    text: `Hello ${recipientName},\n\nYour score in "${examTitle}" is ${result.totalScore}/${result.maxScore} (${result.normalizedScore ?? percentage}%).\nRank: ${isPublic && result.rank ? `#${result.rank}` : 'Private / Available on dashboard'}\nTime: ${timeFormatted}\n\nLOGICWHILE QUIZ — Elevating Coding Knowledge`,
+    text: `Hello ${recipientName},\n\nYour score in "${examTitle}" is ${result.totalScore}/${result.maxScore} (${result.normalizedScore ?? percentage}%).\nRank: ${isPublic && result.rank ? `#${result.rank}` : 'Private / Available on dashboard'}\nTime: ${timeFormatted}\n\nGROWTHRAN — Learn. Grow. Run.`,
     html: wrapBrandTemplate('Exam Results & Standings', innerHtml),
     emailType: 'result',
     examId,

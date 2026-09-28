@@ -165,7 +165,7 @@ export default function PracticeArenaPage() {
         }
       });
     } else {
-      alert('To install LogicWhile: Click browser menu (⋮ or share) -> "Install App" or "Add to Home Screen"');
+      alert('To install GROWTHRAN: Click browser menu (⋮ or share) -> "Install App" or "Add to Home Screen"');
     }
   };
 

@@ -14,10 +14,10 @@ const { wrapBrandTemplate } = require('./dist/services/emailService');
 
 console.log('--- 1. Testing Branded HTML Email Template ---');
 const sampleHtml = wrapBrandTemplate('Test Assessment', '<p>Hello Candidate</p>');
-if (!sampleHtml.includes('LOGICWHILE') || !sampleHtml.includes('QUIZ') || !sampleHtml.includes('Elevating Coding Knowledge')) {
-  throw new Error('Brand template does not contain required LOGICWHILE QUIZ branding');
+if (!sampleHtml.includes('GROWTHRAN') || !sampleHtml.includes('Learn. Grow. Run.')) {
+  throw new Error('Brand template does not contain required GROWTHRAN branding');
 }
-console.log('✅ Branded HTML email template verified with LOGICWHILE QUIZ & "Elevating Coding Knowledge" tagline.');
+console.log('✅ Branded HTML email template verified with GROWTHRAN & "Learn. Grow. Run." tagline.');
 
 console.log('\n--- 2. Testing Result Email Content Generation ---');
 function formatResultContent(result) {

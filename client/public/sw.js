@@ -1,5 +1,5 @@
 /**
- * sw.js — LogicWhile Quiz Service Worker
+ * sw.js — GROWTHRAN Service Worker
  * Phase 1c: Offline resilience
  *
  * Strategy:
@@ -9,7 +9,7 @@
  *   and flushed when the 'sync' event fires (Background Sync API)
  */
 
-const CACHE_VERSION = 'lw-v1';
+const CACHE_VERSION = 'growthran-v1';
 const APP_SHELL = [
   '/',
   '/index.html',

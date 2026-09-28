@@ -109,7 +109,7 @@ const COLLEGE_SPOTLIGHTS = [
     short: 'IARE (Autonomous)',
     city: 'Dundigal, Hyderabad, TS',
     metric: '20,000+ Assessments',
-    desc: 'Autonomous engineering college ranked in NIRF Top 200 band with NAAC A++ accreditation. Deployed LogicWhile Ultra for high-stakes semester exams and campus placement pre-assessments.',
+    desc: 'Autonomous engineering college ranked in NIRF Top 200 band with NAAC A++ accreditation. Deployed GROWTHRAN for high-stakes semester exams and campus placement pre-assessments.',
     tag: 'Autonomous Flagship',
   },
   {
@@ -149,19 +149,19 @@ const COLLEGE_SPOTLIGHTS = [
 const FAQS = [
   {
     q: 'How does the server-authoritative timer prevent cheating?',
-    a: 'Traditional web exams rely on the candidate’s browser timer, which can be paused or altered by freezing browser tabs or adjusting system clocks. LogicWhile’s timer is driven by the server. The server dispatches live time ticks over Socket.io, and remaining duration is calculated against server timestamps. Even if candidates disconnect or refresh, their timer continues accurately without granting unauthorized time.',
+    a: 'Traditional web exams rely on the candidate’s browser timer, which can be paused or altered by freezing browser tabs or adjusting system clocks. GROWTHRAN’s timer is driven by the server. The server dispatches live time ticks over Socket.io, and remaining duration is calculated against server timestamps. Even if candidates disconnect or refresh, their timer continues accurately without granting unauthorized time.',
   },
   {
     q: 'What happens if a candidate loses internet connection during the test?',
-    a: 'LogicWhile features enterprise-grade offline resilience. Supported by a Service Worker and local IndexedDB retry queue, all selected responses are saved locally with microsecond timestamps. If the network drops, candidates can continue answering questions while an unobtrusive status banner indicates offline mode. When connectivity resumes, the queue automatically syncs all pending answers.',
+    a: 'GROWTHRAN features enterprise-grade offline resilience. Supported by a Service Worker and local IndexedDB retry queue, all selected responses are saved locally with microsecond timestamps. If the network drops, candidates can continue answering questions while an unobtrusive status banner indicates offline mode. When connectivity resumes, the queue automatically syncs all pending answers.',
   },
   {
-    q: 'Does LogicWhile record or store student webcam videos?',
+    q: 'Does GROWTHRAN record or store student webcam videos?',
     a: 'No. We strictly adhere to student privacy regulations. All computer vision and facial detection algorithms execute locally in a client-side Web Worker. Raw video streams never leave the candidate’s device. Only numerical incident logs and optional low-resolution thumbnail snapshots (under 20KB) are transmitted when explicit violation thresholds are exceeded.',
   },
   {
     q: 'Can a student log in simultaneously from multiple devices using the same hall ticket?',
-    a: 'No. LogicWhile enforces strict single-active-session concurrency per hall ticket and exam code. If a second device attempts login, it is blocked immediately, or triggers a verified takeover that immediately terminates and evicts the previous session, logging an audit event.',
+    a: 'No. GROWTHRAN enforces strict single-active-session concurrency per hall ticket and exam code. If a second device attempts login, it is blocked immediately, or triggers a verified takeover that immediately terminates and evicts the previous session, logging an audit event.',
   },
   {
     q: 'How do colleges onboard their question banks and configure custom exams?',
@@ -389,7 +389,7 @@ export default function LandingPage() {
                 letterSpacing: '-0.04em',
                 marginBottom: 8,
               }}>
-                <ShimmerText text="LOGICWHILE" shimmer stagger delay={0.3} className="section-title" />
+                <ShimmerText text="GROWTHRAN" shimmer stagger delay={0.3} className="section-title" />
               </h1>
 
               <motion.h2
@@ -714,7 +714,7 @@ export default function LandingPage() {
             <span className="section-label">PARTNER INSTITUTIONS</span>
             <h2 className="section-title">Tested in High-Stakes Campus Drives</h2>
             <p className="section-subtitle" style={{ margin: '12px auto', maxWidth: 640 }}>
-              Discover how leading universities run institutional midterm assessments, semester finals, and placement drives on LogicWhile.
+              Discover how leading universities run institutional midterm assessments, semester finals, and placement drives on GROWTHRAN.
             </p>
           </div>
 
@@ -854,7 +854,7 @@ export default function LandingPage() {
             <span className="section-label">GET STARTED</span>
             <h2 className="section-title">Schedule an Institutional Demo</h2>
             <p className="section-subtitle" style={{ margin: '12px auto' }}>
-              Connect with our assessment engineers to pilot LogicWhile in your next semester examination or placement test.
+              Connect with our assessment engineers to pilot GROWTHRAN in your next semester examination or placement test.
             </p>
           </div>
 
@@ -998,7 +998,7 @@ export default function LandingPage() {
               <ShimmerText text="Assessment Game?" shimmer />
             </h2>
             <p style={{ color: 'var(--color-text-muted)', fontSize: '1.1rem', marginBottom: 36, position: 'relative' }}>
-              Join 200+ colleges using LogicWhile 4.0 ULTRA for fair, smart, and beautiful assessments.
+              Join 200+ colleges using GROWTHRAN for fair, smart, and autonomous assessments.
             </p>
             <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', position: 'relative' }}>
               <Link to="/enter-exam" style={{ textDecoration: 'none' }}>

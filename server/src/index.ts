@@ -80,7 +80,7 @@ app.use('/api/session', sessionRoutes);
 // Leaderboard (public)
 app.get('/api/exam/:examId/leaderboard', validateParams(ExamIdParam), getLeaderboard);
 
-// LogicWhile 4.0 ULTRA routes (execute, AI, proctor, certificate, leaderboard, create-exam-wizard)
+// GROWTHRAN Autonomous Assessment Engine routes (execute, AI, proctor, certificate, leaderboard, create-exam-wizard)
 app.use('/api', ultraRoutes);
 
 // Exam Code System (Hall Ticket + Code entry, No OTP)
