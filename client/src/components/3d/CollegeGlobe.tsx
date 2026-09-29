@@ -86,9 +86,9 @@ function GlobeLogoBadge({
   rotation?: [number, number, number]
   texture: THREE.Texture | null
 }) {
-  const badgeWidth = 0.94
-  const badgeHeight = 0.30
-  const badgeRadius = 0.035
+  const badgeWidth = 0.52
+  const badgeHeight = 0.16
+  const badgeRadius = 0.02
 
   const badgeGeometry = useMemo(() => {
     const shape = createRoundedRectShape(badgeWidth, badgeHeight, badgeRadius)
@@ -124,7 +124,7 @@ function GlobeLogoBadge({
       {/* Holographic Logo Face */}
       {texture && (
         <mesh position={[0, 0, 0.005]}>
-          <planeGeometry args={[0.86, 0.24]} />
+          <planeGeometry args={[0.46, 0.13]} />
           <meshBasicMaterial
             map={texture}
             transparent
@@ -210,14 +210,15 @@ function Globe() {
 
       {/* Front GROWTHRAN 3D Holographic Emblem */}
       <GlobeLogoBadge
-        position={[0, -0.05, 1.025]}
+        position={[0, -0.44, 0.93]}
+        rotation={[-0.38, 0, 0]}
         texture={logoTexture}
       />
 
       {/* Back GROWTHRAN 3D Holographic Emblem (opposite hemisphere) */}
       <GlobeLogoBadge
-        position={[0, -0.05, -1.025]}
-        rotation={[0, Math.PI, 0]}
+        position={[0, -0.44, -0.93]}
+        rotation={[-0.38, Math.PI, 0]}
         texture={logoTexture}
       />
 
@@ -254,7 +255,7 @@ export default function CollegeGlobe({ className = 'w-[400px] h-[400px]' }: { cl
   return (
     <div className={className} style={{ width: 400, height: 400, margin: '0 auto', maxWidth: '100%' }}>
       <Canvas
-        camera={{ position: [0, 0, 2.5], fov: 45 }}
+        camera={{ position: [0, 0, 3.2], fov: 45 }}
         dpr={[1, 1.5]}
         gl={{ antialias: true, alpha: true }}
       >

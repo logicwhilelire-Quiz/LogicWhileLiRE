@@ -53,7 +53,10 @@ export default function QuizPage() {
   const location = useLocation()
   const stateHt = (location.state as { hallTicket?: string } | null)?.hallTicket
   const storedHt = (() => {
-    try { return JSON.parse(localStorage.getItem('lw_attempt') || '{}')?.hallTicket } catch { return '' }
+    try {
+      const raw = localStorage.getItem('growthran_attempt') || localStorage.getItem('lw_attempt') || '{}'
+      return JSON.parse(raw)?.hallTicket
+    } catch { return '' }
   })()
   const hallTicket: string = stateHt || storedHt || ''
 

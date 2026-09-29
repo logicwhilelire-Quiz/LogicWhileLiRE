@@ -62,7 +62,7 @@ export default function EnterExamPage() {
         { params: { hallTicket: form.hallTicket.trim() } }
       )
       if (data.success || data.valid) {
-        localStorage.setItem('lw_attempt', JSON.stringify({
+        const attemptData = JSON.stringify({
           attemptId: data.attempt_id || data.attemptId || `att_${Date.now()}`,
           examCode: form.examCode.trim().toUpperCase(),
           hallTicket: form.hallTicket.trim(),
@@ -71,7 +71,9 @@ export default function EnterExamPage() {
             duration_minutes: 45,
             total_questions: 15,
           },
-        }))
+        })
+        localStorage.setItem('growthran_attempt', attemptData)
+        localStorage.setItem('lw_attempt', attemptData)
         navigate(`/instructions/${form.examCode.trim()}`, {
           state: { hallTicket: form.hallTicket.trim() }
         })

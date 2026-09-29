@@ -15,7 +15,8 @@ export default function InstructionsPage() {
   // Get stored attempt
   const stored = (() => {
     try {
-      return JSON.parse(localStorage.getItem('lw_attempt') || '{}');
+      const raw = localStorage.getItem('growthran_attempt') || localStorage.getItem('lw_attempt') || '{}';
+      return JSON.parse(raw);
     } catch {
       return {};
     }

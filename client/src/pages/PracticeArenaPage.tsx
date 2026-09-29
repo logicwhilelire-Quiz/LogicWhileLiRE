@@ -393,7 +393,7 @@ export default function PracticeArenaPage() {
 
         {activeTab === 'coding' ? (
           /* CODING ARENA SPLIT VIEW */
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 380px) 1fr', gap: 24 }}>
+          <div className="arena-main-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 380px) 1fr', gap: 24 }}>
             
             {/* Left Column: Challenge Selector & Problem Spec */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

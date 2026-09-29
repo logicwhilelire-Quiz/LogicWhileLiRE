@@ -6,8 +6,8 @@ export default function GrowthranIntro({ onComplete }: { onComplete?: () => void
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // If reduced motion is requested or intro was already seen this session, skip
     if (shouldReduceMotion) {
+      setVisible(false);
       if (onComplete) onComplete();
       return;
     }
@@ -15,6 +15,7 @@ export default function GrowthranIntro({ onComplete }: { onComplete?: () => void
     try {
       const seen = sessionStorage.getItem('growthran_intro_seen');
       if (seen) {
+        setVisible(false);
         if (onComplete) onComplete();
         return;
       }
@@ -24,19 +25,19 @@ export default function GrowthranIntro({ onComplete }: { onComplete?: () => void
       const timer = setTimeout(() => {
         setVisible(false);
         if (onComplete) onComplete();
-      }, 1600); // 1.2s animation + 0.4s clean exit fade
+      }, 1400);
 
       return () => clearTimeout(timer);
     } catch {
+      setVisible(false);
       if (onComplete) onComplete();
     }
-  }, [shouldReduceMotion, onComplete]);
-
-  if (!visible) return null;
+  }, []);
 
   return (
     <AnimatePresence>
-      <motion.div
+      {visible && (
+        <motion.div
         key="growthran-intro-overlay"
         initial={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -171,7 +172,8 @@ export default function GrowthranIntro({ onComplete }: { onComplete?: () => void
             </motion.div>
           </div>
         </div>
-      </motion.div>
+        </motion.div>
+      )}
     </AnimatePresence>
   );
 }

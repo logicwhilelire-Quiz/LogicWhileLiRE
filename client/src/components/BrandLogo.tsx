@@ -55,7 +55,7 @@ export default function BrandLogo({
   const depthStroke = isDark ? '#60A5FA' : '#1B5FB5';
   const arrowColor = isDark ? '#60A5FA' : '#1B5FB5';
   const wordmarkColor = isDark ? '#FFFFFF' : '#0A3F8F';
-  const taglineColor = isDark ? '#93C5FD' : '#4A7DBE';
+  const taglineColor = isDark ? '#93C5FD' : '#1B5FB5';
 
   if (variant === 'mark') {
     return (
@@ -64,6 +64,7 @@ export default function BrandLogo({
         height={dimensions.h}
         width={dimensions.markW}
         fill="none"
+        role="img"
         xmlns="http://www.w3.org/2000/svg"
         className={`growthran-mark ${className}`}
         aria-label="GROWTHRAN Logo Mark"
@@ -95,12 +96,14 @@ export default function BrandLogo({
       }}
       aria-label="GROWTHRAN — Learn. Grow. Run."
     >
-      {/* Official Mark */}
+      {/* Official Mark — aria-hidden because parent div has aria-label */}
       <svg
         viewBox="0 0 200 160"
         height={dimensions.h}
         width={dimensions.markW}
         fill="none"
+        aria-hidden="true"
+        focusable="false"
         xmlns="http://www.w3.org/2000/svg"
         style={{ flexShrink: 0 }}
       >

@@ -183,16 +183,23 @@ function GlobeSection() {
     <div
       ref={containerRef}
       onMouseMove={handleMouseMove}
+      className="hero-globe-wrapper"
       style={{
         position: 'relative',
         transform: `rotateX(${mousePos.y * -8}deg) rotateY(${mousePos.x * 8}deg)`,
         transition: 'transform 0.1s ease',
         transformStyle: 'preserve-3d',
+        width: '100%',
+        maxWidth: 360,
+        aspectRatio: '1/1',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
       <Suspense fallback={
         <div style={{
-          width: 380, height: 380, borderRadius: '50%',
+          width: 320, height: 320, borderRadius: '50%',
           background: 'radial-gradient(circle, rgba(43,127,255,0.2), transparent)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: 'var(--color-text-muted)', fontSize: '0.9rem',
@@ -200,13 +207,13 @@ function GlobeSection() {
           Loading Globe...
         </div>
       }>
-        <CollegeGlobe className="w-[380px] h-[380px] max-w-full" />
+        <CollegeGlobe className="w-full h-full max-w-[340px] max-h-[340px]" />
       </Suspense>
 
       {/* Orbital ring */}
       <motion.div
         style={{
-          position: 'absolute', inset: -24,
+          position: 'absolute', inset: -16,
           borderRadius: '50%',
           border: '1px solid rgba(43,127,255,0.15)',
           pointerEvents: 'none',
@@ -216,7 +223,7 @@ function GlobeSection() {
       />
       <motion.div
         style={{
-          position: 'absolute', inset: -48,
+          position: 'absolute', inset: -32,
           borderRadius: '50%',
           border: '1px dashed rgba(43,127,255,0.08)',
           pointerEvents: 'none',
@@ -253,129 +260,122 @@ export default function LandingPage() {
   }
 
   return (
-    <div style={{ background: 'var(--color-bg)', minHeight: '100vh', overflow: 'hidden' }}>
+    <div style={{ background: 'var(--color-bg)', minHeight: '100vh' }}>
       <SiteHeader />
 
-      {/* ─── FLIGHT PATH BACKGROUND (fixed) ─── */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <FlightPathLines color="#bf9f62" opacity={0.08} count={16} className="" />
-      </div>
-
-      {/* ─── HERO SECTION ─── */}
-      <motion.section
-        style={{
-          opacity: heroOpacity, y: heroY,
-          minHeight: 'calc(100vh - 80px)',
-          display: 'flex', alignItems: 'center',
-          position: 'relative', zIndex: 1,
-          paddingTop: 40,
-          paddingBottom: 24,
-        }}
-      >
-        {/* Hero Interactive 3D Node Network background */}
-        <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-          <Suspense fallback={null}>
-            <NodeNetwork nodeCount={36} maxDistance={140} lineColor="rgba(27, 95, 181, 0.16)" nodeColor="#1B5FB5" />
-          </Suspense>
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'radial-gradient(ellipse 80% 60% at 50% 30%, rgba(27, 95, 181, 0.05), transparent)',
-          }} />
+      <main id="main-content">
+        {/* ─── FLIGHT PATH BACKGROUND (fixed) ─── */}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+          <FlightPathLines color="#bf9f62" opacity={0.08} count={16} className="" />
         </div>
 
-        <div className="page-content" style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            alignItems: 'center',
-            gap: 40,
-          }}>
-            {/* Left: Text */}
-            <motion.div
-              initial={{ opacity: 0, x: -40 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1, duration: 0.6 }}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  padding: '6px 14px',
-                  background: 'rgba(43,127,255,0.12)',
-                  border: '1px solid rgba(43,127,255,0.35)',
-                  borderRadius: 999, fontSize: '0.78rem', fontWeight: 600,
-                  color: 'var(--color-primary)', marginBottom: 16,
-                  letterSpacing: '0.03em', maxWidth: '100%', flexWrap: 'wrap',
-                }}
-              >
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', animation: 'blink 2s infinite' }} />
-                ⚡ NEXT-GEN AI ASSESSMENT & PROCTORING PLATFORM
-              </motion.div>
+        {/* ─── HERO SECTION ─── */}
+        <motion.section
+          style={{
+            opacity: heroOpacity, y: heroY,
+            minHeight: 'calc(100vh - 72px)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            position: 'relative', zIndex: 1,
+            paddingTop: 96,
+            paddingBottom: 40,
+          }}
+        >
+          {/* Hero Interactive 3D Node Network background */}
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+            <Suspense fallback={null}>
+              <NodeNetwork nodeCount={36} maxDistance={140} lineColor="rgba(27, 95, 181, 0.16)" nodeColor="#1B5FB5" />
+            </Suspense>
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'radial-gradient(ellipse 80% 60% at 50% 30%, rgba(27, 95, 181, 0.05), transparent)',
+            }} />
+          </div>
+
+          <div className="page-content" style={{ position: 'relative', zIndex: 1, width: '100%' }}>
+            <div className="hero-main-grid">
+              {/* Left: Text */}
+              <div className="hero-text-col">
+                <div
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    padding: '6px 14px',
+                    background: 'rgba(43,127,255,0.12)',
+                    border: '1px solid rgba(43,127,255,0.35)',
+                    borderRadius: 999, fontSize: '0.78rem', fontWeight: 600,
+                    color: 'var(--color-primary)', marginBottom: 16,
+                    letterSpacing: '0.03em', maxWidth: '100%', boxSizing: 'border-box',
+                    textAlign: 'center',
+                  }}
+                >
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', flexShrink: 0 }} />
+                  <span>⚡ NEXT-GEN AI ASSESSMENT &amp; PROCTORING PLATFORM</span>
+                </div>
 
               <h1 style={{
                 fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(3rem, 6vw, 5rem)',
-                fontWeight: 800, lineHeight: 1.0,
-                letterSpacing: '-0.04em',
-                marginBottom: 8,
+                fontSize: 'clamp(2.5rem, 6vw, 4.8rem)',
+                fontWeight: 800, lineHeight: 1.05,
+                letterSpacing: '-0.035em',
+                marginBottom: 10,
               }}>
-                <ShimmerText text="GROWTHRAN" shimmer stagger delay={0.3} className="section-title" />
+                <span style={{
+                  background: 'linear-gradient(135deg, #1B5FB5 0%, #0A3F8F 55%, #2563EB 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  display: 'inline-block',
+                }}>
+                  GROWTHRAN
+                </span>
               </h1>
 
-              <motion.h2
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              <h2
                 style={{
                   fontFamily: 'var(--font-display)',
-                  fontSize: 'clamp(1.2rem, 2.5vw, 1.8rem)',
-                  fontWeight: 500, lineHeight: 1.3,
+                  fontSize: 'clamp(1.2rem, 2.5vw, 1.85rem)',
+                  fontWeight: 600, lineHeight: 1.3,
                   color: 'var(--color-text-muted)',
-                  marginBottom: 24,
+                  marginBottom: 20,
                 }}
               >
                 India's most advanced<br />
-                <span style={{ color: 'var(--color-primary)' }}>Assessment Platform</span>
-              </motion.h2>
+                <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>Assessment Platform</span>
+              </h2>
 
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.65, duration: 0.7 }}
+              <p
                 style={{
-                  color: 'var(--color-text-muted)', fontSize: '1.05rem',
-                  lineHeight: 1.75, marginBottom: 36, maxWidth: 480,
+                  color: 'var(--color-text-muted)', fontSize: '1.02rem',
+                  lineHeight: 1.7, marginBottom: 28, maxWidth: 480,
                 }}
               >
                 AI-powered question generation, multimodal face & audio proctoring, sandboxed code execution in 30+ languages,
                 and live 3D leaderboards — all in one platform.
-              </motion.p>
+              </p>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8, duration: 0.7 }}
-                style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}
+              <div
+                style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}
               >
-                <Link to="/enter-exam" style={{ textDecoration: 'none' }}>
+                <Link to="/enter-exam" id="hero-enter-assessment-cta" style={{ textDecoration: 'none' }}>
                   <MagneticButton
                     className="btn btn-primary btn-xl"
                     style={{
                       minWidth: 220,
-                      background: 'linear-gradient(135deg, #1B5FB5 0%, #0A3F8F 100%)',
-                      boxShadow: '0 10px 28px -4px rgba(27, 95, 181, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.25) inset',
+                      background: 'linear-gradient(135deg, #2563EB 0%, #1B5FB5 50%, #0A3F8F 100%)',
+                      boxShadow: '0 12px 32px -4px rgba(37, 99, 235, 0.5), 0 0 24px rgba(59, 130, 246, 0.35)',
                       color: '#ffffff',
-                      fontSize: '1.12rem',
+                      fontSize: '1.14rem',
                       fontWeight: 700,
                       letterSpacing: '0.02em',
                       padding: '16px 36px',
-                      borderRadius: 12,
+                      borderRadius: 14,
                       cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 10,
                     }}
                   >
-                    🚀 Enter Assessment
+                    <span>🚀 Enter Assessment</span>
+                    <span style={{ fontSize: '1.2rem' }}>→</span>
                   </MagneticButton>
                 </Link>
                 <Link to="/admin/dashboard" style={{ textDecoration: 'none' }}>
@@ -395,55 +395,47 @@ export default function LandingPage() {
                     ⚙️ Admin Portal
                   </MagneticButton>
                 </Link>
-              </motion.div>
+              </div>
 
               {/* Trust badges */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.1, duration: 0.7 }}
-                style={{ display: 'flex', gap: 20, marginTop: 22, alignItems: 'center', flexWrap: 'wrap' }}
-              >
+              <div className="hero-trust-badges">
                 {['🔒 Zero-Trust Security', '⚡ Sub-50ms Latency', '👁️ On-Device AI Vision', '🚀 Early Access Pilot'].map(badge => (
                   <div key={badge} style={{
                     fontSize: '0.82rem', color: 'var(--color-text-faint)',
                     display: 'flex', alignItems: 'center', gap: 4,
+                    whiteSpace: 'nowrap',
                   }}>
                     {badge}
                   </div>
                 ))}
-              </motion.div>
-            </motion.div>
+              </div>
+            </div>
 
             {/* Right: Globe */}
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-              style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+            <div
+              style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', maxWidth: '100%', overflow: 'hidden' }}
             >
               <GlobeSection />
-            </motion.div>
+            </div>
           </div>
 
           {/* ─── HERO STAT COUNTERS (Visible on First Load without scrolling) ─── */}
           <motion.div
+            className="hero-stats-grid"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.95, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              marginTop: 24,
+              marginTop: 20,
               padding: '16px 20px',
-              background: 'var(--glass-bg, rgba(255, 255, 255, 0.88))',
+              background: 'var(--glass-bg, rgba(255, 255, 255, 0.92))',
               backdropFilter: 'blur(16px)',
               WebkitBackdropFilter: 'blur(16px)',
               border: '1px solid var(--color-border)',
               borderRadius: 16,
               boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04)',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: 16,
-              alignItems: 'center',
+              width: '100%',
+              maxWidth: 1280,
             }}
           >
             {STATS.map((stat, i) => (
@@ -501,27 +493,28 @@ export default function LandingPage() {
               </div>
             ))}
           </motion.div>
-        </div>
 
-        {/* Scroll indicator */}
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
-          style={{
-            position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-            color: 'var(--color-text-faint)', fontSize: '0.75rem', letterSpacing: '0.06em',
-          }}
-        >
-          <span>SCROLL TO EXPLORE</span>
-          <div style={{ width: 1, height: 40, background: 'linear-gradient(to bottom, var(--color-primary), transparent)' }} />
-        </motion.div>
+          {/* Scroll indicator */}
+          <motion.div
+            animate={{ y: [0, 6, 0] }}
+            transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+            style={{
+              marginTop: 20,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+              color: 'var(--color-text-faint)', fontSize: '0.74rem', letterSpacing: '0.08em',
+              textAlign: 'center',
+            }}
+          >
+            <span>SCROLL TO EXPLORE</span>
+            <div style={{ width: 1, height: 28, background: 'linear-gradient(to bottom, var(--color-primary), transparent)' }} />
+          </motion.div>
+        </div>
       </motion.section>
 
       {/* ─── MARQUEE — Domains ─── */}
-      <section style={{ position: 'relative', zIndex: 1, padding: '40px 0', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'rgba(20,28,47,0.5)' }}>
+      <section style={{ position: 'relative', zIndex: 1, padding: '40px 0', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-secondary)' }}>
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-text-faint)' }}>
+          <span style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-primary)' }}>
             ARCHITECTED FOR UNIVERSITIES, CODING BOOTCAMPS & ENTERPRISE RECRUITMENT
           </span>
         </div>
@@ -532,16 +525,16 @@ export default function LandingPage() {
                 key={i}
                 style={{
                   padding: '8px 24px',
-                  background: 'rgba(43,127,255,0.06)',
-                  border: '1px solid rgba(43,127,255,0.12)',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
                   borderRadius: 8,
                   fontSize: '0.9rem',
                   fontWeight: 600,
-                  color: 'var(--color-text-muted)',
+                  color: 'var(--color-text)',
                   whiteSpace: 'nowrap',
                   flexShrink: 0,
                 }}
-                whileHover={{ background: 'rgba(43,127,255,0.12)', color: 'var(--color-text)', scale: 1.02 }}
+                whileHover={{ background: 'rgba(43,127,255,0.12)', color: 'var(--color-primary)', scale: 1.02 }}
               >
                 ⚡ {name}
               </motion.div>
@@ -798,9 +791,9 @@ export default function LandingPage() {
                     </span>
                     <span style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)' }}>{col.city}</span>
                   </div>
-                  <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', fontWeight: 800, marginBottom: 4 }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', fontWeight: 800, marginBottom: 4 }}>
                     {col.short}
-                  </h4>
+                  </h3>
                   <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 12, minHeight: 36 }}>
                     {col.name}
                   </div>
@@ -846,18 +839,23 @@ export default function LandingPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {FAQS.map((faq, i) => {
               const isOpen = activeFaq === i
+              const panelId = `faq-panel-${i}`
+              const btnId = `faq-btn-${i}`
               return (
                 <div
                   key={i}
                   style={{
                     background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border)',
+                    border: `1px solid ${isOpen ? 'rgba(27,95,181,0.35)' : 'var(--color-border)'}`,
                     borderRadius: 'var(--radius-lg)',
                     overflow: 'hidden',
-                    transition: 'border-color var(--transition-fast)',
+                    transition: 'border-color 0.22s ease',
                   }}
                 >
                   <button
+                    id={btnId}
+                    aria-expanded={isOpen}
+                    aria-controls={panelId}
                     onClick={() => setActiveFaq(isOpen ? null : i)}
                     style={{
                       width: '100%',
@@ -880,6 +878,7 @@ export default function LandingPage() {
                       animate={{ rotate: isOpen ? 180 : 0 }}
                       transition={{ duration: 0.25 }}
                       style={{ fontSize: '1.2rem', color: 'var(--color-primary)', flexShrink: 0, marginLeft: 16 }}
+                      aria-hidden="true"
                     >
                       ▾
                     </motion.span>
@@ -888,6 +887,9 @@ export default function LandingPage() {
                   <AnimatePresence initial={false}>
                     {isOpen && (
                       <motion.div
+                        id={panelId}
+                        role="region"
+                        aria-labelledby={btnId}
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
@@ -1109,6 +1111,7 @@ export default function LandingPage() {
           <ParticleField count={40} />
         </Suspense>
       </div>
+      </main>
 
       <SiteFooter />
     </div>

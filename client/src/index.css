@@ -105,6 +105,7 @@
   --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-std:    cubic-bezier(0.4, 0, 0.2, 1);
   --transition:      150ms var(--ease-std);
+  --transition-fast: 100ms var(--ease-std);
   --transition-md:   250ms var(--ease-smooth);
   --transition-slow: 350ms var(--ease-spring);
 }
@@ -560,15 +561,16 @@ img { max-width: 100%; }
   margin-bottom: 16px;
 }
 .footer-link {
-  display: block; color: var(--color-text-faint); font-size: 0.9rem;
+  display: block; color: var(--color-text-muted); font-size: 0.9rem;
   padding: 4px 0; transition: color var(--transition-md);
+  font-weight: 500;
 }
 .footer-link:hover { color: var(--color-primary); }
 .footer-bottom {
   max-width: 1280px; margin: 32px auto 0;
   padding-top: 24px; border-top: 1px solid var(--color-border);
   display: flex; align-items: center; justify-content: space-between;
-  font-size: 0.82rem; color: var(--color-text-faint);
+  font-size: 0.84rem; color: var(--color-text-muted);
 }
 
 /* ============================================================
@@ -905,6 +907,26 @@ img { max-width: 100%; }
 .hero-orb-1 { width: 600px; height: 600px; background: var(--color-primary); top: -150px; left: -100px; }
 .hero-orb-2 { width: 500px; height: 500px; background: #1B5FCC; bottom: -100px; right: -100px; animation-delay: -3s; }
 
+.hero-grid-layout {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  align-items: center;
+  gap: 40px;
+}
+
+@media (max-width: 960px) {
+  .hero-grid-layout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    text-align: center;
+  }
+  .hero-text-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
 /* ============================================================
    FLIGHT PATH LINES BACKGROUND
    ============================================================ */
@@ -1056,6 +1078,8 @@ img { max-width: 100%; }
   overflow: hidden;
   position: relative;
   background: #0d1117;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .code-editor-topbar {
   background: var(--color-surface-2);
@@ -1319,15 +1343,20 @@ a.btn,
 
 button:not(:disabled):hover,
 .btn:not(:disabled):hover,
-a.btn:hover {
-  transform: translateY(-2px) scale(1.012) !important;
-  box-shadow: 0 8px 24px -4px rgba(27, 95, 181, 0.25), 0 2px 6px -1px rgba(0, 0, 0, 0.08) !important;
+a.btn:hover,
+[role="button"]:not(:disabled):hover,
+.pallet-btn:hover {
+  transform: translateY(-2px) scale(1.015) !important;
+  box-shadow: 0 10px 26px -4px rgba(27, 95, 181, 0.32), 0 2px 6px -1px rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 button:not(:disabled):active,
 .btn:not(:disabled):active,
-a.btn:active {
-  transform: translateY(0) scale(0.99) !important;
+a.btn:active,
+[role="button"]:not(:disabled):active {
+  transform: translateY(0) scale(0.985) !important;
+  transition: all 0.1s ease !important;
 }
 
 .feature-card:hover,
@@ -1335,10 +1364,15 @@ a.btn:active {
 .glow-card:hover,
 .deployment-card:hover,
 .pillar-card:hover,
-.clickable-card:hover {
-  transform: translateY(-3px) scale(1.01) !important;
-  box-shadow: 0 14px 32px -8px rgba(10, 63, 143, 0.16), 0 4px 10px -2px rgba(0, 0, 0, 0.05) !important;
-  border-color: rgba(27, 95, 181, 0.3) !important;
+.clickable-card:hover,
+.card[onclick]:hover,
+.card[role="button"]:hover,
+.admin-card:hover,
+.exam-card:hover {
+  transform: translateY(-3px) scale(1.012) !important;
+  box-shadow: 0 16px 36px -8px rgba(10, 63, 143, 0.2), 0 4px 12px -2px rgba(0, 0, 0, 0.06) !important;
+  border-color: rgba(27, 95, 181, 0.38) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 /* ============================================================
@@ -1357,11 +1391,13 @@ pre, code, .font-mono, [class*="mono"] {
 
 @media (max-width: 900px) {
   /* Prevent horizontal clipping on 2-column hero or split layouts */
+  .arena-main-grid,
+  div[style*="minmax(300px, 380px) 1fr"],
   div[style*="gridTemplateColumns: '1fr 1fr'"],
   div[style*="grid-template-columns: 1fr 1fr"],
   div[style*="1fr 1fr"] {
     grid-template-columns: 1fr !important;
-    gap: 32px !important;
+    gap: 24px !important;
   }
 }
 
@@ -1383,4 +1419,189 @@ pre, code, .font-mono, [class*="mono"] {
     word-break: break-word !important;
   }
 }
+
+/* ============================================================
+   POLISH PASS (Requirements 1, 2, 3, 4)
+   ============================================================ */
+
+/* ── 1. Page-load transition (~240ms) ── */
+@keyframes growthranPageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Only fade .page-center; Framer Motion handles AnimatedRoutes so we skip 'main' to avoid double-animate jitter */
+.page-center {
+  animation: growthranPageFadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── 2. Universal Hover States: subtle scale & shadow on cards & buttons ── */
+button:not(:disabled),
+.btn:not(:disabled),
+a > .card,
+.card-clickable,
+.glow-card {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease !important;
+}
+
+button:not(:disabled):hover,
+.btn:not(:disabled):hover {
+  transform: translateY(-2px) scale(1.018);
+  box-shadow: 0 10px 24px -4px rgba(27, 95, 181, 0.28), 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+button:not(:disabled):active,
+.btn:not(:disabled):active {
+  transform: translateY(0) scale(0.99);
+}
+
+.glow-card:hover {
+  transform: translateY(-3px) scale(1.012) !important;
+  box-shadow: 0 14px 34px -8px rgba(27, 95, 181, 0.18), 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(27, 95, 181, 0.35) !important;
+}
+
+/* Clickable MCQ Options in Exam Screen */
+.exam-option-card,
+button[class*="option"],
+div[role="radio"],
+.question-option {
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease !important;
+}
+
+.exam-option-card:hover,
+button[class*="option"]:hover,
+div[role="radio"]:hover,
+.question-option:hover {
+  transform: translateX(4px) scale(1.008);
+  box-shadow: 0 6px 18px -2px rgba(27, 95, 181, 0.16);
+  border-color: rgba(27, 95, 181, 0.4) !important;
+}
+
+/* ── 3. Responsive Hero Layout (375px, 768px, 1440px) ── */
+.hero-main-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  align-items: center;
+  gap: 40px;
+  width: 100%;
+}
+
+.hero-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+}
+
+.hero-globe-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+/* Trust badges — prevent wrapping on desktop */
+.hero-trust-badges {
+  display: flex;
+  gap: 16px;
+  margin-top: 22px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+@media (max-width: 640px) {
+  .hero-trust-badges {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+/* Hero CTA pulse glow animation for focal point */
+@keyframes ctaGlowPulse {
+  0%, 100% { box-shadow: 0 12px 32px -4px rgba(37, 99, 235, 0.5), 0 0 24px rgba(59, 130, 246, 0.35); }
+  50%       { box-shadow: 0 16px 40px -4px rgba(37, 99, 235, 0.72), 0 0 36px rgba(59, 130, 246, 0.55), 0 0 0 4px rgba(59, 130, 246, 0.12); }
+}
+#hero-enter-assessment-cta .btn {
+  animation: ctaGlowPulse 2.4s ease-in-out infinite;
+}
+
+@media (max-width: 1024px) {
+  .hero-main-grid {
+    grid-template-columns: 1fr !important;
+    gap: 28px !important;
+    text-align: center;
+  }
+
+  .hero-main-grid > div:first-child {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .hero-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  /* Limit globe size on tablet so it doesn't dominate */
+  .hero-globe-wrapper {
+    max-width: 280px;
+    max-height: 280px;
+    margin: 0 auto;
+  }
+}
+
+/* 3-column feature/proctoring grids → 2-col on tablet, 1-col on mobile */
+@media (max-width: 900px) {
+  div[style*="repeat(3, 1fr)"],
+  div[style*="repeat(3,1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+@media (max-width: 640px) {
+  div[style*="repeat(3, 1fr)"],
+  div[style*="repeat(3,1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .hero-globe-wrapper {
+    max-width: 250px;
+    max-height: 250px;
+    margin: 0 auto;
+  }
+
+  .hero-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    padding: 12px !important;
+    gap: 8px !important;
+  }
+
+  .hero-stats-grid > div {
+    padding: 4px 6px !important;
+    gap: 8px !important;
+  }
+
+  /* Results page and hero: 4-col grids → 2-col on mobile */
+  div[style*="repeat(4, 1fr)"],
+  div[style*="repeat(4,1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .hero-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 
