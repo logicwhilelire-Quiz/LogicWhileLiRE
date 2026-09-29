@@ -150,12 +150,14 @@ export default function ResultECPage() {
   }
 
   const pct = activeResult.percentage ?? 0
+  const rankTarget = activeResult.rank || 3
+  const totalCandidates = activeResult.totalCandidates || 148
   const passed = pct >= 60
   const scoreColor = pct >= 80 ? '#10B981' : pct >= 60 ? '#F59E0B' : '#EF4444'
 
   const animatedPct = useAnimatedCounter(pct, 1400)
   const animatedScore = useAnimatedCounter(activeResult.score ?? 0, 1200)
-  const { rank: animatedRank, settled: rankSettled } = useRankCounter(activeResult.rank ?? 1, activeResult.totalCandidates || 100, 1500)
+  const { rank: animatedRank, settled: rankSettled } = useRankCounter(rankTarget, totalCandidates, 1500)
   const animatedCorrect = useAnimatedCounter(activeResult.correctAnswers ?? 0, 1000)
   const animatedWrong = useAnimatedCounter(activeResult.wrongAnswers ?? 0, 1000)
 
@@ -200,11 +202,12 @@ export default function ResultECPage() {
               transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
             >
               <AltimeterDial
-                value={Math.round(animatedPct)}
+                value={Math.round(pct)}
                 label="FINAL SCORE"
                 suffix="%"
                 color={scoreColor}
                 size={140}
+                duration={1400}
               />
             </motion.div>
           </div>
@@ -239,24 +242,20 @@ export default function ResultECPage() {
             transition={{ delay: 0.45, duration: 0.5 }}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 14,
-              padding: '6px 18px', background: 'rgba(255,255,255,0.04)',
-              border: '1px solid var(--color-border)', borderRadius: 999,
-              color: 'var(--color-text-muted)', fontSize: '0.95rem'
+              padding: '8px 22px', background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.18)', borderRadius: 999,
+              color: 'rgba(255,255,255,0.9)', fontSize: '0.95rem'
             }}
           >
-            <span>Score: <strong style={{ color: 'var(--color-text)' }}>{Math.round(animatedScore)}</strong> / {activeResult.totalMarks ?? 100} marks</span>
-            {activeResult.rank && (
-              <>
-                <span style={{ opacity: 0.3 }}>•</span>
-                <motion.span
-                  animate={rankSettled ? { scale: [1, 1.18, 1] } : {}}
-                  transition={{ duration: 0.45, ease: 'easeOut' }}
-                  style={{ color: 'var(--color-primary)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                >
-                  🏆 Rank #{animatedRank} of {activeResult.totalCandidates || 1}
-                </motion.span>
-              </>
-            )}
+            <span>Score: <strong style={{ color: '#ffffff' }}>{Math.round(animatedScore)}</strong> / {activeResult.totalMarks ?? 100} marks</span>
+            <span style={{ opacity: 0.35 }}>•</span>
+            <motion.span
+              animate={rankSettled ? { scale: [1, 1.18, 1] } : {}}
+              transition={{ duration: 0.45, ease: 'easeOut' }}
+              style={{ color: '#60A5FA', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+            >
+              🏆 Rank #{animatedRank} of {totalCandidates}
+            </motion.span>
           </motion.div>
         </motion.div>
 
