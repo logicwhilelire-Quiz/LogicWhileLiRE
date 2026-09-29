@@ -156,7 +156,8 @@ export async function registerCandidate(req: Request, res: Response): Promise<vo
     role: 'student' as const,
   };
 
-  const token = jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: STUDENT_JWT_EXPIRY });
+  const jwtSecret = process.env.JWT_SECRET || 'growthran_participant_jwt_default_secret_key_demo_2026';
+  const token = jwt.sign(payload, jwtSecret, { expiresIn: STUDENT_JWT_EXPIRY });
   setStudentCookie(res, token);
 
   const redirectUrl = `/contest/demo-contest/waiting-lobby`;

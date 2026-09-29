@@ -2984,6 +2984,23 @@ export default function CandidateRegisterGatePage() {
             </motion.div>
           </div>
         </div>
+
+        {/* Official Footer Credit */}
+        <footer
+          style={{
+            textAlign: 'center',
+            fontSize: '0.78rem',
+            color: '#64748b',
+            marginTop: 40,
+            paddingBottom: 24,
+            fontFamily: "'Space Grotesk', system-ui, sans-serif",
+          }}
+        >
+          <div>GROWTHRAN • <em>"Learn. Grow. Run."</em></div>
+          <div style={{ marginTop: 4, color: '#475569' }}>
+            Developed & Architected by R. Charan Sai • © 2026 All rights reserved.
+          </div>
+        </footer>
       </div>
 
       {/* ── CSS STYLES FOR ENTRANCE GATE & MICRO-ANIMATIONS ── */}

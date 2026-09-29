@@ -7,6 +7,7 @@ import SiteFooter from '../components/SiteFooter';
 import LeaderboardPodium from '../components/3d/LeaderboardPodium';
 import PageTransition from '../components/3d/PageTransition';
 import FlightPathLines from '../components/3d/FlightPathLines';
+import GrowthranLoader from '../components/GrowthranLoader';
 import { supabase } from '../lib/supabaseClient';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -389,10 +390,8 @@ export default function LeaderboardECPage() {
 
         {/* Full Table */}
         {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} style={{ height: 60, background: 'rgba(255, 255, 255, 0.04)', borderRadius: 12 }} />
-            ))}
+          <div style={{ padding: '60px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <GrowthranLoader size="md" message="Synchronizing live leaderboard standings..." />
           </div>
         ) : displayRows.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '64px 24px', color: 'rgba(255,255,255,0.4)' }}>

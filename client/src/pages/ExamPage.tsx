@@ -6,6 +6,7 @@ import { getBrowserFingerprint } from '../lib/fingerprint';
 import { useTimer } from '../hooks/useTimer';
 import { useProctor } from '../hooks/useProctor';
 import BrandLogo from '../components/BrandLogo';
+import GrowthranLoader from '../components/GrowthranLoader';
 import AnimatedPage from '../components/AnimatedPage';
 
 interface Question {
@@ -223,6 +224,18 @@ export default function ExamPage() {
             Make This Tab Active
           </button>
         </div>
+      </div>
+    );
+  }
+
+  // ——— Initial Loading / Starting Screen ———
+  if (phase === 'starting') {
+    return (
+      <div className="page-center" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <GrowthranLoader
+          size="lg"
+          message="Initializing secure exam environment..."
+        />
       </div>
     );
   }

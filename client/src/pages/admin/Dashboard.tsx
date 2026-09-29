@@ -4,6 +4,7 @@ import { listExams, activateExam } from '../../lib/api';
 import AnimatedPage from '../../components/AnimatedPage';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedCounter from '../../components/AnimatedCounter';
+import GrowthranLoader from '../../components/GrowthranLoader';
 
 interface Exam {
   id: string;
@@ -227,8 +228,8 @@ export default function Dashboard() {
 
           <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 12, border: '1px solid var(--color-border)' }}>
             {loading ? (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                Loading assessments...
+              <div style={{ padding: '40px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <GrowthranLoader size="sm" message="Loading active assessments..." />
               </div>
             ) : exams.length === 0 ? (
               <div style={{ padding: 40, textAlign: 'center', color: 'var(--color-text-muted)' }}>

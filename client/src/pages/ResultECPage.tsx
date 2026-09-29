@@ -10,6 +10,8 @@ import LeaderboardPodium from '../components/3d/LeaderboardPodium'
 import ShimmerText from '../components/3d/ShimmerText'
 import FlightPathLines from '../components/3d/FlightPathLines'
 import AltimeterDial from '../components/3d/AltimeterDial'
+import Confetti from '../components/Confetti'
+import GrowthranLoader from '../components/GrowthranLoader'
 
 const RadarChart3D  = lazy(() => import('../components/3d/RadarChart3D'))
 const StarField     = lazy(() => import('../components/3d/StarField'))
@@ -36,6 +38,29 @@ interface LeaderboardEntry {
   score: number
   department?: string
   hall_ticket?: string
+}
+
+function useAnimatedCounter(target: number, durationMs: number = 1400): number {
+  const [val, setVal] = useState(0)
+  useEffect(() => {
+    if (!target || isNaN(target)) { setVal(0); return }
+    let frameId: number
+    const startTime = performance.now()
+    const step = (now: number) => {
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / durationMs, 1)
+      const easeOut = 1 - Math.pow(1 - progress, 3)
+      setVal(Math.round(target * easeOut * 10) / 10)
+      if (progress < 1) {
+        frameId = requestAnimationFrame(step)
+      } else {
+        setVal(target)
+      }
+    }
+    frameId = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frameId)
+  }, [target, durationMs])
+  return val
 }
 
 export default function ResultECPage() {
@@ -74,11 +99,8 @@ export default function ResultECPage() {
   }
 
   if (loading) return (
-    <div className="page-center">
-      <div style={{ textAlign: 'center' }}>
-        <div className="btn-spinner" style={{ width: 36, height: 36, margin: '0 auto 12px', borderTopColor: '#2B7FFF' }} />
-        <div style={{ color: 'var(--color-text-muted)' }}>Loading your results...</div>
-      </div>
+    <div className="page-center" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <GrowthranLoader size="lg" message="Computing authoritative score & analytics..." />
     </div>
   )
 
@@ -86,12 +108,21 @@ export default function ResultECPage() {
   const passed = pct >= 60
   const scoreColor = pct >= 80 ? '#10B981' : pct >= 60 ? '#F59E0B' : '#EF4444'
 
+  const animatedPct = useAnimatedCounter(pct, 1400)
+  const animatedScore = useAnimatedCounter(result?.score ?? 0, 1200)
+  const animatedRank = useAnimatedCounter(result?.rank ?? 1, 1400)
+  const animatedCorrect = useAnimatedCounter(result?.correctAnswers ?? 0, 1000)
+  const animatedWrong = useAnimatedCounter(result?.wrongAnswers ?? 0, 1000)
+
   const TOPICS = result?.topicBreakdown || {
     'Data Structures': 85, 'Algorithms': 70, 'DBMS': 90, 'OS': 65, 'Networks': 78, 'OOP': 88
   }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)', position: 'relative', overflow: 'hidden' }}>
+      {/* Celebration Confetti when passed/qualified */}
+      {passed && <Confetti particleCount={140} durationMs={4500} />}
+
       {/* StarField warp background */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
         <Suspense fallback={null}>
@@ -113,7 +144,7 @@ export default function ResultECPage() {
         >
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
             <AltimeterDial
-              value={Math.round(pct)}
+              value={Math.round(animatedPct)}
               label="FINAL SCORE"
               suffix="%"
               color={scoreColor}
@@ -121,24 +152,36 @@ export default function ResultECPage() {
             />
           </div>
 
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 800, letterSpacing: '-0.04em', marginBottom: 8 }}>
-            <ShimmerText text={`${pct.toFixed(1)}%`} shimmer />
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2.5rem, 5vw, 4.2rem)', fontWeight: 800, letterSpacing: '-0.04em', marginBottom: 8 }}>
+            <span style={{ color: scoreColor }}>{animatedPct.toFixed(1)}%</span>
           </h1>
 
-          <p style={{ fontSize: '1.2rem', color: passed ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 600, marginBottom: 4 }}>
-            {passed ? '✅ PASSED — Well Done!' : '❌ Better Luck Next Time'}
+          <p style={{ fontSize: '1.25rem', color: passed ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 700, marginBottom: 8 }}>
+            {passed ? '🎉 PASSED — Exam Successfully Qualified!' : '📋 Examination Completed'}
           </p>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
-            {result?.score ?? 0} / {result?.totalMarks ?? 100} marks
-            {result?.rank && ` • Rank #${result.rank} of ${result.totalCandidates}`}
-          </p>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 14,
+            padding: '6px 18px', background: 'rgba(255,255,255,0.04)',
+            border: '1px solid var(--color-border)', borderRadius: 999,
+            color: 'var(--color-text-muted)', fontSize: '0.95rem'
+          }}>
+            <span>Score: <strong style={{ color: 'var(--color-text)' }}>{Math.round(animatedScore)}</strong> / {result?.totalMarks ?? 100} marks</span>
+            {result?.rank && (
+              <>
+                <span style={{ opacity: 0.3 }}>•</span>
+                <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>
+                  🏆 Rank #{Math.round(animatedRank)} of {result.totalCandidates || 1}
+                </span>
+              </>
+            )}
+          </div>
         </motion.div>
 
         {/* ─── STATS CARDS ─── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 48 }}>
           {[
-            { icon: '✅', label: 'Correct', value: result?.correctAnswers ?? '-', color: '#10B981' },
-            { icon: '❌', label: 'Wrong',   value: result?.wrongAnswers ?? '-',   color: '#EF4444' },
+            { icon: '✅', label: 'Correct', value: result?.correctAnswers !== undefined ? Math.round(animatedCorrect) : '-', color: '#10B981' },
+            { icon: '❌', label: 'Wrong',   value: result?.wrongAnswers !== undefined ? Math.round(animatedWrong) : '-',   color: '#EF4444' },
             { icon: '⬜', label: 'Skipped', value: result?.unanswered ?? '-',     color: '#F59E0B' },
             { icon: '⏱️', label: 'Time Taken',
               value: result?.timeTaken ? `${Math.floor(result.timeTaken / 60)}m` : '-',

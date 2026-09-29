@@ -9,6 +9,7 @@ import ExamFaceMonitor from '../components/exam/ExamFaceMonitor'
 import ExamTimerProgress from '../components/exam/ExamTimerProgress'
 import ProctoringConsentModal from '../components/ProctoringConsentModal'
 import BrandLogo from '../components/BrandLogo'
+import GrowthranLoader from '../components/GrowthranLoader'
 import FullscreenEnforcementOverlay from '../components/exam/FullscreenEnforcementOverlay'
 import ScreenShareWarningOverlay from '../components/exam/ScreenShareWarningOverlay'
 import { useAudioProctor } from '../hooks/useAudioProctor'
@@ -612,13 +613,8 @@ export default function QuizPage() {
 
   /* ── Render states ── */
   if (loading) return (
-    <div className="page-center">
-      <div className="card" style={{ padding: '48px 64px', textAlign: 'center', maxWidth: 360 }}>
-        <div className="btn-spinner" style={{ width: 32, height: 32, margin: '0 auto 16px', borderTopColor: '#2B7FFF' }} />
-        <div style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-display)' }}>
-          Loading Exam...
-        </div>
-      </div>
+    <div className="page-center" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <GrowthranLoader size="lg" message="Loading secure exam session & question manifest..." />
     </div>
   )
 

@@ -38,9 +38,10 @@ GROWTHRAN comes with a self-contained in-memory demo engine that allows instant 
 git clone https://github.com/your-username/Quiz.git
 cd Quiz
 
-# Install backend dependencies
+# Install backend dependencies & setup environment
 cd server
 npm install
+cp .env.example .env    # On Windows PowerShell: copy .env.example .env
 
 # Install frontend dependencies
 cd ../client

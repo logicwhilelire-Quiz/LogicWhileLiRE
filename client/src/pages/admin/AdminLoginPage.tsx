@@ -106,7 +106,7 @@ export default function AdminLoginPage() {
             </Link>
           </div>
           <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.74rem', color: 'var(--color-text-faint, #64748b)' }}>
-            GROWTHRAN • Developed by R. Charan Sai • © 2026 All rights reserved.
+            GROWTHRAN • <em>"Learn. Grow. Run."</em> • Developed by R. Charan Sai • © 2026 All rights reserved.
           </div>
         </div>
       </div>

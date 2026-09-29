@@ -393,6 +393,25 @@ export default function InstructionsPage() {
                     }}
                   />
                 </div>
+                <button
+                  type="button"
+                  id="skip-instruction-wait-btn"
+                  onClick={() => setCanProceed(true)}
+                  style={{
+                    marginTop: 18,
+                    background: 'rgba(43,127,255,0.08)',
+                    border: '1px solid rgba(43,127,255,0.3)',
+                    color: 'var(--color-primary, #2B7FFF)',
+                    padding: '8px 18px',
+                    borderRadius: 8,
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  ⚡ I have reviewed the instructions • Skip wait →
+                </button>
               </>
             ) : (
               <>

@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLeaderboard, type LeaderboardEntry } from '../hooks/useLeaderboard';
 import BrandLogo from '../components/BrandLogo';
+import GrowthranLoader from '../components/GrowthranLoader';
+import SiteFooter from '../components/SiteFooter';
 import AnimatedPage from '../components/AnimatedPage';
 
 function formatTime(s: number): string {
@@ -83,10 +85,8 @@ export default function LeaderboardPage() {
           </div>
 
           {loading && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="skeleton" style={{ height: 60, borderRadius: 12 }} />
-              ))}
+            <div style={{ padding: '60px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <GrowthranLoader size="md" message="Synchronizing live leaderboard standings..." />
             </div>
           )}
 
@@ -186,6 +186,7 @@ export default function LeaderboardPage() {
             </>
           )}
         </div>
+        <SiteFooter />
       </div>
     </AnimatedPage>
   );

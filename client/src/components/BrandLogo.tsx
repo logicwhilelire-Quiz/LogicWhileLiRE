@@ -140,7 +140,7 @@ export default function BrandLogo({
               lineHeight: 1,
             }}
           >
-            Grow + Run
+            Learn. Grow. Run.
           </span>
         )}
       </div>

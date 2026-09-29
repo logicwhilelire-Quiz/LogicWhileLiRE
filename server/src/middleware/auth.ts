@@ -53,7 +53,8 @@ export async function participantAuth(
 
   let payload: ParticipantJWTPayload;
   try {
-    payload = jwt.verify(token, process.env.JWT_SECRET!) as ParticipantJWTPayload;
+    const jwtSecret = process.env.JWT_SECRET || 'growthran_participant_jwt_default_secret_key_demo_2026';
+    payload = jwt.verify(token, jwtSecret) as ParticipantJWTPayload;
   } catch {
     res.status(401).json({ success: false, error: 'Invalid or expired session token' });
     return;
@@ -113,7 +114,8 @@ export async function studentAuth(
 
   let payload: StudentJWTPayload;
   try {
-    payload = jwt.verify(token, process.env.JWT_SECRET!) as StudentJWTPayload;
+    const jwtSecret = process.env.JWT_SECRET || 'growthran_participant_jwt_default_secret_key_demo_2026';
+    payload = jwt.verify(token, jwtSecret) as StudentJWTPayload;
   } catch {
     res.status(401).json({ success: false, error: 'Invalid or expired student session' });
     return;

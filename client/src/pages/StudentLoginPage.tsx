@@ -197,6 +197,20 @@ export default function StudentLoginPage() {
               Control Center Login
             </Link>
           </div>
+
+          {/* Official Footer Credit */}
+          <div
+            style={{
+              textAlign: 'center',
+              fontSize: '0.75rem',
+              color: '#64748b',
+              marginTop: 24,
+              paddingBottom: 24,
+              fontFamily: 'var(--font-sans, system-ui, sans-serif)',
+            }}
+          >
+            GROWTHRAN • <em>"Learn. Grow. Run."</em> • Developed by R. Charan Sai • © 2026
+          </div>
         </div>
       </div>
     </AnimatedPage>

@@ -553,13 +553,19 @@ export default function LandingPage() {
       {/* ─── STATS — 4x AltimeterDial ─── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '96px 0' }}>
         <div className="page-content">
-          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            style={{ textAlign: 'center', marginBottom: 64 }}
+          >
             <span className="section-label">ENGINEERING BENCHMARKS</span>
             <h2 className="section-title">Architected for Reliability</h2>
             <p className="section-subtitle" style={{ margin: '12px auto' }}>
               Engineered from the ground up for high-concurrency exams, sub-millisecond clock sync, and zero-compromise anti-cheat integrity.
             </p>
-          </div>
+          </motion.div>
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
@@ -595,13 +601,19 @@ export default function LandingPage() {
       {/* ─── FEATURES — 6x GlowCard ─── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '96px 0', background: 'rgba(20,28,47,0.4)' }}>
         <div className="page-content">
-          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            style={{ textAlign: 'center', marginBottom: 64 }}
+          >
             <span className="section-label">CAPABILITIES</span>
             <h2 className="section-title">Built Different</h2>
             <p className="section-subtitle" style={{ margin: '12px auto' }}>
               Every feature engineered for the future of academic assessment.
             </p>
-          </div>
+          </motion.div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
             {FEATURES.map((feat, i) => (
               <motion.div
@@ -643,13 +655,19 @@ export default function LandingPage() {
       {/* ─── SECURITY & PROCTORING SHOWCASE ─── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '96px 0', background: 'rgba(15,23,42,0.6)' }}>
         <div className="page-content">
-          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            style={{ textAlign: 'center', marginBottom: 64 }}
+          >
             <span className="section-label" style={{ color: '#38BDF8' }}>MILITARY-GRADE INTEGRITY</span>
             <h2 className="section-title">Zero-Compromise Proctoring</h2>
             <p className="section-subtitle" style={{ margin: '12px auto', maxWidth: 640 }}>
               Engineered with on-device computer vision and zero-cloud-video privacy standards so candidate trust and examination fairness are never in question.
             </p>
-          </div>
+          </motion.div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
             {PROCTORING_PILLARS.map((pillar, i) => (
@@ -697,10 +715,16 @@ export default function LandingPage() {
       {/* ─── HOW IT WORKS ─── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '96px 0' }}>
         <div className="page-content">
-          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            style={{ textAlign: 'center', marginBottom: 64 }}
+          >
             <span className="section-label">WORKFLOW</span>
             <h2 className="section-title">3 Steps to Assessment</h2>
-          </div>
+          </motion.div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
             {[
               { step: '01', title: 'Admin Creates Exam', desc: 'Upload questions, set time limit, configure proctoring rules. Get a shareable exam code.', icon: '📋' },
@@ -744,13 +768,19 @@ export default function LandingPage() {
       {/* ─── ENTERPRISE ARCHITECTURE SHOWCASE ─── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '96px 0' }}>
         <div className="page-content">
-          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            style={{ textAlign: 'center', marginBottom: 64 }}
+          >
             <span className="section-label">DEPLOYMENT ARCHITECTURE</span>
             <h2 className="section-title">Engineered for Every High-Stakes Evaluation</h2>
             <p className="section-subtitle" style={{ margin: '12px auto', maxWidth: 640 }}>
               Purpose-built infrastructure supporting high-concurrency semester finals, campus placement screening, competitive coding hackathons, and remote proctoring.
             </p>
-          </div>
+          </motion.div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
             {DEPLOYMENT_MODES.map((col, i) => (
@@ -799,13 +829,19 @@ export default function LandingPage() {
       {/* ─── FREQUENTLY ASKED QUESTIONS (FAQ) ─── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '96px 0', background: 'rgba(15,23,42,0.4)' }}>
         <div className="page-content" style={{ maxWidth: 840, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            style={{ textAlign: 'center', marginBottom: 56 }}
+          >
             <span className="section-label">CLARITY FIRST</span>
             <h2 className="section-title">Frequently Asked Questions</h2>
             <p className="section-subtitle" style={{ margin: '12px auto' }}>
               Everything you need to know about exam integrity, timer mechanics, and privacy.
             </p>
-          </div>
+          </motion.div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {FAQS.map((faq, i) => {
@@ -885,13 +921,19 @@ export default function LandingPage() {
       {/* ─── CONTACT & PILOT ONBOARDING REQUEST ─── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '96px 0' }}>
         <div className="page-content" style={{ maxWidth: 840, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            style={{ textAlign: 'center', marginBottom: 48 }}
+          >
             <span className="section-label">STARTUP PILOT PROGRAM</span>
             <h2 className="section-title">Apply for Early Campus Sandbox Access</h2>
             <p className="section-subtitle" style={{ margin: '12px auto' }}>
               We are partnering with forward-thinking universities, institutes, and placement cells to deploy pilot assessments with dedicated engineering support.
             </p>
-          </div>
+          </motion.div>
 
           <GlowCard style={{ padding: '36px 40px' }}>
             {demoForm.submitted ? (
