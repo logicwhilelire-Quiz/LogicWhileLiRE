@@ -7,7 +7,8 @@ import CodeRain from '../components/3d/CodeRain';
 export default function InstructionsPage() {
   const { examCode } = useParams<{ examCode: string }>();
   const navigate = useNavigate();
-  const [countdown, setCountdown] = useState(60);
+  const isDemoOrDev = Boolean(examCode?.toUpperCase().includes('DEMO') || import.meta.env.DEV);
+  const [countdown, setCountdown] = useState(isDemoOrDev ? 5 : 60);
   const [canProceed, setCanProceed] = useState(false);
   const [systemOk, setSystemOk] = useState(false);
   const [lang, setLang] = useState<'en' | 'te'>('en');

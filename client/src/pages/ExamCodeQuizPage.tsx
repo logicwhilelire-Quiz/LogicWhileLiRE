@@ -147,7 +147,7 @@ export default function QuizPage() {
           test_cases: (q.test_cases as ExamQuestion['test_cases']) || [],
         }))
         sessionIdRef.current = data.sessionId || data.session_id
-        const proctoringMode: 'webcam' | 'screen' | 'dual' = exam?.proctoring_mode || 'dual'
+        const proctoringMode: 'webcam' | 'screen' | 'dual' = exam?.proctoring_mode || 'webcam'
         setSession({
           candidateId: data.candidateId || hallTicket,
           examName: exam?.exam_name || exam?.name || 'Exam',
@@ -699,6 +699,7 @@ export default function QuizPage() {
         {/* Right: Proctor Monitor + Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <button
+            id="open-submit-modal-btn"
             className="btn btn-secondary btn-sm"
             onClick={() => setShowSubmitModal(true)}
           >
@@ -1195,6 +1196,7 @@ export default function QuizPage() {
                   Continue Exam
                 </button>
                 <button
+                  id="confirm-submit-exam-btn"
                   className="btn btn-success w-full"
                   onClick={handleSubmit}
                   disabled={submitting}
@@ -1214,7 +1216,7 @@ export default function QuizPage() {
           setConsentGiven(true);
           sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
           document.documentElement.requestFullscreen().catch(() => {});
-          const mode = session?.proctoringMode || 'dual';
+          const mode = session?.proctoringMode || 'webcam';
           if (mode === 'screen' || mode === 'dual') {
             startScreenShare();
           }

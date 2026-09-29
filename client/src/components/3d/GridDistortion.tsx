@@ -11,8 +11,10 @@ export default function GridDistortion({ rows = 14, cols = 20, color = '#6C5CE7'
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
-    const canvas = canvasRef.current!
-    const ctx = canvas.getContext('2d')!
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
     let animId: number
     let mouse = { x: -999, y: -999 }
     let t = 0

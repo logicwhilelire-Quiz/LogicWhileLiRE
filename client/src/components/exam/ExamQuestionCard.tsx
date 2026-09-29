@@ -146,6 +146,7 @@ export default function ExamQuestionCard({
                   return (
                     <motion.div
                       key={idx}
+                      className="exam-option-card"
                       onClick={() => onOptionSelect?.(idx)}
                       whileHover={{ x: 4, borderColor: 'rgba(96,165,250,0.6)' }}
                       whileTap={{ scale: 0.99 }}
