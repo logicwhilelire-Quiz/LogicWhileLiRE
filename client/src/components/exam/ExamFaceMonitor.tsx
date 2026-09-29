@@ -43,9 +43,14 @@ export default function ExamFaceMonitor({ onStatusChange, size = 52, className =
     onStatusChangeRef.current = onStatusChange
   }, [onStatusChange])
 
-  // Fire onStatusChange asynchronously after render commits
+  // Fire onStatusChange asynchronously after render completes
   useEffect(() => {
-    onStatusChangeRef.current?.(status)
+    const fn = onStatusChangeRef.current
+    if (!fn) return
+    const id = setTimeout(() => {
+      fn(status)
+    }, 0)
+    return () => clearTimeout(id)
   }, [status])
 
   useEffect(() => {
