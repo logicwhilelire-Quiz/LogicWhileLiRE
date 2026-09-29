@@ -1299,13 +1299,88 @@ select:focus-visible, textarea:focus-visible,
 }
 
 /* ============================================================
-   PREFERS REDUCED MOTION
+   CLICKABLE HOVER & INTERACTION POLISH (Requirement 2)
    ============================================================ */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.001s !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001s !important;
-    scroll-behavior: auto !important;
+button:not(:disabled),
+.btn:not(:disabled),
+a.btn,
+.clickable,
+[role="button"],
+.glow-card,
+.stat-card,
+.feature-card,
+.deployment-card,
+.pillar-card,
+.clickable-card,
+.option-card,
+.nav-btn {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease !important;
+}
+
+button:not(:disabled):hover,
+.btn:not(:disabled):hover,
+a.btn:hover {
+  transform: translateY(-2px) scale(1.012) !important;
+  box-shadow: 0 8px 24px -4px rgba(27, 95, 181, 0.25), 0 2px 6px -1px rgba(0, 0, 0, 0.08) !important;
+}
+
+button:not(:disabled):active,
+.btn:not(:disabled):active,
+a.btn:active {
+  transform: translateY(0) scale(0.99) !important;
+}
+
+.feature-card:hover,
+.stat-card:hover,
+.glow-card:hover,
+.deployment-card:hover,
+.pillar-card:hover,
+.clickable-card:hover {
+  transform: translateY(-3px) scale(1.01) !important;
+  box-shadow: 0 14px 32px -8px rgba(10, 63, 143, 0.16), 0 4px 10px -2px rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(27, 95, 181, 0.3) !important;
+}
+
+/* ============================================================
+   RESPONSIVE OVERFLOW PROTECTIONS (Requirement 4)
+   ============================================================ */
+html, body, #root {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+pre, code, .font-mono, [class*="mono"] {
+  word-break: break-all !important;
+  overflow-wrap: anywhere !important;
+  max-width: 100% !important;
+}
+
+@media (max-width: 900px) {
+  /* Prevent horizontal clipping on 2-column hero or split layouts */
+  div[style*="gridTemplateColumns: '1fr 1fr'"],
+  div[style*="grid-template-columns: 1fr 1fr"],
+  div[style*="1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
   }
 }
+
+@media (max-width: 640px) {
+  /* 4-column metric grids become 2x2 grids on mobile devices */
+  div[style*="repeat(4, 1fr)"],
+  div[style*="repeat(4,1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .page-content {
+    padding: 16px !important;
+  }
+
+  /* Ensure text doesn't overflow card boundaries */
+  h1, h2, h3, h4, h5, h6 {
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+  }
+}
+

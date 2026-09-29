@@ -192,7 +192,7 @@ function GlobeSection() {
     >
       <Suspense fallback={
         <div style={{
-          width: 420, height: 420, borderRadius: '50%',
+          width: 380, height: 380, borderRadius: '50%',
           background: 'radial-gradient(circle, rgba(43,127,255,0.2), transparent)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: 'var(--color-text-muted)', fontSize: '0.9rem',
@@ -200,7 +200,7 @@ function GlobeSection() {
           Loading Globe...
         </div>
       }>
-        <CollegeGlobe className="w-[420px] h-[420px]" />
+        <CollegeGlobe className="w-[380px] h-[380px] max-w-full" />
       </Suspense>
 
       {/* Orbital ring */}
@@ -268,19 +268,18 @@ export default function LandingPage() {
           minHeight: 'calc(100vh - 80px)',
           display: 'flex', alignItems: 'center',
           position: 'relative', zIndex: 1,
-          paddingTop: 96,
-          paddingBottom: 48,
+          paddingTop: 40,
+          paddingBottom: 24,
         }}
       >
-        {/* Hero Interactive 3D Node Network & Blob background */}
+        {/* Hero Interactive 3D Node Network background */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
           <Suspense fallback={null}>
-            <LiquidBlob />
-            <NodeNetwork nodeCount={36} maxDistance={140} lineColor="rgba(191, 159, 98, 0.22)" nodeColor="#bf9f62" />
+            <NodeNetwork nodeCount={36} maxDistance={140} lineColor="rgba(27, 95, 181, 0.16)" nodeColor="#1B5FB5" />
           </Suspense>
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(191,159,98,0.10), transparent)',
+            background: 'radial-gradient(ellipse 80% 60% at 50% 30%, rgba(27, 95, 181, 0.05), transparent)',
           }} />
         </div>
 
@@ -289,8 +288,7 @@ export default function LandingPage() {
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
             alignItems: 'center',
-            gap: 64,
-            minHeight: 'calc(100vh - 160px)',
+            gap: 40,
           }}>
             {/* Left: Text */}
             <motion.div
@@ -304,12 +302,12 @@ export default function LandingPage() {
                 transition={{ delay: 0.1, duration: 0.6 }}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
-                  padding: '6px 16px',
+                  padding: '6px 14px',
                   background: 'rgba(43,127,255,0.12)',
                   border: '1px solid rgba(43,127,255,0.35)',
-                  borderRadius: 999, fontSize: '0.8rem', fontWeight: 600,
-                  color: 'var(--color-primary)', marginBottom: 20,
-                  letterSpacing: '0.04em',
+                  borderRadius: 999, fontSize: '0.78rem', fontWeight: 600,
+                  color: 'var(--color-primary)', marginBottom: 16,
+                  letterSpacing: '0.03em', maxWidth: '100%', flexWrap: 'wrap',
                 }}
               >
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', animation: 'blink 2s infinite' }} />
@@ -359,15 +357,41 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8, duration: 0.7 }}
-                style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}
+                style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}
               >
                 <Link to="/enter-exam" style={{ textDecoration: 'none' }}>
-                  <MagneticButton className="btn btn-primary btn-xl" style={{ minWidth: 200 }}>
+                  <MagneticButton
+                    className="btn btn-primary btn-xl"
+                    style={{
+                      minWidth: 220,
+                      background: 'linear-gradient(135deg, #1B5FB5 0%, #0A3F8F 100%)',
+                      boxShadow: '0 10px 28px -4px rgba(27, 95, 181, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.25) inset',
+                      color: '#ffffff',
+                      fontSize: '1.12rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.02em',
+                      padding: '16px 36px',
+                      borderRadius: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
                     🚀 Enter Assessment
                   </MagneticButton>
                 </Link>
                 <Link to="/admin/dashboard" style={{ textDecoration: 'none' }}>
-                  <MagneticButton className="btn btn-secondary btn-xl">
+                  <MagneticButton
+                    className="btn btn-secondary btn-xl"
+                    style={{
+                      background: 'var(--color-surface)',
+                      border: '1.5px solid var(--color-border)',
+                      color: 'var(--color-text)',
+                      fontSize: '1.05rem',
+                      fontWeight: 600,
+                      padding: '16px 28px',
+                      borderRadius: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
                     ⚙️ Admin Portal
                   </MagneticButton>
                 </Link>
@@ -378,7 +402,7 @@ export default function LandingPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1.1, duration: 0.7 }}
-                style={{ display: 'flex', gap: 20, marginTop: 40, alignItems: 'center', flexWrap: 'wrap' }}
+                style={{ display: 'flex', gap: 20, marginTop: 22, alignItems: 'center', flexWrap: 'wrap' }}
               >
                 {['🔒 Zero-Trust Security', '⚡ Sub-50ms Latency', '👁️ On-Device AI Vision', '🚀 Early Access Pilot'].map(badge => (
                   <div key={badge} style={{
@@ -401,6 +425,82 @@ export default function LandingPage() {
               <GlobeSection />
             </motion.div>
           </div>
+
+          {/* ─── HERO STAT COUNTERS (Visible on First Load without scrolling) ─── */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.95, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              marginTop: 24,
+              padding: '16px 20px',
+              background: 'var(--glass-bg, rgba(255, 255, 255, 0.88))',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 16,
+              boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04)',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: 16,
+              alignItems: 'center',
+            }}
+          >
+            {STATS.map((stat, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  padding: '4px 10px',
+                  borderRight: i < 3 ? '1px solid var(--color-border)' : 'none',
+                }}
+              >
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 10,
+                    background: `${stat.color}15`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.25rem',
+                    flexShrink: 0,
+                  }}
+                >
+                  {i === 0 ? '⚡' : i === 1 ? '📡' : i === 2 ? '🛡️' : '💻'}
+                </div>
+                <div>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-display)',
+                      fontSize: '1.45rem',
+                      fontWeight: 800,
+                      color: 'var(--color-text)',
+                      lineHeight: 1.1,
+                      letterSpacing: '-0.02em',
+                    }}
+                  >
+                    {stat.value.toLocaleString()}{stat.suffix}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      color: 'var(--color-text-muted)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      marginTop: 2,
+                    }}
+                  >
+                    {stat.label}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </motion.div>
         </div>
 
         {/* Scroll indicator */}
@@ -818,8 +918,10 @@ export default function LandingPage() {
               <form onSubmit={handleDemoSubmit}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   <div className="form-group">
-                    <label className="form-label">Full Name *</label>
+                    <label htmlFor="pilot-name" className="form-label">Full Name *</label>
                     <input
+                      id="pilot-name"
+                      name="name"
                       type="text"
                       className="form-input"
                       placeholder="e.g. Dr. Rajesh Sharma"
@@ -830,8 +932,10 @@ export default function LandingPage() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Official / University Email *</label>
+                    <label htmlFor="pilot-email" className="form-label">Official / University Email *</label>
                     <input
+                      id="pilot-email"
+                      name="email"
                       type="email"
                       className="form-input"
                       placeholder="e.g. dean.academics@university.edu"
@@ -844,8 +948,10 @@ export default function LandingPage() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   <div className="form-group">
-                    <label className="form-label">Institution / College Name *</label>
+                    <label htmlFor="pilot-institution" className="form-label">Institution / College Name *</label>
                     <input
+                      id="pilot-institution"
+                      name="institution"
                       type="text"
                       className="form-input"
                       placeholder="e.g. National Institute of Technology"
@@ -856,8 +962,10 @@ export default function LandingPage() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Estimated Student Batch Size</label>
+                    <label htmlFor="pilot-candidate-count" className="form-label">Estimated Student Batch Size</label>
                     <select
+                      id="pilot-candidate-count"
+                      name="candidateCount"
                       className="form-select"
                       value={demoForm.candidateCount}
                       onChange={e => setDemoForm({ ...demoForm, candidateCount: e.target.value })}
@@ -871,8 +979,10 @@ export default function LandingPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Target Evaluation Format / Requirements</label>
+                  <label htmlFor="pilot-message" className="form-label">Target Evaluation Format / Requirements</label>
                   <textarea
+                    id="pilot-message"
+                    name="message"
                     className="form-textarea"
                     rows={3}
                     placeholder="Describe your upcoming assessment format (e.g. Semester Final, Campus Placement Drive, Coding Hackathon)..."

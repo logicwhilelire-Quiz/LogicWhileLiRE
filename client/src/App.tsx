@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AnimatePresence, MotionConfig } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import ErrorBoundary from './components/ErrorBoundary';
 import PageLoader from './components/PageLoader';
 import CustomCursor from './components/CustomCursor';
@@ -57,7 +57,15 @@ function AnimatedRoutes() {
 
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -6 }}
+        transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+        style={{ width: '100%', minHeight: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}
+      >
+        <Routes location={location}>
         {/* ── PUBLIC LANDING (Marketing page — default route) ── */}
         <Route path="/" element={<LandingPage />} />
 
@@ -135,6 +143,7 @@ function AnimatedRoutes() {
         {/* 404 Fallback */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </motion.div>
     </AnimatePresence>
   );
 }
