@@ -512,7 +512,13 @@ export default function LandingPage() {
       </motion.section>
 
       {/* ─── MARQUEE — Domains ─── */}
-      <section style={{ position: 'relative', zIndex: 1, padding: '40px 0', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-secondary)' }}>
+      <motion.section
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-40px' }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        style={{ position: 'relative', zIndex: 1, padding: '40px 0', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-secondary)' }}
+      >
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <span style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-primary)' }}>
             ARCHITECTED FOR UNIVERSITIES, CODING BOOTCAMPS & ENTERPRISE RECRUITMENT
@@ -541,7 +547,7 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ─── STATS — 4x AltimeterDial ─── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '96px 0' }}>
@@ -842,8 +848,12 @@ export default function LandingPage() {
               const panelId = `faq-panel-${i}`
               const btnId = `faq-btn-${i}`
               return (
-                <div
+                <motion.div
                   key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                   style={{
                     background: 'var(--color-surface)',
                     border: `1px solid ${isOpen ? 'rgba(27,95,181,0.35)' : 'var(--color-border)'}`,
@@ -909,7 +919,7 @@ export default function LandingPage() {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </div>
+                </motion.div>
               )
             })}
           </div>
@@ -937,7 +947,13 @@ export default function LandingPage() {
             </p>
           </motion.div>
 
-          <GlowCard style={{ padding: '36px 40px' }}>
+          <motion.div
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <GlowCard style={{ padding: '36px 40px' }}>
             {demoForm.submitted ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -1052,7 +1068,8 @@ export default function LandingPage() {
                 </button>
               </form>
             )}
-          </GlowCard>
+            </GlowCard>
+          </motion.div>
         </div>
       </section>
 

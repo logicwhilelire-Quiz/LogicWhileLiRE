@@ -63,6 +63,36 @@ function useAnimatedCounter(target: number, durationMs: number = 1400): number {
   return val
 }
 
+function useRankCounter(targetRank: number, total: number = 100, durationMs: number = 1500): { rank: number; settled: boolean } {
+  const [val, setVal] = useState(() => Math.min(total, Math.max(targetRank + 16, 20)))
+  const [settled, setSettled] = useState(false)
+
+  useEffect(() => {
+    if (!targetRank || isNaN(targetRank)) { setVal(1); setSettled(true); return }
+    const startVal = Math.min(total, Math.max(targetRank + 16, 20))
+    setSettled(false)
+    let frameId: number
+    const startTime = performance.now()
+    const step = (now: number) => {
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / durationMs, 1)
+      const easeOut = 1 - Math.pow(1 - progress, 3)
+      const current = Math.round(startVal - (startVal - targetRank) * easeOut)
+      setVal(current)
+      if (progress < 1) {
+        frameId = requestAnimationFrame(step)
+      } else {
+        setVal(targetRank)
+        setSettled(true)
+      }
+    }
+    frameId = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frameId)
+  }, [targetRank, total, durationMs])
+
+  return { rank: val, settled }
+}
+
 export default function ResultECPage() {
   const { examCode } = useParams<{ examCode: string }>()
   const location = useLocation()
@@ -125,7 +155,7 @@ export default function ResultECPage() {
 
   const animatedPct = useAnimatedCounter(pct, 1400)
   const animatedScore = useAnimatedCounter(activeResult.score ?? 0, 1200)
-  const animatedRank = useAnimatedCounter(activeResult.rank ?? 1, 1400)
+  const { rank: animatedRank, settled: rankSettled } = useRankCounter(activeResult.rank ?? 1, activeResult.totalCandidates || 100, 1500)
   const animatedCorrect = useAnimatedCounter(activeResult.correctAnswers ?? 0, 1000)
   const animatedWrong = useAnimatedCounter(activeResult.wrongAnswers ?? 0, 1000)
 
@@ -164,38 +194,70 @@ export default function ResultECPage() {
           style={{ textAlign: 'center', marginBottom: 64 }}
         >
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-            <AltimeterDial
-              value={Math.round(animatedPct)}
-              label="FINAL SCORE"
-              suffix="%"
-              color={scoreColor}
-              size={140}
-            />
+            <motion.div
+              initial={{ scale: 0.72, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <AltimeterDial
+                value={Math.round(animatedPct)}
+                label="FINAL SCORE"
+                suffix="%"
+                color={scoreColor}
+                size={140}
+              />
+            </motion.div>
           </div>
 
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2.5rem, 5vw, 4.2rem)', fontWeight: 800, letterSpacing: '-0.04em', marginBottom: 8 }}>
+          <motion.h1
+            initial={{ scale: 0.85, opacity: 0, y: 14 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(2.5rem, 5vw, 4.2rem)',
+              fontWeight: 800,
+              letterSpacing: '-0.04em',
+              marginBottom: 8,
+              textShadow: `0 0 35px ${scoreColor}40`,
+            }}
+          >
             <span style={{ color: scoreColor }}>{animatedPct.toFixed(1)}%</span>
-          </h1>
+          </motion.h1>
 
-          <p style={{ fontSize: '1.25rem', color: passed ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 700, marginBottom: 8 }}>
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            style={{ fontSize: '1.25rem', color: passed ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 700, marginBottom: 8 }}
+          >
             {passed ? '🎉 PASSED — Exam Successfully Qualified!' : '📋 Examination Completed'}
-          </p>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 14,
-            padding: '6px 18px', background: 'rgba(255,255,255,0.04)',
-            border: '1px solid var(--color-border)', borderRadius: 999,
-            color: 'var(--color-text-muted)', fontSize: '0.95rem'
-          }}>
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45, duration: 0.5 }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 14,
+              padding: '6px 18px', background: 'rgba(255,255,255,0.04)',
+              border: '1px solid var(--color-border)', borderRadius: 999,
+              color: 'var(--color-text-muted)', fontSize: '0.95rem'
+            }}
+          >
             <span>Score: <strong style={{ color: 'var(--color-text)' }}>{Math.round(animatedScore)}</strong> / {activeResult.totalMarks ?? 100} marks</span>
             {activeResult.rank && (
               <>
                 <span style={{ opacity: 0.3 }}>•</span>
-                <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>
-                  🏆 Rank #{Math.round(animatedRank)} of {activeResult.totalCandidates || 1}
-                </span>
+                <motion.span
+                  animate={rankSettled ? { scale: [1, 1.18, 1] } : {}}
+                  transition={{ duration: 0.45, ease: 'easeOut' }}
+                  style={{ color: 'var(--color-primary)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                >
+                  🏆 Rank #{animatedRank} of {activeResult.totalCandidates || 1}
+                </motion.span>
               </>
             )}
-          </div>
+          </motion.div>
         </motion.div>
 
         {/* ─── STATS CARDS ─── */}

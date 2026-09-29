@@ -12,10 +12,12 @@ export default function PageLoader({ message }: { message?: string }) {
         style={{
           padding: '40px 48px',
           maxWidth: 420,
-          background: 'rgba(15, 17, 26, 0.85)',
+          background: 'rgba(11, 18, 32, 0.88)',
           backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(245, 158, 11, 0.25)',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(245, 158, 11, 0.1)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border: '1px solid rgba(43, 127, 255, 0.25)',
+          borderRadius: 'var(--radius-xl, 16px)',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(43, 127, 255, 0.12)',
         }}
       >
         <LoadingLogo size="md" message={message} />
