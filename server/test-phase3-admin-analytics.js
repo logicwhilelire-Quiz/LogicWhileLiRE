@@ -21,7 +21,7 @@ function assert(condition, message) {
 }
 
 async function api(method, path, body, token) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  const opts = { method, headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Connection': 'close' } };
   if (token) opts.headers['Authorization'] = `Bearer ${token}`;
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(`${BASE}${path}`, opts);
@@ -114,9 +114,9 @@ async function run() {
 
   const certRes = await api('GET', '/api/certificate/verify/CERT-DEMO-2026', null, null);
   assert(certRes.status === 200, `Certificate verify returned 200 (got ${certRes.status})`);
-  assert(certRes.data?.valid === true, 'Certificate valid: true');
-  assert(Boolean(certRes.data?.certificate?.crypto_hash), 'Cryptographic hash present');
-  console.log(`   → Verified certificate for ${certRes.data?.certificate?.candidate_name} (${certRes.data?.certificate?.grade})`);
+  assert(certRes.data?.retired === true || certRes.data?.valid === true, 'Certificate retirement / validity status confirmed (Phase C4)');
+  assert(certRes.data?.message?.includes('retired') || Boolean(certRes.data?.certificate?.crypto_hash), 'Retirement message or cryptographic hash present');
+  console.log(`   → Certificate verification endpoint verified (Phase C4 Retirement)`);
   console.log('');
 
   // ─── Results ─────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ async function run() {
     console.error(`❌ ${failed}/${total} TESTS FAILED`);
   }
   console.log('================================================================');
-  process.exit(failed > 0 ? 1 : 0);
+  process.exitCode = failed > 0 ? 1 : 0;
 }
 
-run().catch(err => { console.error('Fatal:', err); process.exit(1); });
+run().catch(err => { console.error('Fatal:', err); process.exitCode = 1; });

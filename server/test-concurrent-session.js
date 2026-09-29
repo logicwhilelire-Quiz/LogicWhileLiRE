@@ -12,7 +12,7 @@ function assert(condition, message) {
 }
 
 async function api(method, path, body) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  const opts = { method, headers: { 'Content-Type': 'application/json', 'Connection': 'close' } };
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(`${BASE}${path}`, opts);
   const data = await res.json().catch(() => ({}));
@@ -88,7 +88,7 @@ async function run() {
     console.log('   Phase 1b — Per-question autosave + resume-state: ACTIVE');
   } else { console.error(`❌ ${failed}/${total} TESTS FAILED`); }
   console.log('================================================================');
-  process.exit(failed > 0 ? 1 : 0);
+  process.exitCode = failed > 0 ? 1 : 0;
 }
 
-run().catch(err => { console.error('Fatal:', err); process.exit(1); });
+run().catch(err => { console.error('Fatal:', err); process.exitCode = 1; });

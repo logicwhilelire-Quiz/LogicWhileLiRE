@@ -21,7 +21,7 @@ function assert(condition, message) {
 }
 
 async function api(method, path, body, token) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  const opts = { method, headers: { 'Content-Type': 'application/json', 'Connection': 'close' } };
   if (token) opts.headers['Authorization'] = `Bearer ${token}`;
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(`${BASE}${path}`, opts);
@@ -119,7 +119,7 @@ async function run() {
     console.error(`❌ ${failed}/${total} TESTS FAILED`);
   }
   console.log('================================================================');
-  process.exit(failed > 0 ? 1 : 0);
+  process.exitCode = failed > 0 ? 1 : 0;
 }
 
-run().catch(err => { console.error('Fatal:', err); process.exit(1); });
+run().catch(err => { console.error('Fatal:', err); process.exitCode = 1; });

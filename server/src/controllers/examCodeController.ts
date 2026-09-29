@@ -880,7 +880,11 @@ export async function saveExamCodeAnswer(req: Request, res: Response): Promise<v
 
   let attempt: any = null;
 
-  if (attemptId && session_token) {
+  if (attemptId) {
+    if (!session_token) {
+      res.status(400).json({ success: false, error: 'session_token required when attemptId is provided', code: 'TOKEN_REQUIRED' });
+      return;
+    }
     const tokenCheck = await verifyAttemptToken(String(attemptId), String(code), String(session_token));
     if (!tokenCheck.valid) {
       const errCode = tokenCheck.evicted ? 'SESSION_EVICTED' : tokenCheck.terminated ? 'SESSION_ENDED' : 'INVALID_ATTEMPT';
@@ -888,13 +892,6 @@ export async function saveExamCodeAnswer(req: Request, res: Response): Promise<v
       return;
     }
     attempt = tokenCheck.attempt;
-  } else if (attemptId) {
-    const { data } = await supabase
-      .from('exam_code_attempts')
-      .select('*')
-      .eq('id', attemptId)
-      .maybeSingle();
-    attempt = data;
   } else if (candidateId) {
     const { data } = await supabase
       .from('exam_code_attempts')

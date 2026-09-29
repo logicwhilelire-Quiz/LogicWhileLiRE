@@ -138,12 +138,26 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       return;
     }
   } else {
-    // Look up staff account by email
-    const { data: staff, error } = await supabase
+    // Look up staff account by email (with backward-compatible domain aliasing)
+    const emailToLookup = normalizedUser.toLowerCase();
+    let { data: staff, error } = await supabase
       .from('staff')
       .select('*')
-      .eq('email', normalizedUser.toLowerCase())
+      .eq('email', emailToLookup)
       .maybeSingle();
+
+    if (!staff && emailToLookup.endsWith('@logicwhile.com')) {
+      const rebrandedEmail = emailToLookup.replace(/@logicwhile\.com$/, '@growthran.com');
+      const { data: fallbackStaff } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('email', rebrandedEmail)
+        .maybeSingle();
+      if (fallbackStaff) {
+        staff = fallbackStaff;
+        error = null;
+      }
+    }
 
     if (error || !staff) {
       handleFailedAttempt();

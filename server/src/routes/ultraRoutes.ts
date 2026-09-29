@@ -467,7 +467,7 @@ router.post('/proctor/log', async (req: Request, res: Response) => {
 // Old public verification URLs must not 404 or crash. Serves status 200 with retirement explanation.
 router.get('/certificate/verify/:token', (req: Request, res: Response) => {
   const accepts = req.headers['accept'] || '';
-  const isHtml = accepts.includes('text/html') || (!accepts.includes('application/json') && !req.xhr);
+  const isHtml = accepts.includes('text/html') && !accepts.includes('application/json');
 
   if (isHtml) {
     return res.status(200).send(`<!DOCTYPE html>
