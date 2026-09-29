@@ -47,3 +47,8 @@ backups/
 *.db
 scratch/
 scratch*
+
+# Reports & Test Screenshots (Audit Evidence)
+lighthouse-after.json
+lighthouse-report.json
+screenshots/

@@ -38,6 +38,16 @@ export default function ExamFaceMonitor({ onStatusChange, size = 52, className =
     }
   }
 
+  const onStatusChangeRef = useRef(onStatusChange)
+  useEffect(() => {
+    onStatusChangeRef.current = onStatusChange
+  }, [onStatusChange])
+
+  // Fire onStatusChange asynchronously after render commits
+  useEffect(() => {
+    onStatusChangeRef.current?.(status)
+  }, [status])
+
   useEffect(() => {
     let cancelled = false
 
@@ -96,22 +106,13 @@ export default function ExamFaceMonitor({ onStatusChange, size = 52, className =
                   }
                 }
 
-                setStatus((prev) => {
-                  if (prev !== newStatus) onStatusChange?.(newStatus)
-                  return newStatus
-                })
+                setStatus((prev) => (prev !== newStatus ? newStatus : prev))
               } catch {
                 /* ignore detection errors */
               }
             } else {
               if (frameRef.current > 40) {
-                setStatus((s) => {
-                  if (s === 'loading') {
-                    onStatusChange?.('ok')
-                    return 'ok'
-                  }
-                  return s
-                })
+                setStatus((s) => (s === 'loading' ? 'ok' : s))
               }
             }
           }
@@ -142,7 +143,7 @@ export default function ExamFaceMonitor({ onStatusChange, size = 52, className =
       if (animRef.current) cancelAnimationFrame(animRef.current)
       if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop())
     }
-  }, [size, onStatusChange])
+  }, [size])
 
   const cfg = getStatusConfig(status)
 

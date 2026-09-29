@@ -320,24 +320,6 @@ export default function QuizPage() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
-  /* ── Face proctoring ── */
-  const handleFaceStatus = useCallback((status: FaceStatus) => {
-    setFaceStatus(status)
-    if (status === 'multiple') {
-      logViolation('multiple_faces', 'Multiple faces detected in camera')
-      setShowProctoringAlert(true)
-      setTimeout(() => setShowProctoringAlert(false), 4000)
-    } else if (status === 'no_face') {
-      logViolation('no_face', 'No face detected — student may have left camera')
-      setShowProctoringAlert(true)
-      setTimeout(() => setShowProctoringAlert(false), 3000)
-    } else if (status === 'looking_away') {
-      logViolation('looking_away', 'Candidate looking away from screen')
-      setShowProctoringAlert(true)
-      setTimeout(() => setShowProctoringAlert(false), 3000)
-    }
-  }, [])
-
   const logViolation = useCallback(async (type: string, msg: string, metadata?: { duration_seconds?: number; exitCount?: number; peak_db?: number }) => {
     violationRef.current++
     setViolationCount(violationRef.current)
@@ -395,6 +377,26 @@ export default function QuizPage() {
       handleSubmit()
     }
   }, [session, examCode, hallTicket, handleSubmit])
+
+  /* ── Face proctoring ── */
+  const handleFaceStatus = useCallback((status: FaceStatus) => {
+    setTimeout(() => {
+      setFaceStatus(status)
+      if (status === 'multiple') {
+        logViolation('multiple_faces', 'Multiple faces detected in camera')
+        setShowProctoringAlert(true)
+        setTimeout(() => setShowProctoringAlert(false), 4000)
+      } else if (status === 'no_face') {
+        logViolation('no_face', 'No face detected — student may have left camera')
+        setShowProctoringAlert(true)
+        setTimeout(() => setShowProctoringAlert(false), 3000)
+      } else if (status === 'looking_away') {
+        logViolation('looking_away', 'Candidate looking away from screen')
+        setShowProctoringAlert(true)
+        setTimeout(() => setShowProctoringAlert(false), 3000)
+      }
+    }, 0)
+  }, [logViolation])
 
   /* ── 1.1 Fullscreen Enforcement Listener ── */
   const handleReturnToFullscreen = useCallback(async () => {
