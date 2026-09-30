@@ -7,8 +7,8 @@ import ThemeToggle from './ui/ThemeToggle'
 
 const NAV_LINKS = [
   { label: 'Home', to: '/' },
-  { label: 'Assessments', to: '/enter-exam' },
-  { label: 'Practice Arena 🔥', to: '/practice' },
+  { label: 'Candidate Gate', to: '/gate' },
+  { label: 'Enter Exam', to: '/enter-exam' },
   { label: 'Admin Portal', to: '/admin' },
 ]
 

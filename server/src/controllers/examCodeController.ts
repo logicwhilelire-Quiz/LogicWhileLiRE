@@ -731,6 +731,17 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
     })
     .eq('id', attempt.id);
 
+  try {
+    await supabase.from('proctor_logs').insert({
+      id: vItem.id,
+      exam_id: code,
+      candidate_id: attempt.hall_ticket_no || attempt.hall_ticket || String(attempt.id),
+      event_type: violationType,
+      metadata: { message: notes || `${violationType} detected`, count: newCount, snapshot_thumb: vItem.snapshot_thumb },
+      created_at: vItem.timestamp,
+    });
+  } catch {}
+
   res.json({
     success: true,
     violation_id: vItem.id,

@@ -141,10 +141,15 @@ export default function QuizPage() {
         await markAnswersSynced(pending.map(p => p.id))
         setPendingSyncCount(0)
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.response?.data?.code === 'SESSION_EVICTED' || (err?.response?.status === 409 && err?.response?.data?.error?.includes('device'))) {
+        alert('Your exam session was opened on another device/tab. This session has been terminated.')
+        navigate('/enter-exam')
+        return
+      }
       console.warn('[SyncQueue] Sync deferred:', err)
     }
-  }, [examCode, hallTicket])
+  }, [examCode, hallTicket, navigate])
 
   /* ── Load session ── */
   useEffect(() => {

@@ -6,6 +6,7 @@ import os from 'os';
 import crypto from 'crypto';
 import { supabase } from '../db/supabase';
 import { adminAuth } from '../middleware/adminAuth';
+import { verifyExamEntry } from '../controllers/examCodeController';
 
 const router = Router();
 
@@ -556,52 +557,12 @@ router.get('/leaderboard/:examCode', async (req: Request, res: Response) => {
 });
 
 // ─── EXAM VERIFY (GET) for EnterExamPage ──────────────────────
-router.get('/exam-code/:code/verify', async (req: Request, res: Response) => {
-  try {
-    const code = String(req.params.code).toUpperCase();
-
-    // Check code in exam_codes by 'code' or 'exam_code'
-    let { data: exam } = await supabase
-      .from('exam_codes')
-      .select('id, exam_name, is_active, start_time, end_time, exam_code, duration_minutes, total_marks')
-      .or(`code.eq.${code},exam_code.eq.${code}`)
-      .maybeSingle();
-
-    if (!exam) {
-      const { data: byCode } = await supabase
-        .from('exam_codes')
-        .select('*')
-        .eq('exam_code', code)
-        .maybeSingle();
-      exam = byCode;
-    }
-
-    if (!exam) {
-      // In demo mode, support known demo codes seamlessly
-      if (code === 'DEMO123' || code === 'DEMO100' || code === 'CS2026') {
-        exam = {
-          id: `ec-${code.toLowerCase()}`,
-          exam_name: `${code} Grand Engineering Assessment`,
-          is_active: true,
-          start_time: new Date(Date.now() - 3600000).toISOString(),
-          end_time: new Date(Date.now() + 86400000).toISOString(),
-          exam_code: code,
-          duration_minutes: 60,
-          total_marks: 100,
-        };
-      } else {
-        return res.status(404).json({ success: false, message: 'Exam code not found' });
-      }
-    }
-
-    if (!exam.is_active) {
-      return res.status(403).json({ success: false, message: 'This exam is not currently active' });
-    }
-
-    res.json({ success: true, valid: true, exam });
-  } catch (err) {
-    res.status(500).json({ success: false, error: 'Verification failed' });
-  }
+router.get('/exam-code/:code/verify', (req: Request, res: Response) => {
+  req.body = {
+    examCode: req.params.code,
+    hallTicket: req.query.hallTicket || req.body?.hallTicket,
+  };
+  return verifyExamEntry(req, res);
 });
 
 // ─── EXAM START (GET questions) ────────────────────────────────

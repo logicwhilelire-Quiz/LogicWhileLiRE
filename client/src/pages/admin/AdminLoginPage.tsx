@@ -101,8 +101,8 @@ export default function AdminLoginPage() {
             }}
           >
             Are you a student?{' '}
-            <Link to="/login" style={{ color: 'var(--color-primary, #2B7FFF)', fontWeight: 600 }}>
-              Go to Student Portal &rarr;
+            <Link to="/enter-exam" style={{ color: 'var(--color-primary, #2B7FFF)', fontWeight: 600 }}>
+              Enter Assessment &rarr;
             </Link>
           </div>
           <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.74rem', color: 'var(--color-text-faint, #64748b)' }}>

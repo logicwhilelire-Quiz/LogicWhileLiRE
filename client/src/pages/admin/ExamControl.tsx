@@ -32,7 +32,7 @@ export default function ExamControl() {
   // Form State
   const [form, setForm] = useState({
     title: '',
-    exam_code: 'GR-',
+    exam_code: 'LW-',
     duration_minutes: 60,
     passing_percentage: 40,
     proctoring_enabled: true,
@@ -51,7 +51,7 @@ export default function ExamControl() {
         setExams(
           raw.map((e: any) => ({
             ...e,
-            exam_code: e.exam_code || `GR-${e.id.slice(0, 6).toUpperCase()}`,
+            exam_code: e.exam_code || `LW-${e.id.slice(0, 6).toUpperCase()}`,
             passing_percentage: e.passing_percentage ?? 40,
             is_launched: e.is_launched ?? e.is_active,
             results_published: e.results_published ?? false,

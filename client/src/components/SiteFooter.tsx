@@ -4,22 +4,19 @@ import BrandLogo from './BrandLogo';
 
 const FOOTER_LINKS = {
   Platform: [
-    { label: 'Assessments', to: '/enter-exam' },
-    { label: 'Practice Arena 🔥', to: '/practice' },
-    { label: 'Candidate Gate 🛡️', to: '/gate' },
-    { label: 'Admin Dashboard', to: '/admin/dashboard' },
+    { label: 'Enter Assessment', to: '/enter-exam' },
+    { label: 'Candidate Gate', to: '/gate' },
+    { label: 'Admin Portal', to: '/admin' },
   ],
   Resources: [
-    { label: 'About & Credits', to: '/about' },
-    { label: 'Candidate Portal', to: '/login' },
+    { label: 'About & Philosophy', to: '/about' },
     { label: 'Documentation', to: '#' },
     { label: 'System Status', to: '#' },
   ],
   Institutional: [
-    { label: 'Autonomous Examination Engine', to: '#' },
+    { label: 'Server-Authoritative Timing', to: '#' },
     { label: 'AI Proctoring Architecture', to: '#' },
-    { label: 'Enterprise Security', to: '#' },
-    { label: 'Exam Code Verification', to: '/enter-exam' },
+    { label: 'Forensic Audit Ledger', to: '#' },
   ],
 };
 
@@ -39,7 +36,7 @@ export default function SiteFooter() {
           </Link>
 
           <p className="footer-tagline" style={{ maxWidth: 360, color: 'var(--color-text-muted)' }}>
-            Autonomous Examination Platform featuring server-authoritative timing, AI proctoring, multi-language code execution, and real-time analytics.
+            Standardized Examination &amp; Autonomous Assessment Platform featuring server-authoritative timing, AI proctoring, and live assessment synchronization.
           </p>
 
           <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-primary)' }}>

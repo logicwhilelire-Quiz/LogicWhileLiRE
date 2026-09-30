@@ -83,8 +83,8 @@ function AnimatedRoutes() {
         <Route path="/verify/:token" element={<VerifyCertificatePage />} />
         <Route path="/certificate/verify/:token" element={<VerifyCertificatePage />} />
         <Route path="/verify" element={<VerifyCertificatePage />} />
-        <Route path="/practice" element={<PracticeArenaPage />} />
-        <Route path="/arena" element={<PracticeArenaPage />} />
+        <Route path="/practice" element={<Navigate to="/" replace />} />
+        <Route path="/arena" element={<Navigate to="/" replace />} />
 
         {/* ── INSTITUTIONAL PERFORMANCE REPORTS (PDF Pages 11-14) ── */}
         <Route path="/reports/student/:hallTicket" element={<InstitutionalStudentReportPage />} />
@@ -122,7 +122,7 @@ function AnimatedRoutes() {
         {/* Admin Authentication & Control Center */}
         <Route path="/admin" element={<AdminLoginPage />} />
         <Route path="/admin/login" element={<AdminLoginPage />} />
-        <Route path="/admin/dashboard" element={<Dashboard />} />
+        <Route path="/admin/dashboard" element={<ExamControl />} />
         <Route path="/admin/exams" element={<ExamControl />} />
         <Route path="/admin/exam-control" element={<ExamControl />} />
         <Route path="/admin/questions" element={<QuestionControl />} />

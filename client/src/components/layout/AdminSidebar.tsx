@@ -19,13 +19,8 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
   })();
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', path: '/admin/dashboard', icon: '📊' },
     { id: 'exams', label: 'Exam Control', path: '/admin/exams', icon: '⚙️' },
-    { id: 'questions', label: 'Question Bank', path: '/admin/questions', icon: '❓' },
-    { id: 'students', label: 'Student Roster', path: '/admin/students', icon: '👥' },
-    { id: 'monitor', label: '100-Tile Monitor Wall', path: '/admin/monitor', icon: '📡' },
-    { id: 'results', label: 'Results & Analytics', path: '/admin/results', icon: '📈' },
-    { id: 'settings', label: 'Platform & Engine', path: '/admin/settings', icon: '🛡️' },
+    { id: 'monitor', label: 'Live Monitor Console', path: '/admin/monitor', icon: '📡' },
   ];
 
   const handleLogout = () => {

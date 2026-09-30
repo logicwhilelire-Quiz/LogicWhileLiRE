@@ -19,47 +19,47 @@ const ParticleField = lazy(() => import('../components/3d/ParticleField'))
 const NodeNetwork   = lazy(() => import('../components/3d/NodeNetwork'))
 
 const STATS = [
-  { value: 10000,  label: 'Concurrent Scale Engine', suffix: '+', color: '#2B7FFF' },
+  { value: 10000,  label: 'Concurrent Capacity',      suffix: '+', color: '#2B7FFF' },
   { value: 50,     label: 'WebSocket Latency',        suffix: 'ms', color: '#38BDF8' },
   { value: 100,    label: 'Server Timing Integrity', suffix: '%', color: '#10B981' },
-  { value: 30,     label: 'Sandboxed Code Runtimes', suffix: '+', color: '#F59E0B' },
+  { value: 99.9,   label: 'Telemetry Reliability',    suffix: '%', color: '#F59E0B' },
 ]
 
 const FEATURES = [
   {
-    icon: '🤖',
-    title: 'AI Question Generator',
-    desc: 'Generate 100 DBMS questions in seconds with GPT-4. Set difficulty, topic, and format. Human-review then publish.',
+    icon: '⚡',
+    title: 'Synchronous Live Exam Dispatch',
+    desc: 'Instant global exam initialization over Socket.io with waiting lobbies, late-join time adjustment, and reconnection synchronization.',
     color: '#2B7FFF',
   },
   {
     icon: '👁️',
-    title: 'Live Face Proctoring',
-    desc: 'TensorFlow.js detects face count in real-time. Auto-flags when face leaves frame or multiple faces appear.',
+    title: 'Client-Side AI Proctoring',
+    desc: 'On-device facial landmarking and active gaze tracking running entirely in browser Web Workers. Zero raw video ever transmitted to servers.',
     color: '#10B981',
   },
   {
-    icon: '💻',
-    title: 'Code Execution Engine',
-    desc: 'Monaco Editor + Piston API. Run code in 30+ languages with hidden test cases and instant verdict.',
+    icon: '⏱️',
+    title: 'Server-Authoritative Timing',
+    desc: 'Eliminates client-side clock tampering. Server drives authoritative ticks and remaining duration math across all candidate terminals.',
     color: '#38BDF8',
   },
   {
-    icon: '📊',
-    title: 'Real-time Analytics',
-    desc: '3D radar charts, predictive placement analysis, department micro-rankings, and comprehensive cognitive skill heatmaps.',
+    icon: '🛡️',
+    title: 'Anti-Leak & Forensic Ledger',
+    desc: 'Dynamic candidate watermark tiles, browser devtools detection, tab-switch monitoring, and real-time invigilator anomaly logging.',
     color: '#A855F7',
   },
   {
-    icon: '🏆',
-    title: '3D Leaderboard',
-    desc: 'Live ranked leaderboard with animated 3D podium. PlasmaBall for 1st, CodeCube for 2nd, NeonGrid for 3rd.',
+    icon: '📶',
+    title: 'Offline Answer Resilience',
+    desc: 'Local IndexedDB write-ahead answer buffer with automatic synchronization upon network reconnection to protect student responses.',
     color: '#F59E0B',
   },
   {
-    icon: '⚡',
-    title: 'Bulk Enrollment',
-    desc: 'Upload Excel with thousands of candidates. Auto-generate hall tickets. Send invites via email/SMS.',
+    icon: '📊',
+    title: 'Real-Time Invigilator Console',
+    desc: 'Comprehensive multi-candidate monitor wall with live status indicators, remote proctor warnings, time extensions, and session terminations.',
     color: '#6366F1',
   },
 ]
@@ -359,11 +359,10 @@ export default function LandingPage() {
               <p
                 style={{
                   color: 'var(--color-text-muted)', fontSize: '1.02rem',
-                  lineHeight: 1.7, marginBottom: 28, maxWidth: 480,
+                  lineHeight: 1.7, marginBottom: 28, maxWidth: 520,
                 }}
               >
-                AI-powered question generation, multimodal face & audio proctoring, sandboxed code execution in 30+ languages,
-                and live 3D leaderboards — all in one platform.
+                Standardized examination and synchronous assessment platform featuring server-authoritative timing, on-device AI proctoring, and live invigilator telemetry.
               </p>
 
               <div
@@ -393,7 +392,7 @@ export default function LandingPage() {
                     <span style={{ fontSize: '1.2rem' }}>→</span>
                   </MagneticButton>
                 </Link>
-                <Link to="/admin/dashboard" style={{ textDecoration: 'none' }}>
+                <Link to="/gate" style={{ textDecoration: 'none' }}>
                   <MagneticButton
                     className="btn btn-secondary btn-xl"
                     style={{
@@ -407,7 +406,7 @@ export default function LandingPage() {
                       cursor: 'pointer',
                     }}
                   >
-                    ⚙️ Admin Portal
+                    🛡️ Candidate Gate
                   </MagneticButton>
                 </Link>
               </div>
