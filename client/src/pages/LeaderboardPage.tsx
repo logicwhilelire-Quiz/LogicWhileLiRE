@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLeaderboard, type LeaderboardEntry } from '../hooks/useLeaderboard';
 import BrandLogo from '../components/BrandLogo';
-import GrowthranLoader from '../components/GrowthranLoader';
+import LogicWhileLiRELoader from '../components/LogicWhileLiRELoader';
 import SiteFooter from '../components/SiteFooter';
 import AnimatedPage from '../components/AnimatedPage';
 
@@ -86,7 +86,7 @@ export default function LeaderboardPage() {
 
           {loading && (
             <div style={{ padding: '60px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <GrowthranLoader size="md" message="Synchronizing live leaderboard standings..." />
+              <LogicWhileLiRELoader size="md" message="Synchronizing live LogicWhileLiRE leaderboard standings..." />
             </div>
           )}
 

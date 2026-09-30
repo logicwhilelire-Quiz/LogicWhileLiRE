@@ -66,8 +66,8 @@ export default function BrandLogo({
         fill="none"
         role="img"
         xmlns="http://www.w3.org/2000/svg"
-        className={`growthran-mark ${className}`}
-        aria-label="GROWTHRAN Logo Mark"
+        className={`logicwhilelire-mark growthran-mark ${className}`}
+        aria-label="LogicWhileLiRE Logo Mark"
         style={{ flexShrink: 0, display: 'inline-block' }}
       >
         <path d="M20 72 V128 H180 V72" stroke={markStroke} strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
@@ -86,7 +86,7 @@ export default function BrandLogo({
 
   return (
     <div
-      className={`growthran-brand-lockup ${className}`}
+      className={`logicwhilelire-brand-lockup growthran-brand-lockup ${className}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -94,7 +94,7 @@ export default function BrandLogo({
         textDecoration: 'none',
         userSelect: 'none',
       }}
-      aria-label="GROWTHRAN — Learn. Grow. Run."
+      aria-label="LogicWhileLiRE — Logic. While. LiRE."
     >
       {/* Official Mark — aria-hidden because parent div has aria-label */}
       <svg
@@ -124,12 +124,24 @@ export default function BrandLogo({
             fontFamily: "var(--font-display, 'Space Grotesk', sans-serif)",
             fontSize: dimensions.fontSize,
             fontWeight: 800,
-            letterSpacing: '0.02em',
-            color: wordmarkColor,
+            letterSpacing: '0.01em',
+            display: 'inline-flex',
+            alignItems: 'baseline',
             lineHeight: 1.05,
           }}
         >
-          GROWTHRAN
+          <span style={{ color: wordmarkColor }}>LogicWhile</span>
+          <span
+            style={{
+              background: 'linear-gradient(135deg, #38BDF8 0%, #818CF8 50%, #C084FC 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontWeight: 900,
+              marginLeft: '1px',
+            }}
+          >
+            LiRE
+          </span>
         </span>
         {effectiveShowTagline && (
           <span
@@ -137,13 +149,13 @@ export default function BrandLogo({
               fontFamily: "var(--font-body, 'Inter', sans-serif)",
               fontSize: dimensions.tagSize,
               fontWeight: 600,
-              letterSpacing: '0.06em',
+              letterSpacing: '0.08em',
               color: taglineColor,
               marginTop: size === 'xs' ? 1 : 2,
               lineHeight: 1,
             }}
           >
-            Learn. Grow. Run.
+            Logic. While. LiRE.
           </span>
         )}
       </div>

@@ -6,7 +6,7 @@ import { getBrowserFingerprint } from '../lib/fingerprint';
 import { useTimer } from '../hooks/useTimer';
 import { useProctor } from '../hooks/useProctor';
 import BrandLogo from '../components/BrandLogo';
-import GrowthranLoader from '../components/GrowthranLoader';
+import LogicWhileLiRELoader from '../components/LogicWhileLiRELoader';
 import AnimatedPage from '../components/AnimatedPage';
 
 interface Question {
@@ -71,7 +71,7 @@ export default function ExamPage() {
   // ——— Duplicate Tab Prevention ———
   useEffect(() => {
     if (!sessionId) return;
-    const channelName = `growthran_exam_${sessionId}`;
+    const channelName = `logicwhilelire_exam_${sessionId}`;
     const bc = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(channelName) : null;
     const tabId = Math.random().toString(36).substring(2, 9);
     localStorage.setItem(`exam_tab_${sessionId}`, tabId);
@@ -232,9 +232,9 @@ export default function ExamPage() {
   if (phase === 'starting') {
     return (
       <div className="page-center" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <GrowthranLoader
+        <LogicWhileLiRELoader
           size="lg"
-          message="Initializing secure exam environment..."
+          message="Initializing secure LogicWhileLiRE exam environment..."
         />
       </div>
     );

@@ -1,5 +1,5 @@
 /**
- * GROWTHRAN Assessment Suite — Gate Module Client Constants
+ * LogicWhileLiRE Assessment Suite — Gate Module Client Constants
  * Specification: AL-SPEC-2026-REG
  */
 

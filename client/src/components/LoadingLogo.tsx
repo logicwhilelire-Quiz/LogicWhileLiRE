@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import GrowthranLoader from './GrowthranLoader';
+import LogicWhileLiRELoader from './LogicWhileLiRELoader';
 
 export interface LoadingLogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -8,11 +8,11 @@ export interface LoadingLogoProps {
 }
 
 const STATUS_MESSAGES = [
-  'Powering GROWTHRAN assessment engine...',
+  'Powering LogicWhileLiRE assessment engine...',
   'Initializing server-authoritative timer...',
   'Securing autonomous proctoring watchdog...',
-  'Preparing questions & telemetry metrics...',
-  'Learn. Grow. Run...',
+  'Synchronizing 3D Technical Sectors...',
+  'Logic. While. LiRE...',
 ];
 
 export default function LoadingLogo({
@@ -33,6 +33,6 @@ export default function LoadingLogo({
   const activeMessage = message || (showStatusMessages ? STATUS_MESSAGES[statusIndex] : undefined);
 
   return (
-    <GrowthranLoader size={size} message={activeMessage} />
+    <LogicWhileLiRELoader size={size} message={activeMessage} />
   );
 }

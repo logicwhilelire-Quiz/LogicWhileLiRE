@@ -6,6 +6,7 @@ interface Question {
   text: string
   options?: string[]
   type?: 'mcq' | 'code' | 'aptitude'
+  topic?: string
 }
 
 interface ExamQuestionCardProps {
@@ -13,6 +14,7 @@ interface ExamQuestionCardProps {
   onOptionSelect?: (optionIdx: number) => void
   selectedOption?: number | null
   questionIndex: number
+  sector?: { name: string; color: string }
 }
 
 /**
@@ -24,6 +26,7 @@ export default function ExamQuestionCard({
   onOptionSelect,
   selectedOption,
   questionIndex,
+  sector,
 }: ExamQuestionCardProps) {
   const [prev, setPrev] = useState(questionIndex)
   const [direction, setDirection] = useState<'next' | 'prev'>('next')
@@ -82,7 +85,7 @@ export default function ExamQuestionCard({
                 marginBottom: 18,
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <span
                   style={{
                     fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
@@ -95,6 +98,27 @@ export default function ExamQuestionCard({
                 >
                   Question {questionIndex + 1}
                 </span>
+                {sector && (
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '3px 10px',
+                      borderRadius: 999,
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.04em',
+                      background: `${sector.color}15`,
+                      border: `1px solid ${sector.color}40`,
+                      color: sector.color,
+                      boxShadow: `0 0 10px ${sector.color}20`,
+                    }}
+                  >
+                    <span>🪐</span>
+                    <span>{sector.name}</span>
+                  </span>
+                )}
                 {question.type && (
                   <span
                     className={`badge ${

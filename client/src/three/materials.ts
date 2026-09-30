@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 
 /**
- * materials.ts — Standardized GROWTHRAN Brand 3D Materials & Geometries
+ * materials.ts — Standardized LogicWhileLiRE Brand 3D Materials & Geometries
  *
  * Adheres strictly to H3:
  * - Brand blues only (#0A3F8F wordmark, #1B5FB5 icon, #2B7FFF aerospace)

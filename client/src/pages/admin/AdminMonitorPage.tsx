@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import axios from 'axios'
 import { supabase } from '../../lib/supabaseClient'
 import LiveGridWall, { type StudentTile } from '../../components/3d/LiveGridWall'
 import GlowCard from '../../components/3d/GlowCard'
@@ -9,6 +10,9 @@ import FlightPathLines from '../../components/3d/FlightPathLines'
 import AltimeterDial from '../../components/3d/AltimeterDial'
 import ShimmerText from '../../components/3d/ShimmerText'
 import CandidateViolationTimelineModal from '../../components/CandidateViolationTimelineModal'
+import InspectorRadarMatrix3D from '../../components/3d/InspectorRadarMatrix3D'
+
+const BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001'
 
 interface ProctoringEvent {
   id: string
@@ -55,9 +59,9 @@ function AdminSidebar({ active = '' }: { active?: string }) {
       {/* Brand */}
       <div style={{ marginBottom: 24, padding: '0 4px' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em', background: 'linear-gradient(135deg, var(--color-text), var(--color-primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-          ⚡ GROWTHRAN
+          ⚡ LogicWhileLiRE
         </div>
-        <div style={{ fontSize: '0.65rem', color: 'var(--color-primary)', fontWeight: 700, letterSpacing: '0.1em', marginTop: 2 }}>4.0 ULTRA ADMIN</div>
+        <div style={{ fontSize: '0.65rem', color: 'var(--color-primary)', fontWeight: 700, letterSpacing: '0.1em', marginTop: 2 }}>ENTERPRISE ADMIN</div>
       </div>
 
       {navItems.map(item => (
@@ -151,6 +155,19 @@ export default function AdminMonitorPage() {
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [actionNotice, setActionNotice] = useState('')
   const [timelineCandidate, setTimelineCandidate] = useState<StudentTile | null>(null)
+  const [show3DMatrix, setShow3DMatrix] = useState(false)
+  const [broadcastModalOpen, setBroadcastModalOpen] = useState(false)
+  const [broadcastMessage, setBroadcastMessage] = useState('')
+  const [whisperModalStudent, setWhisperModalStudent] = useState<StudentTile | null>(null)
+  const [whisperMessage, setWhisperMessage] = useState('')
+  const [isRoomFrozen, setIsRoomFrozen] = useState(false)
+
+  /* ── Outbound Email Hub State ── */
+  const [emailHubOpen, setEmailHubOpen] = useState(false)
+  const [emailLogs, setEmailLogs] = useState<Array<{ id: string; type: string; recipient: string; recipientName?: string; examCode: string; subject: string; status: string; timestamp: string }>>([])
+  const [testEmailType, setTestEmailType] = useState('invitation')
+  const [testEmailRecipient, setTestEmailRecipient] = useState('')
+  const [testEmailSending, setTestEmailSending] = useState(false)
 
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
@@ -491,6 +508,206 @@ export default function AdminMonitorPage() {
     setTimeout(() => setActionNotice(''), 3000)
   }
 
+  /* ── Broadcast to All Candidates ── */
+  const handleBroadcastToAll = () => {
+    if (!broadcastMessage.trim()) return
+    if (broadcastChannelRef.current) {
+      broadcastChannelRef.current.send({
+        type: 'broadcast',
+        event: 'admin_broadcast',
+        payload: {
+          examCode,
+          message: broadcastMessage,
+          inspectorName: 'Chief Exam Invigilator',
+          timestamp: new Date().toISOString(),
+        },
+      })
+    }
+    axios.post(`${BASE_URL}/api/v1/inspector/broadcast`, {
+      examCode,
+      message: broadcastMessage,
+      inspectorName: 'Chief Exam Invigilator',
+    }).catch(() => {})
+
+    setActionNotice(`📢 Announcement broadcasted to all ${students.length} candidates in ${examCode}!`)
+    setBroadcastMessage('')
+    setBroadcastModalOpen(false)
+    setTimeout(() => setActionNotice(''), 3500)
+  }
+
+  /* ── Send Direct Whisper Message ── */
+  const handleSendWhisper = () => {
+    if (!whisperModalStudent || !whisperMessage.trim()) return
+    if (broadcastChannelRef.current) {
+      broadcastChannelRef.current.send({
+        type: 'broadcast',
+        event: 'admin_message',
+        payload: {
+          hallTicket: whisperModalStudent.hallTicket,
+          message: whisperMessage,
+          inspectorName: 'Exam Inspector',
+        },
+      })
+    }
+    axios.post(`${BASE_URL}/api/v1/inspector/candidate-action`, {
+      examCode,
+      hallTicket: whisperModalStudent.hallTicket,
+      action: 'whisper',
+      message: whisperMessage,
+    }).catch(() => {})
+
+    setActionNotice(`💬 Direct notice sent to ${whisperModalStudent.hallTicket}`)
+    setWhisperModalStudent(null)
+    setWhisperMessage('')
+    setTimeout(() => setActionNotice(''), 3000)
+  }
+
+  /* ── Grant Time Extension ── */
+  const handleExtendTime = (student: StudentTile, mins: number = 5) => {
+    const secs = mins * 60
+    if (broadcastChannelRef.current) {
+      broadcastChannelRef.current.send({
+        type: 'broadcast',
+        event: 'admin_extend_time',
+        payload: {
+          hallTicket: student.hallTicket,
+          seconds: secs,
+          message: `Inspector granted you a +${mins} minute time extension.`,
+        },
+      })
+    }
+    axios.post(`${BASE_URL}/api/v1/inspector/candidate-action`, {
+      examCode,
+      hallTicket: student.hallTicket,
+      action: 'extend_time',
+      seconds: secs,
+    }).catch(() => {})
+
+    setActionNotice(`⏱️ +${mins}m extension granted to ${student.hallTicket}`)
+    setTimeout(() => setActionNotice(''), 3000)
+  }
+
+  /* ── Pause / Resume Candidate ── */
+  const handlePauseResume = (student: StudentTile) => {
+    const isPaused = student.status === 'idle'
+    const newAction = isPaused ? 'resume' : 'pause'
+    const eventName = isPaused ? 'admin_resume' : 'admin_pause'
+
+    if (broadcastChannelRef.current) {
+      broadcastChannelRef.current.send({
+        type: 'broadcast',
+        event: eventName,
+        payload: {
+          hallTicket: student.hallTicket,
+        },
+      })
+    }
+    axios.post(`${BASE_URL}/api/v1/inspector/candidate-action`, {
+      examCode,
+      hallTicket: student.hallTicket,
+      action: newAction,
+    }).catch(() => {})
+
+    setStudents(prev =>
+      prev.map(s => s.id === student.id ? { ...s, status: isPaused ? 'active' : 'idle' } : s)
+    )
+    setActionNotice(`${isPaused ? '▶️ Resumed' : '⏸️ Paused'} session for ${student.hallTicket}`)
+    setTimeout(() => setActionNotice(''), 3000)
+  }
+
+  /* ── Master Room Freeze / Resume All Candidates ── */
+  const handleToggleRoomFreeze = () => {
+    const next = !isRoomFrozen
+    setIsRoomFrozen(next)
+    if (broadcastChannelRef.current) {
+      broadcastChannelRef.current.send({
+        type: 'broadcast',
+        event: next ? 'admin_pause' : 'admin_resume',
+        payload: {
+          hallTicket: undefined,
+          message: next ? 'Master room freeze commanded by Chief Invigilator.' : 'Room resumed by Chief Invigilator.',
+        },
+      })
+    }
+    axios.post(`${BASE_URL}/api/v1/inspector/candidate-action`, {
+      examCode,
+      hallTicket: 'ALL',
+      action: next ? 'pause' : 'resume',
+    }).catch(() => {})
+
+    setStudents(prev =>
+      prev.map(s => (s.status === 'active' || s.status === 'idle') ? { ...s, status: next ? 'idle' : 'active' } : s)
+    )
+    setActionNotice(next ? '⏸️ MASTER LOCKDOWN: All candidates in room paused!' : '▶️ ROOM RESUMED: All candidates active!')
+    setTimeout(() => setActionNotice(''), 4000)
+  }
+
+  /* ── Export Forensic Audit Log (JSON) ── */
+  const handleExportAudit = () => {
+    const report = {
+      examCode,
+      exportTimestamp: new Date().toISOString(),
+      inspector: 'Chief Exam Invigilator',
+      stats,
+      candidates: students.map(s => ({
+        id: s.id,
+        name: s.name,
+        hallTicket: s.hallTicket,
+        status: s.status,
+        score: s.score,
+        flagCount: s.flagCount,
+        currentQuestion: s.currentQuestion,
+        joinedAt: s.joinedAt,
+      })),
+      events,
+    }
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `LogicWhileLiRE_Audit_${examCode}_${Date.now()}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    setActionNotice(`📥 Downloaded forensic audit report for ${examCode}!`)
+    setTimeout(() => setActionNotice(''), 3000)
+  }
+
+  /* ── Outbound Email Dispatch Log Fetcher ── */
+  const fetchEmailLogs = useCallback(() => {
+    axios.get(`${BASE_URL}/api/v1/inspector/email-logs/${examCode}`)
+      .then(res => {
+        if (res.data?.emails) setEmailLogs(res.data.emails)
+      })
+      .catch(() => {})
+  }, [examCode])
+
+  useEffect(() => {
+    if (emailHubOpen) {
+      fetchEmailLogs()
+    }
+  }, [emailHubOpen, fetchEmailLogs])
+
+  const handleTestEmailDispatch = async () => {
+    if (!testEmailRecipient.trim()) return
+    setTestEmailSending(true)
+    try {
+      await axios.post(`${BASE_URL}/api/v1/inspector/test-email`, {
+        type: testEmailType,
+        recipient: testEmailRecipient.trim(),
+        examCode,
+        examTitle: `Exam ${examCode}`,
+      })
+      setActionNotice(`📨 Test ${testEmailType} dispatched to ${testEmailRecipient}!`)
+      fetchEmailLogs()
+      setTimeout(() => setActionNotice(''), 3500)
+    } catch {
+      setActionNotice('❌ Failed to dispatch test email')
+      setTimeout(() => setActionNotice(''), 3000)
+    } finally {
+      setTestEmailSending(false)
+    }
+  }
+
   /* ── Stats ── */
   const stats = {
     total:    students.length,
@@ -593,6 +810,80 @@ export default function AdminMonitorPage() {
               }}
             >
               {soundEnabled ? '🔊' : '🔇'}
+            </button>
+
+            {/* Broadcast to All Button */}
+            <button
+              onClick={() => setBroadcastModalOpen(true)}
+              style={{
+                padding: '6px 14px', borderRadius: 'var(--radius-sm)',
+                border: '1px solid rgba(245,158,11,0.5)',
+                background: 'rgba(245,158,11,0.15)',
+                color: '#FBBF24', fontSize: '0.76rem', fontWeight: 800,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <span>📢 Broadcast Alert</span>
+            </button>
+
+            {/* Emergency Room Lockdown / Resume All */}
+            <button
+              onClick={handleToggleRoomFreeze}
+              style={{
+                padding: '6px 14px', borderRadius: 'var(--radius-sm)',
+                border: isRoomFrozen ? '1px solid #10B981' : '1px solid rgba(239,68,68,0.5)',
+                background: isRoomFrozen ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.15)',
+                color: isRoomFrozen ? '#34D399' : '#F87171',
+                fontSize: '0.76rem', fontWeight: 800,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              }}
+              title={isRoomFrozen ? 'Reactivate all candidate terminals' : 'Freeze all candidate terminals immediately'}
+            >
+              <span>{isRoomFrozen ? '▶️ Resume All' : '⏸️ Master Room Freeze'}</span>
+            </button>
+
+            {/* 3D Matrix Toggle Button */}
+            <button
+              onClick={() => setShow3DMatrix(m => !m)}
+              style={{
+                padding: '6px 14px', borderRadius: 'var(--radius-sm)',
+                border: `1px solid ${show3DMatrix ? '#00F2FE' : 'rgba(43,127,255,0.4)'}`,
+                background: show3DMatrix ? 'rgba(0,242,254,0.15)' : 'rgba(43,127,255,0.1)',
+                color: show3DMatrix ? '#00F2FE' : 'var(--color-primary)',
+                fontSize: '0.76rem', fontWeight: 800, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <span>🌐 {show3DMatrix ? 'Hide 3D Matrix' : '3D Orbital Matrix'}</span>
+            </button>
+
+            {/* Export Forensic Audit Report Button */}
+            <button
+              onClick={handleExportAudit}
+              title="Download Forensic Audit Ledger"
+              style={{
+                padding: '6px 12px', borderRadius: 'var(--radius-sm)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                background: 'rgba(255,255,255,0.06)',
+                color: '#E2E8F0', fontSize: '0.76rem', fontWeight: 700,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <span>📥 Export Audit</span>
+            </button>
+
+            {/* Outbound Email Hub Button */}
+            <button
+              onClick={() => setEmailHubOpen(true)}
+              style={{
+                padding: '6px 14px', borderRadius: 'var(--radius-sm)',
+                border: '1px solid rgba(16,185,129,0.5)',
+                background: 'rgba(16,185,129,0.15)',
+                color: '#34D399', fontSize: '0.76rem', fontWeight: 800,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <span>📨 Mail Dispatch Hub</span>
             </button>
           </div>
         </div>
@@ -701,6 +992,25 @@ export default function AdminMonitorPage() {
           ))}
         </div>
 
+        {/* ─── 3D Orbital Candidate Radar Matrix (When toggled) ─── */}
+        <AnimatePresence>
+          {show3DMatrix && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              style={{ marginBottom: 18 }}
+            >
+              <InspectorRadarMatrix3D
+                students={students}
+                onSelectStudent={s => setSelectedStudent(s)}
+                selectedId={selectedStudent?.id}
+                height={380}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* ─── Main 2-Column: LiveGridWall + Event/Inspector Stream ─── */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 310px', gap: 16, alignItems: 'start' }}>
 
@@ -710,6 +1020,11 @@ export default function AdminMonitorPage() {
               students={students}
               selectedId={selectedStudent?.id}
               onSelectStudent={s => setSelectedStudent(s)}
+              onWarnStudent={handleSendWarning}
+              onTerminateStudent={handleTerminateStudent}
+              onExtendTime={s => handleExtendTime(s, 5)}
+              onPauseResume={handlePauseResume}
+              onOpenDossier={s => setTimelineCandidate(s)}
             />
           </GlowCard>
 
@@ -782,30 +1097,98 @@ export default function AdminMonitorPage() {
                       </div>
                     </div>
 
+                    {/* AI Threat Index & Integrity Assessment */}
+                    {(() => {
+                      const flags = selectedStudent.flagCount || 0
+                      const threatScore = Math.min(100, flags * 25 + (selectedStudent.status === 'cheating' ? 45 : selectedStudent.status === 'idle' ? 15 : 5))
+                      const threatColor = threatScore > 70 ? '#EF4444' : threatScore > 35 ? '#F59E0B' : '#10B981'
+                      const threatLabel = threatScore > 70 ? 'CRITICAL RISK' : threatScore > 35 ? 'ELEVATED' : 'NOMINAL'
+                      const recommendation = threatScore > 70
+                        ? '🚨 RECOM: Disqualify session'
+                        : threatScore > 35
+                        ? '⚠️ RECOM: Issue whisper reprimand'
+                        : '🛡️ INTEGRITY: Verified healthy'
+
+                      return (
+                        <div style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${threatColor}35`, borderRadius: 8, padding: '8px 10px', marginBottom: 12 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                            <span style={{ fontSize: '0.66rem', fontWeight: 800, color: 'var(--color-text-faint)', textTransform: 'uppercase' }}>
+                              AI Threat Index
+                            </span>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: threatColor }}>
+                              {threatScore}% • {threatLabel}
+                            </span>
+                          </div>
+                          <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden', marginBottom: 5 }}>
+                            <div style={{ width: `${threatScore}%`, height: '100%', background: threatColor, transition: 'width 0.4s ease' }} />
+                          </div>
+                          <div style={{ fontSize: '0.65rem', fontWeight: 700, color: threatColor, textAlign: 'center' }}>
+                            {recommendation}
+                          </div>
+                        </div>
+                      )
+                    })()}
+
                     {/* Action buttons */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                         <MagneticButton
-                          className="btn btn-warning btn-sm w-full"
+                          className="btn btn-warning btn-sm"
                           onClick={() => handleSendWarning(selectedStudent)}
-                          style={{ fontSize: '0.74rem', padding: '6px 8px' }}
+                          style={{ fontSize: '0.72rem', padding: '6px 6px' }}
                         >
-                          ⚠️ Warn Student
+                          ⚠️ Warn
                         </MagneticButton>
                         <MagneticButton
-                          className="btn btn-danger btn-sm w-full"
+                          className="btn btn-danger btn-sm"
                           onClick={() => handleTerminateStudent(selectedStudent)}
-                          style={{ fontSize: '0.74rem', padding: '6px 8px' }}
+                          style={{ fontSize: '0.72rem', padding: '6px 6px' }}
                         >
                           🛑 Terminate
                         </MagneticButton>
                       </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+                        <button
+                          onClick={() => setWhisperModalStudent(selectedStudent)}
+                          style={{
+                            background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.4)',
+                            color: '#60A5FA', borderRadius: 6, padding: '5px 4px', fontSize: '0.68rem',
+                            fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
+                          }}
+                        >
+                          💬 Whisper
+                        </button>
+                        <button
+                          onClick={() => handleExtendTime(selectedStudent, 5)}
+                          style={{
+                            background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)',
+                            color: '#34D399', borderRadius: 6, padding: '5px 4px', fontSize: '0.68rem',
+                            fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
+                          }}
+                        >
+                          ⏱️ +5m
+                        </button>
+                        <button
+                          onClick={() => handlePauseResume(selectedStudent)}
+                          style={{
+                            background: selectedStudent.status === 'idle' ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
+                            border: `1px solid ${selectedStudent.status === 'idle' ? 'rgba(16,185,129,0.4)' : 'rgba(245,158,11,0.4)'}`,
+                            color: selectedStudent.status === 'idle' ? '#34D399' : '#FBBF24',
+                            borderRadius: 6, padding: '5px 4px', fontSize: '0.68rem',
+                            fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
+                          }}
+                        >
+                          {selectedStudent.status === 'idle' ? '▶️ Resume' : '⏸️ Pause'}
+                        </button>
+                      </div>
+
                       <MagneticButton
                         className="btn btn-ghost btn-sm w-full"
                         onClick={() => setTimelineCandidate(selectedStudent)}
-                        style={{ fontSize: '0.74rem', padding: '6px 8px', border: '1px solid rgba(255,255,255,0.1)' }}
+                        style={{ fontSize: '0.72rem', padding: '6px 8px', border: '1px solid rgba(255,255,255,0.1)' }}
                       >
-                        📋 View Violation Timeline & Overrides
+                        📋 Full Forensic Dossier & Timeline
                       </MagneticButton>
                     </div>
                   </GlowCard>
@@ -894,7 +1277,365 @@ export default function AdminMonitorPage() {
         attemptId={timelineCandidate?.id || timelineCandidate?.hallTicket || ''}
         candidateName={timelineCandidate?.name}
         hallTicket={timelineCandidate?.hallTicket}
+        examCode={examCode}
       />
+
+      {/* ── Broadcast Announcement Modal ── */}
+      <AnimatePresence>
+        {broadcastModalOpen && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(5, 7, 15, 0.85)', backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+          }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 15 }}
+              style={{
+                width: '100%', maxWidth: 540,
+                background: '#0B1120', border: '1px solid rgba(43, 127, 255, 0.4)',
+                borderRadius: 16, padding: 24, boxShadow: '0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(43,127,255,0.2)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '1.4rem' }}>📢</span>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                      Broadcast to Exam Room
+                    </h3>
+                  </div>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                    Transmits an instant high-priority banner to all candidates taking <strong>{examCode}</strong>.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setBroadcastModalOpen(false)}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-faint)', fontSize: '1.2rem', cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Preset Quick Chips */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                {[
+                  '⏱️ 10 minutes remaining in this examination.',
+                  '⚠️ Ensure your webcam and face remain centered.',
+                  '🛡️ Tab switches are being recorded into forensic ledger.',
+                  '✅ Remember to review and submit before time expires.'
+                ].map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setBroadcastMessage(preset)}
+                    style={{
+                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                      color: 'var(--color-text-muted)', borderRadius: 20, padding: '4px 10px',
+                      fontSize: '0.7rem', cursor: 'pointer', textAlign: 'left',
+                    }}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                value={broadcastMessage}
+                onChange={e => setBroadcastMessage(e.target.value)}
+                placeholder="Type your official announcement here..."
+                rows={4}
+                style={{
+                  width: '100%', boxSizing: 'border-box', background: '#070D18',
+                  border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: 8,
+                  padding: 12, color: 'var(--color-text)', fontSize: '0.86rem',
+                  fontFamily: 'inherit', resize: 'vertical', marginBottom: 16,
+                }}
+              />
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setBroadcastModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-primary btn-sm"
+                  disabled={!broadcastMessage.trim()}
+                  onClick={handleBroadcastToAll}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <span>📢</span> Broadcast to All Candidates
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Candidate Direct Whisper / Notice Modal ── */}
+      <AnimatePresence>
+        {whisperModalStudent && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(5, 7, 15, 0.85)', backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+          }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 15 }}
+              style={{
+                width: '100%', maxWidth: 520,
+                background: '#0B1120', border: '1px solid rgba(245, 158, 11, 0.4)',
+                borderRadius: 16, padding: 24, boxShadow: '0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(245, 158, 11, 0.2)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '1.4rem' }}>💬</span>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                      Direct Notice to Candidate
+                    </h3>
+                  </div>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                    Recipient: <strong style={{ color: '#60A5FA' }}>{whisperModalStudent.name}</strong> ({whisperModalStudent.hallTicket})
+                  </p>
+                </div>
+                <button
+                  onClick={() => setWhisperModalStudent(null)}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-faint)', fontSize: '1.2rem', cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Direct Warning Preset Chips */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                {[
+                  'Look directly at the screen; multiple off-screen glances detected.',
+                  'Ensure no one else is present in your testing environment.',
+                  'Disable any unauthorized browser extensions immediately.',
+                  'Stay focused on the quiz window to avoid auto-disqualification.'
+                ].map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setWhisperMessage(preset)}
+                    style={{
+                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                      color: 'var(--color-text-muted)', borderRadius: 20, padding: '4px 10px',
+                      fontSize: '0.7rem', cursor: 'pointer', textAlign: 'left',
+                    }}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                value={whisperMessage}
+                onChange={e => setWhisperMessage(e.target.value)}
+                placeholder="Type direct proctor instruction to this candidate..."
+                rows={4}
+                style={{
+                  width: '100%', boxSizing: 'border-box', background: '#070D18',
+                  border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: 8,
+                  padding: 12, color: 'var(--color-text)', fontSize: '0.86rem',
+                  fontFamily: 'inherit', resize: 'vertical', marginBottom: 16,
+                }}
+              />
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setWhisperModalStudent(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-warning btn-sm"
+                  disabled={!whisperMessage.trim()}
+                  onClick={handleSendWhisper}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <span>💬</span> Send Direct Reprimand
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Email Dispatch & Live Mailbox Hub Modal ── */}
+      <AnimatePresence>
+        {emailHubOpen && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(5, 7, 15, 0.88)', backdropFilter: 'blur(10px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+          }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 15 }}
+              style={{
+                width: '100%', maxWidth: 780, maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+                background: '#0B1120', border: '1px solid rgba(16, 185, 129, 0.4)',
+                borderRadius: 16, padding: 24, boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(16,185,129,0.15)',
+              }}
+            >
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: '1.5rem' }}>📨</span>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                      Outbound Mail & Invigilator Dispatch Hub
+                    </h3>
+                  </div>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                    Authoritative transmission ledger for candidate hall tickets, OTPs, submission receipts, and proctoring violation alerts for <strong>{examCode}</strong>.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setEmailHubOpen(false)}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-faint)', fontSize: '1.3rem', cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Stats Bar */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '10px 14px' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', textTransform: 'uppercase' }}>Total Dispatches</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#38BDF8', marginTop: 2 }}>{emailLogs.length} Records</div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '10px 14px' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', textTransform: 'uppercase' }}>Delivery Rate</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#10B981', marginTop: 2 }}>100% Verified</div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '10px 14px' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', textTransform: 'uppercase' }}>Exam Room</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#A78BFA', marginTop: 2 }}>{examCode}</div>
+                </div>
+              </div>
+
+              {/* Test Dispatch Workbench */}
+              <div style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+                <div style={{ fontSize: '0.76rem', fontWeight: 800, color: '#34D399', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                  ⚡ Live Interactive Email Dispatch Workbench
+                </div>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <input
+                    type="email"
+                    placeholder="Recipient email (e.g. proctor@university.edu)..."
+                    value={testEmailRecipient}
+                    onChange={e => setTestEmailRecipient(e.target.value)}
+                    style={{
+                      flex: 1, minWidth: 220, background: '#070D18', border: '1px solid rgba(255,255,255,0.15)',
+                      borderRadius: 6, padding: '6px 12px', color: '#FFF', fontSize: '0.82rem',
+                    }}
+                  />
+                  <select
+                    value={testEmailType}
+                    onChange={e => setTestEmailType(e.target.value)}
+                    style={{
+                      background: '#070D18', border: '1px solid rgba(255,255,255,0.15)',
+                      borderRadius: 6, padding: '6px 10px', color: '#FFF', fontSize: '0.82rem',
+                    }}
+                  >
+                    <option value="invitation">🎓 Hall Ticket & Passcode</option>
+                    <option value="otp">🔐 OTP Verification Passcode</option>
+                    <option value="submission_receipt">✅ Submission Receipt</option>
+                    <option value="inspector_issue_alert">🚨 Anomaly Proctor Alert</option>
+                    <option value="inspector_notice">⚠️ Direct Invigilator Reprimand</option>
+                  </select>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    disabled={testEmailSending || !testEmailRecipient.trim()}
+                    onClick={handleTestEmailDispatch}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem' }}
+                  >
+                    {testEmailSending ? <span className="btn-spinner" /> : '🚀 Dispatch Now'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Stream Logs Table */}
+              <div style={{ flex: 1, overflowY: 'auto', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem' }}>
+                  <thead>
+                    <tr style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'var(--color-text-faint)', textAlign: 'left' }}>
+                      <th style={{ padding: '8px 12px' }}>Type</th>
+                      <th style={{ padding: '8px 12px' }}>Recipient</th>
+                      <th style={{ padding: '8px 12px' }}>Subject</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'center' }}>Status</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right' }}>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {emailLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-faint)' }}>
+                          No outbound dispatches logged for this examination session yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      emailLogs.map(log => {
+                        const isAlert = log.type.includes('alert')
+                        const isWarn = log.type.includes('notice')
+                        const typeBadgeColor = isAlert ? '#EF4444' : isWarn ? '#F59E0B' : '#38BDF8'
+
+                        return (
+                          <tr key={log.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                            <td style={{ padding: '8px 12px' }}>
+                              <span style={{
+                                background: `${typeBadgeColor}15`, border: `1px solid ${typeBadgeColor}40`,
+                                color: typeBadgeColor, borderRadius: 4, padding: '2px 6px',
+                                fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase'
+                              }}>
+                                {log.type.replace(/_/g, ' ')}
+                              </span>
+                            </td>
+                            <td style={{ padding: '8px 12px', color: '#FFF', fontWeight: 600 }}>
+                              {log.recipient}
+                            </td>
+                            <td style={{ padding: '8px 12px', color: 'var(--color-text-muted)' }}>
+                              {log.subject}
+                            </td>
+                            <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                              <span style={{ color: '#10B981', fontWeight: 800 }}>✓ {log.status}</span>
+                            </td>
+                            <td style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--color-text-faint)', fontFamily: 'monospace' }}>
+                              {new Date(log.timestamp).toLocaleTimeString()}
+                            </td>
+                          </tr>
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Close Button */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14 }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setEmailHubOpen(false)}
+                >
+                  Close Mail Hub
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

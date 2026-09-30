@@ -16,7 +16,7 @@ export default function InstructionsPage() {
   // Get stored attempt
   const stored = (() => {
     try {
-      const raw = localStorage.getItem('growthran_attempt') || localStorage.getItem('lw_attempt') || '{}';
+      const raw = localStorage.getItem('logicwhilelire_attempt') || localStorage.getItem('growthran_attempt') || localStorage.getItem('lw_attempt') || '{}';
       return JSON.parse(raw);
     } catch {
       return {};
@@ -461,7 +461,7 @@ export default function InstructionsPage() {
               paddingBottom: 24,
             }}
           >
-            GROWTHRAN • "Learn. Grow. Run." • Developed by R. Charan Sai • © 2026 All rights reserved.
+            LogicWhileLiRE • "Logic. While. LiRE." • Developed by R. Charan Sai • © 2026 All rights reserved.
           </div>
         </motion.div>
       </div>

@@ -24,7 +24,21 @@ const store: MockTableData = {
   staff: [
     {
       id: 'st000000-0000-0000-0000-000000000001',
-      name: 'GROWTHRAN Super Admin',
+      name: 'LogicWhileLiRE Super Admin',
+      email: 'admin@logicwhilelire.com',
+      password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
+      role: 'super_admin',
+      created_by: null,
+      failed_attempts: 0,
+      locked_until: null,
+      reset_token_hash: null,
+      reset_token_expires: null,
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
+    },
+    {
+      id: 'st000000-0000-0000-0000-000000000000',
+      name: 'LogicWhileLiRE Super Admin (Legacy)',
       email: 'admin@growthran.com',
       password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
       role: 'super_admin',
@@ -118,11 +132,11 @@ const store: MockTableData = {
   exams: [
     {
       id: DEMO_EXAM_ID,
-      title: 'GROWTHRAN — Full-Stack & System Design Assessment 2026',
+      title: 'LogicWhileLiRE — Full-Stack & System Design Assessment 2026',
       duration_minutes: 30,
       start_time: new Date(Date.now() - 3600000).toISOString(),
       end_time: new Date(Date.now() + 86400000 * 7).toISOString(),
-      admin_email: 'admin@growthran.com',
+      admin_email: 'admin@logicwhilelire.com',
       created_by_staff_id: 'st000000-0000-0000-0000-000000000002',
       staff_id: 'st000000-0000-0000-0000-000000000002',
       is_leaderboard_public: true,
@@ -473,7 +487,7 @@ const store: MockTableData = {
       id: 99,
       exam_code: 'CS2026',
       college_id: 1,
-      exam_name: 'GROWTHRAN 4.0 ULTRA - Computer Science & Coding Qualifier 2026',
+      exam_name: 'LogicWhileLiRE 4.0 - Computer Science & Coding Qualifier 2026',
       subject: 'Aptitude, Core CS, DSA & Python/JS Coding',
       total_questions: 15,
       duration_minutes: 45,
@@ -487,7 +501,7 @@ const store: MockTableData = {
       id: 100,
       exam_code: 'DEMO100',
       college_id: 1,
-      exam_name: 'GROWTHRAN 4.0 ULTRA - Instant Interactive Demonstration',
+      exam_name: 'LogicWhileLiRE 4.0 - Instant Interactive Demonstration',
       subject: 'General Aptitude & Rapid Logic',
       total_questions: 15,
       duration_minutes: 30,
@@ -868,7 +882,7 @@ if (!store.exam_codes.find(e => e.exam_code === 'DEMO123')) {
     exam_code: 'DEMO123',
     code: 'DEMO123',
     college_id: 1,
-    exam_name: 'GROWTHRAN 4.0 ULTRA - National Engineering Qualifier',
+    exam_name: 'LogicWhileLiRE 4.0 - National Engineering Qualifier',
     subject: 'Aptitude, Core CS, DSA & Live Coding Sandbox',
     total_questions: 15,
     duration_minutes: 60,
@@ -932,7 +946,7 @@ demoCodes.forEach(code => {
       display_order: 15,
       test_cases: [
         { id: 'tc-p1', input_text: "racecar", expected_output: "True", marks: 3, is_hidden: false },
-        { id: 'tc-p2', input_text: "growthran", expected_output: "False", marks: 3, is_hidden: false },
+        { id: 'tc-p2', input_text: "logicwhilelire", expected_output: "False", marks: 3, is_hidden: false },
         { id: 'tc-p3', input_text: "deified", expected_output: "True", marks: 4, is_hidden: true },
       ],
     },
@@ -1302,6 +1316,12 @@ export const mockSupabase = {
       },
       subscribe() {
         return this;
+      },
+      send(_payload: any) {
+        return Promise.resolve('ok');
+      },
+      track(_payload: any) {
+        return Promise.resolve('ok');
       },
     };
   },

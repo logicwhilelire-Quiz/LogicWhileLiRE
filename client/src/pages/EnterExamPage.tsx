@@ -72,6 +72,7 @@ export default function EnterExamPage() {
             total_questions: 15,
           },
         })
+        localStorage.setItem('logicwhilelire_attempt', attemptData)
         localStorage.setItem('growthran_attempt', attemptData)
         localStorage.setItem('lw_attempt', attemptData)
         navigate(`/instructions/${form.examCode.trim()}`, {

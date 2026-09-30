@@ -11,7 +11,8 @@ import ShimmerText from '../components/3d/ShimmerText'
 import FlightPathLines from '../components/3d/FlightPathLines'
 import AltimeterDial from '../components/3d/AltimeterDial'
 import Confetti from '../components/Confetti'
-import GrowthranLoader from '../components/GrowthranLoader'
+import LogicWhileLiRELoader from '../components/LogicWhileLiRELoader'
+import SectorRadar3D from '../components/3d/SectorRadar3D'
 
 const RadarChart3D  = lazy(() => import('../components/3d/RadarChart3D'))
 const StarField     = lazy(() => import('../components/3d/StarField'))
@@ -97,10 +98,17 @@ export default function ResultECPage() {
   const { examCode } = useParams<{ examCode: string }>()
   const location = useLocation()
   const navigate = useNavigate()
-  const state = location.state as { result?: { data?: ResultData }; hallTicket?: string; error?: boolean } | null
-  const hallTicket = state?.hallTicket || ''
+  const rawState = location.state as any
+  const hallTicket = rawState?.hallTicket || (examCode ? localStorage.getItem(`hallTicket_${examCode}`) : '') || ''
+  const rawResult = rawState?.result
+  const incomingResult: ResultData | null =
+    rawResult?.data ||
+    rawResult?.result ||
+    (rawResult?.score !== undefined ? rawResult : null) ||
+    null
 
-  const [result, setResult] = useState<ResultData | null>(state?.result?.data || null)
+  const [result, setResult] = useState<ResultData | null>(incomingResult)
+  const isDemoFallback = !result
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(!result)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
@@ -108,7 +116,11 @@ export default function ResultECPage() {
   useEffect(() => {
     if (!result && examCode) {
       axios.get(`${BASE}/api/exam-code/${examCode}/result`, { params: { hallTicket } })
-        .then(r => { setResult(r.data.data || r.data); setLoading(false) })
+        .then(r => {
+          const apiData = r.data?.data || r.data?.result || (r.data?.score !== undefined ? r.data : null)
+          if (apiData) setResult(apiData)
+          setLoading(false)
+        })
         .catch(() => setLoading(false))
     }
 
@@ -139,14 +151,13 @@ export default function ResultECPage() {
     wrongAnswers: 2,
     unanswered: 1,
     topicBreakdown: {
-      'Data Structures': 88,
-      'Algorithms': 80,
-      'DBMS & SQL': 92,
-      'Operating Systems': 74,
-      'Networks': 80,
-      'OOP & System Design': 85,
+      'Quantitative Aptitude': 86,
+      'Logical Reasoning': 92,
+      'Core Computer Science': 78,
+      'Data Structures & Algorithms': 84,
+      'Full-Stack & Systems': 88,
     },
-    qrToken: 'GR-VRSEC-2026-HT2026001',
+    qrToken: 'LWL-VRSEC-2026-HT2026001',
   }
 
   const pct = activeResult.percentage ?? 0
@@ -163,37 +174,71 @@ export default function ResultECPage() {
 
   if (loading) return (
     <div className="page-center" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <GrowthranLoader size="lg" message="Computing authoritative score & analytics..." />
+      <LogicWhileLiRELoader size="lg" message="Computing LogicWhileLiRE authoritative score & sector analytics..." />
     </div>
   )
 
   const TOPICS = activeResult.topicBreakdown || {
-    'Data Structures': 85, 'Algorithms': 70, 'DBMS': 90, 'OS': 65, 'Networks': 78, 'OOP': 88
+    'Quantitative Aptitude': 86,
+    'Logical Reasoning': 92,
+    'Core Computer Science': 78,
+    'Data Structures & Algorithms': 84,
+    'Full-Stack & Systems': 88,
   }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)', position: 'relative', overflow: 'hidden' }}>
-      {/* Celebration Confetti when passed/qualified */}
+      {/* Celebration Confetti when qualified */}
       {passed && <Confetti particleCount={140} durationMs={4500} />}
-
-      {/* StarField warp background */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <Suspense fallback={null}>
-          <StarField count={200} speed={0.8} color={scoreColor} className="" />
-        </Suspense>
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(11,18,32,0.7)' }} />
-      </div>
 
       <SiteHeader />
 
-      <div className="page-content" style={{ paddingTop: 100, position: 'relative', zIndex: 1 }}>
+      <div className="page-content" style={{ paddingTop: 96, position: 'relative', zIndex: 1 }}>
+
+        {/* ─── DEMO FALLBACK ALERT BANNER (Step 2 safety) ─── */}
+        {isDemoFallback && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              maxWidth: 760,
+              margin: '0 auto 28px',
+              padding: '12px 20px',
+              background: 'var(--color-surface)',
+              border: '1px solid #334155',
+              borderRadius: 'var(--radius-md)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 12,
+              color: 'var(--color-text-muted)',
+              fontSize: '0.86rem',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            }}
+          >
+            <span style={{
+              padding: '3px 9px',
+              borderRadius: 4,
+              background: '#334155',
+              color: '#f8fafc',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              flexShrink: 0,
+            }}>
+              Demo Preview
+            </span>
+            <span>Sample scorecard preview — no completed candidate assessment session was found for this link.</span>
+          </motion.div>
+        )}
 
         {/* ─── HERO SCORE ─── */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          style={{ textAlign: 'center', marginBottom: 64 }}
+          style={{ textAlign: 'center', marginBottom: 56 }}
         >
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
             <motion.div
@@ -222,7 +267,6 @@ export default function ResultECPage() {
               fontWeight: 800,
               letterSpacing: '-0.04em',
               marginBottom: 8,
-              textShadow: `0 0 35px ${scoreColor}40`,
             }}
           >
             <span style={{ color: scoreColor }}>{animatedPct.toFixed(1)}%</span>
@@ -234,7 +278,7 @@ export default function ResultECPage() {
             transition={{ delay: 0.3, duration: 0.5 }}
             style={{ fontSize: '1.25rem', color: passed ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 700, marginBottom: 8 }}
           >
-            {passed ? '🎉 PASSED — Exam Successfully Qualified!' : '📋 Examination Completed'}
+            {passed ? 'Assessment Qualified — Passing Threshold Met' : 'Assessment Completed — Below Passing Threshold'}
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 15 }}
@@ -242,24 +286,25 @@ export default function ResultECPage() {
             transition={{ delay: 0.45, duration: 0.5 }}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 14,
-              padding: '8px 22px', background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.18)', borderRadius: 999,
-              color: 'rgba(255,255,255,0.9)', fontSize: '0.95rem'
+              padding: '8px 22px', background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)', borderRadius: 999,
+              color: 'var(--color-text)', fontSize: '0.95rem',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.06)'
             }}
           >
-            <span>Score: <strong style={{ color: '#ffffff' }}>{Math.round(animatedScore)}</strong> / {activeResult.totalMarks ?? 100} marks</span>
+            <span>Score: <strong>{Math.round(animatedScore)}</strong> / {activeResult.totalMarks ?? 100} marks</span>
             <span style={{ opacity: 0.35 }}>•</span>
             <motion.span
               animate={rankSettled ? { scale: [1, 1.18, 1] } : {}}
               transition={{ duration: 0.45, ease: 'easeOut' }}
-              style={{ color: '#60A5FA', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+              style={{ color: '#2563eb', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}
             >
-              🏆 Rank #{animatedRank} of {totalCandidates}
+              Rank #{animatedRank} of {totalCandidates}
             </motion.span>
           </motion.div>
         </motion.div>
 
-        {/* ─── STATS CARDS ─── */}
+        {/* ─── STATS CARDS (Solid Surfaces) ─── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 48 }}>
           {[
             { icon: '✅', label: 'Correct', value: activeResult.correctAnswers !== undefined ? Math.round(animatedCorrect) : '-', color: '#10B981' },
@@ -267,14 +312,21 @@ export default function ResultECPage() {
             { icon: '⬜', label: 'Skipped', value: activeResult.unanswered ?? '-',     color: '#F59E0B' },
             { icon: '⏱️', label: 'Time Taken',
               value: activeResult.timeTaken ? `${Math.floor(activeResult.timeTaken / 60)}m` : '-',
-              color: '#2B7FFF' },
+              color: '#2563EB' },
           ].map((s, i) => (
             <motion.div key={i}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             >
-              <GlowCard glowColor={s.color + '40'} style={{ textAlign: 'center', padding: 20 }}>
+              <div style={{
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '20px 16px',
+                textAlign: 'center',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
+              }}>
                 <div style={{ fontSize: '1.8rem', marginBottom: 6 }}>{s.icon}</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, color: s.color }}>
                   {s.value}
@@ -282,26 +334,36 @@ export default function ResultECPage() {
                 <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   {s.label}
                 </div>
-              </GlowCard>
+              </div>
             </motion.div>
           ))}
         </div>
 
-        {/* ─── MAIN GRID: Radar + Telemetry ─── */}
+        {/* ─── MAIN GRID: Radar + Telemetry (Solid Surfaces) ─── */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 48 }}>
 
-          {/* Topic Radar Chart */}
-          <GlowCard>
+          {/* 5-Sector Technical Competency Radar */}
+          <div style={{
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: 24,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)'
+          }}>
             <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, marginBottom: 16 }}>
-              📊 Skill Breakdown
+              5-Sector Competency Radar
             </h3>
-            <Suspense fallback={<div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>Loading chart...</div>}>
-              <RadarChart3D
-                data={Object.entries(TOPICS).map(([label, value]) => ({ label, value: value / 100 }))}
-                height={280}
-                color="#2B7FFF"
-              />
-            </Suspense>
+            <SectorRadar3D
+              scores={[
+                { sector: 'Quantitative Aptitude', short: 'Quant', score: TOPICS['Quantitative Aptitude'] || 86, benchmark: 72, color: '#F59E0B' },
+                { sector: 'Logical Reasoning', short: 'Logic', score: TOPICS['Logical Reasoning'] || 92, benchmark: 76, color: '#8B5CF6' },
+                { sector: 'Core Computer Science', short: 'Core CS', score: TOPICS['Core Computer Science'] || 78, benchmark: 68, color: '#10B981' },
+                { sector: 'Data Structures & Algorithms', short: 'DSA', score: TOPICS['Data Structures & Algorithms'] || 84, benchmark: 64, color: '#38BDF8' },
+                { sector: 'Full-Stack & Systems', short: 'Full-Stack', score: TOPICS['Full-Stack & Systems'] || 88, benchmark: 71, color: '#F43F5E' },
+              ]}
+              width={340}
+              height={280}
+            />
 
             {/* Topic breakdown bars */}
             <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -322,28 +384,34 @@ export default function ResultECPage() {
                       transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
                       style={{
                         background: score >= 75
-                          ? 'linear-gradient(90deg, #10B981, #059669)'
+                          ? '#10B981'
                           : score >= 50
-                            ? 'linear-gradient(90deg, #F59E0B, #d97706)'
-                            : 'linear-gradient(90deg, #EF4444, #dc2626)',
+                            ? '#F59E0B'
+                            : '#EF4444',
                       }}
                     />
                   </div>
                 </div>
               ))}
             </div>
-          </GlowCard>
+          </div>
 
           {/* Integrity & Performance Telemetry Card */}
-          <GlowCard>
+          <div style={{
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: 24,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)'
+          }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>
-                🛡️ Integrity & Verification
+                Integrity & Verification
               </h3>
               <span style={{
                 fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px',
-                borderRadius: 999, background: 'rgba(16,185,129,0.15)',
-                color: '#10B981', border: '1px solid rgba(16,185,129,0.3)',
+                borderRadius: 999, background: 'rgba(16,185,129,0.12)',
+                color: '#10B981', border: '1px solid rgba(16,185,129,0.25)',
                 letterSpacing: '0.04em'
               }}>
                 100% VERIFIED
@@ -352,7 +420,7 @@ export default function ResultECPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
               <div style={{
-                background: 'rgba(255,255,255,0.03)', padding: '14px 16px',
+                background: 'var(--color-bg)', padding: '14px 16px',
                 borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)'
               }}>
                 <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>
@@ -362,18 +430,18 @@ export default function ResultECPage() {
                   100%
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', marginTop: 2 }}>
-                  Zero anti-cheat strikes
+                  Zero anti-cheat flags
                 </div>
               </div>
 
               <div style={{
-                background: 'rgba(255,255,255,0.03)', padding: '14px 16px',
+                background: 'var(--color-bg)', padding: '14px 16px',
                 borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)'
               }}>
                 <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>
                   SERVER TIME SYNC
                 </div>
-                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#38BDF8', fontFamily: 'var(--font-display)' }}>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#2563EB', fontFamily: 'var(--font-display)' }}>
                   ±0.00s
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', marginTop: 2 }}>
@@ -382,14 +450,14 @@ export default function ResultECPage() {
               </div>
 
               <div style={{
-                background: 'rgba(255,255,255,0.03)', padding: '14px 16px',
+                background: 'var(--color-bg)', padding: '14px 16px',
                 borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)'
               }}>
                 <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>
                   PROCTORING LOG
                 </div>
                 <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
-                  Pristine Session
+                  Verified — No Flags
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', marginTop: 2 }}>
                   Audio & screen validated
@@ -397,14 +465,14 @@ export default function ResultECPage() {
               </div>
 
               <div style={{
-                background: 'rgba(255,255,255,0.03)', padding: '14px 16px',
+                background: 'var(--color-bg)', padding: '14px 16px',
                 borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)'
               }}>
                 <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>
                   PLACEMENT READINESS
                 </div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: pct >= 75 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#60A5FA', fontFamily: 'var(--font-display)' }}>
-                  {pct >= 75 ? 'Tier 1 • Top Tier' : pct >= 50 ? 'Tier 2 • Proficient' : 'Core Foundation'}
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: pct >= 75 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#2563EB', fontFamily: 'var(--font-display)' }}>
+                  {pct >= 75 ? 'Proficiency: Advanced' : pct >= 50 ? 'Proficiency: Intermediate' : 'Proficiency: Developing'}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', marginTop: 2 }}>
                   Algorithmic benchmark
@@ -413,13 +481,13 @@ export default function ResultECPage() {
             </div>
 
             <div style={{
-              background: 'rgba(43,127,255,0.06)', border: '1px solid rgba(43,127,255,0.2)',
+              background: 'var(--color-bg)', border: '1px solid var(--color-border)',
               borderRadius: 'var(--radius-sm)', padding: '14px 18px', display: 'flex',
               alignItems: 'center', justifyContent: 'space-between'
             }}>
               <div>
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-                  CANDIDATE SESSION HASH
+                  SESSION VERIFICATION CODE
                 </div>
                 <div style={{ fontSize: '0.82rem', fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)' }}>
                   GR-{(examCode || 'EXAM').toUpperCase()}-{(hallTicket || '0000').slice(-4)}
@@ -427,10 +495,10 @@ export default function ResultECPage() {
               </div>
               <div style={{ fontSize: '1.4rem' }}>🛡️</div>
             </div>
-          </GlowCard>
+          </div>
         </div>
 
-        {/* ─── LEADERBOARD PODIUM ─── */}
+        {/* ─── LEADERBOARD PODIUM (Solid Surface) ─── */}
         {leaderboard.length >= 3 && (
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -438,7 +506,13 @@ export default function ResultECPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           >
-            <GlowCard>
+            <div style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: 24,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.06)'
+            }}>
               <LeaderboardPodium entries={leaderboard.slice(0, 3)} examName={examCode ?? ''} />
 
               {/* Full leaderboard table */}
@@ -458,7 +532,7 @@ export default function ResultECPage() {
                     </thead>
                     <tbody>
                       {leaderboard.slice(0, 20).map(entry => (
-                        <tr key={entry.rank} style={{ background: entry.hall_ticket === hallTicket ? 'rgba(43,127,255,0.06)' : undefined }}>
+                        <tr key={entry.rank} style={{ background: entry.hall_ticket === hallTicket ? 'rgba(37,99,235,0.06)' : undefined }}>
                           <td>
                             <div className={`rank-badge ${['rank-1','rank-2','rank-3'][entry.rank - 1] || 'rank-other'}`}>
                               {entry.rank <= 3 ? ['🥇','🥈','🥉'][entry.rank - 1] : entry.rank}
@@ -467,7 +541,7 @@ export default function ResultECPage() {
                           <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
                             {entry.hall_ticket || entry.name}
                             {entry.hall_ticket === hallTicket && (
-                              <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 999, background: 'rgba(43,127,255,0.15)', color: 'var(--color-primary)', fontSize: '0.7rem', fontWeight: 700 }}>
+                              <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 999, background: 'rgba(37,99,235,0.12)', color: 'var(--color-primary)', fontSize: '0.7rem', fontWeight: 700 }}>
                                 YOU
                               </span>
                             )}
@@ -482,11 +556,11 @@ export default function ResultECPage() {
                   </table>
                 </div>
               )}
-            </GlowCard>
+            </div>
           </motion.div>
         )}
 
-        {/* ─── ACTION BUTTONS ─── */}
+        {/* ─── ACTION BUTTONS (Primary CTA keeps gradient, others clean) ─── */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -495,18 +569,61 @@ export default function ResultECPage() {
           style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 48, marginBottom: 48, flexWrap: 'wrap' }}
         >
           <Link to="/practice" style={{ textDecoration: 'none' }}>
-            <MagneticButton className="btn btn-primary btn-lg">
-              🔥 Practice Arena
+            <MagneticButton
+              className="btn btn-primary btn-lg"
+              style={{
+                background: 'linear-gradient(135deg, #2563EB 0%, #1B5FB5 50%, #0A3F8F 100%)',
+                boxShadow: '0 8px 24px -4px rgba(37, 99, 235, 0.4)',
+                color: '#ffffff',
+                fontWeight: 700,
+                borderRadius: 12,
+                padding: '14px 28px',
+              }}
+            >
+              Practice Question Bank
+            </MagneticButton>
+          </Link>
+          <Link to={`/reports/student/${hallTicket || '22R1KA0584'}`} style={{ textDecoration: 'none' }}>
+            <MagneticButton
+              className="btn btn-primary btn-lg"
+              style={{
+                background: 'linear-gradient(135deg, #10B981, #059669)',
+                color: '#FFF',
+                borderRadius: 12,
+                padding: '14px 28px',
+                border: 'none',
+                boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)',
+              }}
+            >
+              📑 Institutional Performance Report
             </MagneticButton>
           </Link>
           <Link to={`/leaderboard-ec/${examCode}`} style={{ textDecoration: 'none' }}>
-            <MagneticButton className="btn btn-secondary btn-lg">
-              🏆 View Full Leaderboard
+            <MagneticButton
+              className="btn btn-secondary btn-lg"
+              style={{
+                background: 'var(--color-surface)',
+                border: '1.5px solid var(--color-border)',
+                color: 'var(--color-text)',
+                borderRadius: 12,
+                padding: '14px 28px',
+              }}
+            >
+              View Examination Leaderboard
             </MagneticButton>
           </Link>
           <Link to="/enter-exam" style={{ textDecoration: 'none' }}>
-            <MagneticButton className="btn btn-ghost btn-lg">
-              🔄 Take Another Assessment
+            <MagneticButton
+              className="btn btn-ghost btn-lg"
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text-muted)',
+                borderRadius: 12,
+                padding: '14px 28px',
+              }}
+            >
+              Register for Another Assessment
             </MagneticButton>
           </Link>
         </motion.div>

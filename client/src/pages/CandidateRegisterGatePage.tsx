@@ -1087,47 +1087,13 @@ export default function CandidateRegisterGatePage() {
       onMouseMove={handleContainerMouseMove}
       style={{
         minHeight: '100vh',
-        background: 'radial-gradient(ellipse at 30% 15%, #0e1630 0%, #060914 70%)',
+        background: '#0a0e1a',
         color: '#f0f4fc',
         fontFamily: "'Inter', system-ui, sans-serif",
         position: 'relative',
         overflowX: 'hidden',
       }}
     >
-      {/* Dynamic Background Atmosphere Glows */}
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-        <div
-          style={{
-            position: 'absolute',
-            width: 650,
-            height: 650,
-            borderRadius: '50%',
-            background: '#7c3aed',
-            filter: 'blur(140px)',
-            opacity: 0.1,
-            top: '-120px',
-            left: '-120px',
-            transform: `translate(${mouse.x * 20}px, ${mouse.y * 14}px)`,
-            transition: 'transform 0.5s ease-out',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            width: 550,
-            height: 550,
-            borderRadius: '50%',
-            background: '#06b6d4',
-            filter: 'blur(130px)',
-            opacity: 0.08,
-            bottom: '-100px',
-            right: '-100px',
-            transform: `translate(${-mouse.x * 20}px, ${-mouse.y * 14}px)`,
-            transition: 'transform 0.5s ease-out',
-          }}
-        />
-      </div>
-
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 20px 60px', position: 'relative', zIndex: 1 }}>
 
         {/* ── BRANDING & PRODUCT HEADER ── */}
@@ -1138,12 +1104,11 @@ export default function CandidateRegisterGatePage() {
                 width: 42,
                 height: 42,
                 borderRadius: 12,
-                background: 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)',
+                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '1.25rem',
-                boxShadow: '0 0 24px rgba(124, 58, 237, 0.4)',
               }}
             >
               ⚡
@@ -1160,7 +1125,7 @@ export default function CandidateRegisterGatePage() {
                 letterSpacing: '-0.02em',
               }}
             >
-              GROWTHRAN
+              LogicWhileLiRE
             </h1>
           </div>
           <div
@@ -1226,15 +1191,14 @@ export default function CandidateRegisterGatePage() {
             <div
               key={item.badge}
               style={{
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                backdropFilter: 'blur(8px)',
+                background: '#111827',
+                border: '1px solid #1f2937',
                 borderRadius: 12,
                 padding: '10px 14px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
-                boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
               }}
             >
               <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>{item.icon}</span>
@@ -1296,8 +1260,8 @@ export default function CandidateRegisterGatePage() {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 padding: '12px 18px',
-                background: 'rgba(18, 25, 52, 0.85)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                background: '#111827',
+                border: '1px solid #1f2937',
                 borderRadius: '16px 16px 0 0',
                 borderBottom: 'none',
                 flexWrap: 'wrap',
@@ -1316,7 +1280,7 @@ export default function CandidateRegisterGatePage() {
                     color: '#f0f4fc',
                   }}
                 >
-                  Live Assessment Entrance Gate
+                  Candidate Assessment Registration
                 </span>
               </div>
 
@@ -1357,8 +1321,8 @@ export default function CandidateRegisterGatePage() {
               className="hero-canvas-container"
               style={{
                 height: 350,
-                background: '#070a16',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                background: '#0d1117',
+                border: '1px solid #1f2937',
                 position: 'relative',
                 overflow: 'hidden',
                 display: 'flex',
@@ -1375,9 +1339,8 @@ export default function CandidateRegisterGatePage() {
                   bottom: 14,
                   left: 14,
                   right: 14,
-                  background: 'rgba(8, 12, 26, 0.85)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: '#161b22',
+                  border: '1px solid #30363d',
                   borderRadius: 10,
                   padding: '10px 14px',
                   display: 'flex',
@@ -1430,11 +1393,11 @@ export default function CandidateRegisterGatePage() {
             {/* Security Architecture Summary Under Hero */}
             <div
               style={{
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                border: '1px solid #1f2937',
                 borderTop: 'none',
                 borderRadius: '0 0 16px 16px',
                 padding: '18px 20px',
-                background: 'rgba(18, 25, 52, 0.75)',
+                background: '#111827',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 12,
@@ -1518,10 +1481,10 @@ export default function CandidateRegisterGatePage() {
               onMouseLeave={handleCardMouseLeave}
               className={`registration-card ${isShaking ? 'shake-animation' : ''}`}
               style={{
-                background: 'linear-gradient(180deg, rgba(20, 26, 54, 0.98) 0%, rgba(11, 15, 34, 0.99) 100%)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                background: '#111827',
+                border: '1px solid #1f2937',
                 borderRadius: 20,
-                boxShadow: '0 24px 70px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(124, 58, 237, 0.15)',
+                boxShadow: '0 12px 36px rgba(0, 0, 0, 0.45)',
                 overflow: 'hidden',
                 transform: prefersReducedMotion
                   ? 'none'
@@ -1535,8 +1498,8 @@ export default function CandidateRegisterGatePage() {
               <div
                 style={{
                   padding: '20px 24px 16px',
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: '#161e2e',
+                  borderBottom: '1px solid #1f2937',
                 }}
               >
                 <div
@@ -2996,7 +2959,7 @@ export default function CandidateRegisterGatePage() {
             fontFamily: "'Space Grotesk', system-ui, sans-serif",
           }}
         >
-          <div>GROWTHRAN • <em>"Learn. Grow. Run."</em></div>
+          <div>LogicWhileLiRE • <em>"Logic. While. LiRE."</em></div>
           <div style={{ marginTop: 4, color: '#475569' }}>
             Developed & Architected by R. Charan Sai • © 2026 All rights reserved.
           </div>

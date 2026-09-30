@@ -8,10 +8,14 @@
  */
 
 const KEY_MIGRATION_MAP: Record<string, string> = {
-  lw_theme: 'growthran_theme',
-  lw_attempt: 'growthran_attempt',
-  logicwhile_auth_token: 'growthran_auth_token',
-  logicwhile_user: 'growthran_user',
+  lw_theme: 'logicwhilelire_theme',
+  growthran_theme: 'logicwhilelire_theme',
+  lw_attempt: 'logicwhilelire_attempt',
+  growthran_attempt: 'logicwhilelire_attempt',
+  logicwhile_auth_token: 'logicwhilelire_auth_token',
+  growthran_auth_token: 'logicwhilelire_auth_token',
+  logicwhile_user: 'logicwhilelire_user',
+  growthran_user: 'logicwhilelire_user',
 };
 
 /**

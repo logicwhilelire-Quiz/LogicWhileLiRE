@@ -159,7 +159,7 @@ function Step1({ form, setForm }: { form: ExamMeta; setForm: React.Dispatch<Reac
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
         <div style={{ gridColumn: '1 / -1' }}>
-          {field('exam_name', '📝 Exam Title', 'text', { placeholder: 'e.g. GROWTHRAN National Engineering Qualifier 2026' })}
+          {field('exam_name', '📝 Exam Title', 'text', { placeholder: 'e.g. LogicWhileLiRE National Engineering Qualifier 2026' })}
         </div>
 
         {/* Code with Generator button */}
@@ -246,7 +246,7 @@ function Step2({
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', 'growthran_questions_template.csv')
+    link.setAttribute('download', 'logicwhilelire_questions_template.csv')
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -1027,9 +1027,9 @@ export default function CreateExamWizardPage() {
         <aside className="admin-sidebar" style={{ background: 'rgba(20,28,47,0.95)', backdropFilter: 'blur(20px)', borderRight: '1px solid var(--color-border)' }}>
           <div style={{ marginBottom: 24, padding: '0 4px' }}>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em', background: 'linear-gradient(135deg, var(--color-text), var(--color-primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              ⚡ GROWTHRAN
+              ⚡ LogicWhileLiRE
             </div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--color-primary)', fontWeight: 700, letterSpacing: '0.1em', marginTop: 2 }}>4.0 ULTRA ADMIN</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--color-primary)', fontWeight: 700, letterSpacing: '0.1em', marginTop: 2 }}>ENTERPRISE ADMIN</div>
           </div>
           {[
             { icon: '📊', label: 'Dashboard',    path: '/admin/dashboard' },

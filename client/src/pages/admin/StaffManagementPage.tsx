@@ -338,7 +338,7 @@ export default function StaffManagementPage() {
                     className="form-input"
                     type="email"
                     required
-                    placeholder="e.g. rajesh@growthran.com"
+                    placeholder="e.g. rajesh@logicwhilelire.com"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                   />

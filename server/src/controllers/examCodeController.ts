@@ -66,7 +66,7 @@ export function generateExamCode(collegeCode: string): string {
  */
 export function isValidExamCodeFormat(code: string): boolean {
   if (!code || typeof code !== 'string') return false;
-  return /^(GR|LW)-[A-Z0-9]+-[A-Z0-9]+$/i.test(code.trim()) || /^[A-Z0-9_-]{3,32}$/i.test(code.trim());
+  return /^(LWL|LIRE|GR|LW)-[A-Z0-9]+-[A-Z0-9]+$/i.test(code.trim()) || /^[A-Z0-9_-]{3,32}$/i.test(code.trim());
 }
 
 // ─────────────────────────────────────────────

@@ -1,7 +1,7 @@
 {
-  "name": "growthran-server",
+  "name": "logicwhilelire-server",
   "version": "4.0.0",
-  "description": "GROWTHRAN — Learn. Grow. Run. | Career Growth & Assessment Platform",
+  "description": "LogicWhileLiRE — Logic. While. LiRE. | Career Growth & Assessment Platform",
   "main": "index.js",
   "author": "R. Charan Sai",
   "license": "UNLICENSED",
@@ -20,6 +20,7 @@
     "seed:demo": "node seed-demo.js"
   },
   "keywords": [
+    "logicwhilelire",
     "growthran",
     "assessment",
     "proctoring",

@@ -50,7 +50,7 @@ export interface EmailPayload {
   subject: string;
   text: string;
   html: string;
-  emailType: 'otp' | 'result' | 'termination_alert' | 'batch_termination_summary' | 'password_reset';
+  emailType: 'otp' | 'result' | 'termination_alert' | 'batch_termination_summary' | 'password_reset' | 'invitation' | 'submission_receipt' | 'inspector_notice' | 'inspector_issue_alert';
   examId?: string;
   sessionId?: string;
   participantId?: string;
@@ -87,8 +87,8 @@ export async function logDeliverableFailure(
  * Strictly gates console-log fallback behind NODE_ENV !== 'production'.
  */
 export async function sendWithRetry(payload: EmailPayload, maxAttempts: number = 3): Promise<boolean> {
-  const from = process.env.EMAIL_FROM || process.env.OTP_FROM_EMAIL || process.env.SMTP_USER || 'noreply@growthran.com';
-  const fromName = process.env.EMAIL_FROM_NAME || 'GROWTHRAN';
+  const from = process.env.EMAIL_FROM || process.env.OTP_FROM_EMAIL || process.env.SMTP_USER || 'noreply@logicwhilelire.com';
+  const fromName = process.env.EMAIL_FROM_NAME || 'LogicWhileLiRE';
   const t = getTransporter();
 
   // If in dev and no SMTP credentials configured, gate console log fallback
@@ -178,10 +178,10 @@ export function wrapBrandTemplate(title: string, innerHtml: string): string {
                 </div>
               `}
               <h1 style="margin:0 0 6px; font-size:26px; font-weight:800; color:#f0f4f8; letter-spacing:-0.5px;">
-                GROWTHRAN
+                LogicWhileLiRE
               </h1>
               <p style="margin:0; font-size:12px; font-weight:700; letter-spacing:2px; color:#4A7DBE; text-transform:uppercase;">
-                Learn. Grow. Run.
+                Logic. While. LiRE.
               </p>
             </td>
           </tr>
@@ -197,7 +197,7 @@ export function wrapBrandTemplate(title: string, innerHtml: string): string {
           <tr>
             <td style="padding:22px 32px; background-color:#080e1f; border-top:1px solid rgba(255,255,255,0.06); text-align:center;">
               <p style="margin:0 0 6px; font-size:12px; color:#94a3b8;">
-                Automated transmission from <strong>GROWTHRAN</strong> assessment engine.
+                Automated transmission from <strong>LogicWhileLiRE</strong> assessment engine.
               </p>
               <p style="margin:0 0 4px; font-size:11px; color:#64748b;">
                 Developed by R. Charan Sai • © 2026 R. Charan Sai. All rights reserved.
@@ -251,7 +251,7 @@ export async function sendOtpEmail(
   await sendWithRetry({
     to: toEmail,
     subject: `🔐 Your OTP Code: ${otp} — ${examTitle}`,
-    text: `Hello ${recipientName},\n\nYour one-time passcode for "${examTitle}" is: ${otp}\n\nThis code expires in 10 minutes.\n\nGROWTHRAN — Learn. Grow. Run.`,
+    text: `Hello ${recipientName},\n\nYour one-time passcode for "${examTitle}" is: ${otp}\n\nThis code expires in 10 minutes.\n\nLogicWhileLiRE — Logic. While. LiRE.`,
     html: wrapBrandTemplate('Exam OTP Verification', innerHtml),
     emailType: 'otp',
     examId,
@@ -274,7 +274,7 @@ export async function sendPasswordResetEmail(
       Hello <strong style="color:#f8fafc;">${recipientName || 'User'}</strong>,
     </p>
     <p style="margin:0 0 24px; font-size:14px; line-height:1.6; color:#cbd5e1;">
-      We received a request to reset the password for your <strong>GROWTHRAN</strong> account. Click the button below to choose a new, secure password:
+      We received a request to reset the password for your <strong>LogicWhileLiRE</strong> account. Click the button below to choose a new, secure password:
     </p>
     <div style="text-align:center; margin:30px 0;">
       <a href="${resetLink}" style="display:inline-block; padding:14px 32px; background:linear-gradient(135deg, #1B5FB5 0%, #0A3F8F 100%); color:#ffffff; font-size:15px; font-weight:700; text-decoration:none; border-radius:8px; box-shadow:0 4px 14px rgba(27, 95, 181, 0.4); letter-spacing:0.5px;">
@@ -292,12 +292,12 @@ export async function sendPasswordResetEmail(
     </p>
   `;
 
-  const html = wrapBrandTemplate('Reset Your Password — GROWTHRAN', innerHtml);
-  const text = `Hello ${recipientName || 'User'},\n\nWe received a request to reset your password for GROWTHRAN.\nPlease use this link within 1 hour to set a new password:\n\n${resetLink}\n\nIf you did not request this, you can safely ignore this email.`;
+  const html = wrapBrandTemplate('Reset Your Password — LogicWhileLiRE', innerHtml);
+  const text = `Hello ${recipientName || 'User'},\n\nWe received a request to reset your password for LogicWhileLiRE.\nPlease use this link within 1 hour to set a new password:\n\n${resetLink}\n\nIf you did not request this, you can safely ignore this email.`;
 
   return sendWithRetry({
     to: toEmail,
-    subject: '🔑 Password Reset Request — GROWTHRAN',
+    subject: '🔑 Password Reset Request — LogicWhileLiRE',
     text,
     html,
     emailType: 'password_reset',
@@ -416,7 +416,7 @@ export async function sendResultEmail(
   await sendWithRetry({
     to: toEmail,
     subject: `🏆 Your Exam Results: ${examTitle} — Score ${result.totalScore}/${result.maxScore}`,
-    text: `Hello ${recipientName},\n\nYour score in "${examTitle}" is ${result.totalScore}/${result.maxScore} (${result.normalizedScore ?? percentage}%).\nRank: ${isPublic && result.rank ? `#${result.rank}` : 'Private / Available on dashboard'}\nTime: ${timeFormatted}\n\nGROWTHRAN — Learn. Grow. Run.`,
+    text: `Hello ${recipientName},\n\nYour score in "${examTitle}" is ${result.totalScore}/${result.maxScore} (${result.normalizedScore ?? percentage}%).\nRank: ${isPublic && result.rank ? `#${result.rank}` : 'Private / Available on dashboard'}\nTime: ${timeFormatted}\n\nLogicWhileLiRE — Logic. While. LiRE.`,
     html: wrapBrandTemplate('Exam Results & Standings', innerHtml),
     emailType: 'result',
     examId,
@@ -593,3 +593,222 @@ export async function sendBatchTerminationSummaryEmail(
     examId,
   });
 }
+
+/**
+ * 5. Send Candidate Exam Invitation & Hall Ticket Email
+ */
+export async function sendExamInvitationEmail(
+  toEmail: string,
+  recipientName: string,
+  hallTicket: string,
+  examCode: string,
+  examTitle: string,
+  durationMinutes: number,
+  accessUrl: string
+): Promise<boolean> {
+  const innerHtml = `
+    <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">
+      Official Examination Hall Ticket & Access Pass
+    </h2>
+    <p style="margin:0 0 16px; font-size:14px; line-height:1.6; color:#94a3b8;">
+      Dear <strong style="color:#f8fafc;">${recipientName}</strong>,
+    </p>
+    <p style="margin:0 0 20px; font-size:14px; line-height:1.6; color:#cbd5e1;">
+      You have been scheduled to take the <strong>${examTitle}</strong> on the <strong>LogicWhileLiRE</strong> Enterprise Assessment Platform. Below are your non-transferable access credentials:
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(255,255,255,0.03); border:1px solid rgba(43,127,255,0.25); border-radius:12px; margin-bottom:24px;">
+      <tr>
+        <td style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:14px; color:#94a3b8;">Hall Ticket:</td>
+        <td style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:15px; font-weight:800; font-family:monospace; color:#38bdf8;">${hallTicket}</td>
+      </tr>
+      <tr>
+        <td style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:14px; color:#94a3b8;">Exam Pass Code:</td>
+        <td style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:15px; font-weight:800; font-family:monospace; color:#10b981;">${examCode}</td>
+      </tr>
+      <tr>
+        <td style="padding:16px 20px; font-size:14px; color:#94a3b8;">Duration:</td>
+        <td style="padding:16px 20px; font-size:14px; font-weight:700; color:#f8fafc;">${durationMinutes} Minutes (Server-Authoritative Clock)</td>
+      </tr>
+    </table>
+    <div style="text-align:center; margin:30px 0;">
+      <a href="${accessUrl}" style="display:inline-block; padding:14px 36px; background:linear-gradient(135deg, #1B5FB5 0%, #0A3F8F 100%); color:#ffffff; font-size:15px; font-weight:700; text-decoration:none; border-radius:8px; box-shadow:0 4px 16px rgba(27, 95, 181, 0.4); letter-spacing:0.5px;">
+        🚀 Enter Examination Terminal
+      </a>
+    </div>
+    <div style="background:rgba(27,95,181,0.08); border-left:3px solid #1B5FB5; padding:14px 18px; border-radius:6px; margin-bottom:20px;">
+      <h4 style="margin:0 0 6px; font-size:13px; font-weight:700; color:#93c5fd;">System & Proctoring Requirements</h4>
+      <ul style="margin:0; padding-left:18px; font-size:12px; color:#cbd5e1; line-height:1.6;">
+        <li>Full-screen mode is mandatory and strictly enforced throughout the assessment.</li>
+        <li>Dual proctoring (webcam gaze detection + screen live feed) will be monitored by the Inspector.</li>
+        <li>Zero-OTP entry allows immediate terminal entrance with your Hall Ticket and Exam Code.</li>
+      </ul>
+    </div>
+  `;
+
+  return sendWithRetry({
+    to: toEmail,
+    subject: `🎓 Exam Scheduled: ${examTitle} — Pass Code: ${examCode}`,
+    text: `Hello ${recipientName},\n\nYou are scheduled for "${examTitle}".\nHall Ticket: ${hallTicket}\nExam Code: ${examCode}\nDuration: ${durationMinutes} mins\nEntrance URL: ${accessUrl}\n\nLogicWhileLiRE — Logic. While. LiRE.`,
+    html: wrapBrandTemplate('Official Exam Hall Ticket', innerHtml),
+    emailType: 'invitation',
+  });
+}
+
+/**
+ * 6. Send Immediate Candidate Submission Confirmation & Integrity Receipt Email
+ */
+export async function sendCandidateSubmissionReceiptEmail(
+  toEmail: string,
+  recipientName: string,
+  hallTicket: string,
+  examTitle: string,
+  answeredCount: number,
+  totalQuestions: number,
+  submissionHash: string
+): Promise<boolean> {
+  const innerHtml = `
+    <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#10b981;">
+      ✅ Exam Submission Recorded Successfully
+    </h2>
+    <p style="margin:0 0 16px; font-size:14px; line-height:1.6; color:#94a3b8;">
+      Dear <strong style="color:#f8fafc;">${recipientName}</strong>,
+    </p>
+    <p style="margin:0 0 20px; font-size:14px; line-height:1.6; color:#cbd5e1;">
+      Your submission for <strong>${examTitle}</strong> has been securely stamped into the server-authoritative audit ledger.
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(255,255,255,0.03); border:1px solid rgba(16,185,129,0.3); border-radius:12px; margin-bottom:24px;">
+      <tr>
+        <td style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:14px; color:#94a3b8;">Hall Ticket:</td>
+        <td style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:14px; font-weight:700; color:#f8fafc;">${hallTicket}</td>
+      </tr>
+      <tr>
+        <td style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:14px; color:#94a3b8;">Questions Completed:</td>
+        <td style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:14px; font-weight:800; color:#10b981;">${answeredCount} / ${totalQuestions} answered</td>
+      </tr>
+      <tr>
+        <td style="padding:14px 18px; font-size:14px; color:#94a3b8;">Digital Audit Hash:</td>
+        <td style="padding:14px 18px; font-size:12px; font-family:monospace; color:#a78bfa; word-break:break-all;">${submissionHash}</td>
+      </tr>
+    </table>
+    <p style="margin:0; font-size:13px; color:#94a3b8; line-height:1.6;">
+      Your results and performance analytics will be reviewed by the institution's examination committee and published to your student dashboard.
+    </p>
+  `;
+
+  return sendWithRetry({
+    to: toEmail,
+    subject: `✅ Exam Submission Confirmed: ${examTitle} (${hallTicket})`,
+    text: `Hello ${recipientName},\n\nYour submission for "${examTitle}" was successfully received.\nAnswered: ${answeredCount}/${totalQuestions}\nReceipt Hash: ${submissionHash}\n\nLogicWhileLiRE — Logic. While. LiRE.`,
+    html: wrapBrandTemplate('Submission Confirmation Receipt', innerHtml),
+    emailType: 'submission_receipt',
+  });
+}
+
+/**
+ * 7. Send Real-Time Security Anomaly Alert to Inspector / Instructor
+ */
+export async function sendInspectorIssueAlertEmail(
+  inspectorEmail: string,
+  participantName: string,
+  hallTicket: string,
+  examTitle: string,
+  issueType: string,
+  details: string,
+  severity: 'low' | 'medium' | 'high' | 'critical' = 'high'
+): Promise<boolean> {
+  const colorMap = {
+    low: '#38bdf8',
+    medium: '#f59e0b',
+    high: '#ef4444',
+    critical: '#dc2626',
+  };
+  const color = colorMap[severity] || '#ef4444';
+
+  const innerHtml = `
+    <div style="background:${color}15; border:1px solid ${color}; border-radius:8px; padding:14px 18px; margin-bottom:20px;">
+      <span style="font-size:13px; font-weight:800; color:${color}; text-transform:uppercase; letter-spacing:1px;">
+        ⚠️ LIVE PROCTOR INSPECTION ALERT [${severity.toUpperCase()}]
+      </span>
+    </div>
+    <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">
+      Candidate Flagged by Real-Time Telemetry
+    </h2>
+    <p style="margin:0 0 16px; font-size:14px; line-height:1.6; color:#cbd5e1;">
+      A live anomaly was intercepted during active proctor monitoring for <strong>${examTitle}</strong>:
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; margin-bottom:24px;">
+      <tr>
+        <td style="padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:14px; color:#94a3b8;">Candidate:</td>
+        <td style="padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:14px; font-weight:700; color:#f8fafc;">${participantName} (${hallTicket})</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:14px; color:#94a3b8;">Flag Type:</td>
+        <td style="padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:14px; font-weight:800; color:${color};">${issueType.replace(/_/g, ' ').toUpperCase()}</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px; font-size:14px; color:#94a3b8;">Telemetry Details:</td>
+        <td style="padding:12px 16px; font-size:14px; color:#f8fafc;">${details}</td>
+      </tr>
+    </table>
+    <p style="margin:0; font-size:13px; color:#94a3b8;">
+      Open your Live Proctor Console to inspect the candidate's real-time camera feed or issue an on-screen warning.
+    </p>
+  `;
+
+  return sendWithRetry({
+    to: inspectorEmail,
+    subject: `🚨 [INSPECTOR ALERT] ${issueType.toUpperCase()}: ${participantName} (${hallTicket})`,
+    text: `PROCTOR ALERT [${severity.toUpperCase()}]: ${issueType}\nCandidate: ${participantName} (${hallTicket})\nExam: ${examTitle}\nDetails: ${details}\n\nLogicWhileLiRE Inspector Command`,
+    html: wrapBrandTemplate('Inspector Security Alert', innerHtml),
+    emailType: 'inspector_issue_alert',
+  });
+}
+
+/**
+ * 8. Send Official Proctor Warning / Direct Reprimand Notice to Candidate's Email
+ */
+export async function sendInspectorDirectNoticeEmail(
+  toEmail: string,
+  recipientName: string,
+  hallTicket: string,
+  examTitle: string,
+  inspectorName: string,
+  noticeText: string
+): Promise<boolean> {
+  const innerHtml = `
+    <div style="background:rgba(245,158,11,0.15); border:1px solid #f59e0b; border-radius:8px; padding:14px 18px; margin-bottom:20px;">
+      <span style="font-size:13px; font-weight:800; color:#f59e0b; text-transform:uppercase; letter-spacing:1px;">
+        ⚠️ OFFICIAL PROCTOR REPRIMAND & WARNING
+      </span>
+    </div>
+    <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">
+      Notice from Examination Invigilator
+    </h2>
+    <p style="margin:0 0 16px; font-size:14px; line-height:1.6; color:#cbd5e1;">
+      Dear <strong style="color:#f8fafc;">${recipientName}</strong> (Hall Ticket: ${hallTicket}),
+    </p>
+    <p style="margin:0 0 20px; font-size:14px; line-height:1.6; color:#cbd5e1;">
+      During your session for <strong>${examTitle}</strong>, the examination inspector issued the following directive:
+    </p>
+    <div style="background:rgba(255,255,255,0.04); border-left:4px solid #f59e0b; padding:16px 20px; border-radius:4px; margin-bottom:24px;">
+      <p style="margin:0; font-size:15px; font-weight:600; color:#fef3c7; line-height:1.6;">
+        "${noticeText}"
+      </p>
+      <div style="margin-top:10px; font-size:12px; color:#94a3b8;">
+        — Issued by Inspector: <strong>${inspectorName || 'Exam Control Center'}</strong> at ${new Date().toLocaleTimeString()}
+      </div>
+    </div>
+    <p style="margin:0; font-size:12px; color:#94a3b8; line-height:1.5;">
+      Failure to comply with invigilator directives will result in immediate session invalidation and academic disciplinary review.
+    </p>
+  `;
+
+  return sendWithRetry({
+    to: toEmail,
+    subject: `⚠️ Proctor Notice: ${examTitle} — Official Warning for ${hallTicket}`,
+    text: `OFFICIAL PROCTOR NOTICE\nCandidate: ${recipientName} (${hallTicket})\nExam: ${examTitle}\nNotice: ${noticeText}\nIssued by: ${inspectorName}`,
+    html: wrapBrandTemplate('Official Invigilator Warning', innerHtml),
+    emailType: 'inspector_notice',
+  });
+}
+

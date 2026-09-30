@@ -209,7 +209,7 @@ export default function StudentLoginPage() {
               fontFamily: 'var(--font-sans, system-ui, sans-serif)',
             }}
           >
-            GROWTHRAN • <em>"Learn. Grow. Run."</em> • Developed by R. Charan Sai • © 2026
+            LogicWhileLiRE • <em>"Logic. While. LiRE."</em> • Developed by R. Charan Sai • © 2026
           </div>
         </div>
       </div>

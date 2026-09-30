@@ -4,7 +4,7 @@ import { listExams, activateExam } from '../../lib/api';
 import AnimatedPage from '../../components/AnimatedPage';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedCounter from '../../components/AnimatedCounter';
-import GrowthranLoader from '../../components/GrowthranLoader';
+import LogicWhileLiRELoader from '../../components/LogicWhileLiRELoader';
 
 interface Exam {
   id: string;
@@ -49,7 +49,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
-                GROWTHRAN 1.0 Master Control
+                LogicWhileLiRE Master Control
               </div>
               <h1 style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, fontFamily: 'var(--font-display)' }}>
                 Administrative Dashboard
@@ -229,7 +229,7 @@ export default function Dashboard() {
           <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 12, border: '1px solid var(--color-border)' }}>
             {loading ? (
               <div style={{ padding: '40px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <GrowthranLoader size="sm" message="Loading active assessments..." />
+                <LogicWhileLiRELoader size="sm" message="Loading active LogicWhileLiRE assessments..." />
               </div>
             ) : exams.length === 0 ? (
               <div style={{ padding: 40, textAlign: 'center', color: 'var(--color-text-muted)' }}>

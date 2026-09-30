@@ -9,7 +9,7 @@ import ExamFaceMonitor from '../components/exam/ExamFaceMonitor'
 import ExamTimerProgress from '../components/exam/ExamTimerProgress'
 import ProctoringConsentModal from '../components/ProctoringConsentModal'
 import BrandLogo from '../components/BrandLogo'
-import GrowthranLoader from '../components/GrowthranLoader'
+import LogicWhileLiRELoader from '../components/LogicWhileLiRELoader'
 import FullscreenEnforcementOverlay from '../components/exam/FullscreenEnforcementOverlay'
 import ScreenShareWarningOverlay from '../components/exam/ScreenShareWarningOverlay'
 import { useAudioProctor } from '../hooks/useAudioProctor'
@@ -20,6 +20,10 @@ import {
   markAnswersSynced,
   clearAnswerBuffer,
 } from '../lib/offlineAnswerStore'
+import AntiLeakWatermark from '../components/AntiLeakWatermark'
+import HoloScratchpadModal from '../components/HoloScratchpadModal'
+import HoloProctorDeskModal, { type ProctorCommsMessage } from '../components/HoloProctorDeskModal'
+import { soundFx } from '../lib/synthAudio'
 
 /* ── Types ── */
 interface ExamQuestion {
@@ -55,7 +59,7 @@ export default function QuizPage() {
   const stateHt = (location.state as { hallTicket?: string } | null)?.hallTicket
   const storedHt = (() => {
     try {
-      const raw = localStorage.getItem('growthran_attempt') || localStorage.getItem('lw_attempt') || '{}'
+      const raw = localStorage.getItem('logicwhilelire_attempt') || localStorage.getItem('growthran_attempt') || localStorage.getItem('lw_attempt') || '{}'
       return JSON.parse(raw)?.hallTicket
     } catch { return '' }
   })()
@@ -95,6 +99,19 @@ export default function QuizPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
   const sessionIdRef = useRef<string | undefined>(undefined)
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+
+  /* ── Inspector Remote Actions & Integrity State ── */
+  const [broadcastBanner, setBroadcastBanner] = useState('')
+  const [whisperNotice, setWhisperNotice] = useState<{ message: string; inspectorName?: string } | null>(null)
+  const [isExamPaused, setIsExamPaused] = useState(false)
+  const isExamPausedRef = useRef(false)
+  const [timeExtensionNotice, setTimeExtensionNotice] = useState('')
+  const [securityBlockNotice, setSecurityBlockNotice] = useState('')
+  const [showScratchpad, setShowScratchpad] = useState(false)
+  const [showProctorDesk, setShowProctorDesk] = useState(false)
+  const [proctorCommsLog, setProctorCommsLog] = useState<ProctorCommsMessage[]>([])
+  const [unreadCommsCount, setUnreadCommsCount] = useState(0)
+  const [soundEnabled, setSoundEnabled] = useState(true)
 
   /* ── 1.4 Offline Resilience & Sync Queue ── */
   const [isOffline, setIsOffline] = useState(!navigator.onLine)
@@ -245,6 +262,26 @@ export default function QuizPage() {
       if (examCode && hallTicket) {
         await clearAnswerBuffer(examCode, hallTicket)
       }
+
+      // Dispatch official confirmation receipt email to candidate
+      const candidateEmail = sessionStorage.getItem('lw_candidate_email') ||
+        sessionStorage.getItem('email') ||
+        `${hallTicket.toLowerCase()}@logicwhilelire.internal`
+      const candidateName = sessionStorage.getItem('lw_candidate_name') ||
+        sessionStorage.getItem('name') ||
+        hallTicket
+
+      axios.post(`${BASE}/api/v1/inspector/send-receipt`, {
+        examCode,
+        candidateName,
+        candidateEmail,
+        hallTicket,
+        score: data?.score || 0,
+        totalMarks: data?.totalMarks || 100,
+        questionsAttempted: Object.keys(answers).length + Object.keys(codeAnswers).length,
+      }).catch(() => {})
+
+      soundFx.playExamSubmittedFanfare()
       navigate(`/result-ec/${examCode}`, { state: { result: data, hallTicket } })
     } catch {
       navigate(`/result-ec/${examCode}`, { state: { hallTicket, error: true } })
@@ -280,94 +317,13 @@ export default function QuizPage() {
     }
   }, [syncPendingAnswers])
 
-  /* ── Supabase Realtime Telemetry Broadcast ── */
-  useEffect(() => {
-    if (!examCode || !hallTicket) return
-
-    const channel = supabase.channel(`realtime:monitor-${examCode}`)
-
-    channel
-      .on('broadcast', { event: 'admin_warning' }, payload => {
-        const data = payload.payload as { hallTicket?: string; message?: string }
-        if (!data?.hallTicket || data.hallTicket === hallTicket) {
-          setAdminWarningMsg(data?.message || 'Proctor Warning: Unusual activity detected on your terminal.')
-          setShowAdminWarning(true)
-          setTimeout(() => setShowAdminWarning(false), 6000)
-        }
-      })
-      .on('broadcast', { event: 'admin_terminate' }, payload => {
-        const data = payload.payload as { hallTicket?: string }
-        if (!data?.hallTicket || data.hallTicket === hallTicket) {
-          handleSubmit()
-        }
-      })
-      .subscribe()
-
-    realtimeChannelRef.current = channel
-
-    // Periodic Heartbeat every 10 seconds
-    const heartbeatInterval = setInterval(() => {
-      channel.send({
-        type: 'broadcast',
-        event: 'student_heartbeat',
-        payload: {
-          hallTicket,
-          currentQuestion: currentQ + 1,
-          answeredCount: Object.keys(answers).length + Object.keys(codeAnswers).length,
-          timestamp: Date.now(),
-        },
-      })
-    }, 10000)
-
-    return () => {
-      clearInterval(heartbeatInterval)
-      supabase.removeChannel(channel)
-    }
-  }, [examCode, hallTicket, currentQ, answers, codeAnswers])
-
-  /* ── Timer (Sprint 2, Item 2 & 3: Server-authoritative countdown) ── */
-  useEffect(() => {
-    if (!session) return
-    timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        let rem: number
-        if (routerServerStartTime && routerDurationSeconds) {
-          // Continuous sync against server start time: immune to background tab throttling
-          const elapsed = Math.floor((Date.now() - routerServerStartTime) / 1000)
-          rem = Math.max(0, routerDurationSeconds - elapsed)
-        } else if (session.endTimeMs) {
-          // Continuous sync against server end_time from DB
-          rem = Math.max(0, Math.floor((session.endTimeMs - Date.now()) / 1000))
-        } else {
-          rem = Math.max(0, prev - 1)
-        }
-
-        if (rem <= 0) {
-          handleSubmit()
-          return 0
-        }
-        return rem
-      })
-    }, 1000)
-    return () => clearInterval(timerRef.current)
-  }, [session, routerServerStartTime, routerDurationSeconds, handleSubmit])
-
-  /* ── Tab/visibility proctoring ── */
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        logViolation('tab_switch', 'Student switched tab or minimized window')
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [])
-
+  /* ── Forensic Violation Logger & Anomaly Telemetry ── */
   const logViolation = useCallback(async (type: string, msg: string, metadata?: { duration_seconds?: number; exitCount?: number; peak_db?: number }) => {
     violationRef.current++
     setViolationCount(violationRef.current)
     setViolationMsg(msg)
     setShowViolationModal(true)
+    soundFx.playSecurityAlertTone()
     setTimeout(() => setShowViolationModal(false), 3000)
 
     // Capture low-res snapshot thumbnail for audit evidence
@@ -420,6 +376,245 @@ export default function QuizPage() {
       handleSubmit()
     }
   }, [session, examCode, hallTicket, handleSubmit])
+
+  /* ── Supabase Realtime Telemetry Broadcast & Inspector Remote Controls ── */
+  useEffect(() => {
+    if (!examCode || !hallTicket) return
+
+    const channel = supabase.channel(`realtime:monitor-${examCode}`)
+
+    channel
+      .on('broadcast', { event: 'admin_warning' }, payload => {
+        const data = payload.payload as { hallTicket?: string; message?: string }
+        if (!data?.hallTicket || data.hallTicket === hallTicket) {
+          setAdminWarningMsg(data?.message || 'Proctor Warning: Unusual activity detected on your terminal.')
+          setShowAdminWarning(true)
+          soundFx.playSecurityAlertTone()
+          setTimeout(() => setShowAdminWarning(false), 6000)
+        }
+      })
+      .on('broadcast', { event: 'admin_terminate' }, payload => {
+        const data = payload.payload as { hallTicket?: string }
+        if (!data?.hallTicket || data.hallTicket === hallTicket) {
+          handleSubmit()
+        }
+      })
+      .on('broadcast', { event: 'admin_broadcast' }, payload => {
+        const data = payload.payload as { message?: string }
+        if (data?.message) {
+          setBroadcastBanner(data.message)
+          soundFx.playProctorBroadcastChime()
+          setProctorCommsLog(prev => [{
+            id: `bc-${Date.now()}`,
+            type: 'broadcast',
+            title: 'Room Announcement',
+            message: data.message || '',
+            timestamp: new Date().toISOString(),
+          }, ...prev])
+          setUnreadCommsCount(prev => prev + 1)
+          setTimeout(() => setBroadcastBanner(''), 12000)
+        }
+      })
+      .on('broadcast', { event: 'admin_message' }, payload => {
+        const data = payload.payload as { hallTicket?: string; message?: string; inspectorName?: string }
+        if (!data?.hallTicket || data.hallTicket === hallTicket) {
+          if (data?.message) {
+            setWhisperNotice({ message: data.message, inspectorName: data.inspectorName || 'Exam Invigilator' })
+            soundFx.playProctorBroadcastChime()
+            setProctorCommsLog(prev => [{
+              id: `wh-${Date.now()}`,
+              type: 'whisper',
+              title: `Direct Notice from ${data.inspectorName || 'Exam Invigilator'}`,
+              message: data.message || '',
+              timestamp: new Date().toISOString(),
+            }, ...prev])
+            setUnreadCommsCount(prev => prev + 1)
+          }
+        }
+      })
+      .on('broadcast', { event: 'admin_pause' }, payload => {
+        const data = payload.payload as { hallTicket?: string }
+        if (!data?.hallTicket || data.hallTicket === hallTicket) {
+          setIsExamPaused(true)
+          isExamPausedRef.current = true
+        }
+      })
+      .on('broadcast', { event: 'admin_resume' }, payload => {
+        const data = payload.payload as { hallTicket?: string }
+        if (!data?.hallTicket || data.hallTicket === hallTicket) {
+          setIsExamPaused(false)
+          isExamPausedRef.current = false
+        }
+      })
+      .on('broadcast', { event: 'admin_extend_time' }, payload => {
+        const data = payload.payload as { hallTicket?: string; seconds?: number }
+        if (!data?.hallTicket || data.hallTicket === hallTicket) {
+          const addSecs = data?.seconds || 300
+          setTimeLeft(prev => prev + addSecs)
+          setTimeExtensionNotice(`⏱️ +${Math.round(addSecs / 60)} minutes extended by Exam Invigilator!`)
+          soundFx.playTimeExtensionChime()
+          setProctorCommsLog(prev => [{
+            id: `ex-${Date.now()}`,
+            type: 'extension',
+            title: `Time Extension Granted (+${Math.round(addSecs / 60)} mins)`,
+            message: `The invigilator granted an extra ${Math.round(addSecs / 60)} minutes to your session.`,
+            timestamp: new Date().toISOString(),
+          }, ...prev])
+          setUnreadCommsCount(prev => prev + 1)
+          setTimeout(() => setTimeExtensionNotice(''), 6000)
+        }
+      })
+      .subscribe()
+
+    realtimeChannelRef.current = channel
+
+    // Periodic Heartbeat every 10 seconds
+    const heartbeatInterval = setInterval(() => {
+      channel.send({
+        type: 'broadcast',
+        event: 'student_heartbeat',
+        payload: {
+          hallTicket,
+          currentQuestion: currentQ + 1,
+          answeredCount: Object.keys(answers).length + Object.keys(codeAnswers).length,
+          timestamp: Date.now(),
+        },
+      })
+    }, 10000)
+
+    return () => {
+      clearInterval(heartbeatInterval)
+      supabase.removeChannel(channel)
+    }
+  }, [examCode, hallTicket, currentQ, answers, codeAnswers, handleSubmit])
+
+  /* ── Timer (Sprint 2, Item 2 & 3: Server-authoritative countdown) ── */
+  useEffect(() => {
+    if (!session) return
+    timerRef.current = setInterval(() => {
+      if (isExamPausedRef.current) return // Timer freezes while exam is paused by inspector!
+      setTimeLeft(prev => {
+        let rem: number
+        if (routerServerStartTime && routerDurationSeconds) {
+          // Continuous sync against server start time: immune to background tab throttling
+          const elapsed = Math.floor((Date.now() - routerServerStartTime) / 1000)
+          rem = Math.max(0, routerDurationSeconds - elapsed)
+        } else if (session.endTimeMs) {
+          // Continuous sync against server end_time from DB
+          rem = Math.max(0, Math.floor((session.endTimeMs - Date.now()) / 1000))
+        } else {
+          rem = Math.max(0, prev - 1)
+        }
+
+        if (rem <= 0) {
+          handleSubmit()
+          return 0
+        }
+        return rem
+      })
+    }, 1000)
+    return () => clearInterval(timerRef.current)
+  }, [session, routerServerStartTime, routerDurationSeconds, handleSubmit])
+
+  /* ── Tab/visibility proctoring & Inspector Anomaly Reporting ── */
+  useEffect(() => {
+    if (!session || submitting) return
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        logViolation('tab_switch', 'Candidate switched browser tab or minimized window')
+        axios.post(`${BASE}/api/v1/inspector/report-issue`, {
+          examCode,
+          hallTicket,
+          candidateName: session?.candidateId || hallTicket,
+          issueType: 'tab_switch',
+          severity: 'high',
+          description: `Candidate tab switch detected at ${new Date().toLocaleTimeString()}`,
+        }).catch(() => {})
+      }
+    }
+
+    const handleWindowBlur = () => {
+      if (!document.fullscreenElement && !submitting) {
+        logViolation('window_blur', 'Exam terminal lost active focus')
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('blur', handleWindowBlur)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('blur', handleWindowBlur)
+    }
+  }, [session, submitting, logViolation, examCode, hallTicket])
+
+  /* ── Keyboard, Context Menu & Clipboard Integrity Lockdown ── */
+  useEffect(() => {
+    if (!session || submitting) return
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault()
+      setSecurityBlockNotice('🛡️ Right-click context menu is restricted during examination')
+      setTimeout(() => setSecurityBlockNotice(''), 3000)
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // DevTools F12
+      if (e.key === 'F12' || e.keyCode === 123) {
+        e.preventDefault()
+        logViolation('devtools_attempt', 'Candidate pressed F12 DevTools key')
+        setSecurityBlockNotice('🛡️ Developer inspection tools are strictly restricted')
+        setTimeout(() => setSecurityBlockNotice(''), 3000)
+        return
+      }
+
+      // DevTools Ctrl+Shift+I / J / C
+      if (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) {
+        e.preventDefault()
+        logViolation('devtools_attempt', 'Candidate pressed Ctrl+Shift+I/J/C DevTools shortcut')
+        setSecurityBlockNotice('🛡️ Developer inspection tools are strictly restricted')
+        setTimeout(() => setSecurityBlockNotice(''), 3000)
+        return
+      }
+
+      // Ctrl+U (View Source)
+      if (e.ctrlKey && ['u', 'U'].includes(e.key)) {
+        e.preventDefault()
+        setSecurityBlockNotice('🛡️ Page source inspection is restricted')
+        setTimeout(() => setSecurityBlockNotice(''), 3000)
+        return
+      }
+
+      // Ctrl+P (Print)
+      if (e.ctrlKey && ['p', 'P'].includes(e.key)) {
+        e.preventDefault()
+        setSecurityBlockNotice('🛡️ Printing is disabled during exam')
+        setTimeout(() => setSecurityBlockNotice(''), 3000)
+        return
+      }
+    }
+
+    const handleCopy = (e: ClipboardEvent) => {
+      const target = e.target as HTMLElement | null
+      const isInsideCodeEditor = target?.closest('.monaco-editor') || target?.closest('textarea.code-input')
+      if (!isInsideCodeEditor) {
+        e.preventDefault()
+        setSecurityBlockNotice('🛡️ Copying question text is restricted by Exam Proctor')
+        setTimeout(() => setSecurityBlockNotice(''), 3000)
+        logViolation('unauthorized_copy', 'Candidate attempted to copy question content')
+      }
+    }
+
+    document.addEventListener('contextmenu', handleContextMenu)
+    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('copy', handleCopy)
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu)
+      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('copy', handleCopy)
+    }
+  }, [session, submitting, logViolation])
 
   /* ── Face proctoring ── */
   const handleFaceStatus = useCallback((status: FaceStatus) => {
@@ -659,10 +854,30 @@ export default function QuizPage() {
     })
   }
 
+  const getSectorForQuestion = (q: ExamQuestion | undefined, idx: number) => {
+    if (!q) return { name: 'Sector 1 · Quant Velocity', color: '#38BDF8' }
+    if (q.topic) {
+      const t = q.topic.toLowerCase()
+      if (t.includes('quant') || t.includes('math') || t.includes('number') || t.includes('arithmetic')) return { name: 'Sector 1 · Quant Velocity', color: '#38BDF8' }
+      if (t.includes('logic') || t.includes('reason') || t.includes('deduct') || t.includes('syllogism')) return { name: 'Sector 2 · Deductive Logic', color: '#818CF8' }
+      if (t.includes('os') || t.includes('system') || t.includes('dbms') || t.includes('network') || t.includes('core')) return { name: 'Sector 3 · Core CS & Systems', color: '#34D399' }
+      if (t.includes('dsa') || t.includes('tree') || t.includes('graph') || t.includes('algo') || t.includes('array')) return { name: 'Sector 4 · Algorithms & DSA', color: '#F472B6' }
+      if (t.includes('web') || t.includes('react') || t.includes('node') || t.includes('distribut') || t.includes('stack')) return { name: 'Sector 5 · Full-Stack Arch', color: '#FBBF24' }
+    }
+    const defaultSectors = [
+      { name: 'Sector 1 · Quantitative Aptitude', color: '#38BDF8' },
+      { name: 'Sector 2 · Deductive Logic', color: '#818CF8' },
+      { name: 'Sector 3 · Core CS & Systems', color: '#34D399' },
+      { name: 'Sector 4 · Data Structures & DSA', color: '#F472B6' },
+      { name: 'Sector 5 · Full-Stack Arch', color: '#FBBF24' },
+    ]
+    return defaultSectors[idx % 5]
+  }
+
   /* ── Render states ── */
   if (loading) return (
     <div className="page-center" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <GrowthranLoader size="lg" message="Loading secure exam session & question manifest..." />
+      <LogicWhileLiRELoader size="lg" message="Loading secure LogicWhileLiRE exam session & question manifest..." />
     </div>
   )
 
@@ -743,7 +958,91 @@ export default function QuizPage() {
         </motion.div>
 
         {/* Right: Proctor Monitor + Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Scratchpad & Sound Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => setShowScratchpad(true)}
+              style={{
+                background: 'rgba(56, 189, 248, 0.12)',
+                border: '1px solid rgba(56, 189, 248, 0.35)',
+                color: '#38BDF8',
+                borderRadius: 8,
+                padding: '6px 12px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+              title="Open In-Exam Secure Scratchpad & Calculation Canvas"
+            >
+              <span>📝</span>
+              <span>Scratchpad</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowProctorDesk(true)
+                setUnreadCommsCount(0)
+              }}
+              style={{
+                background: unreadCommsCount > 0 ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+                border: unreadCommsCount > 0 ? '1px solid #38BDF8' : '1px solid rgba(255, 255, 255, 0.15)',
+                color: unreadCommsCount > 0 ? '#38BDF8' : 'var(--color-text-muted)',
+                borderRadius: 8,
+                padding: '6px 12px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                position: 'relative',
+              }}
+              title="Open Proctor Communication Desk & AI Sentinel Enclave"
+            >
+              <span>💬</span>
+              <span>Invigilator Desk</span>
+              {unreadCommsCount > 0 && (
+                <span
+                  style={{
+                    background: '#EF4444',
+                    color: '#FFF',
+                    borderRadius: 10,
+                    fontSize: '0.62rem',
+                    fontWeight: 800,
+                    padding: '1px 5px',
+                  }}
+                >
+                  {unreadCommsCount}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !soundEnabled
+                setSoundEnabled(next)
+                soundFx.setEnabled(next)
+              }}
+              style={{
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: soundEnabled ? '#34D399' : 'var(--color-text-faint)',
+                borderRadius: 8,
+                padding: '6px 10px',
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+              }}
+              title={soundEnabled ? 'Mute Proctor Chimes' : 'Unmute Proctor Chimes'}
+            >
+              {soundEnabled ? '🔊' : '🔇'}
+            </button>
+          </div>
+
           <button
             id="open-submit-modal-btn"
             className="btn btn-secondary btn-sm"
@@ -1000,6 +1299,7 @@ export default function QuizPage() {
             questionIndex={currentQ}
             selectedOption={typeof answers[currentQuestion.id] === 'number' ? answers[currentQuestion.id] as number : null}
             onOptionSelect={handleAnswer}
+            sector={getSectorForQuestion(currentQuestion, currentQ)}
           />
 
           {/* When in MCQ mode, navigation sits in Left Column */}
@@ -1288,6 +1588,182 @@ export default function QuizPage() {
       <ScreenShareWarningOverlay
         isOpen={showScreenWarning}
         onReconnect={startScreenShare}
+      />
+
+      {/* ─── INSPECTOR BROADCAST BANNER ─── */}
+      <AnimatePresence>
+        {broadcastBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            style={{
+              position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10000,
+              background: 'linear-gradient(90deg, #1E3A8A, #2563EB, #1D4ED8)',
+              color: '#FFFFFF', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              boxShadow: '0 4px 20px rgba(37,99,235,0.4)', borderBottom: '1px solid rgba(255,255,255,0.2)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: '1.4rem' }}>📢</span>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.9 }}>
+                  Exam Invigilator Official Announcement
+                </div>
+                <div style={{ fontSize: '0.92rem', fontWeight: 600 }}>{broadcastBanner}</div>
+              </div>
+            </div>
+            <button
+              onClick={() => setBroadcastBanner('')}
+              style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#FFF', borderRadius: 4, padding: '4px 10px', fontSize: '0.8rem', cursor: 'pointer' }}
+            >
+              Dismiss
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── EXAM PAUSED OVERLAY ─── */}
+      <AnimatePresence>
+        {isExamPaused && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 10001,
+            background: 'rgba(7, 13, 24, 0.94)', backdropFilter: 'blur(12px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+          }}>
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              style={{
+                maxWidth: 480, textAlign: 'center', background: '#0B1120',
+                border: '1px solid rgba(245, 158, 11, 0.5)', borderRadius: 16, padding: 32,
+                boxShadow: '0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(245,158,11,0.2)',
+              }}
+            >
+              <div style={{ fontSize: '3rem', marginBottom: 12 }}>⏸️</div>
+              <h2 style={{ fontFamily: 'var(--font-display)', margin: '0 0 8px', color: '#FBBF24', fontSize: '1.4rem' }}>
+                Examination Paused by Proctor
+              </h2>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem', lineHeight: 1.5, margin: '0 0 20px' }}>
+                The exam inspector has paused your session. Your questions and timer are frozen. Please remain seated and keep your webcam streaming until the proctor resumes your examination.
+              </p>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 20, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', fontSize: '0.78rem', color: '#FCD34D' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#F59E0B', display: 'inline-block' }} />
+                Awaiting Invigilator Action...
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── WHISPER DIRECT NOTICE MODAL ─── */}
+      <AnimatePresence>
+        {whisperNotice && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 10002,
+            background: 'rgba(5, 7, 15, 0.85)', backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+          }}>
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              style={{
+                maxWidth: 480, width: '100%', background: '#0F172A',
+                border: '1px solid rgba(59, 130, 246, 0.5)', borderRadius: 16, padding: 24,
+                boxShadow: '0 20px 50px rgba(0,0,0,0.8)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <span style={{ fontSize: '1.6rem' }}>💬</span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#60A5FA' }}>
+                    Official Notice from {whisperNotice.inspectorName || 'Exam Proctor'}
+                  </h3>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)' }}>Direct Candidate Communication</span>
+                </div>
+              </div>
+              <div style={{
+                background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 8, padding: 16, fontSize: '0.88rem', color: 'var(--color-text)',
+                marginBottom: 20, lineHeight: 1.5,
+              }}>
+                "{whisperNotice.message}"
+              </div>
+              <button
+                className="btn btn-primary w-full"
+                onClick={() => setWhisperNotice(null)}
+              >
+                ✓ I Acknowledge & Understand
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── TIME EXTENSION TOAST ─── */}
+      <AnimatePresence>
+        {timeExtensionNotice && (
+          <motion.div
+            initial={{ opacity: 0, x: 50, scale: 0.9 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 50, scale: 0.9 }}
+            style={{
+              position: 'fixed', top: 72, right: 24, zIndex: 9999,
+              background: '#064E3B', border: '1px solid #10B981', color: '#A7F3D0',
+              padding: '10px 18px', borderRadius: 8, fontWeight: 700, fontSize: '0.84rem',
+              boxShadow: '0 10px 30px rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', gap: 8,
+            }}
+          >
+            <span>⏱️</span>
+            <span>{timeExtensionNotice}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── SECURITY BLOCK TOAST ─── */}
+      <AnimatePresence>
+        {securityBlockNotice && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.9 }}
+            style={{
+              position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
+              background: '#7F1D1D', border: '1px solid #EF4444', color: '#FECACA',
+              padding: '10px 20px', borderRadius: 30, fontWeight: 700, fontSize: '0.82rem',
+              boxShadow: '0 10px 30px rgba(239,68,68,0.4)', display: 'flex', alignItems: 'center', gap: 8,
+            }}
+          >
+            <span>🛡️</span>
+            <span>{securityBlockNotice}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── DYNAMIC ANTI-LEAK SECURITY WATERMARK ─── */}
+      <AntiLeakWatermark
+        hallTicket={hallTicket}
+        candidateName={session?.candidateId}
+        examCode={examCode}
+      />
+
+      {/* ─── IN-EXAM SECURE SCRATCHPAD MODAL ─── */}
+      <HoloScratchpadModal
+        isOpen={showScratchpad}
+        onClose={() => setShowScratchpad(false)}
+        examCode={examCode || 'EXAM'}
+      />
+
+      {/* ─── INVIGILATOR DESK & AI SENTINEL MODAL ─── */}
+      <HoloProctorDeskModal
+        isOpen={showProctorDesk}
+        onClose={() => setShowProctorDesk(false)}
+        examCode={examCode || 'EXAM'}
+        hallTicket={hallTicket}
+        candidateName={session?.candidateId}
+        commsLog={proctorCommsLog}
       />
     </div>
   )

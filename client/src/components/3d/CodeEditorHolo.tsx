@@ -40,14 +40,17 @@ interface RunResult {
 
 interface CodeEditorHoloProps {
   value?: string
+  starterCode?: string
+  challengeTitle?: string
   onChange?: (val: string) => void
   language?: string
   readOnly?: boolean
   height?: number
   placeholder?: string
   questionId?: string
-  testCases?: Array<{ id: string; input_text: string; is_hidden: boolean; marks?: number }>
+  testCases?: Array<{ id: string; input_text: string; is_hidden: boolean; expected_output?: string; marks?: number }>
   onRunComplete?: (result: RunResult) => void
+  onTestPass?: (earnedScore: number, maxScore: number) => void
   showRunButton?: boolean
 }
 
@@ -59,7 +62,9 @@ const KEYWORDS: Record<string, string[]> = {
 }
 
 export default function CodeEditorHolo({
-  value = '',
+  value: controlledValue,
+  starterCode = '',
+  challengeTitle,
   onChange,
   language: initialLang = 'python',
   readOnly = false,
@@ -68,8 +73,18 @@ export default function CodeEditorHolo({
   questionId,
   testCases = [],
   onRunComplete,
+  onTestPass,
   showRunButton = true,
 }: CodeEditorHoloProps) {
+  const [internalCode, setInternalCode] = useState(starterCode || controlledValue || '')
+
+  useEffect(() => {
+    if (starterCode) {
+      setInternalCode(starterCode)
+    }
+  }, [starterCode])
+
+  const value = controlledValue !== undefined ? controlledValue : internalCode
   const [selectedLang, setSelectedLang] = useState(initialLang)
   const [lineCount, setLineCount] = useState(value.split('\n').length || 1)
   const [cursorLine, setCursorLine] = useState(1)
@@ -91,11 +106,14 @@ export default function CodeEditorHolo({
   /* ── Handle code change ── */
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value
+    if (controlledValue === undefined) {
+      setInternalCode(val)
+    }
     onChange?.(val)
     const lines = val.split('\n').length
     setLineCount(lines)
     setCursorLine(val.slice(0, e.target.selectionStart).split('\n').length)
-  }, [onChange])
+  }, [onChange, controlledValue])
 
   /* ── Handle special keys ── */
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -161,6 +179,9 @@ export default function CodeEditorHolo({
       }
       setRunResult(result)
       onRunComplete?.(result)
+      if (result.passed && result.passed > 0) {
+        onTestPass?.(result.score || result.passed * 10, result.maxScore || (result.total || 1) * 10)
+      }
     } catch (err) {
       const msg = axios.isAxiosError(err) ? err.response?.data?.error || err.message : 'Execution failed'
       const result: RunResult = { output: '', stderr: msg, hasError: true, verdict: 'Error' }
@@ -169,7 +190,7 @@ export default function CodeEditorHolo({
     } finally {
       setRunning(false)
     }
-  }, [value, selectedLang, testCases, questionId, running, onRunComplete])
+  }, [value, selectedLang, testCases, questionId, running, onRunComplete, onTestPass])
 
   /* ── Keyboard shortcut: Ctrl+Enter ── */
   useEffect(() => {
@@ -200,6 +221,14 @@ export default function CodeEditorHolo({
         <div className="code-editor-dot" style={{ background: '#EF4444' }} />
         <div className="code-editor-dot" style={{ background: '#F59E0B' }} />
         <div className="code-editor-dot" style={{ background: '#10B981' }} />
+
+        {/* Optional Challenge Title Badge */}
+        {challengeTitle && (
+          <div style={{ marginLeft: 10, fontSize: '0.74rem', fontWeight: 700, color: '#93C5FD', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>⚡</span>
+            <span>{challengeTitle}</span>
+          </div>
+        )}
 
         {/* Language tabs */}
         <div style={{ flex: 1, display: 'flex', gap: 2, marginLeft: 12 }}>

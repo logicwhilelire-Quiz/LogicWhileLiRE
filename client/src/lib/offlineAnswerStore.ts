@@ -1,5 +1,5 @@
 /**
- * GROWTHRAN — IndexedDB Offline Answer Store & Buffer
+ * LogicWhileLiRE — IndexedDB Offline Answer Store & Buffer
  * Ensures zero-loss answer persistence even during network drops, tab crashes, or unexpected reloads.
  */
 

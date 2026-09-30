@@ -476,7 +476,7 @@ router.get('/certificate/verify/:token', (req: Request, res: Response) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GROWTHRAN — Certificate Verification Retired</title>
+  <title>LogicWhileLiRE — Certificate Verification Retired</title>
   <style>
     body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #050814; color: #F0F4FC; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
     .card { max-width: 520px; width: 100%; padding: 40px; background: #0C1222; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
@@ -491,7 +491,7 @@ router.get('/certificate/verify/:token', (req: Request, res: Response) => {
   <div class="card">
     <div class="badge">SERVICE RETIRED</div>
     <h1>Certificate verification has been retired.</h1>
-    <p>The digital certificate verification service on GROWTHRAN has been permanently discontinued. If your printed credential or QR code directed you here, please contact your institution administrator directly.</p>
+    <p>The digital certificate verification service on LogicWhileLiRE has been permanently discontinued. If your printed credential or QR code directed you here, please contact your institution administrator directly.</p>
     <a href="/">← Return to Home</a>
   </div>
 </body>
@@ -713,7 +713,7 @@ router.get('/exam-code/:code/start', async (req: Request, res: Response) => {
           topic: 'Algorithms (Strings)',
           test_cases: [
             { id: 'tc-p1', input_text: "racecar", expected_output: "True", marks: 3, is_hidden: false },
-            { id: 'tc-p2', input_text: "growthran", expected_output: "False", marks: 3, is_hidden: false },
+            { id: 'tc-p2', input_text: "logicwhilelire", expected_output: "False", marks: 3, is_hidden: false },
             { id: 'tc-p3', input_text: "deified", expected_output: "True", marks: 4, is_hidden: true },
           ],
         },

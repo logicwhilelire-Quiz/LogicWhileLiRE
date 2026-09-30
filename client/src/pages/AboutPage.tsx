@@ -32,12 +32,12 @@ export default function AboutPage() {
                 marginBottom: 16,
               }}
             >
-              Learn. Grow. Run.
+              Logic. While. LiRE.
             </div>
 
             <h1
               style={{
-                fontFamily: "var(--font-display, 'Montserrat', sans-serif)",
+                fontFamily: "var(--font-display, 'Space Grotesk', sans-serif)",
                 fontSize: 'clamp(2rem, 4vw, 2.8rem)',
                 fontWeight: 800,
                 color: 'var(--color-text)',
@@ -45,7 +45,7 @@ export default function AboutPage() {
                 marginBottom: 16,
               }}
             >
-              The Story of GROWTHRAN
+              The Story of LogicWhileLiRE
             </h1>
 
             <p
@@ -118,7 +118,7 @@ export default function AboutPage() {
                   R. Charan Sai
                 </h2>
                 <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
-                  Creator & Lead Developer of the GROWTHRAN Autonomous Examination Engine.
+                  Creator & Lead Developer of the LogicWhileLiRE Autonomous Examination Engine.
                 </p>
               </div>
             </div>

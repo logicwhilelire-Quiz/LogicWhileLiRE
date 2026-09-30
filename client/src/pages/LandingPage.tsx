@@ -9,6 +9,8 @@ import GlowCard from '../components/3d/GlowCard'
 import AltimeterDial from '../components/3d/AltimeterDial'
 import FlightPathLines from '../components/3d/FlightPathLines'
 import LogicCoil from '../components/LogicCoil'
+import SectorsUniverse3D from '../components/3d/SectorsUniverse3D'
+import SectorRadar3D from '../components/3d/SectorRadar3D'
 
 // Lazy-load 3D heavy components
 const CollegeGlobe = lazy(() => import('../components/3d/CollegeGlobe'))
@@ -141,24 +143,24 @@ const DEPLOYMENT_MODES = [
 
 const FAQS = [
   {
-    q: 'How does our institution join the GROWTHRAN Early Pilot Program?',
+    q: 'How does our institution join the LogicWhileLiRE Early Pilot Program?',
     a: 'We offer an early access pilot program for engineering colleges, coding bootcamps, and recruitment teams. Our engineering team provisions a dedicated, zero-cost cloud sandbox with custom branding, institutional admin credentials, and AI question authoring in under 24 hours.',
   },
   {
     q: 'How does the server-authoritative timer prevent cheating?',
-    a: 'Traditional web exams rely on the candidate’s browser timer, which can be paused or altered by freezing browser tabs or adjusting system clocks. GROWTHRAN’s timer is driven by the server. The server dispatches live time ticks over Socket.io, and remaining duration is calculated against server timestamps. Even if candidates disconnect or refresh, their timer continues accurately without granting unauthorized time.',
+    a: 'Traditional web exams rely on the candidate’s browser timer, which can be paused or altered by freezing browser tabs or adjusting system clocks. LogicWhileLiRE’s timer is driven by the server. The server dispatches live time ticks over Socket.io, and remaining duration is calculated against server timestamps. Even if candidates disconnect or refresh, their timer continues accurately without granting unauthorized time.',
   },
   {
     q: 'What happens if a candidate loses internet connection during the test?',
-    a: 'GROWTHRAN features enterprise-grade offline resilience. Supported by a Service Worker and local IndexedDB retry queue, all selected responses are saved locally with microsecond timestamps. If the network drops, candidates can continue answering questions while an unobtrusive status banner indicates offline mode. When connectivity resumes, the queue automatically syncs all pending answers.',
+    a: 'LogicWhileLiRE features enterprise-grade offline resilience. Supported by a Service Worker and local IndexedDB retry queue, all selected responses are saved locally with microsecond timestamps. If the network drops, candidates can continue answering questions while an unobtrusive status banner indicates offline mode. When connectivity resumes, the queue automatically syncs all pending answers.',
   },
   {
-    q: 'Does GROWTHRAN record or store student webcam videos?',
+    q: 'Does LogicWhileLiRE record or store student webcam videos?',
     a: 'No. We strictly adhere to student privacy regulations. All computer vision and facial detection algorithms execute locally in a client-side Web Worker. Raw video streams never leave the candidate’s device. Only numerical incident logs and optional low-resolution thumbnail snapshots (under 20KB) are transmitted when explicit violation thresholds are exceeded.',
   },
   {
     q: 'Can a student log in simultaneously from multiple devices using the same hall ticket?',
-    a: 'No. GROWTHRAN enforces strict single-active-session concurrency per hall ticket and exam code. If a second device attempts login, it is blocked immediately, or triggers a verified takeover that immediately terminates and evicts the previous session, logging an audit event.',
+    a: 'No. LogicWhileLiRE enforces strict single-active-session concurrency per hall ticket and exam code. If a second device attempts login, it is blocked immediately, or triggers a verified takeover that immediately terminates and evicts the previous session, logging an audit event.',
   },
   {
     q: 'How do instructors onboard their question banks and configure custom exams?',
@@ -299,8 +301,8 @@ export default function LandingPage() {
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 8,
                     padding: '6px 14px',
-                    background: 'rgba(43,127,255,0.12)',
-                    border: '1px solid rgba(43,127,255,0.35)',
+                    background: 'rgba(37, 99, 235, 0.1)',
+                    border: '1px solid rgba(37, 99, 235, 0.25)',
                     borderRadius: 999, fontSize: '0.78rem', fontWeight: 600,
                     color: 'var(--color-primary)', marginBottom: 16,
                     letterSpacing: '0.03em', maxWidth: '100%', boxSizing: 'border-box',
@@ -308,7 +310,7 @@ export default function LandingPage() {
                   }}
                 >
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', flexShrink: 0 }} />
-                  <span>⚡ NEXT-GEN AI ASSESSMENT &amp; PROCTORING PLATFORM</span>
+                  <span>CAMPUS &amp; SEMESTER EXAMINATION PLATFORM</span>
                 </div>
 
               <h1 style={{
@@ -319,12 +321,25 @@ export default function LandingPage() {
                 marginBottom: 10,
               }}>
                 <span style={{
-                  background: 'linear-gradient(135deg, #1B5FB5 0%, #0A3F8F 55%, #2563EB 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  display: 'inline-block',
+                  display: 'inline-flex',
+                  alignItems: 'baseline',
                 }}>
-                  GROWTHRAN
+                  <span style={{
+                    background: 'linear-gradient(135deg, #1B5FB5 0%, #0A3F8F 55%, #2563EB 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}>
+                    LogicWhile
+                  </span>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #38BDF8 0%, #818CF8 50%, #C084FC 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    fontWeight: 900,
+                    marginLeft: 4,
+                  }}>
+                    LiRE
+                  </span>
                 </span>
               </h1>
 
@@ -337,8 +352,8 @@ export default function LandingPage() {
                   marginBottom: 20,
                 }}
               >
-                India's most advanced<br />
-                <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>Assessment Platform</span>
+                Standardized Examination &amp;<br />
+                <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>Automated Proctoring Engine</span>
               </h2>
 
               <p
@@ -399,7 +414,7 @@ export default function LandingPage() {
 
               {/* Trust badges */}
               <div className="hero-trust-badges">
-                {['🔒 Zero-Trust Security', '⚡ Sub-50ms Latency', '👁️ On-Device AI Vision', '🚀 Early Access Pilot'].map(badge => (
+                {['🔒 Verified Single-Session Auth', '⚡ WebSocket Realtime Telemetry', '👁️ Client-Side Vision Models', '🏫 Campus Deployment Ready'].map(badge => (
                   <div key={badge} style={{
                     fontSize: '0.82rem', color: 'var(--color-text-faint)',
                     display: 'flex', alignItems: 'center', gap: 4,
@@ -428,12 +443,10 @@ export default function LandingPage() {
             style={{
               marginTop: 20,
               padding: '16px 20px',
-              background: 'var(--glass-bg, rgba(255, 255, 255, 0.92))',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
+              background: 'var(--color-surface)',
               border: '1px solid var(--color-border)',
               borderRadius: 16,
-              boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
               width: '100%',
               maxWidth: 1280,
             }}
@@ -549,6 +562,32 @@ export default function LandingPage() {
         </div>
       </motion.section>
 
+      {/* ─── 3D TECHNICAL SECTORS GALAXY ─── */}
+      <section style={{ position: 'relative', zIndex: 2, padding: '96px 0 60px', background: 'linear-gradient(180deg, var(--color-bg) 0%, #060c1e 50%, var(--color-bg) 100%)' }}>
+        <div className="page-content" style={{ maxWidth: 1240, margin: '0 auto', padding: '0 24px' }}>
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            style={{ textAlign: 'center', marginBottom: 44 }}
+          >
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 999, background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.35)', color: '#38BDF8', fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>
+              <span>🪐</span> MULTI-DIMENSIONAL ASSESSMENT ARCHITECTURE
+            </div>
+            <h2 className="section-title" style={{ fontSize: 'clamp(2rem, 3.8vw, 3rem)', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
+              The 5 Core Technical Sectors of <span style={{ color: 'var(--color-primary)' }}>LogicWhile</span><span style={{ background: 'linear-gradient(135deg, #38BDF8 0%, #818CF8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>LiRE</span>
+            </h2>
+            <p className="section-subtitle" style={{ maxWidth: 760, margin: '14px auto 0', fontSize: '1.05rem', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
+              Rotate, inspect, and explore all 5 examination sectors in real-time 3D. Every question on LogicWhileLiRE is algorithmically classified across quantitative velocity, deductive logic, core systems, algorithms, and cloud architectures.
+            </p>
+          </motion.div>
+
+          {/* 3D WebGL Interactive Universe */}
+          <SectorsUniverse3D />
+        </div>
+      </section>
+
       {/* ─── STATS — 4x AltimeterDial ─── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '96px 0' }}>
         <div className="page-content">
@@ -559,10 +598,10 @@ export default function LandingPage() {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             style={{ textAlign: 'center', marginBottom: 64 }}
           >
-            <span className="section-label">ENGINEERING BENCHMARKS</span>
-            <h2 className="section-title">Architected for Reliability</h2>
+            <span className="section-label">EXAMINATION PLATFORM METRICS</span>
+            <h2 className="section-title">Performance &amp; Reliability Benchmarks</h2>
             <p className="section-subtitle" style={{ margin: '12px auto' }}>
-              Engineered from the ground up for high-concurrency exams, sub-millisecond clock sync, and zero-compromise anti-cheat integrity.
+              Engineered for high-concurrency exams, server-synchronized timers, and automated anti-cheat monitoring.
             </p>
           </motion.div>
           <div style={{
@@ -578,10 +617,19 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               >
-                <GlowCard
+                <div
                   className="stat-card"
-                  glowColor={stat.color + '40'}
-                  style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                  style={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '24px 20px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                  }}
                 >
                   <AltimeterDial
                     value={stat.value}
@@ -590,15 +638,15 @@ export default function LandingPage() {
                     color={stat.color}
                     size={130}
                   />
-                </GlowCard>
+                </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── FEATURES — 6x GlowCard ─── */}
-      <section style={{ position: 'relative', zIndex: 1, padding: '96px 0', background: 'rgba(20,28,47,0.4)' }}>
+      {/* ─── FEATURES — Solid Cards ─── */}
+      <section style={{ position: 'relative', zIndex: 1, padding: '96px 0', background: 'var(--color-bg)' }}>
         <div className="page-content">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
@@ -607,10 +655,10 @@ export default function LandingPage() {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             style={{ textAlign: 'center', marginBottom: 64 }}
           >
-            <span className="section-label">CAPABILITIES</span>
-            <h2 className="section-title">Built Different</h2>
+            <span className="section-label">PLATFORM CAPABILITIES</span>
+            <h2 className="section-title">Core Evaluation Features</h2>
             <p className="section-subtitle" style={{ margin: '12px auto' }}>
-              Every feature engineered for the future of academic assessment.
+              Modular exam management, proctoring tools, and evaluation engines designed for academic workflows.
             </p>
           </motion.div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
@@ -622,7 +670,14 @@ export default function LandingPage() {
                 viewport={{ once: true, margin: '-10%' }}
                 transition={{ delay: i * 0.08, duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
               >
-                <GlowCard glowColor={feat.color + '40'} style={{ height: '100%' }}>
+                <div style={{
+                  height: '100%',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: 24,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                }}>
                   <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>{feat.icon}</div>
                   <h3 style={{
                     fontFamily: 'var(--font-display)',
@@ -638,10 +693,10 @@ export default function LandingPage() {
                   {/* Bottom accent line */}
                   <div style={{
                     marginTop: 20, height: 2,
-                    background: `linear-gradient(90deg, ${feat.color}, transparent)`,
+                    background: `${feat.color}40`,
                     borderRadius: 999,
                   }} />
-                </GlowCard>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -652,7 +707,7 @@ export default function LandingPage() {
       <LogicCoil variant="divider" size={26} />
 
       {/* ─── SECURITY & PROCTORING SHOWCASE ─── */}
-      <section style={{ position: 'relative', zIndex: 1, padding: '96px 0', background: 'rgba(15,23,42,0.6)' }}>
+      <section style={{ position: 'relative', zIndex: 1, padding: '96px 0', background: 'var(--color-bg)' }}>
         <div className="page-content">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
@@ -661,10 +716,10 @@ export default function LandingPage() {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             style={{ textAlign: 'center', marginBottom: 64 }}
           >
-            <span className="section-label" style={{ color: '#38BDF8' }}>MILITARY-GRADE INTEGRITY</span>
-            <h2 className="section-title">Zero-Compromise Proctoring</h2>
+            <span className="section-label" style={{ color: '#2563EB' }}>PROCTORING STANDARDS</span>
+            <h2 className="section-title">Privacy-Preserving On-Device Verification</h2>
             <p className="section-subtitle" style={{ margin: '12px auto', maxWidth: 640 }}>
-              Engineered with on-device computer vision and zero-cloud-video privacy standards so candidate trust and examination fairness are never in question.
+              Client-side vision models process facial verification locally. Incident event timestamps are transmitted without persisting raw video streams on servers.
             </p>
           </motion.div>
 
@@ -677,7 +732,14 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1, duration: 0.6 }}
               >
-                <GlowCard glowColor={pillar.color + '33'} style={{ height: '100%', padding: '28px' }}>
+                <div style={{
+                  height: '100%',
+                  padding: '28px',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-lg)',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                     <div style={{ fontSize: '2.2rem' }}>{pillar.icon}</div>
                     <span style={{
@@ -704,7 +766,7 @@ export default function LandingPage() {
                   <p style={{ color: 'var(--color-text-muted)', fontSize: '0.92rem', lineHeight: 1.7 }}>
                     {pillar.desc}
                   </p>
-                </GlowCard>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -737,13 +799,20 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.15, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
               >
-                <GlowCard style={{ height: '100%' }}>
+                <div style={{
+                  height: '100%',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: 28,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                     <div style={{ fontSize: '2.5rem' }}>{item.icon}</div>
                     <span style={{
                       fontFamily: 'var(--font-display)',
                       fontSize: '2.5rem', fontWeight: 800,
-                      color: 'rgba(43,127,255,0.15)', lineHeight: 1,
+                      color: 'rgba(37,99,235,0.2)', lineHeight: 1,
                     }}>
                       {item.step}
                     </span>
@@ -754,7 +823,7 @@ export default function LandingPage() {
                   <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', lineHeight: 1.7 }}>
                     {item.desc}
                   </p>
-                </GlowCard>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -790,9 +859,18 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1, duration: 0.6 }}
               >
-                <GlowCard style={{ height: '100%', padding: '24px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{
+                  height: '100%',
+                  padding: '24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-lg)',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', background: 'rgba(43,127,255,0.1)', padding: '2px 8px', borderRadius: 4 }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', background: 'rgba(37,99,235,0.1)', padding: '2px 8px', borderRadius: 4 }}>
                       {col.tag}
                     </span>
                     <span style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)' }}>{col.city}</span>
@@ -815,7 +893,7 @@ export default function LandingPage() {
                   <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: 1.6, marginTop: 'auto' }}>
                     {col.desc}
                   </p>
-                </GlowCard>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -953,7 +1031,13 @@ export default function LandingPage() {
             viewport={{ once: true, margin: '-40px' }}
             transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
           >
-            <GlowCard style={{ padding: '36px 40px' }}>
+            <div style={{
+              padding: '36px 40px',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-xl)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+            }}>
             {demoForm.submitted ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -1068,7 +1152,7 @@ export default function LandingPage() {
                 </button>
               </form>
             )}
-            </GlowCard>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -1082,33 +1166,40 @@ export default function LandingPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              background: 'linear-gradient(135deg, rgba(43,127,255,0.12), rgba(27,95,204,0.08))',
-              border: '1px solid rgba(43,127,255,0.25)',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
               borderRadius: 'var(--radius-2xl)',
               padding: '64px 48px',
               textAlign: 'center',
               position: 'relative', overflow: 'hidden',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
             }}
           >
-            {/* Glow orbs */}
-            <div style={{ position: 'absolute', top: -80, left: -80, width: 300, height: 300, borderRadius: '50%', background: 'rgba(43,127,255,0.1)', filter: 'blur(80px)', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', bottom: -80, right: -80, width: 300, height: 300, borderRadius: '50%', background: 'rgba(27,95,204,0.08)', filter: 'blur(80px)', pointerEvents: 'none' }} />
-
             <h2 style={{
               fontFamily: 'var(--font-display)',
               fontSize: 'clamp(2rem, 4vw, 3.5rem)',
               fontWeight: 800, letterSpacing: '-0.03em',
               marginBottom: 16, position: 'relative',
             }}>
-              Ready to Deploy the<br />
-              <ShimmerText text="Future of Assessment?" shimmer />
+              Ready to Deploy<br />
+              <ShimmerText text="LogicWhileLiRE on Your Campus?" shimmer />
             </h2>
             <p style={{ color: 'var(--color-text-muted)', fontSize: '1.1rem', marginBottom: 36, position: 'relative' }}>
-              Experience uncompromised integrity, real-time proctoring, and instant analytics with our launch pilot program.
+              Run scheduled midterm assessments, campus placement screening drives, and automated proctoring with institutional pilot access.
             </p>
             <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', position: 'relative' }}>
               <Link to="/enter-exam" style={{ textDecoration: 'none' }}>
-                <MagneticButton className="btn btn-primary btn-xl" style={{ minWidth: 220 }}>
+                <MagneticButton
+                  className="btn btn-primary btn-xl"
+                  style={{
+                    minWidth: 220,
+                    background: 'linear-gradient(135deg, #2563EB 0%, #1B5FB5 50%, #0A3F8F 100%)',
+                    boxShadow: '0 12px 32px -4px rgba(37, 99, 235, 0.5)',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    borderRadius: 14,
+                  }}
+                >
                   🚀 Start Assessment
                 </MagneticButton>
               </Link>

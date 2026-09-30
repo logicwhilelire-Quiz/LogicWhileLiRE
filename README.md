@@ -1,29 +1,37 @@
-# GROWTHRAN — Enterprise Examination & Assessment Engine
+# LogicWhileLiRE — Enterprise 3D Examination & Assessment Engine
 
 [![Node.js CI](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Three.js](https://img.shields.io/badge/Three.js-WebGL%203D-049EF4?logo=three.js&logoColor=white)](https://threejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.0-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-0A3F8F)](LICENSE)
 
-> **"Learn. Grow. Run."**  
+> **"Logic. While. LiRE."** — *Learn. Reason. Excel.*  
 > Developed & Architected by **R. Charan Sai**  
-> © 2026 R. Charan Sai. All rights reserved.
+> © 2026 LogicWhileLiRE. All rights reserved.
 
 ---
 
 ## 🚀 Overview
 
-**GROWTHRAN** is an autonomous, high-throughput Campus Recruitment Training (CRT) and institutional examination platform engineered specifically for engineering colleges, technical universities, and large-scale competitive drives.
+**LogicWhileLiRE** is an autonomous, high-throughput Campus Recruitment Training (CRT) and institutional examination platform engineered specifically for engineering colleges, technical universities, and large-scale competitive drives.
 
-Engineered for 5,000+ candidate concurrency, GROWTHRAN replaces brittle legacy examination workflows with a high-integrity, proctored, zero-OTP entrance system powered by deterministic institutional exam codes, server-authoritative timekeeping, and real-time behavioral telemetry.
+Engineered for 5,000+ candidate concurrency, LogicWhileLiRE integrates a complete **3D Full-Stack Experience**: interactive WebGL 3D Technical Sectors Universe, multi-axis 3D competency radar visualizers, proctored zero-OTP entrance system, server-authoritative timekeeping, and real-time behavioral telemetry.
 
-### Key Pillars
-- **Zero-OTP Exam Entrance:** Frictionless candidate entry via Hall Ticket + Institutional Exam Code (`DEMO123`, `GR-TECH-2026`, etc.). Eliminates SMS/Email OTP transit failures.
-- **Server-Authoritative Clock:** Examination clocks compute strictly against the database server (`started_at + duration_minutes`). Local clock manipulation or tab sleeps cannot prolong test time.
+### Key Pillars & 3D Technical Sectors
+- **5-Sector Competency Framework:**
+  1. **Sector 1 · Quantitative Aptitude & Numerical Velocity (Set A)**
+  2. **Sector 2 · Logical Reasoning & Deductive Logic (Set B)**
+  3. **Sector 3 · Core Computer Science & Systems (Set C)**
+  4. **Sector 4 · Data Structures & Algorithms (Set D)**
+  5. **Sector 5 · Full-Stack Architecture & Distributed Systems (Set E)**
+- **Interactive 3D WebGL Universe (`SectorsUniverse3D`):** Orbiting polyhedral sector nodes around a glowing LogicWhileLiRE core with real-time HUD telemetry, hover animations, and raycaster navigation.
+- **3D Dynamic Radar Competency Visualizer (`SectorRadar3D`):** 5-axis 3D radar polygon comparing candidate sector performance against live cohort benchmarks.
+- **Zero-OTP Exam Entrance:** Frictionless candidate entry via Hall Ticket + Institutional Exam Code (`DEMO123`, `LWL-TECH-2026`, `GR-TECH-2026`).
+- **Server-Authoritative Clock:** Examination clocks compute strictly against the database server (`started_at + duration_minutes`). Local clock manipulation cannot prolong test time.
 - **Continuous Anti-Tamper & Proctoring:** Active detection of tab switching, window blurring, developer tools execution, screen dimension manipulation, and multi-session concurrency conflicts.
-- **Zero-3D Exam Page Guard:** Rich WebGL & Three.js 3D experiences on marketing, lobby, and leaderboard pages, with a hard architectural guarantee of zero 3D overhead on the exam screen to maximize device compatibility.
-- **500+ Concurrent User Scalability:** Tested and proven under 500 simultaneous candidates with a **0.00% error rate** and P99 latency under 710 ms.
+- **Zero-3D Exam Screen Guard:** High-fidelity 3D on landing, lobby, practice arena, and analytics; isolated 0-overhead 2D on the active exam screen for guaranteed 60fps across all devices.
 
 ---
 
@@ -72,15 +80,60 @@ cd server
 npm run seed:demo
 ```
 
-### 4. Immediate Access Points
+### 4. Complete Output Portals Directory
 
-- **Student Exam Entrance:** [http://localhost:5173/enter-exam](http://localhost:5173/enter-exam)
-  - Hall Ticket: `2201A0501`
-  - Exam Code: `DEMO123`
-- **Admin Control Center:** [http://localhost:5173/admin/login](http://localhost:5173/admin/login)
-  - Username: `admin`
-  - Password: `admin123` *(development/demo mode only)*
-- **Public Interactive Showcase:** [http://localhost:5173](http://localhost:5173)
+The **LogicWhileLiRE** ecosystem features dedicated portals for Candidates, Invigilators, and Administrators:
+
+#### 🌐 A. Public & Candidate Portals
+- **Public 3D Experience Portal:** [http://localhost:5173/](http://localhost:5173/)
+  - Interactive 3D Sectors Universe, dynamic brand header, live feature matrix.
+- **3D Practice Arena & Sandbox:** [http://localhost:5173/practice](http://localhost:5173/practice)
+  - Real-time question testing sandbox with interactive scoring.
+- **Candidate Registration Gate (Argon2id):** [http://localhost:5173/gate](http://localhost:5173/gate)
+  - Strict RFC 5322 email validation, roll number uniqueness, biometric capture.
+- **Candidate Exam Entrance (Zero-OTP):** [http://localhost:5173/enter-exam](http://localhost:5173/enter-exam)
+  - Hall Ticket: `2201A0501` · Exam Code: `DEMO123`
+- **Candidate Secure Exam Terminal:** [http://localhost:5173/quiz/DEMO123](http://localhost:5173/quiz/DEMO123)
+  - Dynamic holographic anti-leak watermark, in-exam scratchpad & canvas, Invigilator Desk & AI Sentinel HUD, Web Audio Synthesizer, developer-tool lock.
+- **Synchronous Waiting Lobby:** [http://localhost:5173/contest/demo-contest/waiting-lobby](http://localhost:5173/contest/demo-contest/waiting-lobby)
+  - Live synchronized countdown clock and participant roster.
+- **Candidate Scorecard & Result:** [http://localhost:5173/result-ec/DEMO123](http://localhost:5173/result-ec/DEMO123)
+  - Full competency scorecards and automated verification hash.
+- **Real-Time 3D Leaderboard:** [http://localhost:5173/leaderboard-ec/DEMO123](http://localhost:5173/leaderboard-ec/DEMO123)
+  - Live 3D podium with sub-second rank updates.
+- **Cryptographic Certificate Verification:** [http://localhost:5173/verify](http://localhost:5173/verify)
+  - Instant tamper-proof credential validation.
+
+#### 🛡️ B. Invigilator & Chief Inspector Command Centers
+- **Master Inspector Surveillance Command Center:** [http://localhost:5173/admin/monitor/DEMO123](http://localhost:5173/admin/monitor/DEMO123)
+  - 3D Orbital Candidate Matrix (Three.js radar sweep)
+  - Biometric WebCam Multi-Feed Wall (every candidate's live video, face mesh outline, gaze tracker, sound meter)
+  - AI Threat Index Meter (0-100%, risk bands, smart auto-recommendations)
+  - Emergency Master Room Freeze (`⏸️ Master Room Freeze` / `▶️ Resume All`)
+  - Remote Candidate Commands (whisper warning, +5m time extension, pause, disqualify)
+  - Outbound Email & Notification Dispatch Hub modal (`📨 Mail Dispatch Hub`)
+  - Candidate Forensic Flight Recorder & Dossier export (JSON)
+- **Live Instructor Console:** [http://localhost:5173/admin/live-console/DEMO123](http://localhost:5173/admin/live-console/DEMO123)
+
+#### 🏛️ C. Institutional Admin Management Portals
+- **Admin Control Center:** [http://localhost:5173/admin/dashboard](http://localhost:5173/admin/dashboard)
+  - Login: [http://localhost:5173/admin](http://localhost:5173/admin) (Username: `admin`, Password: `admin123`)
+- **Exam Control & Scheduling:** [http://localhost:5173/admin/exams](http://localhost:5173/admin/exams)
+- **AI Question Bank & Generator:** [http://localhost:5173/admin/questions](http://localhost:5173/admin/questions)
+- **Student Master Directory:** [http://localhost:5173/admin/students](http://localhost:5173/admin/students)
+- **Results Ledger & Publishing:** [http://localhost:5173/admin/results](http://localhost:5173/admin/results)
+- **Access Codes & Passcodes:** [http://localhost:5173/admin/exam-codes](http://localhost:5173/admin/exam-codes)
+- **Colleges & Universities:** [http://localhost:5173/admin/colleges](http://localhost:5173/admin/colleges)
+- **Forensic Psychometric Analytics:** [http://localhost:5173/admin/analytics](http://localhost:5173/admin/analytics)
+- **Security & Platform Settings:** [http://localhost:5173/admin/settings](http://localhost:5173/admin/settings)
+
+#### ⚡ D. Backend REST API Endpoints
+- Base API URL: `http://localhost:3001`
+- Server Health Check: `http://localhost:3001/api/health`
+- Inspector Email Ledger: `http://localhost:3001/api/v1/inspector/email-logs/DEMO123`
+- Inspector Command Dispatch: `POST http://localhost:3001/api/v1/inspector/candidate-action`
+- Candidate Issue Reporting: `POST http://localhost:3001/api/v1/inspector/report-issue`
+- Candidate Submission Receipt Email: `POST http://localhost:3001/api/v1/inspector/send-receipt`
 
 ---
 
@@ -211,5 +264,5 @@ The included `netlify.toml` automatically configures:
 ## 👥 Credits & Contact
 
 - **Architect & Lead Developer:** R. Charan Sai
-- **Platform:** GROWTHRAN — *"Learn. Grow. Run."*
-- **Support & Inquiries:** `support@growthran.com`
+- **Platform:** LogicWhileLiRE — *"Logic. While. LiRE."*
+- **Support & Inquiries:** `support@logicwhilelire.com`

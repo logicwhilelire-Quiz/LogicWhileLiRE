@@ -30,3 +30,6 @@ export function createGrowthranRenderer(options: RendererOptions = {}): THREE.We
 
   return renderer
 }
+
+export const createLogicWhileLiRERenderer = createGrowthranRenderer
+

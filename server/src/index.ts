@@ -15,6 +15,8 @@ import adminRoutes, { getLeaderboard } from './routes/admin';
 import examCodeRoutes from './routes/examCode';
 import assessmentRoutes from './routes/assessment';
 import ultraRoutes from './routes/ultraRoutes';
+import sectorRoutes from './routes/sectorRoutes';
+import inspectorRoutes from './routes/inspectorRoutes';
 import { startSessionCron } from './jobs/sessionCron';
 import { validateParams, ExamIdParam } from './middleware/validate';
 import { initSocketIO } from './services/socketService';
@@ -82,7 +84,7 @@ const isDemo =
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
-    service: 'GROWTHRAN Assessment Engine',
+    service: 'LogicWhileLiRE Assessment Engine',
     version: '4.0.0',
     environment: process.env.NODE_ENV || 'development',
     demo_mode: isDemo,
@@ -96,7 +98,7 @@ app.get('/api/ready', (_req, res) => {
   res.json({
     status: 'ready',
     ready: true,
-    service: 'GROWTHRAN Assessment Engine',
+    service: 'LogicWhileLiRE Assessment Engine',
     database: isDemo ? 'in_memory_ready' : 'connected',
     timestamp: new Date().toISOString(),
   });
@@ -123,11 +125,21 @@ app.use('/api/session', sessionRoutes);
 // Leaderboard (public)
 app.get('/api/exam/:examId/leaderboard', validateParams(ExamIdParam), getLeaderboard);
 
-// GROWTHRAN Autonomous Assessment Engine routes (execute, AI, proctor, leaderboard, create-exam-wizard)
+// 5 Technical Sectors API (Quant, Logic, Core CS, DSA, Full-Stack)
+app.use('/api/v1/sectors', sectorRoutes);
+app.use('/api/sectors', sectorRoutes);
+
+// LogicWhileLiRE Autonomous Assessment Engine routes (execute, AI, proctor, leaderboard, create-exam-wizard)
 app.use('/api', ultraRoutes);
 
 // Exam Code System (Hall Ticket + Code entry, No OTP)
 app.use('/api', examCodeRoutes);
+
+// Master Inspector Command & Candidate Communication Engine (Broadcasts, Reprimands, Emails, Receipts)
+app.use('/api/v1/inspector', inspectorRoutes);
+app.use('/api/inspector', inspectorRoutes);
+app.use('/api/v1/communication', inspectorRoutes);
+app.use('/api/communication', inspectorRoutes);
 
 // Admin (admin JWT required)
 app.use('/api/admin', adminRoutes);

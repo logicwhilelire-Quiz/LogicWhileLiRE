@@ -32,7 +32,7 @@ export default function SiteHeader() {
       animate={{ y: mounted ? 0 : -80, opacity: mounted ? 1 : 0 }}
       transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
     >
-      {/* Official GROWTHRAN Logo */}
+      {/* Official LogicWhileLiRE Logo */}
       <Link to="/" style={{ textDecoration: 'none' }}>
         <motion.div
           className="navbar-brand"

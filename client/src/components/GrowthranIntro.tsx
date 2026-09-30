@@ -143,15 +143,27 @@ export default function GrowthranIntro({ onComplete }: { onComplete?: () => void
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.75, ease: 'easeOut' }}
               style={{
-                fontFamily: "var(--font-display, 'Montserrat', sans-serif)",
+                fontFamily: "var(--font-display, 'Space Grotesk', sans-serif)",
                 fontSize: '2.4rem',
                 fontWeight: 800,
-                letterSpacing: '0.04em',
-                color: 'var(--color-primary-dark, #0A3F8F)',
+                letterSpacing: '0.02em',
                 lineHeight: 1.1,
+                display: 'inline-flex',
+                alignItems: 'baseline',
               }}
             >
-              GROWTHRAN
+              <span style={{ color: '#E2E8F0' }}>LogicWhile</span>
+              <span
+                style={{
+                  background: 'linear-gradient(135deg, #38BDF8 0%, #818CF8 50%, #C084FC 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 900,
+                  marginLeft: 3,
+                }}
+              >
+                LiRE
+              </span>
             </motion.div>
 
             <motion.div
@@ -160,15 +172,15 @@ export default function GrowthranIntro({ onComplete }: { onComplete?: () => void
               transition={{ duration: 0.4, delay: 0.95, ease: 'easeOut' }}
               style={{
                 fontFamily: "var(--font-body, 'Inter', sans-serif)",
-                fontSize: '1rem',
-                fontWeight: 500,
-                letterSpacing: '0.12em',
-                color: 'var(--color-accent, #4A7DBE)',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                letterSpacing: '0.16em',
+                color: 'var(--color-accent, #60A5FA)',
                 textTransform: 'uppercase',
                 marginTop: 6,
               }}
             >
-              Learn. Grow. Run.
+              Logic. While. LiRE.
             </motion.div>
           </div>
         </div>

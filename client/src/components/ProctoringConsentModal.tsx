@@ -10,7 +10,7 @@ interface ProctoringConsentModalProps {
 export default function ProctoringConsentModal({
   isOpen,
   onConsent,
-  examName = 'GROWTHRAN Assessment',
+  examName = 'LogicWhileLiRE Assessment',
 }: ProctoringConsentModalProps) {
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState('');

@@ -36,6 +36,7 @@ const LeaderboardECPage = lazy(() => import('./pages/LeaderboardECPage'));
 const VerifyCertificatePage = lazy(() => import('./pages/VerifyCertificatePage'));
 const PracticeArenaPage = lazy(() => import('./pages/PracticeArenaPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
+const InstitutionalStudentReportPage = lazy(() => import('./pages/InstitutionalStudentReportPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // ── NEW: Admin pages ─────────────────────────────────────────────
@@ -84,6 +85,13 @@ function AnimatedRoutes() {
         <Route path="/verify" element={<VerifyCertificatePage />} />
         <Route path="/practice" element={<PracticeArenaPage />} />
         <Route path="/arena" element={<PracticeArenaPage />} />
+
+        {/* ── INSTITUTIONAL PERFORMANCE REPORTS (PDF Pages 11-14) ── */}
+        <Route path="/reports/student/:hallTicket" element={<InstitutionalStudentReportPage />} />
+        <Route path="/reports/student" element={<InstitutionalStudentReportPage />} />
+        <Route path="/student/report/:hallTicket" element={<InstitutionalStudentReportPage />} />
+        <Route path="/student/report" element={<InstitutionalStudentReportPage />} />
+        <Route path="/report" element={<InstitutionalStudentReportPage />} />
 
         {/* Gate Module: Candidate Assessment Registration (AL-SPEC-2026-REG) */}
         <Route path="/register" element={<CandidateRegisterGatePage />} />

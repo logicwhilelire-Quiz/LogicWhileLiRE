@@ -6,9 +6,15 @@ export interface GrowthranLoaderProps {
   message?: string;
 }
 
+export type LogicWhileLiRELoaderProps = GrowthranLoaderProps;
+
+export function LogicWhileLiRELoader(props: GrowthranLoaderProps) {
+  return <GrowthranLoader {...props} />;
+}
+
 export default function GrowthranLoader({
   size = 'md',
-  message = 'Loading...',
+  message = 'Loading LogicWhileLiRE...',
 }: GrowthranLoaderProps) {
   const shouldReduceMotion = useReducedMotion();
 

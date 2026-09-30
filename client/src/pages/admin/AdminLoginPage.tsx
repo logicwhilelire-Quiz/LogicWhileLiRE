@@ -57,7 +57,7 @@ export default function AdminLoginPage() {
                 id="admin-username"
                 className="form-input"
                 type="text"
-                placeholder="admin or faculty@growthran.com"
+                placeholder="admin or faculty@logicwhilelire.com"
                 value={form.username}
                 onChange={(e) => setForm({ ...form, username: e.target.value })}
                 autoComplete="username"
@@ -106,7 +106,7 @@ export default function AdminLoginPage() {
             </Link>
           </div>
           <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.74rem', color: 'var(--color-text-faint, #64748b)' }}>
-            GROWTHRAN • <em>"Learn. Grow. Run."</em> • Developed by R. Charan Sai • © 2026 All rights reserved.
+            LogicWhileLiRE • <em>"Logic. While. LiRE."</em> • Developed by R. Charan Sai • © 2026 All rights reserved.
           </div>
         </div>
       </div>

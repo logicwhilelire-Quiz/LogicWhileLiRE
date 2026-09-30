@@ -74,7 +74,7 @@ export default function VerifyCertificatePage() {
               marginBottom: 32,
             }}
           >
-            The digital certificate verification service on GROWTHRAN has been permanently discontinued.
+            The digital certificate verification service on LogicWhileLiRE has been permanently discontinued.
             If your printed credential or QR code directed you here, please note that verification records are no longer hosted online.
             For assessment verification, please contact your institution administrator directly.
           </p>
