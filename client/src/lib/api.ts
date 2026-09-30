@@ -190,4 +190,12 @@ export const bulkEnrollParticipants = (examId: string, file: File) => {
   });
 };
 
+// ——— Live Exam Dispatch (Sprint 2) ———
+export const startExam = (examCode: string, opts?: { allow_late_join?: boolean }) =>
+  api.post(`/api/v1/exams/${examCode}/start`, opts ?? {});
+
+export const getExamLobbyStats = (examCode: string) =>
+  api.get(`/api/v1/exams/${examCode}/lobby-stats`);
+
+
 

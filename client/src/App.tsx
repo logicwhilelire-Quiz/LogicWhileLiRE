@@ -51,6 +51,7 @@ const StudentControl = lazy(() => import('./pages/admin/StudentControl'));
 const MonitorControl = lazy(() => import('./pages/admin/MonitorControl'));
 const ResultControl = lazy(() => import('./pages/admin/ResultControl'));
 const SettingsControl = lazy(() => import('./pages/admin/SettingsControl'));
+const InstructorConsolePage = lazy(() => import('./pages/admin/InstructorConsolePage'));
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -136,6 +137,8 @@ function AnimatedRoutes() {
         <Route path="/admin/analytics/:examId" element={<AnalyticsPage />} />
         <Route path="/admin/colleges" element={<CollegesPage />} />
         <Route path="/admin/exam-codes" element={<ExamCodesPage />} />
+        <Route path="/admin/live-console/:examCode" element={<InstructorConsolePage />} />
+        <Route path="/admin/live-console" element={<InstructorConsolePage />} />
 
         {/* ── About & Philosophy ── */}
         <Route path="/about" element={<AboutPage />} />

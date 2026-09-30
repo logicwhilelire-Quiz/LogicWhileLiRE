@@ -1,16 +1,18 @@
 /**
  * socketService.ts
- * Phase 1d: Socket.io server-pushed timer + waiting lobby + leaderboard
+ * Phase 1d + Sprint 2: Synchronous Live Assessment Dispatch Engine
  *
- * Timer protocol (server is the only authority):
- * - Client joins room `exam:${attemptId}` on connect
- * - Server emits `timer:tick` every second with { remaining_seconds, status }
- * - Client renders the received value; never self-calculates
- * - On reconnect: server sends current remaining immediately
+ * EXAM_STARTED broadcast (Sprint 2):
+ * - Idempotent: a second call returns the existing payload without re-broadcasting.
+ * - Reconnect sync: if a student connects AFTER EXAM_STARTED was fired,
+ *   lobby:join emits EXAM_STARTED to that socket alone with correct elapsed data.
+ * - Server-authoritative: the REST endpoint writes
+ *     end_time = server_start_time + duration_seconds
+ *   to DB so computeRemainingSeconds() gives correct time for all clients,
+ *   including late joiners.
  *
- * Waiting lobby / leaderboard:
- * - Rooms: `lobby:${examCode}` and `leaderboard:${examCode}`
- * - Server emits `lobby:update` and `leaderboard:update` when data changes
+ * EXAM_STARTED schema (PRD §5):
+ *   { event, exam_id, server_start_time, duration_seconds, allow_late_join }
  */
 
 import { Server as HttpServer } from 'http';
@@ -19,8 +21,22 @@ import { supabase } from '../db/supabase';
 
 export let io: IOServer | null = null;
 
-// exam attempt timer intervals
 const timerIntervals = new Map<string, ReturnType<typeof setInterval>>();
+const lobbyConnections = new Map<string, Set<string>>();
+const leaderboardIntervals = new Map<string, ReturnType<typeof setInterval>>();
+
+interface ExamStartedState {
+  exam_id: string;
+  server_start_time: number;
+  duration_seconds: number;
+  allow_late_join: boolean;
+}
+// Idempotency + reconnect-sync store
+const examStartedState = new Map<string, ExamStartedState>();
+
+export function getExamStartedState(examCode: string): ExamStartedState | undefined {
+  return examStartedState.get(examCode.toUpperCase());
+}
 
 export function initSocketIO(httpServer: HttpServer): IOServer {
   const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
@@ -37,54 +53,89 @@ export function initSocketIO(httpServer: HttpServer): IOServer {
   io.on('connection', (socket: Socket) => {
     console.log(`[Socket.io] Client connected: ${socket.id}`);
 
-    // ── Exam timer ───────────────────────────────────────────────────────
-    socket.on('exam:join', async ({ attemptId, examCode, sessionToken }: {
+    // Exam timer
+    socket.on('exam:join', async ({ attemptId, examCode }: {
       attemptId: string;
       examCode: string;
-      sessionToken: string;
+      sessionToken?: string;
     }) => {
       if (!attemptId || !examCode) return;
       const room = `exam:${attemptId}`;
       socket.join(room);
-
-      // Fetch remaining time from the exam_codes end_time
-      await sendTimerTick(socket, attemptId, examCode);
-
-      // Start a per-second tick for this socket (idempotent)
+      await sendTimerTick(socket, examCode);
       if (!timerIntervals.has(room)) {
         const interval = setInterval(async () => {
           if (!io) return;
-          await sendTimerTickToRoom(room, attemptId, examCode);
+          await sendTimerTickToRoom(room, examCode);
         }, 1000);
         timerIntervals.set(room, interval);
       }
     });
 
-    // ── Waiting lobby ────────────────────────────────────────────────────
+    // Waiting lobby
     socket.on('lobby:join', async ({ examCode }: { examCode: string }) => {
       if (!examCode) return;
-      socket.join(`lobby:${examCode}`);
-      await emitLobbyUpdate(examCode);
+      const code = examCode.toUpperCase();
+      socket.join(`lobby:${code}`);
+
+      if (!lobbyConnections.has(code)) lobbyConnections.set(code, new Set());
+      lobbyConnections.get(code)!.add(socket.id);
+
+      await emitLobbyUpdate(code);
+
+      // RECONNECT SYNC (Sprint 2, item 5):
+      // If EXAM_STARTED already fired, immediately push it to this socket
+      // with correct elapsed time so late joiners / reconnectors catch up.
+      const startedState = examStartedState.get(code);
+      if (startedState) {
+        const elapsed = Math.floor((Date.now() - startedState.server_start_time) / 1000);
+        const remainingSeconds = Math.max(0, startedState.duration_seconds - elapsed);
+        if (startedState.allow_late_join || remainingSeconds > 0) {
+          console.log(
+            `[Socket.io] Reconnect-sync EXAM_STARTED -> ${socket.id} ` +
+            `(${code}, elapsed=${elapsed}s, remaining=${remainingSeconds}s)`
+          );
+          socket.emit('EXAM_STARTED', {
+            event: 'EXAM_STARTED',
+            exam_id: startedState.exam_id,
+            server_start_time: startedState.server_start_time,
+            duration_seconds: startedState.duration_seconds,
+            allow_late_join: startedState.allow_late_join,
+            elapsed_seconds: elapsed,
+          });
+        }
+      }
     });
 
-    // ── Leaderboard ──────────────────────────────────────────────────────
+    // Leaderboard
     socket.on('leaderboard:join', async ({ examCode }: { examCode: string }) => {
       if (!examCode) return;
-      socket.join(`leaderboard:${examCode}`);
-      await emitLeaderboardUpdate(examCode);
+      const code = examCode.toUpperCase();
+      socket.join(`leaderboard:${code}`);
+      await emitLeaderboardSnapshot(code);
+      if (!leaderboardIntervals.has(code)) {
+        const interval = setInterval(async () => {
+          await emitLeaderboardSnapshot(code);
+        }, 1000);
+        leaderboardIntervals.set(code, interval);
+      }
     });
 
     socket.on('disconnect', () => {
       console.log(`[Socket.io] Client disconnected: ${socket.id}`);
-      // Note: room timer intervals persist until exam window closes (by design)
-      // — they are cleared when an attempt is submitted
+      for (const [code, sockets] of lobbyConnections.entries()) {
+        if (sockets.has(socket.id)) {
+          sockets.delete(socket.id);
+          emitLobbyUpdate(code).catch(() => {});
+        }
+      }
     });
   });
 
   return io;
 }
 
-// ── Timer helpers ────────────────────────────────────────────────────────────
+// Timer helpers
 
 async function computeRemainingSeconds(examCode: string): Promise<{ remaining: number; status: string }> {
   const { data: exam } = await supabase
@@ -100,22 +151,20 @@ async function computeRemainingSeconds(examCode: string): Promise<{ remaining: n
   return { remaining, status: remaining > 0 ? 'in_progress' : 'expired' };
 }
 
-async function sendTimerTick(socket: Socket, attemptId: string, examCode: string) {
+async function sendTimerTick(socket: Socket, examCode: string) {
   const { remaining, status } = await computeRemainingSeconds(examCode);
   socket.emit('timer:tick', { remaining_seconds: remaining, status });
   if (remaining === 0) {
-    // Auto-submit signal
     socket.emit('exam:auto-submit', { reason: 'time_expired' });
   }
 }
 
-async function sendTimerTickToRoom(room: string, attemptId: string, examCode: string) {
+async function sendTimerTickToRoom(room: string, examCode: string) {
   if (!io) return;
   const { remaining, status } = await computeRemainingSeconds(examCode);
   io.to(room).emit('timer:tick', { remaining_seconds: remaining, status });
   if (remaining === 0) {
     io.to(room).emit('exam:auto-submit', { reason: 'time_expired' });
-    // Stop ticking once expired
     const interval = timerIntervals.get(room);
     if (interval) {
       clearInterval(interval);
@@ -124,37 +173,140 @@ async function sendTimerTickToRoom(room: string, attemptId: string, examCode: st
   }
 }
 
-// ── Lobby / leaderboard emitters (called by REST routes after mutations) ─────
+// Lobby / leaderboard emitters
 
 export async function emitLobbyUpdate(examCode: string) {
   if (!io) return;
+  const code = examCode.toUpperCase();
   const { data } = await supabase
     .from('exam_code_attempts')
     .select('hall_ticket_no, student_name, status, created_at')
-    .eq('exam_code', examCode.toUpperCase())
+    .eq('exam_code', code)
     .order('created_at', { ascending: false });
-  io.to(`lobby:${examCode}`).emit('lobby:update', { participants: data || [] });
-}
 
-export async function emitLeaderboardUpdate(examCode: string) {
-  if (!io) return;
-  const { data } = await supabase
-    .from('exam_code_attempts')
-    .select('hall_ticket_no, student_name, score, max_score, correct_count, time_taken_seconds, status')
-    .eq('exam_code', examCode.toUpperCase())
-    .in('status', ['completed', 'terminated_cheating'])
-    .order('score', { ascending: false })
-    .order('time_taken_seconds', { ascending: true });
-  io.to(`leaderboard:${examCode}`).emit('leaderboard:update', {
-    leaderboard: (data || []).map((r, i) => ({
-      rank: i + 1,
-      ...r,
-      percentage: r.max_score > 0 ? Math.round((r.score / r.max_score) * 100) : 0,
-    })),
+  const connectedSockets = lobbyConnections.get(code)?.size ?? 0;
+  const enrolled = data?.length ?? 0;
+  const pending = Math.max(0, enrolled - connectedSockets);
+
+  io.to(`lobby:${code}`).emit('lobby:update', {
+    participants: data || [],
+    meta: { enrolled, connected: connectedSockets, pending },
   });
 }
 
-/** Stop timer interval for a given attempt (called on submit) */
+export async function emitLeaderboardSnapshot(examCode: string) {
+  if (!io) return;
+  const code = examCode.toUpperCase();
+
+  const { data: examData } = await supabase
+    .from('exam_codes')
+    .select('duration_minutes, is_active')
+    .eq('exam_code', code)
+    .maybeSingle();
+
+  const totalDurationSec = (examData?.duration_minutes ?? 60) * 60;
+
+  const { data } = await supabase
+    .from('exam_code_attempts')
+    .select('hall_ticket_no, student_name, score, max_score, correct_count, time_taken_seconds, status')
+    .eq('exam_code', code)
+    .in('status', ['completed', 'terminated_cheating']);
+
+  const ranked = (data || [])
+    .map((r) => ({
+      ...r,
+      percentage: r.max_score > 0 ? Math.round((r.score / r.max_score) * 100) : 0,
+      rank_score: r.score - (r.time_taken_seconds / totalDurationSec),
+    }))
+    .sort((a, b) => b.rank_score - a.rank_score)
+    .map((r, i) => ({
+      rank: i + 1,
+      student_id: r.hall_ticket_no,
+      student_name: r.student_name,
+      score: r.score,
+      percentage: r.percentage,
+      answered: r.correct_count,
+      time_taken_seconds: r.time_taken_seconds,
+    }));
+
+  const snapshot = {
+    event: 'LEADERBOARD_SNAPSHOT',
+    exam_id: code,
+    top_ranks: ranked.slice(0, 50),
+    total_active: data?.length ?? 0,
+    timestamp: Date.now(),
+  };
+
+  io.to(`leaderboard:${code}`).emit('LEADERBOARD_SNAPSHOT', snapshot);
+  io.to(`lobby:${code}`).emit('LEADERBOARD_SNAPSHOT', snapshot);
+}
+
+export async function emitLeaderboardUpdate(examCode: string) {
+  return emitLeaderboardSnapshot(examCode);
+}
+
+/**
+ * Broadcast EXAM_STARTED to all sockets in lobby:{examCode}.
+ * IDEMPOTENT: second call returns existing payload, does NOT re-broadcast.
+ */
+export async function broadcastExamStarted(params: {
+  examCode: string;
+  durationSeconds: number;
+  allowLateJoin?: boolean;
+  serverStartTime?: number;
+}): Promise<{ payload: ExamStartedState; alreadyStarted: boolean }> {
+  const code = params.examCode.toUpperCase();
+
+  // Idempotency: return existing state without re-broadcasting
+  const existing = examStartedState.get(code);
+  if (existing) {
+    console.log(`[Socket.io] EXAM_STARTED idempotency hit for ${code}`);
+    return { payload: existing, alreadyStarted: true };
+  }
+
+  const serverStartTime = params.serverStartTime ?? Date.now();
+  const state: ExamStartedState = {
+    exam_id: code,
+    server_start_time: serverStartTime,
+    duration_seconds: params.durationSeconds,
+    allow_late_join: params.allowLateJoin ?? false,
+  };
+
+  // Store before emitting so reconnectors immediately see it
+  examStartedState.set(code, state);
+
+  if (io) {
+    const payload = { event: 'EXAM_STARTED', ...state };
+    console.log(`[Socket.io] Broadcasting EXAM_STARTED to lobby:${code}`, payload);
+    io.to(`lobby:${code}`).emit('EXAM_STARTED', payload);
+  }
+
+  // Start per-second leaderboard stream
+  if (io && !leaderboardIntervals.has(code)) {
+    const interval = setInterval(async () => {
+      await emitLeaderboardSnapshot(code);
+    }, 1000);
+    leaderboardIntervals.set(code, interval);
+  }
+
+  return { payload: state, alreadyStarted: false };
+}
+
+export function stopLeaderboardStream(examCode: string) {
+  const code = examCode.toUpperCase();
+  const interval = leaderboardIntervals.get(code);
+  if (interval) {
+    clearInterval(interval);
+    leaderboardIntervals.delete(code);
+  }
+}
+
+export function getLobbyStats(examCode: string): { enrolled: number; connected: number; pending: number } {
+  const code = examCode.toUpperCase();
+  const connected = lobbyConnections.get(code)?.size ?? 0;
+  return { enrolled: connected, connected, pending: 0 };
+}
+
 export function stopAttemptTimer(attemptId: string) {
   const room = `exam:${attemptId}`;
   const interval = timerIntervals.get(room);

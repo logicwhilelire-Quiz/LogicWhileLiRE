@@ -291,6 +291,22 @@ export default function ExamControl() {
                         {exam.is_active ? '🛑 Deactivate Exam' : '🚀 Launch to Candidates'}
                       </button>
 
+                      {/* Live Console — PRD Sprint 2: Instructor Push-to-Start */}
+                      <button
+                        onClick={() => navigate(`/admin/live-console/${exam.exam_code || exam.id}`)}
+                        className="btn btn-sm"
+                        style={{
+                          background: 'rgba(16, 185, 129, 0.12)',
+                          color: '#10b981',
+                          border: '1px solid rgba(16, 185, 129, 0.35)',
+                          fontWeight: 700,
+                          padding: '8px 14px',
+                        }}
+                        title="Open Instructor Live Console"
+                      >
+                        📡 Live Console
+                      </button>
+
                       <button
                         onClick={() => handleDuplicate(exam)}
                         className="btn btn-ghost btn-sm"

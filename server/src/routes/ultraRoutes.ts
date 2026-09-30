@@ -5,6 +5,7 @@ import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
 import { supabase } from '../db/supabase';
+import { adminAuth } from '../middleware/adminAuth';
 
 const router = Router();
 
@@ -938,6 +939,124 @@ router.post('/admin/create-exam-wizard', async (req: Request, res: Response) => 
   } catch (err) {
     console.error('[CreateExamWizard]', err);
     res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Wizard creation failed' });
+  }
+});
+
+
+// ─── INSTRUCTOR PUSH-TO-START ─────────────────────────────────────────────────
+// POST /api/v1/exams/:examCode/start
+// Protected by adminAuth middleware (JWT verified via ADMIN_JWT_SECRET).
+// IDEMPOTENT: a second call for the same exam code returns success with
+// already_started=true and the original payload — no re-broadcast, no timer reset.
+router.post('/v1/exams/:examCode/start', adminAuth, async (req: Request, res: Response) => {
+  try {
+    const { allow_late_join = false } = req.body;
+    const code = (req.params.examCode as string).toUpperCase();
+
+    // ── Idempotency check (Sprint 2, item 1) ──────────────────────────────
+    const { getExamStartedState } = await import('../services/socketService');
+    const alreadyState = getExamStartedState(code);
+    if (alreadyState) {
+      console.log(`[ExamStart] Idempotent call — ${code} already started at ${alreadyState.server_start_time}`);
+      return res.json({
+        success: true,
+        already_started: true,
+        message: `Exam ${code} was already started — no re-broadcast`,
+        exam_id: alreadyState.exam_id,
+        server_start_time: alreadyState.server_start_time,
+        duration_seconds: alreadyState.duration_seconds,
+        allow_late_join: alreadyState.allow_late_join,
+      });
+    }
+
+    // ── Look up exam to get duration ──────────────────────────────────────
+    const { data: examData } = await supabase
+      .from('exam_codes')
+      .select('exam_code, duration_minutes, is_active, max_participants')
+      .eq('exam_code', code)
+      .maybeSingle();
+
+    if (!examData) {
+      return res.status(404).json({ success: false, error: `Exam code ${code} not found` });
+    }
+
+    const durationSeconds = (examData.duration_minutes ?? 60) * 60;
+    const serverStartTime = Date.now();
+
+    // ── Server-authoritative end_time write (Sprint 2, item 2) ───────────
+    // Writing end_time = server_start_time + duration_seconds means the
+    // existing computeRemainingSeconds() in socketService.ts automatically
+    // gives correct remaining time to every client — including late joiners
+    // who join mid-exam and receive an already-counting-down timer.
+    const endTimeIso = new Date(serverStartTime + durationSeconds * 1000).toISOString();
+    try {
+      await supabase
+        .from('exam_codes')
+        .update({
+          is_active: true,
+          started_at: new Date(serverStartTime).toISOString(),
+          end_time: endTimeIso,
+        })
+        .eq('exam_code', code);
+    } catch {
+      // Non-fatal: demo mode / mock DB may not support all columns
+    }
+
+    // ── Broadcast EXAM_STARTED ────────────────────────────────────────────
+    const { broadcastExamStarted } = await import('../services/socketService');
+    const { payload, alreadyStarted } = await broadcastExamStarted({
+      examCode: code,
+      durationSeconds,
+      allowLateJoin: allow_late_join,
+      serverStartTime,
+    });
+
+    console.log(
+      `[ExamStart] ${req.admin?.sub} triggered EXAM_STARTED for ${code}. ` +
+      `Duration=${durationSeconds}s, end_time=${endTimeIso}`
+    );
+
+    return res.json({
+      success: true,
+      already_started: alreadyStarted,
+      message: alreadyStarted
+        ? `Exam ${code} was already started`
+        : `EXAM_STARTED broadcast sent to lobby:${code}`,
+      exam_id: payload.exam_id,
+      server_start_time: payload.server_start_time,
+      duration_seconds: payload.duration_seconds,
+      allow_late_join: payload.allow_late_join,
+    });
+  } catch (err) {
+    console.error('[ExamStart]', err);
+    res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Start failed' });
+  }
+});
+
+// ─── INSTRUCTOR LOBBY STATS ────────────────────────────────────────────────────
+// GET /api/v1/exams/:examCode/lobby-stats
+// Returns real-time enrolled / connected / pending counts for instructor console.
+router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response) => {
+  try {
+    const code = ((req.params.examCode as string) || '').toUpperCase();
+    const { getLobbyStats } = await import('../services/socketService');
+    const stats = getLobbyStats(code);
+
+    // Also fetch enrolled count from DB for accuracy
+    const { data: enrolled } = await supabase
+      .from('exam_code_attempts')
+      .select('id', { count: 'exact', head: true })
+      .eq('exam_code', code);
+
+    res.json({
+      success: true,
+      exam_code: code,
+      enrolled: (enrolled as any)?.count ?? stats.enrolled,
+      connected: stats.connected,
+      pending: Math.max(0, ((enrolled as any)?.count ?? 0) - stats.connected),
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Stats fetch failed' });
   }
 });
 
