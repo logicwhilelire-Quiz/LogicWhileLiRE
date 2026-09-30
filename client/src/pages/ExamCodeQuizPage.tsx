@@ -41,6 +41,7 @@ interface ExamSession {
   duration: number   // seconds
   questions: ExamQuestion[]
   proctoringMode?: 'webcam' | 'screen' | 'dual'
+  endTimeMs?: number
 }
 
 type FaceStatus = 'ok' | 'no_face' | 'multiple' | 'looking_away' | 'loading'
@@ -59,6 +60,11 @@ export default function QuizPage() {
     } catch { return '' }
   })()
   const hallTicket: string = stateHt || storedHt || ''
+
+  // Sprint 2 item 3: read server_start_time from router state (set by WaitingLobbyPage on EXAM_STARTED)
+  // This is the single source of truth for computing correct remaining time for late joiners.
+  const routerServerStartTime: number | undefined = (location.state as any)?.serverStartTime
+  const routerDurationSeconds: number | undefined = (location.state as any)?.durationSeconds
 
   /* ── State ── */
   const [session, setSession] = useState<ExamSession | null>(null)
@@ -155,8 +161,30 @@ export default function QuizPage() {
           duration: (exam?.duration_minutes || 60) * 60,
           questions,
           proctoringMode,
+          endTimeMs: exam?.end_time ? new Date(exam.end_time).getTime() : undefined,
         })
-        setTimeLeft((exam?.duration_minutes || 60) * 60)
+
+        // Sprint 2 item 3: compute correct remaining time from server_start_time.
+        // Priority order:
+        //   1. router state serverStartTime (set by WaitingLobbyPage from EXAM_STARTED)
+        //   2. server-returned end_time (written by POST /start endpoint)
+        //   3. full duration_minutes (fallback for exams not yet started via push-to-start)
+        let initialTimeLeft: number
+        const fullDuration = (exam?.duration_minutes || 60) * 60
+
+        if (routerServerStartTime && routerDurationSeconds) {
+          // Most accurate: router state populated by WaitingLobbyPage's EXAM_STARTED handler
+          const elapsed = Math.floor((Date.now() - routerServerStartTime) / 1000)
+          initialTimeLeft = Math.max(0, routerDurationSeconds - elapsed)
+        } else if (exam?.end_time) {
+          // Second source: server wrote end_time when POST /start was called
+          const serverEndMs = new Date(exam.end_time).getTime()
+          initialTimeLeft = Math.max(0, Math.floor((serverEndMs - Date.now()) / 1000))
+        } else {
+          // Fallback: exam hasn't been started via push-to-start yet, use full duration
+          initialTimeLeft = fullDuration
+        }
+        setTimeLeft(initialTimeLeft)
 
         // ── 1.4 Offline answer restoration ──
         try {
@@ -297,17 +325,32 @@ export default function QuizPage() {
     }
   }, [examCode, hallTicket, currentQ, answers, codeAnswers])
 
-  /* ── Timer ── */
+  /* ── Timer (Sprint 2, Item 2 & 3: Server-authoritative countdown) ── */
   useEffect(() => {
-    if (!session || timeLeft <= 0) return
+    if (!session) return
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
-        if (prev <= 1) { handleSubmit(); return 0 }
-        return prev - 1
+        let rem: number
+        if (routerServerStartTime && routerDurationSeconds) {
+          // Continuous sync against server start time: immune to background tab throttling
+          const elapsed = Math.floor((Date.now() - routerServerStartTime) / 1000)
+          rem = Math.max(0, routerDurationSeconds - elapsed)
+        } else if (session.endTimeMs) {
+          // Continuous sync against server end_time from DB
+          rem = Math.max(0, Math.floor((session.endTimeMs - Date.now()) / 1000))
+        } else {
+          rem = Math.max(0, prev - 1)
+        }
+
+        if (rem <= 0) {
+          handleSubmit()
+          return 0
+        }
+        return rem
       })
     }, 1000)
     return () => clearInterval(timerRef.current)
-  }, [session])
+  }, [session, routerServerStartTime, routerDurationSeconds, handleSubmit])
 
   /* ── Tab/visibility proctoring ── */
   useEffect(() => {
@@ -682,12 +725,15 @@ export default function QuizPage() {
             totalTime={session?.duration || 3600}
           />
           <div>
-            <div style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '1.5rem', fontWeight: 800,
-              color: timerColor, letterSpacing: '0.04em',
-              lineHeight: 1,
-            }}>
+            <div
+              id="quiz-timer-display"
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '1.5rem', fontWeight: 800,
+                color: timerColor, letterSpacing: '0.04em',
+                lineHeight: 1,
+              }}
+            >
               {formatTime(timeLeft)}
             </div>
             <div style={{ fontSize: '0.65rem', color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>

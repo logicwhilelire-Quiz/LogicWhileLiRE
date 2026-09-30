@@ -5,7 +5,7 @@ import BrandLogo from "../components/BrandLogo";
 import AnimatedPage from "../components/AnimatedPage";
 import ParticleField from "../components/3d/ParticleField";
 import NodeNetwork from "../components/3d/NodeNetwork";
-import { getAssessmentSystemCheck, authLogout } from "../lib/api";
+import { getAssessmentSystemCheck, authLogout, getExamLobbyStats } from "../lib/api";
 
 const SOCKET_URL = (import.meta as any).env?.VITE_SOCKET_URL || (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:3001";
 
@@ -66,10 +66,41 @@ export default function WaitingLobbyPage() {
 
   const addEvent = (text: string, type: "info" | "success" | "ping" | "alert" = "info") => {
     setEvents((prev) => [
-      { id: Date.now().toString(), time: new Date().toLocaleTimeString(), text, type },
+      { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, time: new Date().toLocaleTimeString(), text, type },
       ...prev.slice(0, 9),
     ]);
   };
+
+  // ── Mount-time REST check (item 2): recover from page refresh after EXAM_STARTED ──
+  // This runs before the socket connects so a student who refreshes the page
+  // mid-exam doesn't get permanently stuck on the disabled "Waiting" button.
+  useEffect(() => {
+    const checkIfAlreadyStarted = async () => {
+      try {
+        const res = await getExamLobbyStats(contestId);
+        const d = res.data;
+        if (d?.exam_started && d.exam_started.server_start_time) {
+          const s = d.exam_started;
+          setExamStarted(true);
+          setStartPayload({
+            event: "EXAM_STARTED",
+            exam_id: s.exam_id || contestId.toUpperCase(),
+            server_start_time: s.server_start_time,
+            duration_seconds: s.duration_seconds,
+            allow_late_join: s.allow_late_join ?? true,
+            elapsed_seconds: s.elapsed_seconds,
+          });
+          addEvent(
+            `[REST-sync] Exam already started — elapsed=${s.elapsed_seconds}s, remaining=${s.remaining_seconds}s`,
+            "alert"
+          );
+        }
+      } catch {
+        // Non-fatal — socket event is the primary mechanism
+      }
+    };
+    checkIfAlreadyStarted();
+  }, [contestId]);
 
   useEffect(() => {
     const stateCandidate = (location.state as any)?.candidate;
@@ -166,17 +197,24 @@ export default function WaitingLobbyPage() {
   useEffect(() => {
     if (examStarted && startPayload) {
       const examCode = startPayload.exam_id || contestId;
+      const hallTicket = candidate?.roll_number || (location.state as any)?.hallTicket || "2201A0501";
       const timer = setTimeout(() => {
         navigate(`/quiz/${examCode}`, {
-          state: { serverStartTime: startPayload.server_start_time, durationSeconds: startPayload.duration_seconds, examCode },
+          state: {
+            serverStartTime: startPayload.server_start_time,
+            durationSeconds: startPayload.duration_seconds,
+            examCode,
+            hallTicket,
+          },
         });
       }, 1800);
       return () => clearTimeout(timer);
     }
-  }, [examStarted, startPayload, contestId, navigate]);
+  }, [examStarted, startPayload, contestId, candidate, location.state, navigate]);
 
   const handleManualStart = () => {
     const examCode = startPayload?.exam_id || contestId;
+    const hallTicket = candidate?.roll_number || (location.state as any)?.hallTicket || "2201A0501";
     // Compute remaining from server_start_time to honour server-authoritative timer (Sprint 2, item 4)
     const elapsed = startPayload
       ? Math.floor((Date.now() - startPayload.server_start_time) / 1000)
@@ -187,6 +225,7 @@ export default function WaitingLobbyPage() {
         serverStartTime: startPayload?.server_start_time,
         durationSeconds: startPayload?.duration_seconds,
         elapsed_seconds: elapsed,
+        hallTicket,
       },
     });
   };

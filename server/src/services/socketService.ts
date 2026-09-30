@@ -38,6 +38,14 @@ export function getExamStartedState(examCode: string): ExamStartedState | undefi
   return examStartedState.get(examCode.toUpperCase());
 }
 
+export function resetExamStartedState(examCode?: string): void {
+  if (examCode) {
+    examStartedState.delete(examCode.toUpperCase());
+  } else {
+    examStartedState.clear();
+  }
+}
+
 export function initSocketIO(httpServer: HttpServer): IOServer {
   const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 

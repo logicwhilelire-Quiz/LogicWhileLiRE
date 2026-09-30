@@ -1033,14 +1033,31 @@ router.post('/v1/exams/:examCode/start', adminAuth, async (req: Request, res: Re
   }
 });
 
+// POST /api/v1/exams/:examCode/reset-state (admin only)
+router.post('/v1/exams/:examCode/reset-state', adminAuth, async (req: Request, res: Response) => {
+  try {
+    const code = ((req.params.examCode as string) || '').toUpperCase();
+    const { resetExamStartedState } = await import('../services/socketService');
+    resetExamStartedState(code);
+    return res.json({ success: true, message: `Exam ${code} state reset` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Reset failed' });
+  }
+});
+
 // ─── INSTRUCTOR LOBBY STATS ────────────────────────────────────────────────────
 // GET /api/v1/exams/:examCode/lobby-stats
-// Returns real-time enrolled / connected / pending counts for instructor console.
+// Returns real-time enrolled / connected / pending counts + exam_started_state.
+// The exam_started_state field is used by WaitingLobbyPage on mount to recover
+// from a page refresh after the exam has already started.
 router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response) => {
   try {
     const code = ((req.params.examCode as string) || '').toUpperCase();
-    const { getLobbyStats } = await import('../services/socketService');
+    const { getLobbyStats, getExamStartedState } = await import('../services/socketService');
     const stats = getLobbyStats(code);
+
+    // Include the exam_started_state so clients can recover from page refreshes
+    const startedState = getExamStartedState(code);
 
     // Also fetch enrolled count from DB for accuracy
     const { data: enrolled } = await supabase
@@ -1054,10 +1071,25 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
       enrolled: (enrolled as any)?.count ?? stats.enrolled,
       connected: stats.connected,
       pending: Math.max(0, ((enrolled as any)?.count ?? 0) - stats.connected),
+      // Exam started state — null if not yet started
+      exam_started: startedState
+        ? {
+            exam_id: startedState.exam_id,
+            server_start_time: startedState.server_start_time,
+            duration_seconds: startedState.duration_seconds,
+            allow_late_join: startedState.allow_late_join,
+            elapsed_seconds: Math.floor((Date.now() - startedState.server_start_time) / 1000),
+            remaining_seconds: Math.max(
+              0,
+              startedState.duration_seconds - Math.floor((Date.now() - startedState.server_start_time) / 1000)
+            ),
+          }
+        : null,
     });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Stats fetch failed' });
   }
 });
+
 
 export default router;
