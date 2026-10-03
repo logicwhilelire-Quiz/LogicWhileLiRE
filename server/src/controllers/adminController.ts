@@ -100,7 +100,10 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
   let staffRecord: any = null;
   const isBootstrapAdmin =
     normalizedUser === (process.env.ADMIN_USERNAME || 'admin') ||
-    normalizedUser === (process.env.INITIAL_ADMIN_EMAIL || 'admin@growthran.local');
+    normalizedUser === (process.env.INITIAL_ADMIN_EMAIL || 'admin@logicwhilelire.local') ||
+    normalizedUser === 'admin@growthran.local' ||
+    normalizedUser === 'admin@growthran.com' ||
+    normalizedUser === 'admin@logicwhilelire.com';
 
   if (isBootstrapAdmin) {
     const { data: existingAdmin } = await supabase
@@ -114,25 +117,21 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     } else {
       staffRecord = {
         id: 'st000000-0000-0000-0000-000000000001',
-        name: 'GROWTHRAN Super Admin',
-        email: process.env.INITIAL_ADMIN_EMAIL || 'admin@growthran.local',
+        name: 'LogicWhileLiRE Super Admin',
+        email: process.env.INITIAL_ADMIN_EMAIL || 'admin@logicwhilelire.local',
         role: 'super_admin',
         is_active: true,
       };
     }
 
 
-    const adminHash = process.env.ADMIN_PASSWORD_HASH || '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.';
-    let passwordValid = await bcrypt.compare(password, adminHash);
-    if (
-      !passwordValid &&
-      process.env.DEMO_MODE === 'true' &&
-      process.env.NODE_ENV !== 'production' &&
-      password === 'admin123'
-    ) {
-      passwordValid = true;
+    const adminHash = existingAdmin?.password_hash || process.env.ADMIN_PASSWORD_HASH;
+    if (!adminHash) {
+      handleFailedAttempt();
+      return;
     }
 
+    const passwordValid = await bcrypt.compare(password, adminHash);
     if (!passwordValid) {
       handleFailedAttempt();
       return;
@@ -146,16 +145,23 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       .eq('email', emailToLookup)
       .maybeSingle();
 
-    if (!staff && emailToLookup.endsWith('@logicwhile.com')) {
-      const rebrandedEmail = emailToLookup.replace(/@logicwhile\.com$/, '@growthran.com');
-      const { data: fallbackStaff } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('email', rebrandedEmail)
-        .maybeSingle();
-      if (fallbackStaff) {
-        staff = fallbackStaff;
-        error = null;
+    if (!staff) {
+      const aliasDomains = ['@logicwhilelire.com', '@growthran.com', '@logicwhile.com'];
+      for (const domain of aliasDomains) {
+        const usernamePrefix = emailToLookup.split('@')[0];
+        const candidateEmail = `${usernamePrefix}${domain}`;
+        if (candidateEmail !== emailToLookup) {
+          const { data: fallbackStaff } = await supabase
+            .from('staff')
+            .select('*')
+            .eq('email', candidateEmail)
+            .maybeSingle();
+          if (fallbackStaff) {
+            staff = fallbackStaff;
+            error = null;
+            break;
+          }
+        }
       }
     }
 
@@ -172,16 +178,12 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    let passwordValid = await bcrypt.compare(password, staff.password_hash);
-    if (
-      !passwordValid &&
-      process.env.DEMO_MODE === 'true' &&
-      process.env.NODE_ENV !== 'production' &&
-      password === 'admin123'
-    ) {
-      passwordValid = true;
+    if (!staff.password_hash) {
+      handleFailedAttempt();
+      return;
     }
 
+    const passwordValid = await bcrypt.compare(password, staff.password_hash);
     if (!passwordValid) {
       handleFailedAttempt();
       return;
@@ -201,7 +203,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       name: staffRecord.name,
       college_id: staffRecord.college_id || null,
     },
-    process.env.ADMIN_JWT_SECRET || 'growthran_admin_jwt_default_secret_key_demo_2026',
+    process.env.ADMIN_JWT_SECRET || 'logicwhilelire_admin_jwt_default_secret_key_demo_2026',
     {
       expiresIn: '8h',
     }
@@ -434,7 +436,7 @@ export async function bulkEnrollParticipantsHandler(req: Request, res: Response)
 export function getBulkEnrollTemplate(_req: Request, res: Response): void {
   const csvContent = 'Full Name,Hall Ticket,Mobile Number,Email Address\nAarav Sharma,HT2026101,+919876543210,aarav.student@example.com\nNeha Patel,HT2026102,+919876543211,neha.student@example.com\n';
   res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', 'attachment; filename="growthran_roster_template.csv"');
+  res.setHeader('Content-Disposition', 'attachment; filename="logicwhilelire_roster_template.csv"');
   res.send(csvContent);
 }
 
@@ -565,7 +567,7 @@ export async function exportExcelReport(req: Request, res: Response): Promise<vo
       Wrong: r.wrong_count,
       'Time (s)': r.time_taken_seconds,
       'Graded At': r.graded_at,
-      Platform: 'GROWTHRAN',
+      Platform: 'LogicWhileLiRE',
     };
   });
 
@@ -586,7 +588,7 @@ export async function exportExcelReport(req: Request, res: Response): Promise<vo
   const safeTitle = (exam?.title || 'exam').replace(/[^a-zA-Z0-9_\-]/g, '_');
   res.set({
     'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'Content-Disposition': `attachment; filename="Growthran_${safeTitle}_report.xlsx"`,
+    'Content-Disposition': `attachment; filename="LogicWhileLiRE_${safeTitle}_report.xlsx"`,
   });
   res.send(buf);
 }
@@ -627,11 +629,11 @@ export async function exportPdfReport(req: Request, res: Response): Promise<void
     }
   }
 
-  // Executive Brand Header: GROWTHRAN in deep blue
-  doc.fontSize(24).font('Helvetica-Bold').fillColor('#0A3F8F').text('GROWTHRAN', { align: 'center' });
+  // Executive Brand Header: LogicWhileLiRE in deep blue
+  doc.fontSize(24).font('Helvetica-Bold').fillColor('#0A3F8F').text('LogicWhileLiRE', { align: 'center' });
   
   // Official Tagline
-  doc.fontSize(9).font('Helvetica-Bold').fillColor('#4A7DBE').text('LEARN. GROW. RUN.', { align: 'center', characterSpacing: 2 });
+  doc.fontSize(9).font('Helvetica-Bold').fillColor('#4A7DBE').text('LOGIC. WHILE. LIRE.', { align: 'center', characterSpacing: 2 });
   doc.moveDown(0.6);
 
   // Brand Accent Divider Rule
@@ -667,7 +669,7 @@ export async function exportPdfReport(req: Request, res: Response): Promise<void
   });
 
   doc.moveDown(1.5);
-  doc.fontSize(8).font('Helvetica').fillColor('#64748b').text('GROWTHRAN Autonomous Assessment Engine • Developed by R. Charan Sai • © 2026 R. Charan Sai. All rights reserved.', { align: 'center' });
+  doc.fontSize(8).font('Helvetica').fillColor('#64748b').text('LogicWhileLiRE Autonomous Assessment Engine • Developed by R. Charan Sai • © 2026 R. Charan Sai. All rights reserved.', { align: 'center' });
 
   doc.end();
 }
@@ -1233,8 +1235,8 @@ export async function getPlatformSettings(_req: Request, res: Response): Promise
     res.json({
       success: true,
       settings: {
-        platform_name: 'GROWTHRAN',
-        tagline: 'Learn. Grow. Run.',
+        platform_name: 'LogicWhileLiRE',
+        tagline: 'Logic. While. LiRE.',
         primary_color: '#2B7FFF',
         secondary_color: '#050814',
         maintenance_mode: false,
@@ -1248,8 +1250,8 @@ export async function getPlatformSettings(_req: Request, res: Response): Promise
   res.json({
     success: true,
     settings: data || {
-      platform_name: 'GROWTHRAN',
-      tagline: 'Learn. Grow. Run.',
+      platform_name: 'LogicWhileLiRE',
+      tagline: 'Logic. While. LiRE.',
       primary_color: '#2B7FFF',
       secondary_color: '#050814',
       maintenance_mode: false,

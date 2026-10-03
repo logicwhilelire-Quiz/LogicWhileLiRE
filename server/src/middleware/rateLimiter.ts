@@ -101,6 +101,21 @@ export const passwordResetRateLimit = rateLimit({
 });
 
 /**
+ * Rate limiter for enter-exam & exam code verification — 20 per 10 minutes per IP
+ */
+export const enterExamRateLimit = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: isLoadTestBypass,
+  message: {
+    success: false,
+    error: 'Too many exam entry attempts. Please check your credentials and try again in 10 minutes.',
+  },
+});
+
+/**
  * General API rate limiter
  */
 export const generalRateLimit = rateLimit({

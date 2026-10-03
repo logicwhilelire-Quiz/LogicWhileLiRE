@@ -405,7 +405,7 @@ export default function GateHeroCanvas({ wsLatency = 18 }: GateHeroCanvasProps) 
                 gap: 8,
               }}
             >
-              <span>GROWTHRAN</span>
+              <span>LogicWhileLiRE</span>
             </div>
             <div
               style={{
@@ -417,7 +417,7 @@ export default function GateHeroCanvas({ wsLatency = 18 }: GateHeroCanvasProps) 
                 marginTop: 2,
               }}
             >
-              Learn. Grow. Run.
+              Logic. While. LiRE.
             </div>
           </div>
 

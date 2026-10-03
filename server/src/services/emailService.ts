@@ -108,7 +108,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
     try {
       const logoPath = path.resolve(__dirname, '../../logo.png');
       const attachments = fs.existsSync(logoPath)
-        ? [{ filename: 'logo.png', path: logoPath, cid: 'growthranlogo' }]
+        ? [{ filename: 'logo.png', path: logoPath, cid: 'logicwhilelirelogo' }]
         : [];
 
       await t.sendMail({
@@ -145,7 +145,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
 }
 
 /**
- * Brand email wrapper for GROWTHRAN matching PDF report and system branding
+ * Brand email wrapper for LogicWhileLiRE matching PDF report and system branding
  */
 export function wrapBrandTemplate(title: string, innerHtml: string): string {
   const logoPath = path.resolve(__dirname, '../../logo.png');
@@ -170,7 +170,7 @@ export function wrapBrandTemplate(title: string, innerHtml: string): string {
             <td style="padding:32px 32px 24px; text-align:center; background:linear-gradient(180deg, rgba(27,95,181,0.2) 0%, rgba(16,29,63,0) 100%); border-bottom:1px solid rgba(255,255,255,0.06);">
               ${hasLogoImage ? `
                 <div style="margin-bottom:12px;">
-                  <img src="cid:growthranlogo" alt="GROWTHRAN Logo" width="56" height="56" style="display:inline-block; border-radius:12px; border:1px solid rgba(27,95,181,0.4);" />
+                  <img src="cid:logicwhilelirelogo" alt="LogicWhileLiRE Logo" width="56" height="56" style="display:inline-block; border-radius:12px; border:1px solid rgba(27,95,181,0.4);" />
                 </div>
               ` : `
                 <div style="display:inline-block; padding:8px 16px; background:rgba(27,95,181,0.2); border:1px solid #1B5FB5; border-radius:999px; margin-bottom:12px;">
@@ -323,6 +323,9 @@ export async function sendResultEmail(
     totalParticipants?: number;
     isLeaderboardPublic?: boolean;
     topicBreakdown?: Record<string, { correct: number; wrong: number; score: number; maxScore: number }>;
+    hasCodingQuestions?: boolean;
+    mcqScore?: number;
+    mcqMaxScore?: number;
   },
   examId?: string,
   sessionId?: string,
@@ -367,12 +370,12 @@ export async function sendResultEmail(
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; margin-bottom:24px;">
       <tr>
         <td style="padding:20px; text-align:center; border-right:1px solid rgba(255,255,255,0.06);">
-          <span style="font-size:11px; text-transform:uppercase; color:#8888aa; letter-spacing:1px; display:block; margin-bottom:4px;">Score</span>
-          <span style="font-size:28px; font-weight:800; color:#10b981;">${result.totalScore}</span>
-          <span style="font-size:14px; color:#8888aa;"> / ${result.maxScore}</span>
+          <span style="font-size:11px; text-transform:uppercase; color:#8888aa; letter-spacing:1px; display:block; margin-bottom:4px;">${result.hasCodingQuestions || (result.mcqMaxScore !== undefined && result.mcqMaxScore < result.maxScore) ? 'Auto-Graded (MCQ)' : 'Score'}</span>
+          <span style="font-size:28px; font-weight:800; color:#10b981;">${result.mcqScore !== undefined ? result.mcqScore : result.totalScore}</span>
+          <span style="font-size:14px; color:#8888aa;"> / ${result.mcqMaxScore !== undefined ? result.mcqMaxScore : result.maxScore}</span>
         </td>
         <td style="padding:20px; text-align:center; border-right:1px solid rgba(255,255,255,0.06);">
-          <span style="font-size:11px; text-transform:uppercase; color:#8888aa; letter-spacing:1px; display:block; margin-bottom:4px;">Normalized %</span>
+          <span style="font-size:11px; text-transform:uppercase; color:#8888aa; letter-spacing:1px; display:block; margin-bottom:4px;">${result.hasCodingQuestions || (result.mcqMaxScore !== undefined && result.mcqMaxScore < result.maxScore) ? 'MCQ Accuracy' : 'Normalized %'}</span>
           <span style="font-size:28px; font-weight:800; color:#a78bfa;">${result.normalizedScore ?? percentage}%</span>
         </td>
         <td style="padding:20px; text-align:center;">
@@ -384,6 +387,16 @@ export async function sendResultEmail(
         </td>
       </tr>
     </table>
+
+    ${
+      result.hasCodingQuestions || (result.mcqMaxScore !== undefined && result.mcqMaxScore < result.maxScore)
+        ? `
+      <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:8px; padding:12px 16px; margin-bottom:20px; font-size:13px; color:#fbbf24; text-align:left;">
+        ℹ️ <strong>Evaluation Transparency:</strong> The score above reflects auto-graded objective/MCQ questions. Coding questions have been submitted and are pending instructor manual review.
+      </div>
+    `
+        : ''
+    }
 
     <p style="margin:0 0 16px; font-size:14px; color:#8888aa;">
       ⏱ <strong>Time Taken:</strong> ${timeFormatted} &nbsp;|&nbsp; 
@@ -415,8 +428,8 @@ export async function sendResultEmail(
 
   await sendWithRetry({
     to: toEmail,
-    subject: `🏆 Your Exam Results: ${examTitle} — Score ${result.totalScore}/${result.maxScore}`,
-    text: `Hello ${recipientName},\n\nYour score in "${examTitle}" is ${result.totalScore}/${result.maxScore} (${result.normalizedScore ?? percentage}%).\nRank: ${isPublic && result.rank ? `#${result.rank}` : 'Private / Available on dashboard'}\nTime: ${timeFormatted}\n\nLogicWhileLiRE — Logic. While. LiRE.`,
+    subject: `🏆 Your Exam Results: ${examTitle} — Score ${result.mcqScore !== undefined ? result.mcqScore : result.totalScore}/${result.mcqMaxScore !== undefined ? result.mcqMaxScore : result.maxScore}`,
+    text: `Hello ${recipientName},\n\nYour score in "${examTitle}" is ${result.mcqScore !== undefined ? result.mcqScore : result.totalScore}/${result.mcqMaxScore !== undefined ? result.mcqMaxScore : result.maxScore} (${result.normalizedScore ?? percentage}%).${result.hasCodingQuestions || (result.mcqMaxScore !== undefined && result.mcqMaxScore < result.maxScore) ? '\n(Note: Score reflects auto-graded objective/MCQ sections. Coding questions are pending manual review.)' : ''}\nRank: ${isPublic && result.rank ? `#${result.rank}` : 'Private / Available on dashboard'}\nTime: ${timeFormatted}\n\nLogicWhileLiRE — Logic. While. LiRE.`,
     html: wrapBrandTemplate('Exam Results & Standings', innerHtml),
     emailType: 'result',
     examId,

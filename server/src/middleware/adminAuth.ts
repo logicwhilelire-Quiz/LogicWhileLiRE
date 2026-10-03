@@ -37,7 +37,7 @@ export function adminAuth(req: Request, res: Response, next: NextFunction): void
   }
 
   try {
-    const adminJwtSecret = process.env.ADMIN_JWT_SECRET || 'growthran_admin_jwt_default_secret_key_demo_2026';
+    const adminJwtSecret = process.env.ADMIN_JWT_SECRET || 'logicwhilelire_admin_jwt_default_secret_key_demo_2026';
     const payload = jwt.verify(token, adminJwtSecret) as AdminJWTPayload;
     if (payload.role === 'admin') {
       payload.role = 'super_admin';

@@ -244,3 +244,53 @@ export const candidateRegisterSchema = z
     message: 'Confirm password must match password exactly',
     path: ['confirm_password'],
   });
+
+export const verifyExamEntrySchema = z.object({
+  examCode: z.string().min(1, 'Exam code is required').trim(),
+  hallTicket: z.string().min(1, 'Hall ticket is required').trim(),
+  candidateName: z.string().optional(),
+  name: z.string().optional(),
+  deviceFingerprint: z.string().optional(),
+});
+
+export const saveExamCodeAnswerSchema = z.object({
+  attemptId: z.string().optional(),
+  candidateId: z.string().optional(),
+  hallTicket: z.string().optional(),
+  session_token: z.string().optional(),
+  question_id: z.string().optional(),
+  answer: z.any().optional(),
+  answers: z.record(z.string(), z.any()).optional(),
+  items: z.any().optional(),
+  current_question_index: z.number().optional(),
+});
+
+export const submitExamCodeSchema = z.object({
+  attemptId: z.string().optional(),
+  candidateId: z.string().optional(),
+  hallTicket: z.string().optional(),
+  session_token: z.string().optional(),
+  answers: z.any().optional(),
+  codeAnswers: z.any().optional(),
+  timeTakenSeconds: z.number().nonnegative().optional(),
+  violationCount: z.number().int().nonnegative().optional(),
+});
+
+export const inspectorBroadcastSchema = z.object({
+  examCode: z.string().min(1, 'examCode is required'),
+  message: z.string().min(1, 'message is required'),
+  priority: z.enum(['normal', 'urgent', 'critical']).optional(),
+  inspectorName: z.string().optional(),
+});
+
+export const inspectorCandidateActionSchema = z.object({
+  examCode: z.string().min(1, 'examCode is required'),
+  hallTicket: z.string().min(1, 'hallTicket is required'),
+  action: z.enum(['warn', 'whisper', 'pause', 'resume', 'extend_time', 'terminate']),
+  message: z.string().optional(),
+  seconds: z.number().optional(),
+  inspectorName: z.string().optional(),
+  studentEmail: z.string().email().optional().or(z.literal('')),
+  studentName: z.string().optional(),
+});
+

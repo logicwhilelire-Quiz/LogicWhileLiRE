@@ -237,7 +237,7 @@ export default function ResultControl() {
               <thead>
                 <tr style={{ background: 'rgba(255, 255, 255, 0.03)', borderBottom: '1px solid var(--color-border)' }}>
                   <th style={{ padding: '12px 18px', textAlign: 'left', color: 'var(--color-text-faint)', fontWeight: 600 }}>Candidate</th>
-                  <th style={{ padding: '12px 18px', textAlign: 'left', color: 'var(--color-text-faint)', fontWeight: 600 }}>Raw Score</th>
+                  <th style={{ padding: '12px 18px', textAlign: 'left', color: 'var(--color-text-faint)', fontWeight: 600 }}>Auto-Graded (MCQ)</th>
                   <th style={{ padding: '12px 18px', textAlign: 'left', color: 'var(--color-text-faint)', fontWeight: 600 }}>Grace</th>
                   <th style={{ padding: '12px 18px', textAlign: 'left', color: 'var(--color-text-faint)', fontWeight: 600 }}>Final Score</th>
                   <th style={{ padding: '12px 18px', textAlign: 'left', color: 'var(--color-text-faint)', fontWeight: 600 }}>Status</th>
@@ -256,7 +256,9 @@ export default function ResultControl() {
                         </div>
                       </td>
                       <td style={{ padding: '14px 18px', color: 'var(--color-text-muted)' }}>
-                        {r.raw_score} / {r.max_score}
+                        <div>{r.raw_score} / {r.max_score}</div>
+                        <div style={{ fontSize: '0.7rem', color: '#10B981', fontWeight: 600 }}>Auto-graded (MCQ)</div>
+                        <div style={{ fontSize: '0.68rem', color: '#38BDF8' }}>Coding: Pending Review</div>
                       </td>
                       <td style={{ padding: '14px 18px' }}>
                         <span style={{ color: r.grace_marks > 0 ? '#10B981' : 'var(--color-text-faint)', fontWeight: 700 }}>

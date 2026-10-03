@@ -3,8 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import BrandLogo from '../../components/BrandLogo';
+import { API_BASE_URL } from '../../lib/config';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+const BASE_URL = API_BASE_URL;
 
 function api(path: string, opts?: Parameters<typeof axios>[1]) {
   const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');

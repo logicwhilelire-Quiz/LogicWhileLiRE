@@ -155,15 +155,7 @@ export async function studentLogin(req: Request, res: Response): Promise<void> {
     }
   }
 
-  let passwordValid = await bcrypt.compare(password, student.password_hash);
-  if (
-    !passwordValid &&
-    process.env.DEMO_MODE === 'true' &&
-    process.env.NODE_ENV !== 'production' &&
-    password === 'admin123'
-  ) {
-    passwordValid = true;
-  }
+  const passwordValid = await bcrypt.compare(password, student.password_hash);
 
   if (!passwordValid) {
     const newFailedAttempts = (student.failed_attempts || 0) + 1;

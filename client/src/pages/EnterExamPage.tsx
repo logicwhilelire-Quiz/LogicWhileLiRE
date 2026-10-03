@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
+import { API_BASE_URL } from '../lib/config'
 import SiteHeader from '../components/SiteHeader'
 import SiteFooter from '../components/SiteFooter'
 import GlowCard from '../components/3d/GlowCard'
@@ -56,7 +57,7 @@ export default function EnterExamPage() {
     setError('')
 
     try {
-      const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+      const BASE = API_BASE_URL
       const { data } = await axios.get(
         `${BASE}/api/exam-code/${encodeURIComponent(form.examCode.trim())}/verify`,
         { params: { hallTicket: form.hallTicket.trim() } }

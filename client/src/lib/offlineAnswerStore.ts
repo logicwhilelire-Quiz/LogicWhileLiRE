@@ -14,7 +14,7 @@ export interface BufferedAnswer {
   updatedAt: number;
 }
 
-const DB_NAME = 'GrowthranOfflineDB';
+const DB_NAME = 'LogicWhileLiREOfflineDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'pending_answers';
 
@@ -83,7 +83,7 @@ export async function bufferAnswer(
   } catch (err) {
     console.warn('[OfflineDB] Failed to buffer answer to IndexedDB, fallback to localStorage:', err);
     try {
-      localStorage.setItem(`growthran_ans_${id}`, JSON.stringify(record));
+      localStorage.setItem(`logicwhilelire_ans_${id}`, JSON.stringify(record));
     } catch {
       /* storage limit reached */
     }

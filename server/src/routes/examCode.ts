@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { adminAuth, requireCollegeScope } from '../middleware/adminAuth';
+import { adminAuth, requireRole, requireCollegeScope } from '../middleware/adminAuth';
 import { supabase } from '../db/supabase';
 import {
   listColleges,
@@ -30,7 +30,8 @@ import {
   getExamCodeResumeState,
   saveScreenThumbnail,
 } from '../controllers/examCodeController';
-import { enrollRateLimit, answerRateLimit } from '../middleware/rateLimiter';
+import { enrollRateLimit, answerRateLimit, enterExamRateLimit } from '../middleware/rateLimiter';
+import { validateBody, verifyExamEntrySchema, saveExamCodeAnswerSchema, submitExamCodeSchema } from '../middleware/validate';
 
 
 const router = Router();
@@ -41,26 +42,26 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 // Public list of colleges for dropdown
 router.get('/colleges', listColleges);
 
-// Student exam entry verification (NO OTP) — rate-limited
-router.post('/verify-exam-entry', enrollRateLimit, verifyExamEntry);
+// Student exam entry verification (NO OTP) — rate-limited & validated
+router.post('/verify-exam-entry', enterExamRateLimit, validateBody(verifyExamEntrySchema), verifyExamEntry);
 
 
 // Adapters for EnterExamPage & QuizPage routes
-router.get('/exam-code/:code/verify', (req, res) => {
+router.get('/exam-code/:code/verify', enterExamRateLimit, (req, res) => {
   req.body = {
     examCode: req.params.code,
     hallTicket: req.query.hallTicket || req.body?.hallTicket,
   };
   return verifyExamEntry(req, res);
 });
-router.post('/exam-code/:code/verify', (req, res) => {
+router.post('/exam-code/:code/verify', enterExamRateLimit, (req, res) => {
   req.body = {
     examCode: req.params.code,
     hallTicket: req.body?.hallTicket || req.query.hallTicket,
   };
   return verifyExamEntry(req, res);
 });
-router.post('/exam-code/:code/validate', (req, res) => {
+router.post('/exam-code/:code/validate', enterExamRateLimit, (req, res) => {
   req.body = {
     examCode: req.params.code,
     hallTicket: req.body?.hallTicket || req.query.hallTicket,
@@ -124,13 +125,13 @@ router.get('/exam-code/:code/start', async (req, res) => {
 router.get('/exam-code/:code/questions', getExamCodeQuestions);
 
 // Per-question autosave (1b)
-router.post('/exam-code/:code/save-answer', answerRateLimit, saveExamCodeAnswer);
+router.post('/exam-code/:code/save-answer', answerRateLimit, validateBody(saveExamCodeAnswerSchema), saveExamCodeAnswer);
 
 // Resume state after refresh/crash (1b)
 router.get('/exam-code/:code/resume-state', getExamCodeResumeState);
 
 // Submit answers
-router.post('/exam-code/:code/submit', submitExamCodeAttempt);
+router.post('/exam-code/:code/submit', validateBody(submitExamCodeSchema), submitExamCodeAttempt);
 
 // Log violation
 router.post('/exam-code/:code/violation', logExamCodeViolation);
@@ -143,11 +144,11 @@ router.get('/exam-code/:code/leaderboard', getExamCodeLeaderboard);
 
 // ─── ADMIN ROUTES (require adminAuth) ─────────────────────────
 
-// Colleges management
+// Colleges management (mutations restricted to super_admin)
 router.get('/admin/colleges', adminAuth, listColleges);
-router.post('/admin/colleges', adminAuth, createCollege);
-router.patch('/admin/colleges/:id', adminAuth, updateCollege);
-router.delete('/admin/colleges/:id', adminAuth, deleteCollege);
+router.post('/admin/colleges', adminAuth, requireRole('super_admin'), createCollege);
+router.patch('/admin/colleges/:id', adminAuth, requireRole('super_admin'), updateCollege);
+router.delete('/admin/colleges/:id', adminAuth, requireRole('super_admin'), deleteCollege);
 
 // Exam codes management
 router.get('/admin/exam-codes', adminAuth, listExamCodes);

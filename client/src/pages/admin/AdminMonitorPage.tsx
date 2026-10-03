@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
+import { API_BASE_URL } from '../../lib/config'
 import { supabase } from '../../lib/supabaseClient'
 import LiveGridWall, { type StudentTile } from '../../components/3d/LiveGridWall'
 import GlowCard from '../../components/3d/GlowCard'
@@ -12,7 +13,7 @@ import ShimmerText from '../../components/3d/ShimmerText'
 import CandidateViolationTimelineModal from '../../components/CandidateViolationTimelineModal'
 import InspectorRadarMatrix3D from '../../components/3d/InspectorRadarMatrix3D'
 
-const BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001'
+const BASE_URL = API_BASE_URL
 
 interface ProctoringEvent {
   id: string
@@ -1083,10 +1084,24 @@ export default function AdminMonitorPage() {
                         <span style={{ color: 'var(--color-text-faint)' }}>Current Question</span>
                         <span style={{ fontWeight: 700 }}>Q{selectedStudent.currentQuestion || 1} / 15</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: 'var(--color-text-faint)' }}>Estimated Score</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: 'var(--color-text-faint)' }}>Auto-graded (MCQ)</span>
                         <span style={{ fontWeight: 700, color: (selectedStudent.score || 0) >= 60 ? '#10B981' : '#F59E0B' }}>
                           {selectedStudent.score !== undefined ? `${selectedStudent.score}%` : 'Evaluating'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: 'var(--color-text-faint)' }}>Coding Questions</span>
+                        <span style={{
+                          fontWeight: 700,
+                          fontSize: '0.72rem',
+                          color: '#38BDF8',
+                          background: 'rgba(56, 189, 248, 0.12)',
+                          border: '1px solid rgba(56, 189, 248, 0.3)',
+                          padding: '1px 6px',
+                          borderRadius: 4,
+                        }}>
+                          Pending Manual Review
                         </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>

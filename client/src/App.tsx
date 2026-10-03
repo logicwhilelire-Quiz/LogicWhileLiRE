@@ -4,7 +4,7 @@ import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import ErrorBoundary from './components/ErrorBoundary';
 import PageLoader from './components/PageLoader';
 import CustomCursor from './components/CustomCursor';
-import GrowthranIntro from './components/GrowthranIntro';
+import LogicWhileLiREIntro from './components/LogicWhileLiREIntro';
 import PageTransition from './components/3d/PageTransition';
 
 // Code-split routes for optimal performance and smaller initial bundles
@@ -44,7 +44,7 @@ const CollegesPage = lazy(() => import('./pages/admin/CollegesPage'));
 const ExamCodesPage = lazy(() => import('./pages/admin/ExamCodesPage'));
 const AdminMonitorPage = lazy(() => import('./pages/admin/AdminMonitorPage'));
 
-// ── GROWTHRAN 1.0 Clean Admin Control Center ───────────────────────
+// ── LogicWhileLiRE Clean Admin Control Center ───────────────────────
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
 const ExamControl = lazy(() => import('./pages/admin/ExamControl'));
 const QuestionControl = lazy(() => import('./pages/admin/QuestionControl'));
@@ -183,7 +183,7 @@ export default function App() {
     <ErrorBoundary>
       <MotionConfig reducedMotion="user">
         <BrowserRouter>
-          <GrowthranIntro />
+          <LogicWhileLiREIntro />
           <RouteSweep />
           <CustomCursor />
           <Suspense fallback={<PageLoader />}>

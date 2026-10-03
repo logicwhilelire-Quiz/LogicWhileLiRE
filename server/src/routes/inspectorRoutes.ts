@@ -6,6 +6,9 @@
 
 import { Router, Request, Response } from 'express';
 import { supabase } from '../db/supabase';
+import { adminAuth } from '../middleware/adminAuth';
+import { otpRateLimit } from '../middleware/rateLimiter';
+import { validateBody, inspectorBroadcastSchema, inspectorCandidateActionSchema } from '../middleware/validate';
 import {
   sendExamInvitationEmail,
   sendCandidateSubmissionReceiptEmail,
@@ -14,6 +17,7 @@ import {
   sendOtpEmail,
   sendResultEmail,
 } from '../services/emailService';
+
 
 const router = Router();
 
@@ -46,7 +50,7 @@ const EMAIL_DISPATCH_LEDGER: OutboundEmailRecord[] = [
   {
     id: 'eml-init-1',
     type: 'invitation',
-    recipient: 'student01@growthran.edu',
+    recipient: 'student01@logicwhilelire.edu',
     recipientName: 'Candidate 01',
     examCode: 'DEMO123',
     subject: '🎓 Official Hall Ticket & Passcode — DEMO123',
@@ -56,7 +60,7 @@ const EMAIL_DISPATCH_LEDGER: OutboundEmailRecord[] = [
   {
     id: 'eml-init-2',
     type: 'otp',
-    recipient: 'student02@growthran.edu',
+    recipient: 'student02@logicwhilelire.edu',
     recipientName: 'Candidate 02',
     examCode: 'DEMO123',
     subject: '🔐 Your Verification Code: 491024 — DEMO123',
@@ -69,7 +73,7 @@ const EMAIL_DISPATCH_LEDGER: OutboundEmailRecord[] = [
  * POST /api/v1/inspector/broadcast
  * Broadcasts an announcement or invigilator order to all students in an exam room
  */
-router.post('/broadcast', async (req: Request, res: Response) => {
+router.post('/broadcast', adminAuth, validateBody(inspectorBroadcastSchema), async (req: Request, res: Response) => {
   try {
     const { examCode, message, priority = 'normal', inspectorName = 'Lead Inspector' } = req.body;
 
@@ -125,7 +129,7 @@ router.post('/broadcast', async (req: Request, res: Response) => {
  * POST /api/v1/inspector/candidate-action
  * Executes direct actions on a specific candidate: warn, whisper, pause, resume, extend_time, terminate
  */
-router.post('/candidate-action', async (req: Request, res: Response) => {
+router.post('/candidate-action', adminAuth, validateBody(inspectorCandidateActionSchema), async (req: Request, res: Response) => {
   try {
     const {
       examCode,
@@ -289,7 +293,7 @@ router.post('/report-issue', async (req: Request, res: Response) => {
  * POST /api/v1/communication/send-otp
  * Dispatches a one-time passcode or verification code to candidate's email
  */
-router.post('/send-otp', async (req: Request, res: Response) => {
+router.post('/send-otp', otpRateLimit, async (req: Request, res: Response) => {
   try {
     const { email, name = 'Candidate', examTitle = 'LogicWhileLiRE Assessment', otp } = req.body;
 
@@ -316,7 +320,7 @@ router.post('/send-otp', async (req: Request, res: Response) => {
  * POST /api/v1/communication/send-invitation
  * Sends candidate their exam pass code, hall ticket, and direct entrance URL
  */
-router.post('/send-invitation', async (req: Request, res: Response) => {
+router.post('/send-invitation', adminAuth, async (req: Request, res: Response) => {
   try {
     const {
       email,
@@ -332,7 +336,8 @@ router.post('/send-invitation', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'email, hallTicket, and examCode are required' });
     }
 
-    const appUrl = accessUrl || `${process.env.CLIENT_URL || 'http://localhost:5173'}/enter-exam`;
+    const clientBase = (process.env.CLIENT_ORIGIN || process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/+$/, '');
+    const appUrl = accessUrl || `${clientBase}/enter-exam`;
 
     await sendExamInvitationEmail(
       email,
@@ -400,7 +405,7 @@ router.post('/send-receipt', async (req: Request, res: Response) => {
  * GET /api/v1/inspector/audit-log/:examCode
  * Retrieves full forensic audit log for an examination
  */
-router.get('/audit-log/:examCode', (req: Request, res: Response) => {
+router.get('/audit-log/:examCode', adminAuth, (req: Request, res: Response) => {
   const code = String(req.params.examCode).toUpperCase();
   const logs = AUDIT_LEDGER.filter((l) => l.examCode === code);
 
@@ -416,7 +421,7 @@ router.get('/audit-log/:examCode', (req: Request, res: Response) => {
  * GET /api/v1/inspector/email-logs/:examCode?
  * Retrieves outbound email communication records for invigilator verification
  */
-router.get(['/email-logs', '/email-logs/:examCode'], (req: Request, res: Response) => {
+router.get(['/email-logs', '/email-logs/:examCode'], adminAuth, (req: Request, res: Response) => {
   const code = req.params.examCode ? String(req.params.examCode).toUpperCase() : null;
   const filtered = code ? EMAIL_DISPATCH_LEDGER.filter((e) => e.examCode === code) : EMAIL_DISPATCH_LEDGER;
 
@@ -432,7 +437,7 @@ router.get(['/email-logs', '/email-logs/:examCode'], (req: Request, res: Respons
  * POST /api/v1/inspector/test-email
  * Invigilator test workbench to live-dispatch any template
  */
-router.post('/test-email', async (req: Request, res: Response) => {
+router.post('/test-email', adminAuth, async (req: Request, res: Response) => {
   try {
     const {
       type,
@@ -453,6 +458,7 @@ router.post('/test-email', async (req: Request, res: Response) => {
       await sendOtpEmail(recipient, name, code, examTitle);
       subject = `🔐 Your Verification Code: ${code} — ${examTitle}`;
     } else if (type === 'invitation') {
+      const clientBase = (process.env.CLIENT_ORIGIN || process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/+$/, '');
       await sendExamInvitationEmail(
         recipient,
         name,
@@ -460,7 +466,7 @@ router.post('/test-email', async (req: Request, res: Response) => {
         examCode,
         examTitle,
         60,
-        `http://localhost:5173/enter-exam?code=${examCode}&ht=${hallTicket}`
+        `${clientBase}/enter-exam?code=${examCode}&ht=${hallTicket}`
       );
       subject = `🎓 Official Examination Hall Ticket & Access Pass — ${examCode}`;
     } else if (type === 'submission_receipt') {

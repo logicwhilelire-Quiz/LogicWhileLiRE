@@ -9,6 +9,6 @@
     <path d="M38 108 L78 74 L106 95 L174 24" stroke="#60A5FA" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
     <polygon points="182,16 150,22 176,48" fill="#60A5FA" stroke="#60A5FA" stroke-width="4" stroke-linejoin="round"/>
   </g>
-  <text x="215" y="102" font-family="'Space Grotesk', 'Montserrat', 'Inter', -apple-system, sans-serif" font-size="64" font-weight="800" fill="#FFFFFF" letter-spacing="0.02em">GROWTHRAN</text>
-  <text x="218" y="146" font-family="'Inter', -apple-system, sans-serif" font-size="32" font-weight="600" fill="#93C5FD" letter-spacing="0.04em">Learn. Grow. Run.</text>
+  <text x="215" y="102" font-family="'Space Grotesk', 'Montserrat', 'Inter', -apple-system, sans-serif" font-size="52" font-weight="800" fill="#FFFFFF" letter-spacing="0.02em">LogicWhileLiRE</text>
+  <text x="218" y="146" font-family="'Inter', -apple-system, sans-serif" font-size="30" font-weight="600" fill="#93C5FD" letter-spacing="0.04em">Logic. While. LiRE.</text>
 </svg>

@@ -13,7 +13,7 @@ export interface SceneManagerOptions {
  * LogicWhileLiRESceneManager / GrowthranSceneManager — Controls scene lifecycle, frame loops, and viewport pause
  * Ensures animations stop when tab is backgrounded or canvas is scrolled out of view.
  */
-export class GrowthranSceneManager {
+export class LogicWhileLiRESceneManager {
   private container: HTMLElement
   private renderer: THREE.WebGLRenderer
   private scene: THREE.Scene
@@ -112,5 +112,5 @@ export class GrowthranSceneManager {
   }
 }
 
-export const LogicWhileLiRESceneManager = GrowthranSceneManager
+export const GrowthranSceneManager = LogicWhileLiRESceneManager
 

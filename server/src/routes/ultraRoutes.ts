@@ -534,23 +534,26 @@ router.get('/leaderboard/:examCode', async (req: Request, res: Response) => {
       return res.json({ success: true, data: rows });
     }
 
-    // Fallback: compute from attempts
+    // Fallback: compute from attempts using canonical score DESC, time_taken_seconds ASC
     const { data: attempts } = await supabase
       .from('exam_code_attempts')
-      .select('hall_ticket, score, percentage, submitted_at')
+      .select('hall_ticket_no, student_name, score, max_score, time_taken_seconds, status')
       .eq('exam_code', examCode)
-      .not('submitted_at', 'is', null)
-      .order('percentage', { ascending: false })
+      .in('status', ['completed', 'terminated_cheating'])
+      .order('score', { ascending: false })
+      .order('time_taken_seconds', { ascending: true })
       .limit(50);
 
     const rows = (attempts || []).map((a: Record<string, unknown>, i: number) => ({
       rank: i + 1,
-      hall_ticket: a.hall_ticket as string,
-      name: a.hall_ticket as string,
-      score: Number(a.percentage || 0),
+      hall_ticket: (a.hall_ticket_no || a.student_name || '') as string,
+      name: (a.student_name || a.hall_ticket_no || '') as string,
+      score: Number(a.score || 0),
+      max_score: Number(a.max_score || 0),
+      time_taken_seconds: Number(a.time_taken_seconds || 0),
     }));
 
-    res.json({ success: true, data: rows });
+    res.json({ success: true, data: rows, leaderboard: rows });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Leaderboard fetch failed' });
   }
@@ -774,9 +777,45 @@ router.get('/exam-code/:code/result', async (req: Request, res: Response) => {
           unanswered: 1,
           timeTaken: 1420,
           qrToken: `cert_${code}_${hallTicket || 'DEMO'}`,
+          code_answers: {},
+          mcq_score: 85,
+          mcq_max_score: 100,
+          mcq_percentage: 85,
+          coding_questions: [],
+          has_coding_questions: false,
         },
       });
     }
+
+    // Inspect questions to identify coding vs MCQ questions
+    const { data: qList } = await supabase
+      .from('questions_ec')
+      .select('id, question, marks, topic, option_a, option_b, question_type')
+      .eq('exam_code', String(code).toUpperCase());
+
+    const codingQList: Array<{ id: string; title: string; marks: number; submitted: boolean }> = [];
+    let mcqMaxMarks = 0;
+    const codeAns = attempt.code_answers || {};
+
+    (qList || []).forEach((q: any) => {
+      const isCoding = q.question_type === 'code' || (!q.option_a && !q.option_b && (String(q.topic || '').toLowerCase().includes('algorithm') || String(q.topic || '').toLowerCase().includes('code')));
+      const qMarks = Number(q.marks || 1);
+      if (isCoding) {
+        const isSub = Boolean(codeAns[q.id] && String(codeAns[q.id]).trim().length > 0);
+        codingQList.push({
+          id: q.id,
+          title: q.question || 'Coding Problem',
+          marks: qMarks,
+          submitted: isSub,
+        });
+      } else {
+        mcqMaxMarks += qMarks;
+      }
+    });
+
+    const hasCoding = codingQList.length > 0;
+    const mcqScore = attempt.score || 0;
+    const mcqPercentage = mcqMaxMarks > 0 ? Math.round((mcqScore / mcqMaxMarks) * 100) : (attempt.percentage || 0);
 
     res.json({
       success: true,
@@ -789,6 +828,12 @@ router.get('/exam-code/:code/result', async (req: Request, res: Response) => {
         unanswered: attempt.unanswered || 0,
         timeTaken: attempt.time_taken || attempt.time_taken_seconds || 0,
         qrToken: attempt.qr_token || `token_${code}_${attempt.hall_ticket}`,
+        code_answers: codeAns,
+        mcq_score: mcqScore,
+        mcq_max_score: mcqMaxMarks > 0 ? mcqMaxMarks : (attempt.total_marks || attempt.max_score || 100),
+        mcq_percentage: mcqPercentage,
+        coding_questions: codingQList,
+        has_coding_questions: hasCoding,
       },
     });
   } catch (err) {

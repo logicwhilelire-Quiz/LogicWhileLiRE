@@ -17,8 +17,8 @@ import { io as connectSocket, Socket } from "socket.io-client";
 import AdminSidebar from "../../components/layout/AdminSidebar";
 import AnimatedPage from "../../components/AnimatedPage";
 import { startExam, getExamLobbyStats } from "../../lib/api";
+import { SOCKET_URL } from "../../lib/config";
 
-const SOCKET_URL = (import.meta as any).env?.VITE_SOCKET_URL || (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:3001";
 
 interface RankEntry {
   rank: number;

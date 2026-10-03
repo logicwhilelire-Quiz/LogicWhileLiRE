@@ -10,10 +10,10 @@ export interface RendererOptions {
 }
 
 /**
- * createGrowthranRenderer — Standardized Three.js WebGLRenderer factory
+ * createLogicWhileLiRERenderer — Standardized Three.js WebGLRenderer factory
  * Enforces DPR cap at 1.5, ACESFilmicToneMapping, and color space correctness.
  */
-export function createGrowthranRenderer(options: RendererOptions = {}): THREE.WebGLRenderer {
+export function createLogicWhileLiRERenderer(options: RendererOptions = {}): THREE.WebGLRenderer {
   const renderer = new THREE.WebGLRenderer({
     canvas: options.canvas,
     alpha: options.alpha ?? true,
@@ -31,5 +31,5 @@ export function createGrowthranRenderer(options: RendererOptions = {}): THREE.We
   return renderer
 }
 
-export const createLogicWhileLiRERenderer = createGrowthranRenderer
+export const createGrowthranRenderer = createLogicWhileLiRERenderer
 

@@ -122,7 +122,7 @@ export default function FullscreenEnforcementOverlay({
               marginBottom: 24,
             }}
           >
-            You have exited fullscreen mode. GROWTHRAN assessment integrity requires uninterrupted fullscreen throughout your session.
+            You have exited fullscreen mode. LogicWhileLiRE assessment integrity requires uninterrupted fullscreen throughout your session.
           </p>
 
           {/* Exit counter & Strike Box */}

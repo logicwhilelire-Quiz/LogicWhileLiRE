@@ -1426,6 +1426,16 @@ pre, code, .font-mono, [class*="mono"] {
    ============================================================ */
 
 /* ── 1. Page-load transition (~240ms) ── */
+@keyframes logicwhilelirePageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 @keyframes growthranPageFadeIn {
   from {
     opacity: 0;
@@ -1439,7 +1449,7 @@ pre, code, .font-mono, [class*="mono"] {
 
 /* Only fade .page-center; Framer Motion handles AnimatedRoutes so we skip 'main' to avoid double-animate jitter */
 .page-center {
-  animation: growthranPageFadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: logicwhilelirePageFadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* ── 2. Universal Hover States: subtle scale & shadow on cards & buttons ── */

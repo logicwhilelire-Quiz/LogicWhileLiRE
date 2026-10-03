@@ -54,7 +54,7 @@ function request(method, path, headers = {}, body = null) {
 
 async function runRoleSecurityTests() {
   console.log('================================================================');
-  console.log('🛡️ GROWTHRAN — ROLE & OWNERSHIP SECURITY TESTS');
+  console.log('🛡️ LogicWhileLiRE — ROLE & OWNERSHIP SECURITY TESTS');
   console.log(`Target: ${BASE_URL}`);
   console.log('================================================================\n');
 
@@ -71,9 +71,9 @@ async function runRoleSecurityTests() {
   console.log('  ✅ Super Admin authenticated (role: super_admin)');
 
   // Test 2: Faculty 1 Login (Dr. Suresh Kumar)
-  console.log('\n[2/8] Testing Faculty 1 Login (suresh@growthran.com)...');
+  console.log('\n[2/8] Testing Faculty 1 Login (suresh@logicwhilelire.com)...');
   const f1Res = await request('POST', '/api/admin/login', {}, {
-    username: 'suresh@growthran.com',
+    username: 'suresh@logicwhilelire.com',
     password: 'admin123',
   });
   if (f1Res.status !== 200 || f1Res.json?.user?.role !== 'faculty') {
@@ -84,9 +84,9 @@ async function runRoleSecurityTests() {
   console.log(`  ✅ Faculty 1 authenticated (role: faculty, staff_id: ${f1StaffId})`);
 
   // Test 3: Faculty 2 Login (Priya Sharma)
-  console.log('\n[3/8] Testing Faculty 2 Login (priya@growthran.com)...');
+  console.log('\n[3/8] Testing Faculty 2 Login (priya@logicwhilelire.com)...');
   const f2Res = await request('POST', '/api/admin/login', {}, {
-    username: 'priya@growthran.com',
+    username: 'priya@logicwhilelire.com',
     password: 'admin123',
   });
   if (f2Res.status !== 200 || f2Res.json?.user?.role !== 'faculty') {
@@ -147,7 +147,7 @@ async function runRoleSecurityTests() {
 
   // Test 7: Super Admin Staff Account Lifecycle (Create)
   console.log('\n[7/8] Testing Super Admin Faculty Account Creation...');
-  const newEmail = `faculty.test.${Date.now()}@growthran.com`;
+  const newEmail = `faculty.test.${Date.now()}@logicwhilelire.com`;
   const createStaffRes = await request(
     'POST',
     '/api/admin/staff',

@@ -14,7 +14,7 @@ const assert = require('assert');
 
 function run3DArchitectureTests() {
   console.log('================================================================');
-  console.log('🎨 GROWTHRAN — PHASE H: 3D & ANIMATION ARCHITECTURE TEST SUITE');
+  console.log('🎨 LogicWhileLiRE — PHASE H: 3D & ANIMATION ARCHITECTURE TEST SUITE');
   console.log('================================================================\n');
 
   // Test 1: Capability Detector & Fallback Unit Logic

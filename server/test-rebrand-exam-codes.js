@@ -6,7 +6,7 @@ const assert = require('assert');
 const { generateExamCode, isValidExamCodeFormat } = require('./dist/controllers/examCodeController');
 
 console.log('================================================================');
-console.log('🔑 GROWTHRAN — EXAM CODE SYSTEM DUAL-PREFIX TEST SUITE');
+console.log('🔑 LogicWhileLiRE — EXAM CODE SYSTEM DUAL-PREFIX TEST SUITE');
 console.log('================================================================\n');
 
 // Test 1: New codes generate with GR- prefix

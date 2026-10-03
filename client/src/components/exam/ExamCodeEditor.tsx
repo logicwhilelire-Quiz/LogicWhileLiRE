@@ -1,8 +1,9 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
+import { API_BASE_URL } from '../../lib/config'
 
-const BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const BASE = API_BASE_URL
 
 const LANGUAGES = [
   {

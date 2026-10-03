@@ -156,7 +156,7 @@ export async function registerCandidate(req: Request, res: Response): Promise<vo
     role: 'student' as const,
   };
 
-  const jwtSecret = process.env.JWT_SECRET || 'growthran_participant_jwt_default_secret_key_demo_2026';
+  const jwtSecret = process.env.JWT_SECRET || 'logicwhilelire_participant_jwt_default_secret_key_demo_2026';
   const token = jwt.sign(payload, jwtSecret, { expiresIn: STUDENT_JWT_EXPIRY });
   setStudentCookie(res, token);
 
@@ -210,7 +210,7 @@ export async function getLobbyStatus(req: Request, res: Response): Promise<void>
     success: true,
     contest: {
       id: contestId,
-      title: 'GROWTHRAN 2026 Live Assessment Gate',
+      title: 'LogicWhileLiRE 2026 Live Assessment Gate',
       status: 'waiting_lobby',
       scheduled_start: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
     },

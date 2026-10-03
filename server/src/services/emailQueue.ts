@@ -17,6 +17,9 @@ export interface ResultEmailJob {
     totalParticipants?: number;
     isLeaderboardPublic?: boolean;
     topicBreakdown?: Record<string, { correct: number; wrong: number; score: number; maxScore: number }>;
+    hasCodingQuestions?: boolean;
+    mcqScore?: number;
+    mcqMaxScore?: number;
   };
   examId?: string;
   sessionId?: string;

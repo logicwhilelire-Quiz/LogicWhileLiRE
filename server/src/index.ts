@@ -28,18 +28,44 @@ const app = express();
 const httpServer = http.createServer(app);
 const PORT = parseInt(process.env.PORT || '3001');
 
-// ------- Performance & Security middleware -------
-app.use(helmet());
-app.use(compression());
-
 // Trust proxy (needed for rate limiting by real IP when behind Render/Railway/Nginx)
 app.set('trust proxy', 1);
 
-// ------- CORS - locked to allowed origins (1f: CORS allowlist) -------
+// ------- CORS & Origin Setup -------
 const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean);
+
+// ------- Performance & Security middleware -------
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+        imgSrc: ["'self'", "data:", "blob:", "https:"],
+        connectSrc: [
+          "'self'",
+          ...allowedOrigins,
+          "https://*.supabase.co",
+          "wss:",
+          "ws:",
+          "https://fonts.googleapis.com",
+          "https://fonts.gstatic.com",
+        ],
+        mediaSrc: ["'self'", "blob:", "data:"],
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
+app.use(compression());
 
 app.use(
   cors({
@@ -53,6 +79,7 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'x-load-test'],
   })
 );
+
 
 // ------- Request ID tracking (Phase J1) -------
 app.use((req, res, next) => {

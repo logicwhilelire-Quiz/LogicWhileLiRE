@@ -1,11 +1,12 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
+import { API_BASE_URL } from '../../lib/config'
 import HoloScan from './HoloScan'
 import MagneticButton from './MagneticButton'
 import TypingDots from './TypingDots'
 
-const BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const BASE = API_BASE_URL
 
 const LANGUAGES = [
   { id: 'python',     label: 'Python 3',   ext: '.py',   comment: '# Write your solution in Python 3\nimport sys\n\ndef solve():\n    lines = sys.stdin.read().splitlines()\n    if not lines: return\n    # Implement logic and print expected output\n    print("True")\n\nif __name__ == "__main__":\n    solve()\n' },

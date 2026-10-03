@@ -1,5 +1,5 @@
 /**
- * GROWTHRAN Assessment Suite — Gate Module Constants
+ * LogicWhileLiRE Assessment Suite — Gate Module Constants
  * Doc ID: AL-SPEC-2026-REG
  */
 

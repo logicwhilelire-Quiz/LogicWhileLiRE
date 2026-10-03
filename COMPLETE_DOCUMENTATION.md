@@ -1,8 +1,8 @@
-# GROWTHRAN — Complete Platform Documentation & Technical Reference
+# LogicWhileLiRE — Complete Platform Documentation & Technical Reference
 
 **Version:** 4.0.0 (Production Release)  
-**Product:** GROWTHRAN Assessment Engine  
-**Tagline:** "Learn. Grow. Run."  
+**Product:** LogicWhileLiRE Assessment Engine  
+**Tagline:** "Logic. While. LiRE."  
 **Platform Architect & Lead Developer:** R. Charan Sai  
 **Copyright:** © 2026 R. Charan Sai. All rights reserved.  
 **Repository:** `c:\Users\chara\OneDrive\Desktop\Quiz`  
@@ -26,11 +26,11 @@
 
 ## 1. Executive Summary & System Overview
 
-**GROWTHRAN** is an enterprise-grade, high-throughput Campus Recruitment Training (CRT) and coding assessment platform engineered specifically for autonomous engineering colleges, technical universities, and recruitment drives.
+**LogicWhileLiRE** is an enterprise-grade, high-throughput Campus Recruitment Training (CRT) and coding assessment platform engineered specifically for autonomous engineering colleges, technical universities, and recruitment drives.
 
 ### Core Capabilities
 - **High-Throughput Assessment Gate:** High-concurrency registration and queueing gate preventing database bottlenecks during simultaneous logins of 5,000+ candidates.
-- **Exam Code Flow (Zero-OTP Friction):** Direct entrance with pre-generated institutional Exam Codes (`DEMO123`, `GR-TECH-2026`) + Student Hall Ticket numbers, completely eliminating SMS/Email OTP bottlenecks.
+- **Exam Code Flow (Zero-OTP Friction):** Direct entrance with pre-generated institutional Exam Codes (`DEMO123`, `LW-TECH-2026`, `GR-TECH-2026`) + Student Hall Ticket numbers, completely eliminating SMS/Email OTP bottlenecks.
 - **Server-Authoritative Clock:** Examination timers are computed exclusively on the server (`started_at + duration_minutes`). Client-side clock manipulation or browser pauses cannot extend test duration.
 - **Anti-Cheat Hardware & Canvas Fingerprinting:** Continuous detection of tab switching, window blurring, developer tools execution, screen resizing, and multi-session concurrency conflicts.
 - **Client-Side Face Sentinel:** On-device MediaPipe landmarking detects face absence, multiple faces, and looking away. Zero video feeds or audio streams are ever transmitted or stored on cloud servers.
@@ -45,8 +45,8 @@
 ### 2.1 Logo Philosophy & Visual Geometry
 - **The Open Book:** Represents deep foundational knowledge, rigorous scholarship, and verified examination standards.
 - **The Rising Growth Arrow:** Ascends from within the pages, breaks through institutional constraints, and surges diagonally upward-right at +45°, embodying upward trajectory, rapid growth, and execution speed.
-- **The Wordmark:** **GROWTHRAN** — bold, geometric all-caps sans-serif in deep authority blue (`#0A3F8F`), projecting institutional reliability.
-- **The Tagline:** *"Learn. Grow. Run."* — modern medium weight in lighter growth blue (`#4A7DBE`), communicating momentum and action.
+- **The Wordmark:** **LogicWhileLiRE** — bold, geometric sans-serif featuring deep authority blue (`#0A3F8F`) paired with a vivid cyan-violet gradient (`#38BDF8` to `#C084FC`), projecting institutional reliability and next-gen intelligence.
+- **The Tagline:** *"Logic. While. LiRE."* — modern medium weight in growth blue (`#1B5FB5` / `#93C5FD`), communicating structured logic, persistent momentum, and execution excellence.
 
 ### 2.2 Color Tokens
 ```css
@@ -118,7 +118,7 @@ The frontend is built using React 18, Vite, and modern CSS. All 20+ routes are c
 
 ### 4.1 Candidate Experience
 - **Public Marketing Landing (`/`):** `client/src/pages/LandingPage.tsx`
-  - Canonical GROWTHRAN logo, hero showcase, live animated counter, feature breakdown, and developer credit (*R. Charan Sai*).
+  - Canonical LogicWhileLiRE logo, hero showcase, live animated counter, feature breakdown, and developer credit (*R. Charan Sai*).
 - **Exam Code Entrance (`/enter-exam`):** `client/src/pages/EnterExamPage.tsx`
   - Hall Ticket Number + Master Exam Code entry with immediate active-window verification.
 - **Pre-Assessment Instructions (`/instructions/:examCode`):** `client/src/pages/InstructionsPage.tsx`
@@ -235,7 +235,7 @@ Every HTTP request receives a unique `X-Request-Id` (UUID v4) propagated across 
 
 ## 10. Performance Benchmarks & 500-User Load Validation
 
-The GROWTHRAN platform was benchmarked under a realistic 500-candidate concurrent load simulation across 7 phases:
+The LogicWhileLiRE platform was benchmarked under a realistic 500-candidate concurrent load simulation across 7 phases:
 - **Total Requests Executed:** 4,500
 - **Successful Requests:** 4,500
 - **Failed Requests:** 0 (0.00% error rate)
@@ -250,5 +250,5 @@ The GROWTHRAN platform was benchmarked under a realistic 500-candidate concurren
 ## 👥 Credits & Verification
 
 - **Architect & Author:** R. Charan Sai
-- **Platform:** GROWTHRAN — *"Learn. Grow. Run."*
+- **Platform:** LogicWhileLiRE — *"Logic. While. LiRE."*
 - **Status:** Release Ready v4.0.0

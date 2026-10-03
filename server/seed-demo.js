@@ -1,10 +1,10 @@
 /**
- * seed-demo.js — GROWTHRAN Demo Mode Dataset Seeder & Reset Tool
+ * seed-demo.js — LogicWhileLiRE Demo Mode Dataset Seeder & Reset Tool
  *
  * PHASE J Specification (Section 11, J5):
  * Single command that seeds a clean demo dataset and resets it:
  * - Super admin credentials (admin / admin123 in development)
- * - Faculty credentials (suresh@growthran.com / Faculty@123)
+ * - Faculty credentials (suresh@logicwhilelire.com / Faculty@123)
  * - Active demo exams (GR-TECH-2026, DEMO123)
  * - Demo candidate accounts (2201A0501 - 2201A0504)
  * - Rich question bank (MCQ, Aptitude, Coding Sandbox Challenges)
@@ -38,7 +38,7 @@ function checkHealth() {
 
 async function main() {
   console.log('================================================================');
-  console.log('🚀 GROWTHRAN — DEMO DATASET SEED & RESET UTILITY');
+  console.log('🚀 LogicWhileLiRE — DEMO DATASET SEED & RESET UTILITY');
   console.log('================================================================\n');
 
   console.log(`[1/3] Verifying server connection at ${BASE_URL}...`);
@@ -54,8 +54,8 @@ async function main() {
 
   console.log('[2/3] Seeding clean baseline demo dataset:');
   console.log('  • Super Admin:       admin / admin123 (development mode only)');
-  console.log('  • Faculty Staff:     suresh@growthran.com (VRSEC Department Chair)');
-  console.log('  • Faculty Staff:     priya@growthran.com (RVRJC Department Chair)');
+  console.log('  • Faculty Staff:     suresh@logicwhilelire.com (VRSEC Department Chair)');
+  console.log('  • Faculty Staff:     priya@logicwhilelire.com (RVRJC Department Chair)');
   console.log('  • Primary Demo Code: DEMO123 (Engineering Qualifier 2026)');
   console.log('  • Secondary Code:    GR-TECH-2026 (Technical Assessment)');
   console.log('  • Legacy Code:       CS2026 & LW-VRSEC-2026 (100% Backward Compatible)');

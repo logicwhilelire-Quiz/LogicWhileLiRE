@@ -39,10 +39,16 @@ export async function verifyAttemptToken(
   }
   // If no stored token yet (legacy row), accept and migrate
   if (!attempt.session_token) return { valid: true, evicted: false, terminated: false, attempt };
-  const match = providedToken && crypto.timingSafeEqual(
-    Buffer.from(attempt.session_token, 'hex'),
-    Buffer.from(providedToken.padEnd(32, '0').slice(0, 32), 'hex')
-  );
+
+  let match = false;
+  if (providedToken && typeof providedToken === 'string') {
+    const bufA = Buffer.from(String(attempt.session_token));
+    const bufB = Buffer.from(String(providedToken));
+    if (bufA.length === bufB.length) {
+      match = crypto.timingSafeEqual(bufA, bufB);
+    }
+  }
+
   if (!match) return { valid: false, evicted: true, terminated: false, attempt };
   return { valid: true, evicted: false, terminated: false, attempt };
 }
@@ -475,7 +481,13 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
     randomizedQuestions.push(...shuffledList);
   }
 
-  res.json({ success: true, questions: randomizedQuestions, total: randomizedQuestions.length });
+  // Question secrecy guard: ensure answer keys/explanations are never leaked to candidate client
+  const sanitizedQuestions = (randomizedQuestions || []).map((q: any) => {
+    const { correct_answer, correct_option, explanation, ...safeQ } = q;
+    return safeQ;
+  });
+
+  res.json({ success: true, questions: sanitizedQuestions, total: sanitizedQuestions.length });
 }
 
 /**
@@ -554,7 +566,7 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
   // Fetch questions with correct answers for server-authoritative grading
   const { data: questions } = await supabase
     .from('questions_ec')
-    .select('id, correct_answer, marks, topic, option_a, option_b, option_c, option_d')
+    .select('id, question, correct_answer, marks, topic, option_a, option_b, option_c, option_d, question_type')
     .eq('exam_code', String(code).toUpperCase());
 
   if (!questions) {
@@ -567,10 +579,14 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
   let maxScore = 0;
   let correctCount = 0;
   let wrongCount = 0;
+  let mcqScore = 0;
+  let mcqMaxScore = 0;
+  const codingQuestionsList: Array<{ id: string; title: string; marks: number; submitted: boolean }> = [];
   const topicBreakdown: Record<string, { correct: number; wrong: number; score: number; maxScore: number }> = {};
   const optLetters = ['A', 'B', 'C', 'D'];
 
   for (const q of questions) {
+    const isCodingQ = q.question_type === 'code' || (!q.option_a && !q.option_b && (String(q.topic || '').toLowerCase().includes('algorithm') || String(q.topic || '').toLowerCase().includes('code')));
     const qMarks = Number(q.marks || 1);
     maxScore += qMarks;
     const topic = q.topic || 'General';
@@ -579,6 +595,21 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
     }
     topicBreakdown[topic].maxScore += qMarks;
 
+    if (isCodingQ) {
+      const codeAns = codeAnswers ? codeAnswers[q.id] : undefined;
+      const isSubmitted = typeof codeAns === 'string' && codeAns.trim().length > 0;
+      codingQuestionsList.push({
+        id: q.id,
+        title: q.question || 'Coding Challenge',
+        marks: qMarks,
+        submitted: isSubmitted,
+      });
+      // Coding questions are evaluated manually; not scored by MCQ letter matcher
+      continue;
+    }
+
+    // MCQ question:
+    mcqMaxScore += qMarks;
     const studentAnswer = finalAnswers[q.id];
     if (studentAnswer !== undefined && studentAnswer !== null) {
       let studentLetter = '';
@@ -604,6 +635,7 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
       const expectedLetter = String(q.correct_answer || 'A').trim().toUpperCase();
       if (studentLetter && studentLetter === expectedLetter) {
         totalScore += qMarks;
+        mcqScore += qMarks;
         correctCount++;
         topicBreakdown[topic].correct++;
         topicBreakdown[topic].score += qMarks;
@@ -652,6 +684,12 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
       topic_breakdown: topicBreakdown,
       status: finalStatus,
       expired_grace: isGraceExpired,
+      code_answers: codeAnswers || {},
+      mcq_score: mcqScore,
+      mcq_max_score: mcqMaxScore > 0 ? mcqMaxScore : maxScore,
+      mcq_percentage: mcqMaxScore > 0 ? Math.round((mcqScore / mcqMaxScore) * 100) : (maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0),
+      coding_questions: codingQuestionsList,
+      has_coding_questions: codingQuestionsList.length > 0,
     },
   });
 }

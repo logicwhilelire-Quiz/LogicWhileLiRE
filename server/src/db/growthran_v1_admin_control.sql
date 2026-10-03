@@ -55,14 +55,14 @@ CREATE TABLE IF NOT EXISTS staff (
 -- ─── 3. TABLE: platform_settings (Platform & Engine Control) ──
 CREATE TABLE IF NOT EXISTS platform_settings (
   id                    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  platform_name         TEXT NOT NULL DEFAULT 'GROWTHRAN',
-  tagline               TEXT NOT NULL DEFAULT 'Learn. Grow. Run.',
+  platform_name         TEXT NOT NULL DEFAULT 'LogicWhileLiRE',
+  tagline               TEXT NOT NULL DEFAULT 'Logic. While. LiRE.',
   college_name          TEXT NOT NULL DEFAULT 'Aerospace Innovation Partner',
-  logo_url              TEXT DEFAULT '/brand/growthran-logo-full.svg',
+  logo_url              TEXT DEFAULT '/brand/logicwhilelire-logo-full.svg',
   primary_color         TEXT NOT NULL DEFAULT '#2B7FFF',
   secondary_color       TEXT NOT NULL DEFAULT '#050814',
   maintenance_mode      BOOLEAN NOT NULL DEFAULT FALSE,
-  maintenance_message   TEXT DEFAULT 'GROWTHRAN Portal is undergoing scheduled administrative maintenance.',
+  maintenance_message   TEXT DEFAULT 'LogicWhileLiRE Portal is undergoing scheduled administrative maintenance.',
   allowed_languages     TEXT[] NOT NULL DEFAULT ARRAY['python', 'javascript', 'cpp', 'java', 'go'],
   execution_timeout_ms  INTEGER NOT NULL DEFAULT 5000,
   memory_limit_mb       INTEGER NOT NULL DEFAULT 256,

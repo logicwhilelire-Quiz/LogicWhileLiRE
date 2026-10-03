@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
-export default function GrowthranIntro({ onComplete }: { onComplete?: () => void }) {
+export default function LogicWhileLiREIntro({ onComplete }: { onComplete?: () => void }) {
   const shouldReduceMotion = useReducedMotion();
   const [visible, setVisible] = useState(false);
 
@@ -13,13 +13,13 @@ export default function GrowthranIntro({ onComplete }: { onComplete?: () => void
     }
 
     try {
-      const seen = sessionStorage.getItem('growthran_intro_seen');
+      const seen = sessionStorage.getItem('logicwhilelire_intro_seen');
       if (seen) {
         setVisible(false);
         if (onComplete) onComplete();
         return;
       }
-      sessionStorage.setItem('growthran_intro_seen', 'true');
+      sessionStorage.setItem('logicwhilelire_intro_seen', 'true');
       setVisible(true);
 
       const timer = setTimeout(() => {
@@ -38,7 +38,7 @@ export default function GrowthranIntro({ onComplete }: { onComplete?: () => void
     <AnimatePresence>
       {visible && (
         <motion.div
-        key="growthran-intro-overlay"
+        key="logicwhilelire-intro-overlay"
         initial={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -189,3 +189,5 @@ export default function GrowthranIntro({ onComplete }: { onComplete?: () => void
     </AnimatePresence>
   );
 }
+
+export const GrowthranIntro = LogicWhileLiREIntro;

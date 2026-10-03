@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listExams, activateExam, adminLogout, getQRUrl } from '../../lib/api';
+import { API_BASE_URL } from '../../lib/config';
 import BrandLogo from '../../components/BrandLogo';
 import AnimatedPage from '../../components/AnimatedPage';
 import AnimatedCounter from '../../components/AnimatedCounter';
@@ -271,7 +272,7 @@ export default function AdminDashboardPage() {
             />
             <div className="mt-2">
               <a
-                href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/admin/exams/${qrExamId}/qr`}
+                href={`${API_BASE_URL}/api/admin/exams/${qrExamId}/qr`}
                 download="enrollment-qr.png"
                 className="btn btn-primary btn-sm"
               >

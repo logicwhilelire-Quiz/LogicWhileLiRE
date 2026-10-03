@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
+import { API_BASE_URL } from '../lib/config'
 import { supabase } from '../lib/supabaseClient'
 import ExamQuestionCard from '../components/exam/ExamQuestionCard'
 import ExamCodeEditor from '../components/exam/ExamCodeEditor'
@@ -50,7 +51,7 @@ interface ExamSession {
 
 type FaceStatus = 'ok' | 'no_face' | 'multiple' | 'looking_away' | 'loading'
 
-const BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const BASE = API_BASE_URL
 
 export default function QuizPage() {
   const { examCode } = useParams<{ examCode: string }>()
@@ -287,11 +288,27 @@ export default function QuizPage() {
       }).catch(() => {})
 
       soundFx.playExamSubmittedFanfare()
-      navigate(`/result-ec/${examCode}`, { state: { result: data, hallTicket } })
+      const codingQState = (session?.questions || [])
+        .filter(q => q.type === 'code')
+        .map(q => ({
+          id: q.id,
+          title: q.text,
+          marks: q.marks,
+          submitted: Boolean(codeAnswers[q.id] && codeAnswers[q.id].trim().length > 0),
+        }))
+
+      navigate(`/result-ec/${examCode}`, {
+        state: {
+          result: data,
+          hallTicket,
+          codeAnswers,
+          codingQuestions: codingQState,
+        },
+      })
     } catch {
       navigate(`/result-ec/${examCode}`, { state: { hallTicket, error: true } })
     }
-  }, [submitting, examCode, hallTicket, answers, codeAnswers, navigate, syncPendingAnswers])
+  }, [submitting, examCode, hallTicket, answers, codeAnswers, session, navigate, syncPendingAnswers])
 
   /* ── 1.4 Background Sync & Network Listeners ── */
   useEffect(() => {
@@ -918,8 +935,27 @@ export default function QuizPage() {
           <BrandLogo size="xs" variant="mark" />
           <div>
             <div className="exam-title">{session.examName}</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', marginTop: 2 }}>
-              {hallTicket} • {answeredCount}/{session.questions.length} answered
+            <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span>{hallTicket} • {answeredCount}/{session.questions.length} answered</span>
+              {session.questions.some(q => q.type === 'code') && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    fontSize: '0.7rem',
+                    padding: '1px 6px',
+                    borderRadius: 4,
+                    background: 'rgba(56, 189, 248, 0.12)',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    color: '#38BDF8',
+                    fontWeight: 600,
+                  }}
+                  title="Coding questions are evaluated manually by instructors; they are not part of the live instant MCQ auto-grade."
+                >
+                  💻 Coding: Manual Review
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -1374,6 +1410,20 @@ export default function QuizPage() {
         {/* ── Right Column: Code Editor (in Code Mode) OR Question Palette (in MCQ Mode) ── */}
         {isCode ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{
+              background: 'rgba(56, 189, 248, 0.08)',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              borderRadius: 8,
+              padding: '8px 12px',
+              fontSize: '0.78rem',
+              color: '#38BDF8',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <span>ℹ️</span>
+              <span><strong>Manual Evaluation:</strong> Coding solutions are submitted for instructor manual review and are not included in the instant live MCQ auto-grade.</span>
+            </div>
             <ExamCodeEditor
               value={codeAnswers[currentQuestion.id] || ''}
               onChange={handleCodeAnswer}

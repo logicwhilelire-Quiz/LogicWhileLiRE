@@ -1,5 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 
+if (process.env.NODE_ENV === 'production') {
+  throw new Error('FATAL: mockSupabase and pre-seeded demo accounts must never be loaded in production mode.');
+}
+
 export interface MockTableData {
   staff: any[];
   students: any[];
@@ -53,6 +57,20 @@ const store: MockTableData = {
     {
       id: 'st000000-0000-0000-0000-000000000002',
       name: 'Dr. Suresh Kumar (Faculty)',
+      email: 'suresh@logicwhilelire.com',
+      password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
+      role: 'faculty',
+      created_by: 'st000000-0000-0000-0000-000000000001',
+      failed_attempts: 0,
+      locked_until: null,
+      reset_token_hash: null,
+      reset_token_expires: null,
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 15).toISOString(),
+    },
+    {
+      id: 'st000000-0000-0000-0000-000000000022',
+      name: 'Dr. Suresh Kumar (Faculty - Legacy)',
       email: 'suresh@growthran.com',
       password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
       role: 'faculty',
@@ -67,6 +85,20 @@ const store: MockTableData = {
     {
       id: 'st000000-0000-0000-0000-000000000003',
       name: 'Prof. Priya Sharma (Faculty)',
+      email: 'priya@logicwhilelire.com',
+      password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
+      role: 'faculty',
+      created_by: 'st000000-0000-0000-0000-000000000001',
+      failed_attempts: 0,
+      locked_until: null,
+      reset_token_hash: null,
+      reset_token_expires: null,
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 10).toISOString(),
+    },
+    {
+      id: 'st000000-0000-0000-0000-000000000033',
+      name: 'Prof. Priya Sharma (Faculty - Legacy)',
       email: 'priya@growthran.com',
       password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
       role: 'faculty',
@@ -149,7 +181,7 @@ const store: MockTableData = {
       duration_minutes: 45,
       start_time: new Date(Date.now() - 86400000).toISOString(),
       end_time: new Date(Date.now() + 86400000 * 14).toISOString(),
-      admin_email: 'admin@growthran.com',
+      admin_email: 'admin@logicwhilelire.com',
       created_by_staff_id: 'st000000-0000-0000-0000-000000000003',
       staff_id: 'st000000-0000-0000-0000-000000000003',
       is_leaderboard_public: true,
@@ -1270,6 +1302,27 @@ class MockQueryBuilder {
       rows = rows.slice(this.rangeConfig.from, this.rangeConfig.to + 1);
     } else if (this.limitCount !== undefined) {
       rows = rows.slice(0, this.limitCount);
+    }
+
+    // Column projection if specific fields were requested (and not a join with sub-selects)
+    if (this.selectFields && this.selectFields !== '*' && !this.selectFields.includes('(') && !this.selectFields.includes('count(')) {
+      const requestedFields = this.selectFields
+        .split(',')
+        .map((f) => f.trim())
+        .filter(Boolean);
+
+      rows = rows.map((r) => {
+        const projected: any = {};
+        for (const field of requestedFields) {
+          if (field.includes(':')) {
+            const [alias, col] = field.split(':').map((s) => s.trim());
+            projected[alias] = r[col || alias];
+          } else {
+            projected[field] = r[field];
+          }
+        }
+        return projected;
+      });
     }
 
     if (this.singleMode === 'single') {

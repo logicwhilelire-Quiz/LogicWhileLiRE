@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { API_BASE_URL } from '../lib/config';
 import BrandLogo from '../components/BrandLogo';
 import SiteFooter from '../components/SiteFooter';
 import LeaderboardPodium from '../components/3d/LeaderboardPodium';
@@ -10,7 +11,7 @@ import FlightPathLines from '../components/3d/FlightPathLines';
 import LogicWhileLiRELoader from '../components/LogicWhileLiRELoader';
 import { supabase } from '../lib/supabaseClient';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const BASE_URL = API_BASE_URL;
 
 interface LeaderboardRow {
   rank: number;

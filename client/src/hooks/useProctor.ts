@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { API_BASE_URL } from '../lib/config';
 
 interface ProctoringConfig {
   sessionId: string;
@@ -12,7 +13,7 @@ interface ProctoringConfig {
  * Sends violations via navigator.sendBeacon (fires even if tab is closing).
  */
 export function useProctor({ sessionId, onViolation, enabled }: ProctoringConfig) {
-  const beaconUrl = `${import.meta.env.VITE_API_BASE_URL}/api/session/${sessionId}/violation`;
+  const beaconUrl = `${API_BASE_URL}/api/session/${sessionId}/violation`;
   const disabledRef = useRef(!enabled);
 
   useEffect(() => {

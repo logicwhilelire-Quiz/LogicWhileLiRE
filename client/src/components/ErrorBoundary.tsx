@@ -82,7 +82,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             </div>
 
             <div style={{ marginTop: 24, fontSize: '0.78rem', color: 'var(--color-text-faint)' }}>
-              GROWTHRAN • Developed by R. Charan Sai • © 2026 R. Charan Sai. All rights reserved.
+              LogicWhileLiRE • Developed by R. Charan Sai • © 2026 R. Charan Sai. All rights reserved.
             </div>
           </div>
         </div>

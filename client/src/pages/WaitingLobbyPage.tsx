@@ -6,8 +6,8 @@ import AnimatedPage from "../components/AnimatedPage";
 import ParticleField from "../components/3d/ParticleField";
 import NodeNetwork from "../components/3d/NodeNetwork";
 import { getAssessmentSystemCheck, authLogout, getExamLobbyStats } from "../lib/api";
+import { SOCKET_URL } from "../lib/config";
 
-const SOCKET_URL = (import.meta as any).env?.VITE_SOCKET_URL || (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:3001";
 
 interface CandidateProfile {
   id?: string;

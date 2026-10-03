@@ -99,6 +99,12 @@ export default function InstructionsPage() {
       severity: 'danger',
     },
     {
+      icon: '💻',
+      en: 'Coding questions are submitted for manual faculty review and are not part of the live instant MCQ auto-grade.',
+      te: 'కోడింగ్ ప్రశ్నలు మాన్యువల్ ఫ్యాకల్టీ మూల్యాంకనం కోసం సమర్పించబడతాయి మరియు తక్షణ MCQ ఆటో-గ్రేడ్‌లో చేర్చబడవు.',
+      severity: 'info',
+    },
+    {
       icon: '⌨️',
       en: 'Keyboard shortcuts: 1-4 = Select option, N = Next question, P = Previous question.',
       te: 'కీబోర్డ్ షార్ట్‌కట్‌లు: 1-4 = ఆప్షన్ ఎంపిక, N = తదుపరి ప్రశ్న, P = మునుపటి ప్రశ్న.',

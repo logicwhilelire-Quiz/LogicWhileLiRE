@@ -47,16 +47,24 @@ export function resetExamStartedState(examCode?: string): void {
 }
 
 export function initSocketIO(httpServer: HttpServer): IOServer {
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
 
   io = new IOServer(httpServer, {
     cors: {
-      origin: clientOrigin,
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        callback(new Error('CORS: Socket origin not allowed'));
+      },
       methods: ['GET', 'POST'],
       credentials: true,
     },
     transports: ['websocket', 'polling'],
   });
+
 
   io.on('connection', (socket: Socket) => {
     console.log(`[Socket.io] Client connected: ${socket.id}`);

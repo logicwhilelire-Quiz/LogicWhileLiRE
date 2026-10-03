@@ -66,7 +66,7 @@ export default function BrandLogo({
         fill="none"
         role="img"
         xmlns="http://www.w3.org/2000/svg"
-        className={`logicwhilelire-mark growthran-mark ${className}`}
+        className={`logicwhilelire-mark ${className}`}
         aria-label="LogicWhileLiRE Logo Mark"
         style={{ flexShrink: 0, display: 'inline-block' }}
       >
@@ -86,7 +86,7 @@ export default function BrandLogo({
 
   return (
     <div
-      className={`logicwhilelire-brand-lockup growthran-brand-lockup ${className}`}
+      className={`logicwhilelire-brand-lockup ${className}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',

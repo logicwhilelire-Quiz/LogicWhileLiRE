@@ -8,8 +8,9 @@ import ShimmerText from '../../components/3d/ShimmerText'
 import FlightPathLines from '../../components/3d/FlightPathLines'
 import TypingDots from '../../components/3d/TypingDots'
 import HoloScan from '../../components/3d/HoloScan'
+import { API_BASE_URL } from '../../lib/config'
 
-const BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const BASE = API_BASE_URL
 
 /* ── Types ─────────────────────────────────────────── */
 interface ExamMeta {

@@ -21,14 +21,14 @@ function latLngToVec3(lat: number, lng: number, radius: number) {
   )
 }
 
-function useGrowthranLogoTexture() {
+function useLogicWhileLiRELogoTexture() {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
 
   useEffect(() => {
     let active = true
     const img = new Image()
     img.crossOrigin = 'anonymous'
-    img.src = '/brand/growthran-logo-dark.svg'
+    img.src = '/brand/logicwhilelire-logo-dark.svg'
     img.onload = () => {
       if (!active) return
       const canvas = document.createElement('canvas')
@@ -49,9 +49,14 @@ function useGrowthranLogoTexture() {
     img.onerror = () => {
       if (!active) return
       const loader = new THREE.TextureLoader()
-      loader.load('/brand/growthran-logo.png', (tex) => {
+      loader.load('/brand/growthran-logo-dark.svg', (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace
         if (active) setTexture(tex)
+      }, undefined, () => {
+        loader.load('/logo.png', (tex) => {
+          tex.colorSpace = THREE.SRGBColorSpace
+          if (active) setTexture(tex)
+        })
       })
     }
     return () => {
@@ -157,7 +162,7 @@ function GlobeLogoBadge({
 
 function Globe() {
   const groupRef = useRef<THREE.Group>(null!)
-  const logoTexture = useGrowthranLogoTexture()
+  const logoTexture = useLogicWhileLiRELogoTexture()
 
   useFrame(() => {
     if (groupRef.current) {
@@ -208,14 +213,14 @@ function Globe() {
         />
       </mesh>
 
-      {/* Front GROWTHRAN 3D Holographic Emblem */}
+      {/* Front LogicWhileLiRE 3D Holographic Emblem */}
       <GlobeLogoBadge
         position={[0, -0.44, 0.93]}
         rotation={[-0.38, 0, 0]}
         texture={logoTexture}
       />
 
-      {/* Back GROWTHRAN 3D Holographic Emblem (opposite hemisphere) */}
+      {/* Back LogicWhileLiRE 3D Holographic Emblem (opposite hemisphere) */}
       <GlobeLogoBadge
         position={[0, -0.44, -0.93]}
         rotation={[-0.38, Math.PI, 0]}
