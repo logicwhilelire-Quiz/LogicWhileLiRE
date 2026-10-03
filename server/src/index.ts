@@ -20,6 +20,7 @@ import inspectorRoutes from './routes/inspectorRoutes';
 import { startSessionCron } from './jobs/sessionCron';
 import { validateParams, ExamIdParam } from './middleware/validate';
 import { initSocketIO } from './services/socketService';
+import { verifyDatabaseConnectivity } from './db/supabase';
 
 // ── PRODUCTION BOOT GUARD (must be first — refuses to start with weak secrets) ──
 runProductionBootGuard();
@@ -120,13 +121,20 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-// Readiness check (Phase J1)
-app.get('/api/ready', (_req, res) => {
-  res.json({
-    status: 'ready',
-    ready: true,
+// Readiness check (live database probe)
+app.get('/api/ready', async (_req, res) => {
+  const dbStatus = await verifyDatabaseConnectivity();
+  const statusCode = dbStatus.connected ? 200 : 503;
+  res.status(statusCode).json({
+    status: dbStatus.connected ? 'ready' : 'degraded',
+    ready: dbStatus.connected,
     service: 'LogicWhileLiRE Assessment Engine',
-    database: isDemo ? 'in_memory_ready' : 'connected',
+    database: {
+      connected: dbStatus.connected,
+      latency_ms: dbStatus.latencyMs,
+      error: dbStatus.error || null,
+      mode: isDemo ? 'in_memory_mock' : 'live_supabase',
+    },
     timestamp: new Date().toISOString(),
   });
 });
@@ -186,10 +194,27 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 initSocketIO(httpServer);
 
 // ------- Start server with high-capacity connection backlog -------
-httpServer.listen(PORT, '0.0.0.0', 2048, () => {
+httpServer.listen(PORT, '0.0.0.0', 2048, async () => {
   console.log(`[Server] Running on port ${PORT} (${process.env.NODE_ENV})`);
   console.log(`[Socket.io] WebSocket server ready on port ${PORT}`);
   startSessionCron();
+
+  // Fail-fast database connectivity check
+  const dbCheck = await verifyDatabaseConnectivity();
+  if (dbCheck.connected) {
+    console.log(`✅ [Database] Connection verified healthy (${dbCheck.latencyMs}ms)`);
+  } else {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('================================================================');
+      console.error('🚨 [FATAL ERROR] Production database is UNREACHABLE at boot!');
+      console.error(`Error details: ${dbCheck.error}`);
+      console.error('Terminating process to prevent accepting traffic in an unhealthy state.');
+      console.error('================================================================');
+      process.exit(1);
+    } else {
+      console.warn(`⚡ [Database Warning] Database connectivity probe returned: ${dbCheck.error}`);
+    }
+  }
 });
 
 // ------- Graceful shutdown handlers (Phase J1) -------

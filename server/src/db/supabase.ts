@@ -47,3 +47,38 @@ export const supabase: SupabaseClient = (
       })
 ) as unknown as SupabaseClient;
 
+/**
+ * Verifies live database connectivity at boot time.
+ * In production mode, queries the database to confirm reachable credentials.
+ * In demo / test mode, verifies mock store readiness.
+ */
+export async function verifyDatabaseConnectivity(): Promise<{ connected: boolean; latencyMs: number; error?: string }> {
+  const start = Date.now();
+  try {
+    const { data, error } = await supabase
+      .from('colleges')
+      .select('id')
+      .limit(1);
+
+    if (error) {
+      return {
+        connected: false,
+        latencyMs: Date.now() - start,
+        error: `Supabase query failed: ${error.message} (code: ${error.code || 'UNKNOWN'})`,
+      };
+    }
+
+    return {
+      connected: true,
+      latencyMs: Date.now() - start,
+    };
+  } catch (err: any) {
+    return {
+      connected: false,
+      latencyMs: Date.now() - start,
+      error: err?.message || String(err),
+    };
+  }
+}
+
+
