@@ -1,4 +1,4 @@
-/**
+﻿/**
  * LogicWhile QUIZ — Bulk Enrollment Test Suite
  * Validates roster CSV generation, validation, duplicate handling, and faculty exam ownership guards.
  */
@@ -71,7 +71,7 @@ async function runTests() {
     const facultyLoginRes = await request('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-    }, JSON.stringify({ username: 'suresh@logicwhilelire.com', password: 'admin123' }));
+    }, JSON.stringify({ username: 'suresh@example.com', password: 'admin123' }));
 
     if (facultyLoginRes.status !== 200 || !facultyLoginRes.data.token) {
       throw new Error(`Faculty login failed: ${JSON.stringify(facultyLoginRes.data)}`);

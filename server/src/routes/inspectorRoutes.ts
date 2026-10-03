@@ -246,7 +246,7 @@ router.post('/report-issue', async (req: Request, res: Response) => {
       details,
       description,
       severity = 'high',
-      inspectorEmail = process.env.INSPECTOR_ALERT_EMAIL || process.env.ADMIN_EMAIL || 'inspector@logicwhilelire.com',
+      inspectorEmail = process.env.INSPECTOR_ALERT_EMAIL || process.env.ADMIN_EMAIL,
     } = req.body;
 
     if (!examCode || !hallTicket || !issueType) {

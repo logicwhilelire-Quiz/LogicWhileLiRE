@@ -100,10 +100,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
   let staffRecord: any = null;
   const isBootstrapAdmin =
     normalizedUser === (process.env.ADMIN_USERNAME || 'admin') ||
-    normalizedUser === (process.env.INITIAL_ADMIN_EMAIL || 'admin@logicwhilelire.local') ||
-    normalizedUser === 'admin@LOGICWHILELIRE.local' ||
-    normalizedUser === 'admin@LOGICWHILELIRE.com' ||
-    normalizedUser === 'admin@logicwhilelire.com';
+    (!!process.env.INITIAL_ADMIN_EMAIL && normalizedUser === process.env.INITIAL_ADMIN_EMAIL);
 
   if (isBootstrapAdmin) {
     const { data: existingAdmin } = await supabase
@@ -146,7 +143,9 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       .maybeSingle();
 
     if (!staff) {
-      const aliasDomains = ['@logicwhilelire.com', '@LOGICWHILELIRE.com', '@logicwhile.com'];
+      // Backward-compat alias: if a staff record was previously stored under a legacy domain, try the configured mail domain too
+      const mailDomain = process.env.MAIL_DOMAIN ? `@${process.env.MAIL_DOMAIN}` : null;
+      const aliasDomains = ['@logicwhile.com', ...(mailDomain ? [mailDomain] : [])].filter(Boolean) as string[];
       for (const domain of aliasDomains) {
         const usernamePrefix = emailToLookup.split('@')[0];
         const candidateEmail = `${usernamePrefix}${domain}`;

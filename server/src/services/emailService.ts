@@ -87,7 +87,7 @@ export async function logDeliverableFailure(
  * Strictly gates console-log fallback behind NODE_ENV !== 'production'.
  */
 export async function sendWithRetry(payload: EmailPayload, maxAttempts: number = 3): Promise<boolean> {
-  const from = process.env.EMAIL_FROM || process.env.OTP_FROM_EMAIL || process.env.SMTP_USER || 'noreply@logicwhilelire.com';
+  const from = process.env.EMAIL_FROM || process.env.OTP_FROM_EMAIL || process.env.SMTP_USER;
   const fromName = process.env.EMAIL_FROM_NAME || 'LogicWhileLiRE';
   const t = getTransporter();
 

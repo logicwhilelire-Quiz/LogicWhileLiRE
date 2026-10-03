@@ -57,10 +57,12 @@ services:
         generateValue: true
       - key: INITIAL_ADMIN_EMAIL
         sync: false
+      - key: MAIL_DOMAIN
+        sync: false # e.g. yourdomain.com — used to build noreply@ and alias lookups
       - key: EMAIL_FROM
-        value: noreply@LOGICWHILELIRE.com
+        sync: false # e.g. noreply@yourdomain.com
       - key: EMAIL_FROM_NAME
-        value: LOGICWHILELIRE Platform
+        sync: false # e.g. LogicWhileLiRE
       - key: OTP_FROM_EMAIL
         sync: false
       - key: ADMIN_ALERT_EMAIL
@@ -120,10 +122,12 @@ services:
         sync: false
       - key: SMTP_PASS
         sync: false
+      - key: MAIL_DOMAIN
+        sync: false # e.g. yourdomain.com
       - key: EMAIL_FROM
-        value: noreply@LOGICWHILELIRE.com
+        sync: false # e.g. noreply@yourdomain.com
       - key: EMAIL_FROM_NAME
-        value: LOGICWHILELIRE Platform (Staging)
+        sync: false # e.g. LogicWhileLiRE (Staging)
       - key: OTP_FROM_EMAIL
         sync: false
       - key: ADMIN_ALERT_EMAIL
