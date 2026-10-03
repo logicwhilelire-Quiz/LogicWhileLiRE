@@ -1,5 +1,5 @@
 /**
- * GROWTHRAN — Phase 1.2 Dual-Camera / Screen Share Proctoring Test Suite
+ * LOGICWHILELIRE — Phase 1.2 Dual-Camera / Screen Share Proctoring Test Suite
  */
 const http = require('http');
 const assert = require('assert');
@@ -39,7 +39,7 @@ function request(method, path, body = null) {
 
 async function runScreenShareTests() {
   console.log('================================================================');
-  console.log('🖥️  GROWTHRAN — PHASE 1.2 DUAL-CAMERA & SCREEN SHARE SUITE');
+  console.log('🖥️  LOGICWHILELIRE — PHASE 1.2 DUAL-CAMERA & SCREEN SHARE SUITE');
   console.log(`Target: ${BASE_URL}`);
   console.log('================================================================\n');
 

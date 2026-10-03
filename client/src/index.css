@@ -1436,7 +1436,7 @@ pre, code, .font-mono, [class*="mono"] {
     transform: translateY(0);
   }
 }
-@keyframes growthranPageFadeIn {
+@keyframes LOGICWHILELIREPageFadeIn {
   from {
     opacity: 0;
     transform: translateY(6px);

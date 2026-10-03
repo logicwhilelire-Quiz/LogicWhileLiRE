@@ -1,8 +1,8 @@
--- ============================================================
--- GROWTHRAN 1.0 — Unified Clean Production Database Schema
--- Architecture: GROWTHRAN Clean Portal Architecture
+﻿-- ============================================================
+-- LOGICWHILELIRE 1.0 — Unified Clean Production Database Schema
+-- Architecture: LOGICWHILELIRE Clean Portal Architecture
 -- Author: R. Charan Sai
--- Target: growthran-prod / Supabase SQL Editor
+-- Target: LOGICWHILELIRE-prod / Supabase SQL Editor
 -- ============================================================
 
 -- ─── 0. EXTENSIONS ───────────────────────────────────────────

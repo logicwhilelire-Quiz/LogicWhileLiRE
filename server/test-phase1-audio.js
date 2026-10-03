@@ -1,5 +1,5 @@
 /**
- * GROWTHRAN — Phase 1.3 Audio Proctoring & Volume Spike Detection Test Suite
+ * LOGICWHILELIRE — Phase 1.3 Audio Proctoring & Volume Spike Detection Test Suite
  */
 const http = require('http');
 const assert = require('assert');
@@ -39,7 +39,7 @@ function request(method, path, body = null) {
 
 async function runAudioProctoringTests() {
   console.log('================================================================');
-  console.log('🎙️  GROWTHRAN — PHASE 1.3 AUDIO PROCTORING TEST SUITE');
+  console.log('🎙️  LOGICWHILELIRE — PHASE 1.3 AUDIO PROCTORING TEST SUITE');
   console.log(`Target: ${BASE_URL}`);
   console.log('================================================================\n');
 

@@ -1,5 +1,5 @@
 /**
- * GROWTHRAN — High-Concurrency Institutional Load Test Suite
+ * LOGICWHILELIRE — High-Concurrency Institutional Load Test Suite
  * Simulates 500+ concurrent candidates taking an assessment:
  * 1. Concurrent Enrollment Burst (500 candidates)
  * 2. Concurrent OTP Verification (500 candidates)
@@ -137,7 +137,7 @@ async function runBatched(items, fn, batchSize = 100) {
 
 async function runLoadTest() {
   console.log('================================================================');
-  console.log('⚡ GROWTHRAN ASSESSMENT ENGINE — 500+ CONCURRENT LOAD TEST');
+  console.log('⚡ LOGICWHILELIRE ASSESSMENT ENGINE — 500+ CONCURRENT LOAD TEST');
   console.log(`Target: ${BASE_URL}`);
   console.log(`Concurrent Users: ${CONCURRENT_USERS}`);
   console.log(`Latency Benchmark: Sub-${SUB_2S_TARGET_MS / 1000}s (< ${SUB_2S_TARGET_MS}ms at P99)`);
@@ -154,7 +154,7 @@ async function runLoadTest() {
       name: `Candidate ${num}`,
       hall_ticket: `GR-LOAD-${testRunId}-${num}`,
       mobile: `+9198765${num.padStart(5, '0')}`,
-      email: `candidate.${testRunId}.${num}@student.growthran.com`,
+      email: `candidate.${testRunId}.${num}@student.LOGICWHILELIRE.com`,
       participant_id: null,
       demo_otp: null,
       token: null,

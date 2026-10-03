@@ -1,21 +1,21 @@
 import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
-export interface GrowthranLoaderProps {
+export interface LOGICWHILELIRELoaderProps {
   size?: 'sm' | 'md' | 'lg';
   message?: string;
 }
 
-export type LogicWhileLiRELoaderProps = GrowthranLoaderProps;
+export type LogicWhileLiRELoaderProps = LOGICWHILELIRELoaderProps;
 
-export function LogicWhileLiRELoader(props: GrowthranLoaderProps) {
-  return <GrowthranLoader {...props} />;
+export function LogicWhileLiRELoader(props: LOGICWHILELIRELoaderProps) {
+  return <LOGICWHILELIRELoader {...props} />;
 }
 
-export default function GrowthranLoader({
+export default function LOGICWHILELIRELoader({
   size = 'md',
   message = 'Loading LogicWhileLiRE...',
-}: GrowthranLoaderProps) {
+}: LOGICWHILELIRELoaderProps) {
   const shouldReduceMotion = useReducedMotion();
 
   const dims = {

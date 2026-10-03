@@ -37,7 +37,7 @@ Engineered for 5,000+ candidate concurrency, LogicWhileLiRE integrates a complet
 
 ## ⚡ 5-Minute Quickstart (Demo Mode)
 
-GROWTHRAN comes with a self-contained in-memory demo engine that allows instant local evaluation with **zero external dependencies** (no Supabase account or cloud services needed).
+LOGICWHILELIRE comes with a self-contained in-memory demo engine that allows instant local evaluation with **zero external dependencies** (no Supabase account or cloud services needed).
 
 ### 1. Clone & Install
 
@@ -139,7 +139,7 @@ The **LogicWhileLiRE** ecosystem features dedicated portals for Candidates, Invi
 
 ## 🧪 Comprehensive Test Suite
 
-GROWTHRAN enforces 100% green status across all test suites prior to deployment:
+LOGICWHILELIRE enforces 100% green status across all test suites prior to deployment:
 
 ```bash
 # 1. Run all server unit & integration tests (52 tests)
@@ -204,7 +204,7 @@ Quiz/
 │   ├── src/
 │   │   ├── components/         # Reusable UI & Exam components
 │   │   │   ├── exam/           # Dedicated 2D high-performance exam components
-│   │   │   └── BrandLogo.tsx   # Canonical GROWTHRAN logo component
+│   │   │   └── BrandLogo.tsx   # Canonical LOGICWHILELIRE logo component
 │   │   ├── pages/              # Route pages (Exam, Admin, Lobby, Leaderboard)
 │   │   ├── three/              # Consolidated Three.js WebGL visual kit
 │   │   ├── lib/                # API client, offline queue, state management

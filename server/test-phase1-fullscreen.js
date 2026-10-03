@@ -1,5 +1,5 @@
 /**
- * GROWTHRAN — Phase 1.1 Fullscreen Enforcement & Violation Tracking Suite
+ * LOGICWHILELIRE — Phase 1.1 Fullscreen Enforcement & Violation Tracking Suite
  */
 const http = require('http');
 const assert = require('assert');
@@ -39,7 +39,7 @@ function request(method, path, body = null) {
 
 async function runFullscreenEnforcementTests() {
   console.log('================================================================');
-  console.log('🖥️  GROWTHRAN — PHASE 1.1 FULLSCREEN ENFORCEMENT TEST SUITE');
+  console.log('🖥️  LOGICWHILELIRE — PHASE 1.1 FULLSCREEN ENFORCEMENT TEST SUITE');
   console.log(`Target: ${BASE_URL}`);
   console.log('================================================================\n');
 

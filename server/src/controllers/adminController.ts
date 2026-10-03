@@ -101,8 +101,8 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
   const isBootstrapAdmin =
     normalizedUser === (process.env.ADMIN_USERNAME || 'admin') ||
     normalizedUser === (process.env.INITIAL_ADMIN_EMAIL || 'admin@logicwhilelire.local') ||
-    normalizedUser === 'admin@growthran.local' ||
-    normalizedUser === 'admin@growthran.com' ||
+    normalizedUser === 'admin@LOGICWHILELIRE.local' ||
+    normalizedUser === 'admin@LOGICWHILELIRE.com' ||
     normalizedUser === 'admin@logicwhilelire.com';
 
   if (isBootstrapAdmin) {
@@ -146,7 +146,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       .maybeSingle();
 
     if (!staff) {
-      const aliasDomains = ['@logicwhilelire.com', '@growthran.com', '@logicwhile.com'];
+      const aliasDomains = ['@logicwhilelire.com', '@LOGICWHILELIRE.com', '@logicwhile.com'];
       for (const domain of aliasDomains) {
         const usernamePrefix = emailToLookup.split('@')[0];
         const candidateEmail = `${usernamePrefix}${domain}`;

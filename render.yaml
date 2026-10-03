@@ -1,5 +1,5 @@
 # ==============================================================================
-# GROWTHRAN — Render Infrastructure as Code Blueprint
+# LOGICWHILELIRE — Render Infrastructure as Code Blueprint
 # Defines separate Production and Staging backend services
 # ==============================================================================
 services:
@@ -58,9 +58,9 @@ services:
       - key: INITIAL_ADMIN_EMAIL
         sync: false
       - key: EMAIL_FROM
-        value: noreply@growthran.com
+        value: noreply@LOGICWHILELIRE.com
       - key: EMAIL_FROM_NAME
-        value: GROWTHRAN Platform
+        value: LOGICWHILELIRE Platform
       - key: OTP_FROM_EMAIL
         sync: false
       - key: ADMIN_ALERT_EMAIL
@@ -121,9 +121,9 @@ services:
       - key: SMTP_PASS
         sync: false
       - key: EMAIL_FROM
-        value: noreply@growthran.com
+        value: noreply@LOGICWHILELIRE.com
       - key: EMAIL_FROM_NAME
-        value: GROWTHRAN Platform (Staging)
+        value: LOGICWHILELIRE Platform (Staging)
       - key: OTP_FROM_EMAIL
         sync: false
       - key: ADMIN_ALERT_EMAIL

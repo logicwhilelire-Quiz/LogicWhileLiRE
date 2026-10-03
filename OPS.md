@@ -62,7 +62,7 @@ chmod +x scripts/backup-db.sh
 To restore from a backup:
 ```bash
 # Decompress and restore into target database
-gunzip -c backups/growthran_backup_TIMESTAMP.sql.gz | psql "$DATABASE_URL"
+gunzip -c backups/LOGICWHILELIRE_backup_TIMESTAMP.sql.gz | psql "$DATABASE_URL"
 ```
 
 ---
@@ -72,7 +72,7 @@ gunzip -c backups/growthran_backup_TIMESTAMP.sql.gz | psql "$DATABASE_URL"
 ### Migration Inventory
 All SQL migrations are organized in `server/db/`:
 1. `schema.sql`: Core schema (students, exams, questions, sessions, answers, violations, results, audit log).
-2. `growthran_v1_admin_control.sql`: Multi-campus college tables, exam codes, staff roles (`super_admin`, `faculty`), and ownership.
+2. `LOGICWHILELIRE_v1_admin_control.sql`: Multi-campus college tables, exam codes, staff roles (`super_admin`, `faculty`), and ownership.
 3. `migration_exam_codes.sql`: GR- & LW- dual prefix support and attempt tracking.
 4. `migration_remove_certificates.sql`: Safe certificate table retirement migration with full rollback script.
 

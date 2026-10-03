@@ -9,13 +9,13 @@
 
 const KEY_MIGRATION_MAP: Record<string, string> = {
   lw_theme: 'logicwhilelire_theme',
-  growthran_theme: 'logicwhilelire_theme',
+  LOGICWHILELIRE_theme: 'logicwhilelire_theme',
   lw_attempt: 'logicwhilelire_attempt',
-  growthran_attempt: 'logicwhilelire_attempt',
+  LOGICWHILELIRE_attempt: 'logicwhilelire_attempt',
   logicwhile_auth_token: 'logicwhilelire_auth_token',
-  growthran_auth_token: 'logicwhilelire_auth_token',
+  LOGICWHILELIRE_auth_token: 'logicwhilelire_auth_token',
   logicwhile_user: 'logicwhilelire_user',
-  growthran_user: 'logicwhilelire_user',
+  LOGICWHILELIRE_user: 'logicwhilelire_user',
 };
 
 /**
@@ -34,13 +34,13 @@ export function migrateLocalStorage(): void {
       }
     }
 
-    // 2. Dynamic key prefixes (e.g. lw_exam_draft_, growthran_exam_draft_)
+    // 2. Dynamic key prefixes (e.g. lw_exam_draft_, LOGICWHILELIRE_exam_draft_)
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (!key) continue;
 
-      if (key.startsWith('lw_exam_draft_') || key.startsWith('growthran_exam_draft_')) {
-        const newKey = key.replace(/^(lw_exam_draft_|growthran_exam_draft_)/, 'logicwhilelire_exam_draft_');
+      if (key.startsWith('lw_exam_draft_') || key.startsWith('LOGICWHILELIRE_exam_draft_')) {
+        const newKey = key.replace(/^(lw_exam_draft_|LOGICWHILELIRE_exam_draft_)/, 'logicwhilelire_exam_draft_');
         const val = localStorage.getItem(key);
         if (val !== null && !localStorage.getItem(newKey)) {
           localStorage.setItem(newKey, val);
@@ -85,13 +85,13 @@ export function setStorageItem(key: string, value: string, legacyKey?: string): 
 }
 
 /**
- * Migrates IndexedDB database 'lw_exam_autosave' or 'growthran_exam_autosave' to 'logicwhilelire_exam_autosave'
+ * Migrates IndexedDB database 'lw_exam_autosave' or 'LOGICWHILELIRE_exam_autosave' to 'logicwhilelire_exam_autosave'
  */
 export async function migrateIndexedDB(): Promise<void> {
   try {
     if (typeof window === 'undefined' || !window.indexedDB) return;
 
-    const legacyDbNames = ['lw_exam_autosave', 'growthran_exam_autosave'];
+    const legacyDbNames = ['lw_exam_autosave', 'LOGICWHILELIRE_exam_autosave'];
     const newDbName = 'logicwhilelire_exam_autosave';
 
     for (const legacyDbName of legacyDbNames) {

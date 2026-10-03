@@ -31,5 +31,5 @@ export function createLogicWhileLiRERenderer(options: RendererOptions = {}): THR
   return renderer
 }
 
-export const createGrowthranRenderer = createLogicWhileLiRERenderer
+export const createLOGICWHILELIRERenderer = createLogicWhileLiRERenderer
 

@@ -1,5 +1,5 @@
 -- ==============================================================================
--- GROWTHRAN MIGRATION: RETIRE CERTIFICATES (Phase C Spec)
+-- LOGICWHILELIRE MIGRATION: RETIRE CERTIFICATES (Phase C Spec)
 -- ==============================================================================
 --
 -- ⚠️ WARNING / DATA LOSS IMPACT:

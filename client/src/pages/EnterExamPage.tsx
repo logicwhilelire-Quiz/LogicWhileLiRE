@@ -74,7 +74,6 @@ export default function EnterExamPage() {
           },
         })
         localStorage.setItem('logicwhilelire_attempt', attemptData)
-        localStorage.setItem('growthran_attempt', attemptData)
         localStorage.setItem('lw_attempt', attemptData)
         navigate(`/instructions/${form.examCode.trim()}`, {
           state: { hallTicket: form.hallTicket.trim() }

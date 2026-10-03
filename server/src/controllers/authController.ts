@@ -277,7 +277,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
     } else if (
       normalizedEmail === (process.env.ADMIN_USERNAME || 'admin@logicwhilelire.com') ||
       normalizedEmail === 'admin@logicwhilelire.com' ||
-      normalizedEmail === 'admin@growthran.com'
+      normalizedEmail === 'admin@LOGICWHILELIRE.com'
     ) {
       // Bootstrap super admin account
       user = {

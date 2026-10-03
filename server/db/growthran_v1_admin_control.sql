@@ -1,9 +1,9 @@
--- ============================================================
--- GROWTHRAN 1.0 — Unified Admin-Authoritative Database Schema
+﻿-- ============================================================
+-- LOGICWHILELIRE 1.0 — Unified Admin-Authoritative Database Schema
 -- Architecture: Single Source of Truth = ADMIN
 -- Database Rule: Every table has created_by_admin, updated_by_admin
 -- Author: R. Charan Sai
--- Target: growthran-prod / Supabase SQL Editor
+-- Target: LOGICWHILELIRE-prod / Supabase SQL Editor
 -- ============================================================
 
 -- ─── 0. EXTENSIONS ───────────────────────────────────────────

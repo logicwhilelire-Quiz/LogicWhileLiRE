@@ -1,5 +1,5 @@
 /**
- * GROWTHRAN — Phase 1.5 Server-Authoritative Scoring, 30s Grace Window & Timer Suite
+ * LOGICWHILELIRE — Phase 1.5 Server-Authoritative Scoring, 30s Grace Window & Timer Suite
  */
 const http = require('http');
 const assert = require('assert');
@@ -39,7 +39,7 @@ function request(method, path, body = null) {
 
 async function runAuthoritativeScoringTests() {
   console.log('================================================================');
-  console.log('⏱️  GROWTHRAN — PHASE 1.5 SERVER-AUTHORITATIVE SCORING & TIMER');
+  console.log('⏱️  LOGICWHILELIRE — PHASE 1.5 SERVER-AUTHORITATIVE SCORING & TIMER');
   console.log(`Target: ${BASE_URL}`);
   console.log('================================================================\n');
 

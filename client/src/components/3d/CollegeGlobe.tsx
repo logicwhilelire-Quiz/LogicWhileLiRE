@@ -49,7 +49,7 @@ function useLogicWhileLiRELogoTexture() {
     img.onerror = () => {
       if (!active) return
       const loader = new THREE.TextureLoader()
-      loader.load('/brand/growthran-logo-dark.svg', (tex) => {
+      loader.load('/brand/logicwhilelire-logo-dark.svg', (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace
         if (active) setTexture(tex)
       }, undefined, () => {

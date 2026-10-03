@@ -10,7 +10,7 @@ export interface SceneManagerOptions {
 }
 
 /**
- * LogicWhileLiRESceneManager / GrowthranSceneManager — Controls scene lifecycle, frame loops, and viewport pause
+ * LogicWhileLiRESceneManager / LOGICWHILELIRESceneManager — Controls scene lifecycle, frame loops, and viewport pause
  * Ensures animations stop when tab is backgrounded or canvas is scrolled out of view.
  */
 export class LogicWhileLiRESceneManager {
@@ -112,5 +112,5 @@ export class LogicWhileLiRESceneManager {
   }
 }
 
-export const GrowthranSceneManager = LogicWhileLiRESceneManager
+export const LOGICWHILELIRESceneManager = LogicWhileLiRESceneManager
 

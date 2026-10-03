@@ -190,4 +190,4 @@ export default function LogicWhileLiREIntro({ onComplete }: { onComplete?: () =>
   );
 }
 
-export const GrowthranIntro = LogicWhileLiREIntro;
+export const LOGICWHILELIREIntro = LogicWhileLiREIntro;

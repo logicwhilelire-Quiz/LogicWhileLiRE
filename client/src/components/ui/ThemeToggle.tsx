@@ -5,7 +5,7 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
 
   useEffect(() => {
-    const savedTheme = (localStorage.getItem('logicwhilelire_theme') || localStorage.getItem('growthran_theme') || localStorage.getItem('lw_theme') as 'dark' | 'light') || 'light';
+    const savedTheme = (localStorage.getItem('logicwhilelire_theme') || localStorage.getItem('LOGICWHILELIRE_theme') || localStorage.getItem('lw_theme') as 'dark' | 'light') || 'light';
     setTheme(savedTheme as 'dark' | 'light');
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
@@ -15,7 +15,7 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
     setTheme(nextTheme);
     document.documentElement.setAttribute('data-theme', nextTheme);
     localStorage.setItem('logicwhilelire_theme', nextTheme);
-    localStorage.setItem('growthran_theme', nextTheme);
+    localStorage.setItem('LOGICWHILELIRE_theme', nextTheme);
     localStorage.removeItem('lw_theme');
   };
 

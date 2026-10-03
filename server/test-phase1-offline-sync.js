@@ -1,5 +1,5 @@
 /**
- * GROWTHRAN — Phase 1.4 Offline Resilience, IndexedDB Sync Queue & Answer Recovery Test Suite
+ * LOGICWHILELIRE — Phase 1.4 Offline Resilience, IndexedDB Sync Queue & Answer Recovery Test Suite
  */
 const http = require('http');
 const assert = require('assert');
@@ -39,7 +39,7 @@ function request(method, path, body = null) {
 
 async function runOfflineSyncTests() {
   console.log('================================================================');
-  console.log('📡  GROWTHRAN — PHASE 1.4 OFFLINE RESILIENCE & SYNC TEST SUITE');
+  console.log('📡  LOGICWHILELIRE — PHASE 1.4 OFFLINE RESILIENCE & SYNC TEST SUITE');
   console.log(`Target: ${BASE_URL}`);
   console.log('================================================================\n');
 

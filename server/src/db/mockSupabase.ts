@@ -43,7 +43,7 @@ const store: MockTableData = {
     {
       id: 'st000000-0000-0000-0000-000000000000',
       name: 'LogicWhileLiRE Super Admin (Legacy)',
-      email: 'admin@growthran.com',
+      email: 'admin@LOGICWHILELIRE.com',
       password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
       role: 'super_admin',
       created_by: null,
@@ -71,7 +71,7 @@ const store: MockTableData = {
     {
       id: 'st000000-0000-0000-0000-000000000022',
       name: 'Dr. Suresh Kumar (Faculty - Legacy)',
-      email: 'suresh@growthran.com',
+      email: 'suresh@LOGICWHILELIRE.com',
       password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
       role: 'faculty',
       created_by: 'st000000-0000-0000-0000-000000000001',
@@ -99,7 +99,7 @@ const store: MockTableData = {
     {
       id: 'st000000-0000-0000-0000-000000000033',
       name: 'Prof. Priya Sharma (Faculty - Legacy)',
-      email: 'priya@growthran.com',
+      email: 'priya@LOGICWHILELIRE.com',
       password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
       role: 'faculty',
       created_by: 'st000000-0000-0000-0000-000000000001',

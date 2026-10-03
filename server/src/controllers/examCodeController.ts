@@ -58,7 +58,7 @@ export async function verifyAttemptToken(
 // ─────────────────────────────────────────────
 
 /**
- * Generates a unique exam code: GR-{COLLEGE_CODE}-{6CHAR} (GROWTHRAN)
+ * Generates a unique exam code: GR-{COLLEGE_CODE}-{6CHAR} (LOGICWHILELIRE)
  * e.g. GR-VRSEC-8X9P2Q
  * Note: The platform continuously accepts both new GR- and legacy LW- codes.
  */
