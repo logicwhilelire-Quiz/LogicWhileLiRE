@@ -12,6 +12,9 @@ import {
   toggleExamCode,
   getExamCodeQR,
   importQuestionsForExamCode,
+  validateAndPreviewQuestions,
+  confirmImportQuestions,
+  deterministicShuffle,
   getExamCodeReport,
   getAttemptViolations,
   reviewAttemptViolation,
@@ -70,7 +73,7 @@ router.post('/exam-code/:code/validate', enterExamRateLimit, (req, res) => {
 });
 
 // Start session endpoint: returns exam + questions
-router.get('/exam-code/:code/start', async (req, res) => {
+router.get('/exam-code/:code/start', enterExamRateLimit, async (req, res) => {
   const code = String(req.params.code).toUpperCase();
   const hallTicket = String(req.query.hallTicket || 'GUEST').toUpperCase();
 
@@ -96,15 +99,31 @@ router.get('/exam-code/:code/start', async (req, res) => {
       questions = fallbackQ || [];
     }
 
-    const formattedQuestions = (questions || []).map((q: any) => ({
-      id: q.id,
-      question_text: q.question || q.question_text || 'Question',
-      options: [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean),
-      question_type: q.question_type || 'mcq',
-      marks: q.marks || 1,
-      difficulty: q.difficulty || 'Medium',
-      topic: q.topic || 'General',
-    }));
+    const studentIdentifier = `${hallTicket}_${code}`;
+    const shuffledQuestions = deterministicShuffle(questions || [], studentIdentifier);
+
+    const formattedQuestions = shuffledQuestions.map((q: any) => {
+      const studentSeed = `${studentIdentifier}_${q.id}`;
+      const origOpts = [
+        { key: 'A', text: q.option_a },
+        { key: 'B', text: q.option_b },
+        { key: 'C', text: q.option_c },
+        { key: 'D', text: q.option_d },
+      ].filter((o) => o.text !== undefined && o.text !== null && String(o.text).trim().length > 0);
+      const shuffledOpts = deterministicShuffle(origOpts, studentSeed);
+
+      return {
+        id: q.id,
+        question_text: q.question || q.question_text || 'Question',
+        options: shuffledOpts.map((o) => o.text),
+        question_type: q.question_type || 'mcq',
+        marks: q.marks || 1,
+        penalty: Number(q.penalty ?? q.negative_marks ?? 0),
+        difficulty: q.difficulty || 'Medium',
+        topic: q.topic || 'General',
+        section: q.section || 'General',
+      };
+    });
 
     return res.json({
       success: true,
@@ -157,13 +176,31 @@ router.patch('/admin/exam-codes/:id/toggle', adminAuth, requireCollegeScope(), t
 router.get('/admin/exam-codes/:id/qr', adminAuth, requireCollegeScope(), getExamCodeQR);
 router.get('/admin/exam-codes/:id/report', adminAuth, requireCollegeScope(), getExamCodeReport);
 
-// Question import for exam codes
+// Question import for exam codes & Faculty 5-column Excel upload with validation and preview
 router.post(
   '/admin/exam-codes/:id/import-questions',
   adminAuth,
   requireCollegeScope(),
   upload.single('file'),
   importQuestionsForExamCode
+);
+router.post(
+  '/admin/questions/validate-preview',
+  adminAuth,
+  upload.single('file'),
+  validateAndPreviewQuestions
+);
+router.post(
+  '/admin/questions/confirm-import',
+  adminAuth,
+  confirmImportQuestions
+);
+router.post(
+  '/admin/exam-codes/:id/validate-preview',
+  adminAuth,
+  requireCollegeScope(),
+  upload.single('file'),
+  validateAndPreviewQuestions
 );
 
 // Phase 2: Violation timeline & false-positive review

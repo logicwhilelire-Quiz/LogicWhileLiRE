@@ -1,4 +1,4 @@
-﻿import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 if (process.env.NODE_ENV === 'production') {
   throw new Error('FATAL: mockSupabase and pre-seeded demo accounts must never be loaded in production mode.');
@@ -7,6 +7,11 @@ if (process.env.NODE_ENV === 'production') {
 export interface MockTableData {
   staff: any[];
   students: any[];
+  academic_years: any[];
+  cohorts: any[];
+  sections: any[];
+  batches: any[];
+  curriculum: any[];
   exams: any[];
   participants: any[];
   exam_sessions: any[];
@@ -17,11 +22,14 @@ export interface MockTableData {
   results: any[];
   deliverable_failures: any[];
   audit_log: any[];
+  student_roster: any[];
   [key: string]: any[];
 }
 
 export const DEMO_EXAM_ID = 'e1000000-0000-0000-0000-000000000001';
 export const DEMO_EXAM_2_ID = 'e2000000-0000-0000-0000-000000000002';
+
+export const DEMO_PASSWORD_HASH = '$2b$10$5clufsDpS3i07SC0fOiN0umtVP3XKEjUEb4tDZp4YSokgY3EF1/lq'; // bcrypt hash for 'admin123'
 
 // In-memory store
 const store: MockTableData = {
@@ -30,43 +38,76 @@ const store: MockTableData = {
       id: 'st000000-0000-0000-0000-000000000001',
       name: 'LogicWhileLiRE Super Admin',
       email: 'admin@example.com',
-      password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
+      password_hash: DEMO_PASSWORD_HASH,
       role: 'super_admin',
       created_by: null,
       failed_attempts: 0,
       locked_until: null,
       reset_token_hash: null,
       reset_token_expires: null,
+      totp_secret: null,
+      totp_enabled: false,
+      must_change_password: false,
       is_active: true,
+      permissions: ['create_questions', 'upload_excel', 'view_results', 'export_data', 'manage_exams', 'manage_students'],
       created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
     },
     {
       id: 'st000000-0000-0000-0000-000000000002',
       name: 'Dr. Suresh Kumar (Faculty)',
       email: 'suresh@example.com',
-      password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
+      password_hash: DEMO_PASSWORD_HASH,
       role: 'faculty',
+      college_id: 1,
       created_by: 'st000000-0000-0000-0000-000000000001',
       failed_attempts: 0,
       locked_until: null,
       reset_token_hash: null,
       reset_token_expires: null,
+      totp_secret: null,
+      totp_enabled: false,
+      must_change_password: false,
       is_active: true,
+      permissions: ['create_questions', 'view_results'],
       created_at: new Date(Date.now() - 86400000 * 15).toISOString(),
     },
     {
       id: 'st000000-0000-0000-0000-000000000003',
       name: 'Prof. Priya Sharma (Faculty)',
       email: 'priya@example.com',
-      password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
+      password_hash: DEMO_PASSWORD_HASH,
       role: 'faculty',
+      college_id: 2,
       created_by: 'st000000-0000-0000-0000-000000000001',
       failed_attempts: 0,
       locked_until: null,
       reset_token_hash: null,
       reset_token_expires: null,
+      totp_secret: null,
+      totp_enabled: false,
+      must_change_password: false,
       is_active: true,
+      permissions: ['create_questions', 'view_results'],
       created_at: new Date(Date.now() - 86400000 * 10).toISOString(),
+    },
+    {
+      id: 'st000000-0000-0000-0000-000000000004',
+      name: 'Dr. K. V. Rao (Principal / Inspector)',
+      email: 'inspector@example.com',
+      password_hash: DEMO_PASSWORD_HASH,
+      role: 'inspector',
+      college_id: 1,
+      created_by: 'st000000-0000-0000-0000-000000000001',
+      failed_attempts: 0,
+      locked_until: null,
+      reset_token_hash: null,
+      reset_token_expires: null,
+      totp_secret: null,
+      totp_enabled: false,
+      must_change_password: false,
+      is_active: true,
+      permissions: [],
+      created_at: new Date(Date.now() - 86400000 * 20).toISOString(),
     },
   ],
   students: [
@@ -76,13 +117,18 @@ const store: MockTableData = {
       last_name: 'Sharma',
       name: 'Aarav Sharma',
       email: 'aarav.sharma@example.com',
-      college_id: 'COL-UNIV-042',
-      college_name: 'University College of Eng.',
-      year_of_passing: 2028,
+      college_id: 1,
+      college_name: 'Velagapudi Ramakrishna Siddhartha Engineering College (VRSEC)',
+      academic_year_id: 'ay-vrsec-2025-26',
+      cohort_id: 'coh-vrsec-2026',
+      section_id: 'sec-vrsec-csm-b',
+      batch_id: 'bat-vrsec-csm-b-1',
+      year_of_passing: 2026,
       roll_number: 'HT2026001',
       hall_ticket: 'HT2026001',
       branch_code: 'CSM',
       section: 'B',
+      batch: 'Batch 1',
       contact_number: '9876543210',
       mobile: '+91 98765 43210',
       password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
@@ -90,7 +136,10 @@ const store: MockTableData = {
       locked_until: null,
       reset_token_hash: null,
       reset_token_expires: null,
+      must_change_password: false,
       is_active: true,
+      is_verified: true,
+      active_session_id: 'session-demo-aarav-001',
       created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
       updated_at: new Date(Date.now() - 86400000 * 30).toISOString(),
     },
@@ -100,13 +149,18 @@ const store: MockTableData = {
       last_name: 'Patel',
       name: 'Neha Patel',
       email: 'neha.patel@example.com',
-      college_id: 'COL-TECH-108',
-      college_name: 'Tech Campus North',
-      year_of_passing: 2028,
+      college_id: 2,
+      college_name: 'Koneru Lakshmaiah Education Foundation (KL University)',
+      academic_year_id: 'ay-klu-2025-26',
+      cohort_id: 'coh-klu-2026',
+      section_id: 'sec-klu-cse-a',
+      batch_id: 'bat-klu-cse-a-1',
+      year_of_passing: 2026,
       roll_number: 'HT2026002',
       hall_ticket: 'HT2026002',
       branch_code: 'CSE',
       section: 'A',
+      batch: 'Batch 1',
       contact_number: '9876543211',
       mobile: '+91 98765 43211',
       password_hash: '$2b$12$kP1ZkxGsbQgL.PSNBA/ts.vFh6WhJ57LGOrf4biA7vQT7K0qiJTL.',
@@ -114,7 +168,10 @@ const store: MockTableData = {
       locked_until: null,
       reset_token_hash: null,
       reset_token_expires: null,
+      must_change_password: false,
       is_active: true,
+      is_verified: true,
+      active_session_id: 'session-demo-neha-002',
       created_at: new Date(Date.now() - 86400000 * 20).toISOString(),
       updated_at: new Date(Date.now() - 86400000 * 20).toISOString(),
     },
@@ -129,6 +186,7 @@ const store: MockTableData = {
       admin_email: 'admin@example.com',
       created_by_staff_id: 'st000000-0000-0000-0000-000000000002',
       staff_id: 'st000000-0000-0000-0000-000000000002',
+      college_id: 1,
       is_leaderboard_public: true,
       is_active: true,
       created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
@@ -142,6 +200,7 @@ const store: MockTableData = {
       admin_email: 'admin@example.com',
       created_by_staff_id: 'st000000-0000-0000-0000-000000000003',
       staff_id: 'st000000-0000-0000-0000-000000000003',
+      college_id: 2,
       is_leaderboard_public: true,
       is_active: true,
       created_at: new Date(Date.now() - 86400000).toISOString(),
@@ -401,6 +460,189 @@ const store: MockTableData = {
   ],
   deliverable_failures: [],
   audit_log: [],
+  academic_years: [
+    {
+      id: 'ay-vrsec-2025-26',
+      college_id: 1,
+      year: '2025-2026',
+      start_date: '2025-06-01',
+      end_date: '2026-05-31',
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 60).toISOString(),
+    },
+    {
+      id: 'ay-klu-2025-26',
+      college_id: 2,
+      year: '2025-2026',
+      start_date: '2025-06-01',
+      end_date: '2026-05-31',
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 60).toISOString(),
+    },
+  ],
+  cohorts: [
+    {
+      id: 'coh-vrsec-2026',
+      college_id: 1,
+      academic_year_id: 'ay-vrsec-2025-26',
+      yop: 2026,
+      name: 'Class of 2026 (YOP 2026)',
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 50).toISOString(),
+    },
+    {
+      id: 'coh-vrsec-2027',
+      college_id: 1,
+      academic_year_id: 'ay-vrsec-2025-26',
+      yop: 2027,
+      name: 'Class of 2027 (YOP 2027)',
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 50).toISOString(),
+    },
+    {
+      id: 'coh-klu-2026',
+      college_id: 2,
+      academic_year_id: 'ay-klu-2025-26',
+      yop: 2026,
+      name: 'Class of 2026 (YOP 2026)',
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 50).toISOString(),
+    },
+  ],
+  sections: [
+    {
+      id: 'sec-vrsec-csm-a',
+      college_id: 1,
+      academic_year_id: 'ay-vrsec-2025-26',
+      cohort_id: 'coh-vrsec-2026',
+      name: 'A',
+      branch: 'CSM',
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 40).toISOString(),
+    },
+    {
+      id: 'sec-vrsec-csm-b',
+      college_id: 1,
+      academic_year_id: 'ay-vrsec-2025-26',
+      cohort_id: 'coh-vrsec-2026',
+      name: 'B',
+      branch: 'CSM',
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 40).toISOString(),
+    },
+    {
+      id: 'sec-klu-cse-a',
+      college_id: 2,
+      academic_year_id: 'ay-klu-2025-26',
+      cohort_id: 'coh-klu-2026',
+      name: 'A',
+      branch: 'CSE',
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 40).toISOString(),
+    },
+  ],
+  batches: [
+    {
+      id: 'bat-vrsec-csm-a-1',
+      college_id: 1,
+      academic_year_id: 'ay-vrsec-2025-26',
+      cohort_id: 'coh-vrsec-2026',
+      section_id: 'sec-vrsec-csm-a',
+      name: 'Batch 1',
+      capacity: 35,
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
+    },
+    {
+      id: 'bat-vrsec-csm-b-1',
+      college_id: 1,
+      academic_year_id: 'ay-vrsec-2025-26',
+      cohort_id: 'coh-vrsec-2026',
+      section_id: 'sec-vrsec-csm-b',
+      name: 'Batch 1',
+      capacity: 35,
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
+    },
+    {
+      id: 'bat-klu-cse-a-1',
+      college_id: 2,
+      academic_year_id: 'ay-klu-2025-26',
+      cohort_id: 'coh-klu-2026',
+      section_id: 'sec-klu-cse-a',
+      name: 'Batch 1',
+      capacity: 35,
+      is_active: true,
+      created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
+    },
+  ],
+  student_roster: [
+    {
+      id: 'ros-vrsec-001',
+      college_id: 1,
+      academic_year_id: 'ay-vrsec-2025-26',
+      cohort_id: 'coh-vrsec-2026',
+      section_id: 'sec-vrsec-csm-b',
+      batch_id: 'bat-vrsec-csm-b-1',
+      roll_number: 'HT2026001',
+      name: 'Aarav Sharma',
+      email: 'aarav.sharma@example.com',
+      section: 'B',
+      batch: 'Batch 1',
+    },
+    {
+      id: 'ros-vrsec-002',
+      college_id: 1,
+      academic_year_id: 'ay-vrsec-2025-26',
+      cohort_id: 'coh-vrsec-2026',
+      section_id: 'sec-vrsec-csm-a',
+      batch_id: 'bat-vrsec-csm-a-1',
+      roll_number: '2201A0501',
+      name: 'Aravind Swamy',
+      email: 'aravind.s@campus.edu',
+      section: 'A',
+      batch: 'Batch 1',
+    },
+    {
+      id: 'ros-vrsec-003',
+      college_id: 1,
+      academic_year_id: 'ay-vrsec-2025-26',
+      cohort_id: 'coh-vrsec-2026',
+      section_id: 'sec-vrsec-csm-b',
+      batch_id: 'bat-vrsec-csm-b-1',
+      roll_number: '2201A0502',
+      name: 'Bhavana Reddy',
+      email: 'bhavana.r@campus.edu',
+      section: 'B',
+      batch: 'Batch 1',
+    },
+    {
+      id: 'ros-klu-001',
+      college_id: 2,
+      academic_year_id: 'ay-klu-2025-26',
+      cohort_id: 'coh-klu-2026',
+      section_id: 'sec-klu-cse-a',
+      batch_id: 'bat-klu-cse-a-1',
+      roll_number: 'HT2026002',
+      name: 'Neha Patel',
+      email: 'neha.patel@example.com',
+      section: 'A',
+      batch: 'Batch 1',
+    },
+    {
+      id: 'ros-klu-002',
+      college_id: 2,
+      academic_year_id: 'ay-klu-2025-26',
+      cohort_id: 'coh-klu-2026',
+      section_id: 'sec-klu-cse-a',
+      batch_id: 'bat-klu-cse-a-1',
+      roll_number: '2201A0588',
+      name: 'Karthik Varma',
+      email: 'karthik.v@campus.edu',
+      section: 'A',
+      batch: 'Batch 1',
+    },
+  ],
   colleges: [
     {
       id: 1,
@@ -411,6 +653,7 @@ const store: MockTableData = {
       contact_email: 'tpo@vrsec.ac.in',
       contact_phone: '+91 866 258 2333',
       is_active: true,
+      registration_enabled: true,
       created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
     },
     {
@@ -422,6 +665,7 @@ const store: MockTableData = {
       contact_email: 'placements@kluniversity.in',
       contact_phone: '+91 863 239 9999',
       is_active: true,
+      registration_enabled: true,
       created_at: new Date(Date.now() - 86400000 * 25).toISOString(),
     },
     {
@@ -433,6 +677,7 @@ const store: MockTableData = {
       contact_email: 'tpo@vignan.ac.in',
       contact_phone: '+91 863 234 4700',
       is_active: true,
+      registration_enabled: true,
       created_at: new Date(Date.now() - 86400000 * 20).toISOString(),
     },
     {
@@ -444,6 +689,7 @@ const store: MockTableData = {
       contact_email: 'placements@rvrjcce.ac.in',
       contact_phone: '+91 863 228 8201',
       is_active: true,
+      registration_enabled: true,
       created_at: new Date(Date.now() - 86400000 * 15).toISOString(),
     },
     {
@@ -455,7 +701,60 @@ const store: MockTableData = {
       contact_email: 'tpo@gvpce.ac.in',
       contact_phone: '+91 891 273 9507',
       is_active: true,
+      registration_enabled: true,
       created_at: new Date(Date.now() - 86400000 * 10).toISOString(),
+    },
+  ],
+  curriculum: [
+    {
+      id: 'cur-01',
+      code: 'SEC-QUANT',
+      name: 'Quantitative Aptitude & Numerical Velocity',
+      short_name: 'Quantitative Aptitude',
+      sector_number: 1,
+      color: '#F59E0B',
+      is_active: true,
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'cur-02',
+      code: 'SEC-LOGIC',
+      name: 'Logical Reasoning & Deductive Logic',
+      short_name: 'Logical Reasoning',
+      sector_number: 2,
+      color: '#8B5CF6',
+      is_active: true,
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'cur-03',
+      code: 'SEC-CORECS',
+      name: 'Core Computer Science & Systems',
+      short_name: 'Core Computer Science',
+      sector_number: 3,
+      color: '#10B981',
+      is_active: true,
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'cur-04',
+      code: 'SEC-DSA',
+      name: 'Data Structures & Algorithmic Complexity',
+      short_name: 'DSA & Algorithms',
+      sector_number: 4,
+      color: '#38BDF8',
+      is_active: true,
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'cur-05',
+      code: 'SEC-FULLSTACK',
+      name: 'Full-Stack Architecture & Distributed Systems',
+      short_name: 'Full-Stack & Systems',
+      sector_number: 5,
+      color: '#F43F5E',
+      is_active: true,
+      created_at: new Date().toISOString(),
     },
   ],
   exam_codes: [
@@ -862,7 +1161,13 @@ const store: MockTableData = {
       created_at: new Date(Date.now() - 2400000).toISOString(),
     },
   ],
+  email_queue: [],
 };
+
+// Aliases matching Postgres compatibility views
+(store as any).candidates = store.participants;
+(store as any).sessions = store.exam_sessions;
+(store as any).audit_logs = store.audit_log;
 
 // Seed DEMO123 into exam_codes
 const demoCodes = ['DEMO123', 'DEMO100', 'CS2026'];
@@ -1160,12 +1465,50 @@ class MockQueryBuilder {
   }
 
   private execute(): Promise<{ data: any; error: any; count?: number }> {
+    if (this.tableName === 'pg_tables') {
+      const allKnownTables = [
+        'academic_years', 'audit_log', 'batches', 'cohorts', 'colleges',
+        'deliverable_failures', 'email_queue', 'exam_code_attempts', 'exam_codes',
+        'exam_sessions', 'exams', 'leaderboard', 'participants', 'platform_settings',
+        'proctor_logs', 'questions', 'questions_ec', 'results', 'sections',
+        'session_answers', 'staff', 'student_roster', 'students', 'suspicious_activity',
+        'violations'
+      ];
+      const rows = allKnownTables.map((t) => ({
+        schemaname: 'public',
+        tablename: t,
+        rowsecurity: true,
+      }));
+      return Promise.resolve({ data: rows, error: null, count: rows.length });
+    }
+
+    if (!store[this.tableName]) {
+      store[this.tableName] = [];
+    }
     const table = store[this.tableName];
 
     if (this.action === 'insert') {
       const items = Array.isArray(this.payload) ? this.payload : [this.payload];
       const inserted: any[] = [];
       for (const item of items) {
+        if (this.tableName === 'students' && item.college_id && (item.roll_number || item.hall_ticket)) {
+          const roll = (item.roll_number || item.hall_ticket || '').toUpperCase();
+          const exists = table.find(
+            (s: any) =>
+              String(s.college_id) === String(item.college_id) &&
+              (s.roll_number || s.hall_ticket || '').toUpperCase() === roll &&
+              s.is_verified !== false
+          );
+          if (exists) {
+            return Promise.resolve({
+              data: null,
+              error: {
+                code: '23505',
+                message: 'duplicate key value violates unique constraint "uq_college_roll"',
+              },
+            });
+          }
+        }
         const record = {
           id: item.id || uuidv4(),
           created_at: new Date().toISOString(),

@@ -1615,4 +1615,39 @@ div[role="radio"]:hover,
   }
 }
 
+/* ── Official Logic Whi1e LiRE Circuit & Elevated Brand Styles ── */
+.logicwhilelire-brand-lockup {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s ease;
+}
+
+.logicwhilelire-brand-lockup:hover {
+  transform: translateY(-1px);
+}
+
+.logicwhilelire-hero-emblem {
+  position: relative;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.logicwhilelire-hero-emblem:hover {
+  transform: scale(1.02);
+}
+
+/* Sector glow aura animations */
+@keyframes circuitPulse {
+  0%, 100% { opacity: 0.7; filter: drop-shadow(0 0 6px rgba(255, 194, 0, 0.4)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 16px rgba(255, 194, 0, 0.8)); }
+}
+
+.sector-card-elevated {
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sector-card-elevated:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
+
 

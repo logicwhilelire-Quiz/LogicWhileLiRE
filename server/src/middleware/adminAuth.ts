@@ -2,13 +2,29 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { supabase } from '../db/supabase';
 
-export type StaffRole = 'super_admin' | 'faculty' | 'college_admin';
+/**
+ * Returns the ADMIN_JWT_SECRET from env. Throws in production if missing.
+ * In dev/test, falls back to a deterministic key for local testing only.
+ */
+export function getAdminJwtSecret(): string {
+  const secret = process.env.ADMIN_JWT_SECRET;
+  if (secret) return secret;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('[FATAL] ADMIN_JWT_SECRET is required in production');
+  }
+  return 'dev_only_admin_jwt_secret_not_for_production_use';
+}
+
+export type StaffRole = 'super_admin' | 'faculty' | 'college_admin' | 'inspector' | 'admin';
 
 export interface AdminJWTPayload {
   sub: string;  // admin username or staff email
-  role: StaffRole | 'admin';
+  role: StaffRole;
   staff_id: string;
   name?: string;
+  college_id?: number | string | null;
+  must_change_password?: boolean;
+  permissions?: string[];
   iat?: number;
   exp?: number;
 }
@@ -37,18 +53,27 @@ export function adminAuth(req: Request, res: Response, next: NextFunction): void
   }
 
   try {
-    const adminJwtSecret = process.env.ADMIN_JWT_SECRET || 'logicwhilelire_admin_jwt_default_secret_key_demo_2026';
+    const adminJwtSecret = process.env.ADMIN_JWT_SECRET;
+    if (!adminJwtSecret) {
+      res.status(500).json({ success: false, error: 'Server misconfiguration: ADMIN_JWT_SECRET not set' });
+      return;
+    }
     const payload = jwt.verify(token, adminJwtSecret) as AdminJWTPayload;
     if (payload.role === 'admin') {
       payload.role = 'super_admin';
     }
-    if (payload.role !== 'super_admin' && payload.role !== 'faculty' && payload.role !== 'college_admin') {
+    if (
+      payload.role !== 'super_admin' &&
+      payload.role !== 'faculty' &&
+      payload.role !== 'college_admin' &&
+      payload.role !== 'inspector'
+    ) {
       res.status(403).json({ success: false, error: 'Insufficient privileges' });
       return;
     }
-    if (!payload.staff_id) {
-      payload.staff_id = 'st000000-0000-0000-0000-000000000001';
-    }
+    payload.staff_id = payload.staff_id || (payload as any).id || 'st000000-0000-0000-0000-000000000001';
+    payload.permissions = payload.permissions || [];
+
     req.admin = payload;
     next();
   } catch {
@@ -66,13 +91,77 @@ export function requireRole(...roles: StaffRole[]) {
       return;
     }
     const currentRole = (req.admin.role === 'admin' ? 'super_admin' : req.admin.role) as StaffRole;
-    if (!roles.includes(currentRole)) {
+    const isAllowed = roles.some((r) => {
+      if (r === 'super_admin' && (currentRole === 'super_admin' || currentRole === 'admin')) return true;
+      if (
+        (r === 'inspector' || r === 'college_admin') &&
+        (currentRole === 'inspector' || currentRole === 'college_admin')
+      ) {
+        return true;
+      }
+      return r === currentRole;
+    });
+
+    if (!isAllowed) {
       res.status(403).json({
         success: false,
         error: `Insufficient privileges: Action requires ${roles.join(' or ')} permission`,
       });
       return;
     }
+    next();
+  };
+}
+
+/**
+ * Server-side RBAC: Require specific permission for faculty.
+ * Super Admin bypasses this check.
+ * Inspectors are forbidden from faculty actions.
+ * Faculty must have the specific permission ticked.
+ */
+export function requireFacultyPermission(permission: string) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.admin) {
+      res.status(401).json({ success: false, error: 'Admin authentication required' });
+      return;
+    }
+    const currentRole = req.admin.role === 'admin' ? 'super_admin' : req.admin.role;
+    if (currentRole === 'super_admin') {
+      next();
+      return;
+    }
+    if (currentRole === 'inspector') {
+      res.status(403).json({
+        success: false,
+        error: 'Forbidden: Inspectors cannot perform faculty operations',
+        code: 'INSPECTOR_FORBIDDEN',
+      });
+      return;
+    }
+
+    // Query live permissions from DB to guarantee immediate revocation / addition
+    let staffPerms: string[] = req.admin.permissions || [];
+    try {
+      const { data: member } = await supabase
+        .from('staff')
+        .select('permissions')
+        .eq('id', req.admin.staff_id)
+        .maybeSingle();
+      if (member && Array.isArray(member.permissions)) {
+        staffPerms = member.permissions;
+      }
+    } catch {}
+
+    if (!staffPerms.includes(permission)) {
+      res.status(403).json({
+        success: false,
+        error: `Forbidden: Faculty member lacks the '${permission}' permission`,
+        code: 'FACULTY_PERMISSION_DENIED',
+        required_permission: permission,
+      });
+      return;
+    }
+
     next();
   };
 }
@@ -101,12 +190,13 @@ export function requireCollegeScope() {
       next();
       return;
     }
-    // If creating: ensure the supplied college_id matches
-    if (req.method === 'POST' && req.body?.college_id) {
-      if (String(req.body.college_id) !== String(callerCollegeId)) {
+    // If creating or querying: ensure the supplied college_id matches
+    const targetCollegeId = req.body?.college_id || req.query?.college_id;
+    if (targetCollegeId) {
+      if (String(targetCollegeId) !== String(callerCollegeId)) {
         res.status(403).json({
           success: false,
-          error: 'Forbidden: You can only create resources for your own college.',
+          error: 'Forbidden: You can only access or create resources for your own college.',
           code: 'CROSS_COLLEGE_FORBIDDEN',
         });
         return;
@@ -151,7 +241,7 @@ export function requireExamOwnership(paramKey: 'examId' | 'id' | 'sessionId' = '
       return;
     }
 
-    let examId = req.params[paramKey];
+    let examId = req.params[paramKey] || req.params.examId || req.params.id;
 
     // If param is sessionId, find associated examId
     if (paramKey === 'sessionId') {
@@ -173,22 +263,49 @@ export function requireExamOwnership(paramKey: 'examId' | 'id' | 'sessionId' = '
       return;
     }
 
-    // Check ownership in database
-    const { data: exam, error } = await supabase
+    // Check ownership in database (check exams table, then exam_codes table)
+    const { data: exam } = await supabase
       .from('exams')
-      .select('id, created_by_staff_id')
+      .select('id, created_by_staff_id, college_id')
       .eq('id', examId)
-      .single();
+      .maybeSingle();
 
-    if (error || !exam) {
+    let examRecord = exam;
+    if (!examRecord) {
+      const { data: ec } = await supabase
+        .from('exam_codes')
+        .select('id, created_by_staff_id, college_id')
+        .or(`id.eq.${examId},exam_code.eq.${examId},code.eq.${examId}`)
+        .maybeSingle();
+      examRecord = ec;
+    }
+
+    if (!examRecord) {
       res.status(404).json({ success: false, error: 'Exam not found' });
       return;
     }
 
-    if (exam.created_by_staff_id && exam.created_by_staff_id !== req.admin.staff_id) {
+    // Inspectors can manage exams scoped to their college
+    if (req.admin.role === 'inspector' || req.admin.role === 'college_admin') {
+      const callerCollegeId = (req.admin as any).college_id;
+      if (callerCollegeId && examRecord.college_id && String(examRecord.college_id) !== String(callerCollegeId)) {
+        res.status(403).json({
+          success: false,
+          error: 'Forbidden: You do not have permission to manage exams from another college',
+          code: 'CROSS_COLLEGE_FORBIDDEN',
+        });
+        return;
+      }
+      next();
+      return;
+    }
+
+    const callerStaffId = req.admin.staff_id || (req.admin as any).id;
+    if (examRecord.created_by_staff_id && examRecord.created_by_staff_id !== callerStaffId) {
       res.status(403).json({
         success: false,
         error: 'Forbidden: You do not have permission to manage this assessment',
+        code: 'FORBIDDEN_NOT_EXAM_OWNER',
       });
       return;
     }

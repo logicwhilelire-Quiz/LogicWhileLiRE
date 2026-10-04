@@ -2,17 +2,11 @@
  * socketService.ts
  * Phase 1d + Sprint 2: Synchronous Live Assessment Dispatch Engine
  *
- * EXAM_STARTED broadcast (Sprint 2):
- * - Idempotent: a second call returns the existing payload without re-broadcasting.
- * - Reconnect sync: if a student connects AFTER EXAM_STARTED was fired,
- *   lobby:join emits EXAM_STARTED to that socket alone with correct elapsed data.
- * - Server-authoritative: the REST endpoint writes
- *     end_time = server_start_time + duration_seconds
- *   to DB so computeRemainingSeconds() gives correct time for all clients,
- *   including late joiners.
- *
- * EXAM_STARTED schema (PRD §5):
- *   { event, exam_id, server_start_time, duration_seconds, allow_late_join }
+ * Real-Time Telemetry & Inspector-Led Exam Flow:
+ * - Inspector live command telemetry: queue count, joined/submitted counts, live ranks.
+ * - Strict Rate Limiting: Batched and emitted at NO MORE THAN 1 UPDATE PER SECOND PER ROOM.
+ * - Idempotent EXAM_STARTED broadcast: synchronous dispatch to all candidates in room.
+ * - Reconnect sync for late joiners with server-authoritative clock.
  */
 
 import { Server as HttpServer } from 'http';
@@ -25,7 +19,17 @@ const timerIntervals = new Map<string, ReturnType<typeof setInterval>>();
 const lobbyConnections = new Map<string, Set<string>>();
 const leaderboardIntervals = new Map<string, ReturnType<typeof setInterval>>();
 
-interface ExamStartedState {
+export interface LobbyStudent {
+  socketId: string;
+  examCode: string;
+  hallTicket: string;
+  studentName: string;
+  section: string;
+  joinedAt: number;
+}
+const socketStudents = new Map<string, LobbyStudent>();
+
+export interface ExamStartedState {
   exam_id: string;
   server_start_time: number;
   duration_seconds: number;
@@ -46,17 +50,180 @@ export function resetExamStartedState(examCode?: string): void {
   }
 }
 
+// ─────────────────────────────────────────────
+// ROOM UPDATE THROTTLER (Strict: <= 1 update / sec / room)
+// ─────────────────────────────────────────────
+
+interface ThrottlerState {
+  lastEmitTime: number;
+  scheduledTimeout: NodeJS.Timeout | null;
+  isDirty: boolean;
+  pulseInterval: NodeJS.Timeout | null;
+}
+
+const roomThrottlers = new Map<string, ThrottlerState>();
+
+export function scheduleThrottledRoomUpdate(examCode: string): void {
+  if (!examCode) return;
+  const code = examCode.toUpperCase();
+  let state = roomThrottlers.get(code);
+  if (!state) {
+    state = { lastEmitTime: 0, scheduledTimeout: null, isDirty: false, pulseInterval: null };
+    roomThrottlers.set(code, state);
+  }
+  state.isDirty = true;
+
+  const now = Date.now();
+  const timeSinceLastEmit = now - state.lastEmitTime;
+
+  if (timeSinceLastEmit >= 1000 && !state.scheduledTimeout) {
+    state.lastEmitTime = now;
+    state.isDirty = false;
+    emitBatchRoomTelemetry(code).catch(() => {});
+  } else if (!state.scheduledTimeout) {
+    const delay = Math.max(50, 1000 - timeSinceLastEmit);
+    state.scheduledTimeout = setTimeout(async () => {
+      const curr = roomThrottlers.get(code);
+      if (curr) {
+        curr.scheduledTimeout = null;
+        if (curr.isDirty) {
+          curr.lastEmitTime = Date.now();
+          curr.isDirty = false;
+          await emitBatchRoomTelemetry(code).catch(() => {});
+        }
+      }
+    }, delay);
+  }
+}
+
+export function getWaitingStudents(examCode: string): LobbyStudent[] {
+  const code = examCode.toUpperCase();
+  const list: LobbyStudent[] = [];
+  for (const s of socketStudents.values()) {
+    if (s.examCode === code) {
+      list.push(s);
+    }
+  }
+  return list;
+}
+
+/**
+ * Consolidates telemetry and emits at most once every 1000ms to rooms:
+ * - lobby:{code}
+ * - leaderboard:{code}
+ * - monitor:{code}
+ */
+export async function emitBatchRoomTelemetry(examCode: string): Promise<void> {
+  if (!io) return;
+  const code = examCode.toUpperCase();
+
+  // 1. Waiting students in lobby
+  const waitingSockets = getWaitingStudents(code);
+  const connectedCount = lobbyConnections.get(code)?.size ?? 0;
+
+  // 2. Fetch attempts from DB
+  const { data: attempts } = await supabase
+    .from('exam_code_attempts')
+    .select('hall_ticket_no, student_name, score, max_score, correct_count, time_taken_seconds, status, created_at')
+    .eq('exam_code', code);
+
+  const attemptList = attempts || [];
+  const submittedList = attemptList.filter(
+    (a) => a.status === 'completed' || a.status === 'terminated_cheating' || a.status === 'auto_submitted_expired'
+  );
+
+  // 3. Compute live rankings
+  const { data: examData } = await supabase
+    .from('exam_codes')
+    .select('duration_minutes, is_active')
+    .eq('exam_code', code)
+    .maybeSingle();
+
+  const totalDurationSec = (examData?.duration_minutes ?? 60) * 60;
+
+  const ranked = submittedList
+    .map((r) => ({
+      ...r,
+      percentage: (r.max_score || 0) > 0 ? Math.round(((r.score || 0) / r.max_score) * 100) : 0,
+      rank_score: (r.score || 0) - ((r.time_taken_seconds || 0) / (totalDurationSec || 3600)),
+    }))
+    .sort((a, b) => b.rank_score - a.rank_score)
+    .map((r, i) => ({
+      rank: i + 1,
+      student_id: r.hall_ticket_no,
+      student_name: r.student_name,
+      score: r.score ?? 0,
+      percentage: r.percentage,
+      answered: r.correct_count ?? 0,
+      time_taken_seconds: r.time_taken_seconds ?? 0,
+    }));
+
+  const waitingFormatted = waitingSockets.map((s) => ({
+    hall_ticket_no: s.hallTicket,
+    student_name: s.studentName,
+    section: s.section,
+    joined_at: new Date(s.joinedAt).toISOString(),
+    status: 'waiting',
+  }));
+
+  const payload = {
+    event: 'ROOM_TELEMETRY',
+    exam_code: code,
+    queue_count: waitingSockets.length,
+    joined_count: connectedCount,
+    submitted_count: submittedList.length,
+    total_enrolled: Math.max(attemptList.length, connectedCount),
+    live_ranks: ranked.slice(0, 50),
+    waiting_students: waitingFormatted,
+    timestamp: Date.now(),
+  };
+
+  // Broadcast unified telemetry to all rooms
+  io.to(`lobby:${code}`).emit('telemetry:update', payload);
+  io.to(`leaderboard:${code}`).emit('telemetry:update', payload);
+  io.to(`monitor:${code}`).emit('telemetry:update', payload);
+
+  // Backwards compatibility for existing views
+  io.to(`lobby:${code}`).emit('lobby:update', {
+    participants: waitingFormatted,
+    meta: {
+      enrolled: payload.total_enrolled,
+      connected: connectedCount,
+      pending: Math.max(0, payload.total_enrolled - connectedCount),
+      queue_count: waitingSockets.length,
+      submitted_count: submittedList.length,
+    },
+  });
+
+  const snapshot = {
+    event: 'LEADERBOARD_SNAPSHOT',
+    exam_id: code,
+    top_ranks: ranked.slice(0, 50),
+    total_active: submittedList.length,
+    timestamp: Date.now(),
+  };
+  io.to(`leaderboard:${code}`).emit('LEADERBOARD_SNAPSHOT', snapshot);
+  io.to(`lobby:${code}`).emit('LEADERBOARD_SNAPSHOT', snapshot);
+}
+
+// ─────────────────────────────────────────────
+// SOCKET.IO INITIALIZATION
+// ─────────────────────────────────────────────
+
 export function initSocketIO(httpServer: HttpServer): IOServer {
   const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
     .split(',')
-    .map((o) => o.trim())
+    .map((o) => o.trim().replace(/\/+$/, ''))
     .filter(Boolean);
 
   io = new IOServer(httpServer, {
     cors: {
       origin: (origin, callback) => {
         if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) return callback(null, true);
+        const cleanOrigin = origin.replace(/\/+$/, '');
+        if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
         callback(new Error('CORS: Socket origin not allowed'));
       },
       methods: ['GET', 'POST'],
@@ -65,11 +232,10 @@ export function initSocketIO(httpServer: HttpServer): IOServer {
     transports: ['websocket', 'polling'],
   });
 
-
   io.on('connection', (socket: Socket) => {
     console.log(`[Socket.io] Client connected: ${socket.id}`);
 
-    // Exam timer
+    // Exam timer room
     socket.on('exam:join', async ({ attemptId, examCode }: {
       attemptId: string;
       examCode: string;
@@ -88,18 +254,35 @@ export function initSocketIO(httpServer: HttpServer): IOServer {
       }
     });
 
-    // Waiting lobby
-    socket.on('lobby:join', async ({ examCode }: { examCode: string }) => {
-      if (!examCode) return;
-      const code = examCode.toUpperCase();
+    // Waiting lobby room
+    socket.on('lobby:join', async (data: {
+      examCode: string;
+      hallTicket?: string;
+      studentName?: string;
+      section?: string;
+    }) => {
+      if (!data?.examCode) return;
+      const code = data.examCode.toUpperCase();
       socket.join(`lobby:${code}`);
 
       if (!lobbyConnections.has(code)) lobbyConnections.set(code, new Set());
       lobbyConnections.get(code)!.add(socket.id);
 
-      await emitLobbyUpdate(code);
+      // Record student details for queue tracking
+      const studentInfo: LobbyStudent = {
+        socketId: socket.id,
+        examCode: code,
+        hallTicket: data.hallTicket || `HT-${socket.id.slice(0, 6).toUpperCase()}`,
+        studentName: data.studentName || 'Student Candidate',
+        section: data.section || 'General',
+        joinedAt: Date.now(),
+      };
+      socketStudents.set(socket.id, studentInfo);
 
-      // RECONNECT SYNC (Sprint 2, item 5):
+      // Schedule throttled room update (max 1/sec)
+      scheduleThrottledRoomUpdate(code);
+
+      // RECONNECT SYNC:
       // If EXAM_STARTED already fired, immediately push it to this socket
       // with correct elapsed time so late joiners / reconnectors catch up.
       const startedState = examStartedState.get(code);
@@ -123,26 +306,38 @@ export function initSocketIO(httpServer: HttpServer): IOServer {
       }
     });
 
-    // Leaderboard
+    // Live monitor room for inspectors
+    socket.on('monitor:join', async ({ examCode }: { examCode: string }) => {
+      if (!examCode) return;
+      const code = examCode.toUpperCase();
+      socket.join(`monitor:${code}`);
+      scheduleThrottledRoomUpdate(code);
+    });
+
+    // Leaderboard room
     socket.on('leaderboard:join', async ({ examCode }: { examCode: string }) => {
       if (!examCode) return;
       const code = examCode.toUpperCase();
       socket.join(`leaderboard:${code}`);
-      await emitLeaderboardSnapshot(code);
-      if (!leaderboardIntervals.has(code)) {
-        const interval = setInterval(async () => {
-          await emitLeaderboardSnapshot(code);
-        }, 1000);
-        leaderboardIntervals.set(code, interval);
-      }
+      scheduleThrottledRoomUpdate(code);
     });
 
     socket.on('disconnect', () => {
       console.log(`[Socket.io] Client disconnected: ${socket.id}`);
-      for (const [code, sockets] of lobbyConnections.entries()) {
-        if (sockets.has(socket.id)) {
-          sockets.delete(socket.id);
-          emitLobbyUpdate(code).catch(() => {});
+      const student = socketStudents.get(socket.id);
+      if (student) {
+        socketStudents.delete(socket.id);
+        const code = student.examCode;
+        if (lobbyConnections.has(code)) {
+          lobbyConnections.get(code)!.delete(socket.id);
+        }
+        scheduleThrottledRoomUpdate(code);
+      } else {
+        for (const [code, sockets] of lobbyConnections.entries()) {
+          if (sockets.has(socket.id)) {
+            sockets.delete(socket.id);
+            scheduleThrottledRoomUpdate(code);
+          }
         }
       }
     });
@@ -189,76 +384,16 @@ async function sendTimerTickToRoom(room: string, examCode: string) {
   }
 }
 
-// Lobby / leaderboard emitters
-
 export async function emitLobbyUpdate(examCode: string) {
-  if (!io) return;
-  const code = examCode.toUpperCase();
-  const { data } = await supabase
-    .from('exam_code_attempts')
-    .select('hall_ticket_no, student_name, status, created_at')
-    .eq('exam_code', code)
-    .order('created_at', { ascending: false });
-
-  const connectedSockets = lobbyConnections.get(code)?.size ?? 0;
-  const enrolled = data?.length ?? 0;
-  const pending = Math.max(0, enrolled - connectedSockets);
-
-  io.to(`lobby:${code}`).emit('lobby:update', {
-    participants: data || [],
-    meta: { enrolled, connected: connectedSockets, pending },
-  });
+  scheduleThrottledRoomUpdate(examCode);
 }
 
 export async function emitLeaderboardSnapshot(examCode: string) {
-  if (!io) return;
-  const code = examCode.toUpperCase();
-
-  const { data: examData } = await supabase
-    .from('exam_codes')
-    .select('duration_minutes, is_active')
-    .eq('exam_code', code)
-    .maybeSingle();
-
-  const totalDurationSec = (examData?.duration_minutes ?? 60) * 60;
-
-  const { data } = await supabase
-    .from('exam_code_attempts')
-    .select('hall_ticket_no, student_name, score, max_score, correct_count, time_taken_seconds, status')
-    .eq('exam_code', code)
-    .in('status', ['completed', 'terminated_cheating']);
-
-  const ranked = (data || [])
-    .map((r) => ({
-      ...r,
-      percentage: r.max_score > 0 ? Math.round((r.score / r.max_score) * 100) : 0,
-      rank_score: r.score - (r.time_taken_seconds / totalDurationSec),
-    }))
-    .sort((a, b) => b.rank_score - a.rank_score)
-    .map((r, i) => ({
-      rank: i + 1,
-      student_id: r.hall_ticket_no,
-      student_name: r.student_name,
-      score: r.score,
-      percentage: r.percentage,
-      answered: r.correct_count,
-      time_taken_seconds: r.time_taken_seconds,
-    }));
-
-  const snapshot = {
-    event: 'LEADERBOARD_SNAPSHOT',
-    exam_id: code,
-    top_ranks: ranked.slice(0, 50),
-    total_active: data?.length ?? 0,
-    timestamp: Date.now(),
-  };
-
-  io.to(`leaderboard:${code}`).emit('LEADERBOARD_SNAPSHOT', snapshot);
-  io.to(`lobby:${code}`).emit('LEADERBOARD_SNAPSHOT', snapshot);
+  scheduleThrottledRoomUpdate(examCode);
 }
 
 export async function emitLeaderboardUpdate(examCode: string) {
-  return emitLeaderboardSnapshot(examCode);
+  scheduleThrottledRoomUpdate(examCode);
 }
 
 /**
@@ -297,19 +432,26 @@ export async function broadcastExamStarted(params: {
     io.to(`lobby:${code}`).emit('EXAM_STARTED', payload);
   }
 
-  // Start per-second leaderboard stream
-  if (io && !leaderboardIntervals.has(code)) {
-    const interval = setInterval(async () => {
-      await emitLeaderboardSnapshot(code);
+  // Start throttled 1-second pulse for ranks and monitor
+  const throttler = roomThrottlers.get(code);
+  if (throttler && !throttler.pulseInterval) {
+    throttler.pulseInterval = setInterval(() => {
+      scheduleThrottledRoomUpdate(code);
     }, 1000);
-    leaderboardIntervals.set(code, interval);
   }
+
+  scheduleThrottledRoomUpdate(code);
 
   return { payload: state, alreadyStarted: false };
 }
 
 export function stopLeaderboardStream(examCode: string) {
   const code = examCode.toUpperCase();
+  const throttler = roomThrottlers.get(code);
+  if (throttler?.pulseInterval) {
+    clearInterval(throttler.pulseInterval);
+    throttler.pulseInterval = null;
+  }
   const interval = leaderboardIntervals.get(code);
   if (interval) {
     clearInterval(interval);
@@ -317,10 +459,11 @@ export function stopLeaderboardStream(examCode: string) {
   }
 }
 
-export function getLobbyStats(examCode: string): { enrolled: number; connected: number; pending: number } {
+export function getLobbyStats(examCode: string): { enrolled: number; connected: number; pending: number; queue_count: number } {
   const code = examCode.toUpperCase();
   const connected = lobbyConnections.get(code)?.size ?? 0;
-  return { enrolled: connected, connected, pending: 0 };
+  const waiting = getWaitingStudents(code).length;
+  return { enrolled: connected, connected, pending: 0, queue_count: waiting };
 }
 
 export function stopAttemptTimer(attemptId: string) {

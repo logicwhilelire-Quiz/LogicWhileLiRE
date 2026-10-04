@@ -28,7 +28,7 @@ export async function verifyAttemptToken(
 ): Promise<{ valid: boolean; evicted: boolean; terminated: boolean; attempt: any | null }> {
   const { data: attempt } = await supabase
     .from('exam_code_attempts')
-    .select('id, status, session_token, exam_code')
+    .select('*')
     .eq('id', attemptId)
     .eq('exam_code', examCode.toUpperCase())
     .maybeSingle();
@@ -75,29 +75,66 @@ export function isValidExamCodeFormat(code: string): boolean {
   return /^(LWL|LIRE|GR|LW)-[A-Z0-9]+-[A-Z0-9]+$/i.test(code.trim()) || /^[A-Z0-9_-]{3,32}$/i.test(code.trim());
 }
 
+/**
+ * Deterministically shuffles an array using a string seed.
+ * Consistent across reloads for the same student session, but unique per candidate.
+ */
+export function deterministicShuffle<T>(arr: T[], seedStr: string): T[] {
+  const copy = [...arr];
+  let seed = 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    seed = ((seed << 5) - seed + seedStr.charCodeAt(i)) | 0;
+  }
+  for (let i = copy.length - 1; i > 0; i--) {
+    seed = (seed * 9301 + 49297) % 233280;
+    const j = Math.floor((Math.abs(seed) / 233280) * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 // ─────────────────────────────────────────────
 // COLLEGES
 // ─────────────────────────────────────────────
 
 /**
  * GET /api/colleges
- * Public – returns active colleges for dropdown
+ * Public – returns active colleges for dropdown.
+ * When ?registration=true is supplied, filters only colleges enabled for student registration.
  */
 export async function listColleges(req: Request, res: Response): Promise<void> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('colleges')
-    .select('id, college_name, college_code, city, state, is_active')
+    .select('id, college_name, college_code, city, state, is_active, registration_enabled')
     .order('college_name');
 
+  if (req.query.registration === 'true') {
+    query = (query as any).eq('is_active', true).eq('registration_enabled', true);
+  }
+
+  const { data, error } = await query;
+
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
-  res.json({ success: true, colleges: data });
+  
+  // Ensure default registration_enabled is true if null/undefined
+  const colleges = (data || []).map((c: any) => ({
+    ...c,
+    registration_enabled: c.registration_enabled !== false,
+  }));
+
+  // Extra guard if query was registration=true
+  const result = req.query.registration === 'true'
+    ? colleges.filter((c: any) => c.registration_enabled && c.is_active)
+    : colleges;
+
+  res.json({ success: true, colleges: result });
 }
 
 /**
  * POST /api/admin/colleges
  */
 export async function createCollege(req: Request, res: Response): Promise<void> {
-  const { college_name, college_code, city, state, contact_email, contact_phone } = req.body;
+  const { college_name, college_code, city, state, contact_email, contact_phone, registration_enabled } = req.body;
   if (!college_name || !college_code) {
     res.status(400).json({ success: false, error: 'college_name and college_code are required' });
     return;
@@ -105,7 +142,16 @@ export async function createCollege(req: Request, res: Response): Promise<void> 
   const normalized = college_code.toUpperCase().replace(/[^A-Z0-9]/g, '');
   const { data, error } = await supabase
     .from('colleges')
-    .insert({ college_name, college_code: normalized, city, state, contact_email, contact_phone })
+    .insert({
+      college_name,
+      college_code: normalized,
+      city,
+      state,
+      contact_email,
+      contact_phone,
+      registration_enabled: registration_enabled !== false,
+      is_active: true,
+    })
     .select()
     .single();
 
@@ -125,10 +171,19 @@ export async function createCollege(req: Request, res: Response): Promise<void> 
  */
 export async function updateCollege(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
-  const { college_name, city, state, contact_email, contact_phone, is_active } = req.body;
+  const { college_name, city, state, contact_email, contact_phone, is_active, registration_enabled } = req.body;
+  const updates: any = {};
+  if (college_name !== undefined) updates.college_name = college_name;
+  if (city !== undefined) updates.city = city;
+  if (state !== undefined) updates.state = state;
+  if (contact_email !== undefined) updates.contact_email = contact_email;
+  if (contact_phone !== undefined) updates.contact_phone = contact_phone;
+  if (is_active !== undefined) updates.is_active = is_active;
+  if (registration_enabled !== undefined) updates.registration_enabled = registration_enabled;
+
   const { data, error } = await supabase
     .from('colleges')
-    .update({ college_name, city, state, contact_email, contact_phone, is_active })
+    .update(updates)
     .eq('id', id)
     .select()
     .single();
@@ -347,7 +402,7 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
     .maybeSingle();
 
   if (existing) {
-    if (existing.status === 'in_progress') {
+    if (existing.status === 'in_progress' || existing.status === 'active') {
       // ── 1a: Concurrent-session block ──────────────────────────────────────
       // Issue a FRESH session_token so any previously-open browser is evicted.
       // The new token is returned to THIS caller; the old tab's token no longer
@@ -461,14 +516,15 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
 
   const { data: questions, error } = await supabase
     .from('questions_ec')
-    .select('id, question, option_a, option_b, option_c, option_d, marks, difficulty, topic, section, tags, display_order')
+    .select('id, question, option_a, option_b, option_c, option_d, marks, penalty, negative_marks, difficulty, topic, section, tags, display_order')
     .eq('exam_code', String(code).toUpperCase())
     .order('display_order', { ascending: true, nullsFirst: false })
     .order('created_at');
 
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
 
-  // Phase 3: Section-wise randomization (shuffles questions within each section)
+  // Phase 3: Section-wise and student-specific question shuffling
+  const studentIdentifier = String(attemptId || req.query.candidateId || req.query.hallTicket || 'student');
   const sectionsMap = new Map<string, any[]>();
   for (const q of questions || []) {
     const sec = q.section || q.topic || 'General';
@@ -476,15 +532,33 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
     sectionsMap.get(sec)!.push(q);
   }
   const randomizedQuestions: any[] = [];
-  for (const [_sec, qList] of sectionsMap.entries()) {
-    const shuffledList = [...qList].sort(() => Math.random() - 0.5);
+  for (const [secName, qList] of sectionsMap.entries()) {
+    const shuffledList = deterministicShuffle(qList, `${studentIdentifier}_sec_${secName}`);
     randomizedQuestions.push(...shuffledList);
   }
 
-  // Question secrecy guard: ensure answer keys/explanations are never leaked to candidate client
+  // Question secrecy guard & per-student option shuffling:
+  // Options are shuffled per student; grading strictly uses the server's master key.
   const sanitizedQuestions = (randomizedQuestions || []).map((q: any) => {
+    const studentSeed = `${studentIdentifier}_${q.id}`;
+    const opts = [
+      { key: 'A', text: q.option_a },
+      { key: 'B', text: q.option_b },
+      { key: 'C', text: q.option_c },
+      { key: 'D', text: q.option_d },
+    ].filter((o) => o.text !== undefined && o.text !== null && String(o.text).trim().length > 0);
+
+    const shuffledOpts = deterministicShuffle(opts, studentSeed);
     const { correct_answer, correct_option, explanation, ...safeQ } = q;
-    return safeQ;
+    return {
+      ...safeQ,
+      options: shuffledOpts.map((o) => o.text),
+      option_a: shuffledOpts[0]?.text ?? null,
+      option_b: shuffledOpts[1]?.text ?? null,
+      option_c: shuffledOpts[2]?.text ?? null,
+      option_d: shuffledOpts[3]?.text ?? null,
+      penalty: Number(q.penalty ?? q.negative_marks ?? 0),
+    };
   });
 
   res.json({ success: true, questions: sanitizedQuestions, total: sanitizedQuestions.length });
@@ -566,7 +640,7 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
   // Fetch questions with correct answers for server-authoritative grading
   const { data: questions } = await supabase
     .from('questions_ec')
-    .select('id, question, correct_answer, marks, topic, option_a, option_b, option_c, option_d, question_type')
+    .select('id, question, correct_answer, marks, penalty, negative_marks, topic, option_a, option_b, option_c, option_d, question_type')
     .eq('exam_code', String(code).toUpperCase());
 
   if (!questions) {
@@ -574,7 +648,7 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
     return;
   }
 
-  // ── 1.5 Pure Server-Authoritative Scoring ──
+  // ── 1.5 Pure Server-Authoritative Scoring & Negative Marking ──
   let totalScore = 0;
   let maxScore = 0;
   let correctCount = 0;
@@ -582,8 +656,10 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
   let mcqScore = 0;
   let mcqMaxScore = 0;
   const codingQuestionsList: Array<{ id: string; title: string; marks: number; submitted: boolean }> = [];
-  const topicBreakdown: Record<string, { correct: number; wrong: number; score: number; maxScore: number }> = {};
+  const topicBreakdown: Record<string, { correct: number; wrong: number; score: number; maxScore: number; penalty?: number }> = {};
   const optLetters = ['A', 'B', 'C', 'D'];
+
+  const studentIdentifier = String(attempt.id || candidateId || attempt.hall_ticket_no || 'student');
 
   for (const q of questions) {
     const isCodingQ = q.question_type === 'code' || (!q.option_a && !q.option_b && (String(q.topic || '').toLowerCase().includes('algorithm') || String(q.topic || '').toLowerCase().includes('code')));
@@ -591,7 +667,7 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
     maxScore += qMarks;
     const topic = q.topic || 'General';
     if (!topicBreakdown[topic]) {
-      topicBreakdown[topic] = { correct: 0, wrong: 0, score: 0, maxScore: 0 };
+      topicBreakdown[topic] = { correct: 0, wrong: 0, score: 0, maxScore: 0, penalty: 0 };
     }
     topicBreakdown[topic].maxScore += qMarks;
 
@@ -611,29 +687,42 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
     // MCQ question:
     mcqMaxScore += qMarks;
     const studentAnswer = finalAnswers[q.id];
-    if (studentAnswer !== undefined && studentAnswer !== null) {
-      let studentLetter = '';
+    if (studentAnswer !== undefined && studentAnswer !== null && String(studentAnswer).trim() !== '') {
+      // Re-create the student's unique shuffled option mapping
+      const studentSeed = `${studentIdentifier}_${q.id}`;
+      const origOpts = [
+        { key: 'A', text: q.option_a },
+        { key: 'B', text: q.option_b },
+        { key: 'C', text: q.option_c },
+        { key: 'D', text: q.option_d },
+      ].filter((o) => o.text !== undefined && o.text !== null && String(o.text).trim().length > 0);
+      const shuffledOpts = deterministicShuffle(origOpts, studentSeed);
+
+      let studentMasterLetter = '';
       if (typeof studentAnswer === 'number') {
-        studentLetter = optLetters[studentAnswer] || '';
+        studentMasterLetter = shuffledOpts[studentAnswer]?.key || optLetters[studentAnswer] || '';
       } else if (typeof studentAnswer === 'string') {
         const trimmed = studentAnswer.trim();
         if (/^[0-3]$/.test(trimmed)) {
-          studentLetter = optLetters[parseInt(trimmed, 10)] || '';
-        } else if (/^[A-D]$/i.test(trimmed)) {
-          studentLetter = trimmed.toUpperCase();
-        } else if (trimmed.toLowerCase() === String(q.option_a || '').trim().toLowerCase()) {
-          studentLetter = 'A';
-        } else if (trimmed.toLowerCase() === String(q.option_b || '').trim().toLowerCase()) {
-          studentLetter = 'B';
-        } else if (trimmed.toLowerCase() === String(q.option_c || '').trim().toLowerCase()) {
-          studentLetter = 'C';
-        } else if (trimmed.toLowerCase() === String(q.option_d || '').trim().toLowerCase()) {
-          studentLetter = 'D';
+          const idx = parseInt(trimmed, 10);
+          studentMasterLetter = shuffledOpts[idx]?.key || optLetters[idx] || '';
+        } else {
+          // Check matching option text directly in original or shuffled
+          const matchedByText = origOpts.find((o) => String(o.text).trim().toLowerCase() === trimmed.toLowerCase());
+          if (matchedByText) {
+            studentMasterLetter = matchedByText.key;
+          } else if (/^[A-D]$/i.test(trimmed)) {
+            // Mapped letter or direct letter
+            const letterIdx = optLetters.indexOf(trimmed.toUpperCase());
+            studentMasterLetter = shuffledOpts[letterIdx]?.key || trimmed.toUpperCase();
+          }
         }
       }
 
       const expectedLetter = String(q.correct_answer || 'A').trim().toUpperCase();
-      if (studentLetter && studentLetter === expectedLetter) {
+      const penalty = Number(q.penalty ?? q.negative_marks ?? 0);
+
+      if (studentMasterLetter && studentMasterLetter === expectedLetter) {
         totalScore += qMarks;
         mcqScore += qMarks;
         correctCount++;
@@ -641,10 +730,18 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
         topicBreakdown[topic].score += qMarks;
       } else {
         wrongCount++;
+        const pen = penalty > 0 ? penalty : 0;
+        totalScore -= pen;
+        mcqScore -= pen;
         topicBreakdown[topic].wrong++;
+        topicBreakdown[topic].score -= pen;
+        topicBreakdown[topic].penalty = (topicBreakdown[topic].penalty || 0) + pen;
       }
     }
   }
+
+  totalScore = Math.max(0, Math.round(totalScore * 100) / 100);
+  mcqScore = Math.max(0, Math.round(mcqScore * 100) / 100);
 
   const vCount = violationCount !== undefined ? violationCount : (attempt.violation_count || 0);
   const finalStatus = vCount >= 5
@@ -672,6 +769,37 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
     .eq('id', attempt.id);
 
   if (updateError) { res.status(500).json({ success: false, error: updateError.message }); return; }
+
+  // Persist attempt to results table for institutional record keeping
+  try {
+    await supabase.from('results').insert({
+      attempt_id: attempt.id,
+      exam_id: attempt.exam_code,
+      exam_code: attempt.exam_code,
+      student_id: attempt.hall_ticket_no,
+      student_name: attempt.student_name,
+      score: totalScore,
+      max_score: maxScore,
+      correct_count: correctCount,
+      wrong_count: wrongCount,
+      percentage: maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0,
+      status: finalStatus,
+      answers: finalAnswers,
+      time_taken_seconds: timeTakenSeconds || Math.round((Date.now() - startTime) / 1000),
+      submitted_at: new Date().toISOString(),
+    });
+  } catch {}
+
+  // Clear leaderboard cache for fresh rank computation
+  try {
+    leaderboardCache.delete(code);
+  } catch {}
+
+  // Trigger throttled room telemetry (<= 1 update per second per room)
+  try {
+    const { scheduleThrottledRoomUpdate } = await import('../services/socketService');
+    scheduleThrottledRoomUpdate(code);
+  } catch {}
 
   res.json({
     success: true,
@@ -995,6 +1123,12 @@ export async function saveExamCodeAnswer(req: Request, res: Response): Promise<v
 
   await supabase.from('exam_code_attempts').update(upd).eq('id', attempt.id);
 
+  // Trigger throttled room telemetry (<= 1 update per second per room)
+  try {
+    const { scheduleThrottledRoomUpdate } = await import('../services/socketService');
+    scheduleThrottledRoomUpdate(code);
+  } catch {}
+
   res.json({
     success: true,
     saved: true,
@@ -1087,7 +1221,10 @@ export async function getExamCodeLeaderboard(req: Request, res: Response): Promi
   const leaderboard = (data || []).map((row, index) => ({
     rank: index + 1,
     hall_ticket: row.hall_ticket_no,
+    hall_ticket_no: row.hall_ticket_no,
+    student_id: row.hall_ticket_no,
     name: row.student_name || row.hall_ticket_no,
+    student_name: row.student_name || row.hall_ticket_no,
     score: row.score,
     max_score: row.max_score,
     percentage: row.max_score > 0 ? Math.round((Number(row.score) / Number(row.max_score)) * 100) : 0,
@@ -1268,6 +1405,206 @@ export async function importQuestionsForExamCode(req: Request, res: Response): P
     validation_errors: errors,
     message: `${validRows.length} questions imported for exam code ${ec.exam_code}.`,
   });
+}
+
+/**
+ * POST /api/admin/questions/validate-preview
+ * Faculty upload questions by Excel in the 5-column format with validation and preview.
+ * Supports:
+ * - 5-column format: [Question, Option A, Option B, Option C, Option D]
+ * - Extended format with Correct Option, Marks, Negative Marks / Penalty, Section, Topic, Difficulty
+ */
+export async function validateAndPreviewQuestions(req: Request, res: Response): Promise<void> {
+  try {
+    let rows: any[] = [];
+    if (req.file) {
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
+    } else if (Array.isArray(req.body.questions)) {
+      rows = req.body.questions;
+    } else if (Array.isArray(req.body.rows)) {
+      rows = req.body.rows;
+    }
+
+    if (rows.length === 0) {
+      res.status(400).json({ success: false, error: 'No question rows found in uploaded file or request body' });
+      return;
+    }
+
+    const preview: any[] = [];
+    const allErrors: string[] = [];
+    let validCount = 0;
+    let invalidCount = 0;
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNum = i + 2;
+      const rowErrors: string[] = [];
+
+      const norm: Record<string, string> = {};
+      const keys = Object.keys(row);
+      for (const k of keys) {
+        norm[k.trim().toLowerCase().replace(/[\s_]/g, '')] = String(row[k] ?? '').trim();
+      }
+
+      let question = '';
+      let optA = '';
+      let optB = '';
+      let optC = '';
+      let optD = '';
+      let correct = '';
+      let marks = 1;
+      let penalty = 0;
+      let section = 'General';
+      let topic = 'General';
+      let difficulty = 'Medium';
+
+      if (keys.length >= 5 && (!norm['question'] && !norm['questiontext'])) {
+        // Positional 5-column format: Col 1: Question, Col 2: Opt A, Col 3: Opt B, Col 4: Opt C, Col 5: Opt D
+        question = String(row[keys[0]] ?? '').trim();
+        optA = String(row[keys[1]] ?? '').trim();
+        optB = String(row[keys[2]] ?? '').trim();
+        optC = String(row[keys[3]] ?? '').trim();
+        optD = String(row[keys[4]] ?? '').trim();
+        if (keys.length > 5) correct = String(row[keys[5]] ?? '').trim().toUpperCase();
+        if (keys.length > 6) marks = parseFloat(String(row[keys[6]])) || 1;
+        if (keys.length > 7) penalty = parseFloat(String(row[keys[7]])) || 0;
+      } else {
+        question = String(norm['question'] || norm['questiontext'] || row['Question'] || '').trim();
+        optA = String(norm['optiona'] || row['Option A'] || row['OptionA'] || '').trim();
+        optB = String(norm['optionb'] || row['Option B'] || row['OptionB'] || '').trim();
+        optC = String(norm['optionc'] || row['Option C'] || row['OptionC'] || '').trim();
+        optD = String(norm['optiond'] || row['Option D'] || row['OptionD'] || '').trim();
+        correct = String(norm['correct'] || norm['correctoption'] || norm['correctanswer'] || row['Correct Answer'] || '').trim().toUpperCase();
+        marks = parseFloat(String(norm['marks'] || row['Marks'] || '1')) || 1;
+        penalty = parseFloat(String(norm['penalty'] || norm['negativemarks'] || norm['negativemarking'] || row['Penalty'] || '0')) || 0;
+        section = String(norm['section'] || row['Section'] || 'General').trim();
+        topic = String(norm['topic'] || row['Topic'] || 'General').trim();
+        difficulty = String(norm['difficulty'] || row['Difficulty'] || 'Medium').trim();
+      }
+
+      // Default correct to 'A' if 5-column minimal format was uploaded without answer column
+      if (!correct || correct === '') {
+        correct = 'A';
+      } else if (correct === '0' || correct === '1' || correct === '2' || correct === '3') {
+        correct = ['A', 'B', 'C', 'D'][parseInt(correct, 10)] || 'A';
+      }
+
+      if (!question) rowErrors.push('Question text is required');
+      if (!optA) rowErrors.push('Option A is required');
+      if (!optB) rowErrors.push('Option B is required');
+      if (!optC) rowErrors.push('Option C is required');
+      if (!optD) rowErrors.push('Option D is required');
+      if (!['A', 'B', 'C', 'D'].includes(correct)) rowErrors.push('Correct option must be A, B, C, or D');
+      if (isNaN(marks) || marks <= 0) rowErrors.push('Marks must be greater than 0');
+      if (isNaN(penalty) || penalty < 0) rowErrors.push('Negative marking penalty must be >= 0');
+
+      const isValid = rowErrors.length === 0;
+      if (isValid) validCount++;
+      else {
+        invalidCount++;
+        allErrors.push(`Row ${rowNum}: ${rowErrors.join(', ')}`);
+      }
+
+      preview.push({
+        row_number: rowNum,
+        valid: isValid,
+        question,
+        option_a: optA,
+        option_b: optB,
+        option_c: optC,
+        option_d: optD,
+        correct_answer: correct,
+        marks,
+        penalty,
+        section: section || 'General',
+        topic: topic || 'General',
+        difficulty: ['Easy', 'Medium', 'Hard'].includes(difficulty) ? difficulty : 'Medium',
+        errors: rowErrors,
+      });
+    }
+
+    res.json({
+      success: true,
+      total_rows: rows.length,
+      valid_count: validCount,
+      invalid_count: invalidCount,
+      preview: preview.slice(0, 100),
+      errors: allErrors,
+      can_import: validCount > 0,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Validation failed' });
+  }
+}
+
+/**
+ * POST /api/admin/questions/confirm-import
+ * Commits the validated preview questions into the database
+ */
+export async function confirmImportQuestions(req: Request, res: Response): Promise<void> {
+  try {
+    const { examCode, examId, questions } = req.body;
+    if (!questions || !Array.isArray(questions) || questions.length === 0) {
+      res.status(400).json({ success: false, error: 'No questions provided for import' });
+      return;
+    }
+
+    const targetCode = String(examCode || 'DEFAULT').toUpperCase();
+    const rowsToInsert = questions.map((q: any, idx: number) => ({
+      exam_code: targetCode,
+      exam_id: examId || null,
+      question: q.question,
+      option_a: q.option_a,
+      option_b: q.option_b,
+      option_c: q.option_c,
+      option_d: q.option_d,
+      correct_answer: q.correct_answer || 'A',
+      marks: Number(q.marks || 1),
+      penalty: Number(q.penalty || 0),
+      negative_marks: Number(q.penalty || 0),
+      topic: q.topic || 'General',
+      section: q.section || 'General',
+      difficulty: q.difficulty || 'Medium',
+      display_order: idx + 1,
+    }));
+
+    const { error } = await supabase.from('questions_ec').insert(rowsToInsert);
+    if (error) {
+      res.status(500).json({ success: false, error: error.message });
+      return;
+    }
+
+    // Also populate standard questions table
+    try {
+      await supabase.from('questions').insert(
+        rowsToInsert.map((r: any) => ({
+          exam_id: examId || targetCode,
+          question_text: r.question,
+          option_a: r.option_a,
+          option_b: r.option_b,
+          option_c: r.option_c,
+          option_d: r.option_d,
+          correct_option: r.correct_answer.toLowerCase(),
+          marks: r.marks,
+          penalty: r.penalty,
+          topic: r.topic,
+          difficulty: r.difficulty,
+          section: r.section,
+        }))
+      );
+    } catch {}
+
+    res.json({
+      success: true,
+      imported_count: rowsToInsert.length,
+      exam_code: targetCode,
+      message: `Successfully imported ${rowsToInsert.length} questions for ${targetCode}.`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Import failed' });
+  }
 }
 
 /**

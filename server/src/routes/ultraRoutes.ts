@@ -5,8 +5,9 @@ import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
 import { supabase } from '../db/supabase';
-import { adminAuth } from '../middleware/adminAuth';
-import { verifyExamEntry } from '../controllers/examCodeController';
+import { adminAuth, requireRole } from '../middleware/adminAuth';
+import { answerRateLimit } from '../middleware/rateLimiter';
+import { verifyExamEntry, deterministicShuffle } from '../controllers/examCodeController';
 
 const router = Router();
 
@@ -175,7 +176,7 @@ async function executeProgram(language: string, code: string, stdin = ''): Promi
 }
 
 // ─── CODE EXECUTION — Multi-tier (Local + Wandbox + Piston) ─────
-router.post('/execute', async (req: Request, res: Response) => {
+router.post('/execute', answerRateLimit, async (req: Request, res: Response) => {
   try {
     const { language, code, testCases = [] } = req.body;
 
@@ -243,7 +244,11 @@ router.post('/execute', async (req: Request, res: Response) => {
 });
 
 // ─── AI QUESTION GENERATION ────────────────────────────────────
-router.post('/ai/generate-questions', async (req: Request, res: Response) => {
+router.post(
+  '/ai/generate-questions',
+  adminAuth,
+  requireRole('super_admin', 'inspector', 'faculty'),
+  async (req: Request, res: Response) => {
   try {
     const { topic = 'Computer Science', count = 5, difficulty = 'medium', type = 'mixed' } = req.body;
     const reqCount = Math.min(Math.max(Number(count) || 5, 1), 20);
@@ -684,16 +689,36 @@ router.get('/exam-code/:code/start', async (req: Request, res: Response) => {
       ];
     }
 
-    const formattedQuestions = questions.map((q: any) => ({
-      id: q.id,
-      text: q.question_text || q.question || 'Question',
-      options: q.options || [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean),
-      type: q.question_type || (q.type ? q.type : 'mcq'),
-      marks: q.marks || 1,
-      difficulty: q.difficulty || 'Medium',
-      topic: q.topic || 'Computer Science',
-      test_cases: q.test_cases || [],
-    }));
+    const studentIdentifier = `${hallTicket}_${code}`;
+    const shuffledQuestions = deterministicShuffle(questions, studentIdentifier);
+
+    const formattedQuestions = shuffledQuestions.map((q: any) => {
+      const studentSeed = `${studentIdentifier}_${q.id}`;
+      const rawOpts = q.options && q.options.length > 0
+        ? q.options.map((t: string, idx: number) => ({ key: ['A', 'B', 'C', 'D'][idx] || String(idx), text: t }))
+        : [
+            { key: 'A', text: q.option_a },
+            { key: 'B', text: q.option_b },
+            { key: 'C', text: q.option_c },
+            { key: 'D', text: q.option_d },
+          ].filter((o) => o.text !== undefined && o.text !== null && String(o.text).trim().length > 0);
+
+      const shuffledOpts = deterministicShuffle(rawOpts, studentSeed);
+
+      return {
+        id: q.id,
+        text: q.question_text || q.question || 'Question',
+        question: q.question_text || q.question || 'Question',
+        options: shuffledOpts.map((o: any) => o.text),
+        type: q.question_type || (q.type ? q.type : 'mcq'),
+        marks: q.marks || 1,
+        penalty: Number(q.penalty ?? q.negative_marks ?? 0),
+        difficulty: q.difficulty || 'Medium',
+        topic: q.topic || 'Computer Science',
+        section: q.section || 'General',
+        test_cases: q.test_cases || [],
+      };
+    });
 
     // Record or update attempt in exam_code_attempts
     try {
@@ -705,7 +730,7 @@ router.get('/exam-code/:code/start', async (req: Request, res: Response) => {
         student_name: hallTicket,
         started_at: new Date().toISOString(),
         start_time: new Date().toISOString(),
-        status: 'active',
+        status: 'in_progress',
       }, { onConflict: 'exam_code,hall_ticket' });
     } catch {}
 
@@ -842,7 +867,11 @@ router.get('/exam-code/:code/result', async (req: Request, res: Response) => {
 });
 
 // ─── ADMIN: CREATE EXAM WIZARD (Unified Metadata + Questions) ──
-router.post('/admin/create-exam-wizard', async (req: Request, res: Response) => {
+router.post(
+  '/admin/create-exam-wizard',
+  adminAuth,
+  requireRole('super_admin', 'inspector', 'faculty'),
+  async (req: Request, res: Response) => {
   try {
     const {
       exam_name,
@@ -954,7 +983,11 @@ router.post('/admin/create-exam-wizard', async (req: Request, res: Response) => 
 // Protected by adminAuth middleware (JWT verified via ADMIN_JWT_SECRET).
 // IDEMPOTENT: a second call for the same exam code returns success with
 // already_started=true and the original payload — no re-broadcast, no timer reset.
-router.post('/v1/exams/:examCode/start', adminAuth, async (req: Request, res: Response) => {
+router.post(
+  '/v1/exams/:examCode/start',
+  adminAuth,
+  requireRole('super_admin', 'inspector'),
+  async (req: Request, res: Response) => {
   try {
     const { allow_late_join = false } = req.body;
     const code = (req.params.examCode as string).toUpperCase();
@@ -978,12 +1011,23 @@ router.post('/v1/exams/:examCode/start', adminAuth, async (req: Request, res: Re
     // ── Look up exam to get duration ──────────────────────────────────────
     const { data: examData } = await supabase
       .from('exam_codes')
-      .select('exam_code, duration_minutes, is_active, max_participants')
+      .select('exam_code, duration_minutes, is_active, max_participants, college_id')
       .eq('exam_code', code)
       .maybeSingle();
 
     if (!examData) {
       return res.status(404).json({ success: false, error: `Exam code ${code} not found` });
+    }
+
+    // ── College scope check for inspector / college_admin ──
+    if (req.admin?.role === 'inspector' || req.admin?.role === 'college_admin') {
+      if (req.admin.college_id && examData.college_id && String(examData.college_id) !== String(req.admin.college_id)) {
+        return res.status(403).json({
+          success: false,
+          error: 'Forbidden: You can only start exams for your own college',
+          code: 'CROSS_COLLEGE_FORBIDDEN',
+        });
+      }
     }
 
     const durationSeconds = (examData.duration_minutes ?? 60) * 60;
@@ -1039,8 +1083,12 @@ router.post('/v1/exams/:examCode/start', adminAuth, async (req: Request, res: Re
   }
 });
 
-// POST /api/v1/exams/:examCode/reset-state (admin only)
-router.post('/v1/exams/:examCode/reset-state', adminAuth, async (req: Request, res: Response) => {
+// POST /api/v1/exams/:examCode/reset-state (super_admin only)
+router.post(
+  '/v1/exams/:examCode/reset-state',
+  adminAuth,
+  requireRole('super_admin'),
+  async (req: Request, res: Response) => {
   try {
     const code = ((req.params.examCode as string) || '').toUpperCase();
     const { resetExamStartedState } = await import('../services/socketService');
@@ -1076,6 +1124,7 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
       exam_code: code,
       enrolled: (enrolled as any)?.count ?? stats.enrolled,
       connected: stats.connected,
+      queue_count: stats.queue_count ?? stats.connected,
       pending: Math.max(0, ((enrolled as any)?.count ?? 0) - stats.connected),
       // Exam started state — null if not yet started
       exam_started: startedState

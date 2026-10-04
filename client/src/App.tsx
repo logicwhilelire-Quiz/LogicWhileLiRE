@@ -9,6 +9,9 @@ import PageTransition from './components/3d/PageTransition';
 
 // Code-split routes for optimal performance and smaller initial bundles
 const StudentLoginPage = lazy(() => import('./pages/StudentLoginPage'));
+const StudentRegisterPage = lazy(() => import('./pages/StudentRegisterPage'));
+const StudentDashboardPage = lazy(() => import('./pages/StudentDashboardPage'));
+const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
 const CandidateRegisterGatePage = lazy(() => import('./pages/CandidateRegisterGatePage'));
 const WaitingLobbyPage = lazy(() => import('./pages/WaitingLobbyPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
@@ -53,6 +56,8 @@ const MonitorControl = lazy(() => import('./pages/admin/MonitorControl'));
 const ResultControl = lazy(() => import('./pages/admin/ResultControl'));
 const SettingsControl = lazy(() => import('./pages/admin/SettingsControl'));
 const InstructorConsolePage = lazy(() => import('./pages/admin/InstructorConsolePage'));
+const HierarchyManagementPage = lazy(() => import('./pages/admin/HierarchyManagementPage'));
+const ActivityLogPage = lazy(() => import('./pages/admin/ActivityLogPage'));
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -83,8 +88,9 @@ function AnimatedRoutes() {
         <Route path="/verify/:token" element={<VerifyCertificatePage />} />
         <Route path="/certificate/verify/:token" element={<VerifyCertificatePage />} />
         <Route path="/verify" element={<VerifyCertificatePage />} />
-        <Route path="/practice" element={<Navigate to="/" replace />} />
-        <Route path="/arena" element={<Navigate to="/" replace />} />
+        <Route path="/practice" element={<PracticeArenaPage />} />
+        <Route path="/arena" element={<PracticeArenaPage />} />
+        <Route path="/sectors" element={<PracticeArenaPage />} />
 
         {/* ── INSTITUTIONAL PERFORMANCE REPORTS (PDF Pages 11-14) ── */}
         <Route path="/reports/student/:hallTicket" element={<InstitutionalStudentReportPage />} />
@@ -93,11 +99,15 @@ function AnimatedRoutes() {
         <Route path="/student/report" element={<InstitutionalStudentReportPage />} />
         <Route path="/report" element={<InstitutionalStudentReportPage />} />
 
-        {/* Gate Module: Candidate Assessment Registration (AL-SPEC-2026-REG) */}
-        <Route path="/register" element={<CandidateRegisterGatePage />} />
+        {/* Student Self-Registration, Email Verification & Dashboard */}
+        <Route path="/register" element={<StudentRegisterPage />} />
+        <Route path="/student/register" element={<StudentRegisterPage />} />
+        <Route path="/student/dashboard" element={<StudentDashboardPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+
+        {/* Gate Module: Multi-step Candidate Assessment Registration */}
         <Route path="/gate" element={<CandidateRegisterGatePage />} />
         <Route path="/register-candidate" element={<CandidateRegisterGatePage />} />
-        <Route path="/student/register" element={<Navigate to="/register" replace />} />
 
         {/* Contest Waiting Lobby (Section 4 Handoff) */}
         <Route path="/contest/:contestId/waiting-lobby" element={<WaitingLobbyPage />} />
@@ -122,9 +132,11 @@ function AnimatedRoutes() {
         {/* Admin Authentication & Control Center */}
         <Route path="/admin" element={<AdminLoginPage />} />
         <Route path="/admin/login" element={<AdminLoginPage />} />
-        <Route path="/admin/dashboard" element={<ExamControl />} />
+        <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/admin/exams" element={<ExamControl />} />
         <Route path="/admin/exam-control" element={<ExamControl />} />
+        <Route path="/admin/activity" element={<ActivityLogPage />} />
+        <Route path="/admin/audit-logs" element={<ActivityLogPage />} />
         <Route path="/admin/questions" element={<QuestionControl />} />
         <Route path="/admin/question-control" element={<QuestionControl />} />
         <Route path="/admin/students" element={<StudentControl />} />
@@ -146,9 +158,13 @@ function AnimatedRoutes() {
         <Route path="/admin/analytics" element={<AnalyticsPage />} />
         <Route path="/admin/analytics/:examId" element={<AnalyticsPage />} />
         <Route path="/admin/colleges" element={<CollegesPage />} />
+        <Route path="/admin/hierarchy" element={<HierarchyManagementPage />} />
+        <Route path="/admin/structure" element={<HierarchyManagementPage />} />
         <Route path="/admin/exam-codes" element={<ExamCodesPage />} />
         <Route path="/admin/live-console/:examCode" element={<InstructorConsolePage />} />
         <Route path="/admin/live-console" element={<InstructorConsolePage />} />
+        <Route path="/admin/inspector" element={<InstructorConsolePage />} />
+        <Route path="/admin/inspector/:examCode" element={<InstructorConsolePage />} />
 
         {/* ── About & Philosophy ── */}
         <Route path="/about" element={<AboutPage />} />

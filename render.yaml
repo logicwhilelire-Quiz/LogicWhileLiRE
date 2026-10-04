@@ -29,6 +29,8 @@ services:
         value: 5
       - key: CLIENT_ORIGIN
         sync: false # e.g. https://logicwhilequiz.com or https://your-app.netlify.app
+      - key: FRONTEND_URL
+        sync: false # e.g. https://your-app.netlify.app — used in email links and password-reset URLs
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
@@ -39,10 +41,18 @@ services:
         generateValue: true
       - key: ADMIN_JWT_SECRET
         generateValue: true
+      - key: TOTP_ENCRYPTION_KEY
+        generateValue: true # 32+ char random key for AES-256-CTR encryption of TOTP secrets at rest
       - key: ADMIN_USERNAME
         sync: false
       - key: ADMIN_PASSWORD_HASH
         sync: false
+      - key: INITIAL_ADMIN_EMAIL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false # Primary email transport — Resend HTTPS API key
+      - key: EMAIL_DAILY_CAP
+        value: "100" # Free-tier safeguard cap (warn at 80%, block at 100%)
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
@@ -55,8 +65,6 @@ services:
         value: "false"
       - key: SESSION_SECRET
         generateValue: true
-      - key: INITIAL_ADMIN_EMAIL
-        sync: false
       - key: MAIL_DOMAIN
         sync: false # e.g. yourdomain.com — used to build noreply@ and alias lookups
       - key: EMAIL_FROM
@@ -66,7 +74,26 @@ services:
       - key: OTP_FROM_EMAIL
         sync: false
       - key: ADMIN_ALERT_EMAIL
-        sync: false
+        sync: false # Destination for proctoring violations & critical alerts
+      - key: ADMIN_EMAIL
+        sync: false # Admin email for proctoring monitor notifications
+      - key: SUPPORT_EMAIL
+        sync: false # Support contact email displayed in email footers
+      - key: INSPECTOR_ALERT_EMAIL
+        sync: false # Email for proctoring inspector alerts
+      - key: STUDENT_JWT_EXPIRY
+        value: "4h"
+      - key: BACKUP_DIR
+        value: /var/backups/logicwhilelire # Must be absolute path outside the repo
+      - key: BREVO_SMTP_USER
+        sync: false # Brevo fallback — login email (optional)
+      - key: BREVO_SMTP_PASS
+        sync: false # Brevo fallback — SMTP key starting with xsmtp...
+      - key: BREVO_SMTP_HOST
+        value: smtp-relay.brevo.com
+      - key: BREVO_SMTP_PORT
+        value: "587"
+
 
   # ——————————————————————————————————————————
   # 2. STAGING BACKEND SERVICE
@@ -96,6 +123,8 @@ services:
         value: 5
       - key: CLIENT_ORIGIN
         sync: false # e.g. https://staging--your-app.netlify.app
+      - key: FRONTEND_URL
+        sync: false # Staging frontend URL
       - key: SUPABASE_URL
         sync: false # Staging Supabase project URL
       - key: SUPABASE_SERVICE_ROLE_KEY
@@ -106,6 +135,8 @@ services:
         generateValue: true
       - key: ADMIN_JWT_SECRET
         generateValue: true
+      - key: TOTP_ENCRYPTION_KEY
+        generateValue: true
       - key: SESSION_SECRET
         generateValue: true
       - key: ADMIN_USERNAME
@@ -114,6 +145,10 @@ services:
         sync: false
       - key: ADMIN_PASSWORD_HASH
         sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_DAILY_CAP
+        value: "50"
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
@@ -132,3 +167,22 @@ services:
         sync: false
       - key: ADMIN_ALERT_EMAIL
         sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: SUPPORT_EMAIL
+        sync: false
+      - key: INSPECTOR_ALERT_EMAIL
+        sync: false
+      - key: STUDENT_JWT_EXPIRY
+        value: "4h"
+      - key: BACKUP_DIR
+        value: /var/backups/logicwhilelire-staging
+      - key: BREVO_SMTP_USER
+        sync: false
+      - key: BREVO_SMTP_PASS
+        sync: false
+      - key: BREVO_SMTP_HOST
+        value: smtp-relay.brevo.com
+      - key: BREVO_SMTP_PORT
+        value: "587"
+

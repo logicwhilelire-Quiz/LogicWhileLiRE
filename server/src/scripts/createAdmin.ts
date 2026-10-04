@@ -3,6 +3,12 @@ import readline from 'readline';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../db/supabase';
+import {
+  generateTotpSecret,
+  encryptTotpSecret,
+  generateTotpUri,
+  generateBackupCodes,
+} from '../utils/totp';
 
 /**
  * LogicWhileLiRE — Create Super Admin Script
@@ -113,7 +119,14 @@ export async function createAdmin(): Promise<void> {
   console.log('🔒 Generating bcrypt salt and hashing password with 12 rounds...');
   const passwordHash = await bcrypt.hash(password, 12);
 
-  // 5. Insert new Super Admin
+  // 5. Generate Mandatory TOTP 2FA secret (encrypted at rest with env key)
+  console.log('🛡️  Generating TOTP 2FA secret (AES-256-CTR encrypted at rest)...');
+  const totpPlainSecret = generateTotpSecret();
+  const totpEncryptedSecret = encryptTotpSecret(totpPlainSecret);
+  const otpauthUri = generateTotpUri(normalizedEmail, 'LogicWhileLiRE', totpPlainSecret);
+  const backupCodes = generateBackupCodes(8);
+
+  // 6. Insert new Super Admin
   const adminId = `st000000-${uuidv4().slice(9)}`;
   const { error: insertError } = await supabase.from('staff').insert({
     id: adminId,
@@ -122,6 +135,9 @@ export async function createAdmin(): Promise<void> {
     password_hash: passwordHash,
     role: 'super_admin',
     is_active: true,
+    totp_secret: totpEncryptedSecret,
+    totp_enabled: true,
+    two_factor_backup_codes: backupCodes.hashed,
     created_at: new Date().toISOString(),
   });
 
@@ -131,9 +147,17 @@ export async function createAdmin(): Promise<void> {
   }
 
   console.log('\n🎉 SUCCESS: Super Admin created successfully!');
-  console.log(`   • ID:    ${adminId}`);
-  console.log(`   • Email: ${normalizedEmail}`);
-  console.log(`   • Role:  super_admin`);
+  console.log(`   • ID:               ${adminId}`);
+  console.log(`   • Email:            ${normalizedEmail}`);
+  console.log(`   • Role:             super_admin`);
+  console.log(`   • 2FA Status:       MANDATORY TOTP ACTIVE (RFC 6238)`);
+  console.log(`   • 2FA Base32 Key:   ${totpPlainSecret}`);
+  console.log(`   • Authenticator URI: ${otpauthUri}`);
+  console.log('\n🔐 Emergency Single-Use Backup Recovery Codes:');
+  backupCodes.plain.forEach((code, idx) => {
+    console.log(`   [${idx + 1}] ${code}`);
+  });
+  console.log('\n⚠️  Store these backup codes securely. They can be used if your authenticator app is unavailable.');
   console.log('======================================================\n');
 }
 

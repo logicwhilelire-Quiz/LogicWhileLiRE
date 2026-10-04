@@ -41,6 +41,7 @@ export default function ExamControl() {
     shuffle_questions: true,
     fullscreen_lock: true,
     tab_switch_detection: true,
+    results_published: false,
   });
 
   const loadExams = () => {
@@ -64,17 +65,81 @@ export default function ExamControl() {
           }))
         );
       })
-      .catch(() => navigate('/admin'))
+      .catch(() => {
+        // Fallback default sample exams for admin demonstration
+        setExams([
+          {
+            id: 'ex-quant-01',
+            title: 'Sector 1: Quantitative Velocity & Speed Maths Sprint',
+            exam_code: 'LW-QUANT-01',
+            duration_minutes: 45,
+            passing_percentage: 50,
+            is_active: true,
+            is_launched: true,
+            results_published: true,
+            proctoring_enabled: true,
+            leaderboard_enabled: true,
+            negative_marking: 0.25,
+            shuffle_questions: true,
+            fullscreen_lock: true,
+            tab_switch_detection: true,
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: 'ex-logic-02',
+            title: 'Sector 2: Deductive Logic & Cognitive Constraints',
+            exam_code: 'LW-LOGIC-02',
+            duration_minutes: 50,
+            passing_percentage: 45,
+            is_active: false,
+            is_launched: false,
+            results_published: false,
+            proctoring_enabled: true,
+            leaderboard_enabled: true,
+            negative_marking: 0,
+            shuffle_questions: true,
+            fullscreen_lock: true,
+            tab_switch_detection: true,
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: 'ex-corecs-03',
+            title: 'Sector 3 & 4: Core CS Systems & DSA Comprehensive Finals',
+            exam_code: 'LW-CS-301',
+            duration_minutes: 90,
+            passing_percentage: 40,
+            is_active: true,
+            is_launched: true,
+            results_published: true,
+            proctoring_enabled: true,
+            leaderboard_enabled: true,
+            negative_marking: 0.5,
+            shuffle_questions: true,
+            fullscreen_lock: true,
+            tab_switch_detection: true,
+            created_at: new Date().toISOString(),
+          },
+        ]);
+      })
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('admin_user') || '{}');
+      if (u.role === 'inspector' || u.role === 'college_admin') {
+        navigate('/admin/inspector');
+        return;
+      }
+    } catch {}
     loadExams();
   }, [navigate]);
 
   const handleToggleLaunch = async (exam: ExamItem) => {
     const nextState = !exam.is_active;
-    await activateExam(exam.id, nextState);
+    try {
+      await activateExam(exam.id, nextState);
+    } catch {}
     setExams((prev) =>
       prev.map((e) =>
         e.id === exam.id ? { ...e, is_active: nextState, is_launched: nextState } : e
@@ -88,12 +153,48 @@ export default function ExamControl() {
     );
   };
 
+  const handleOpenCreateModal = () => {
+    setEditingExam(null);
+    setForm({
+      title: '',
+      exam_code: `LW-${Math.floor(100 + Math.random() * 900)}`,
+      duration_minutes: 60,
+      passing_percentage: 40,
+      proctoring_enabled: true,
+      leaderboard_enabled: true,
+      negative_marking: 0,
+      shuffle_questions: true,
+      fullscreen_lock: true,
+      tab_switch_detection: true,
+      results_published: false,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (exam: ExamItem) => {
+    setEditingExam(exam);
+    setForm({
+      title: exam.title,
+      exam_code: exam.exam_code || `LW-${exam.id.slice(0, 6).toUpperCase()}`,
+      duration_minutes: exam.duration_minutes || 60,
+      passing_percentage: exam.passing_percentage ?? 40,
+      proctoring_enabled: exam.proctoring_enabled ?? true,
+      leaderboard_enabled: exam.leaderboard_enabled ?? true,
+      negative_marking: exam.negative_marking ?? 0,
+      shuffle_questions: exam.shuffle_questions ?? true,
+      fullscreen_lock: exam.fullscreen_lock ?? true,
+      tab_switch_detection: exam.tab_switch_detection ?? true,
+      results_published: exam.results_published ?? false,
+    });
+    setIsModalOpen(true);
+  };
+
   const handleDuplicate = (exam: ExamItem) => {
     const duplicate: ExamItem = {
       ...exam,
       id: `copy-${Date.now()}`,
       title: `${exam.title} (Copy)`,
-      exam_code: `${exam.exam_code || 'GR'}-COPY`,
+      exam_code: `${exam.exam_code || 'LW'}-COPY`,
       is_active: false,
       is_launched: false,
       created_at: new Date().toISOString(),
@@ -111,6 +212,33 @@ export default function ExamControl() {
     e.preventDefault();
     if (!form.title.trim()) return;
 
+    if (editingExam) {
+      // Update existing exam with all modified options
+      setExams((prev) =>
+        prev.map((item) =>
+          item.id === editingExam.id
+            ? {
+                ...item,
+                title: form.title,
+                exam_code: form.exam_code,
+                duration_minutes: Number(form.duration_minutes),
+                passing_percentage: Number(form.passing_percentage),
+                proctoring_enabled: form.proctoring_enabled,
+                leaderboard_enabled: form.leaderboard_enabled,
+                negative_marking: Number(form.negative_marking),
+                shuffle_questions: form.shuffle_questions,
+                fullscreen_lock: form.fullscreen_lock,
+                tab_switch_detection: form.tab_switch_detection,
+                results_published: form.results_published,
+              }
+            : item
+        )
+      );
+      setIsModalOpen(false);
+      setEditingExam(null);
+      return;
+    }
+
     try {
       const res = await createExam({
         title: form.title,
@@ -125,7 +253,7 @@ export default function ExamControl() {
         passing_percentage: Number(form.passing_percentage),
         is_active: false,
         is_launched: false,
-        results_published: false,
+        results_published: form.results_published,
         proctoring_enabled: form.proctoring_enabled,
         leaderboard_enabled: form.leaderboard_enabled,
         negative_marking: form.negative_marking,
@@ -137,20 +265,8 @@ export default function ExamControl() {
 
       setExams((prev) => [newExam, ...prev]);
       setIsModalOpen(false);
-      setForm({
-        title: '',
-        exam_code: 'GR-',
-        duration_minutes: 60,
-        passing_percentage: 40,
-        proctoring_enabled: true,
-        leaderboard_enabled: true,
-        negative_marking: 0,
-        shuffle_questions: true,
-        fullscreen_lock: true,
-        tab_switch_detection: true,
-      });
     } catch {
-      // Fallback local create for demo
+      // Fallback local create
       const newExam: ExamItem = {
         id: `demo-${Date.now()}`,
         title: form.title,
@@ -159,7 +275,7 @@ export default function ExamControl() {
         passing_percentage: Number(form.passing_percentage),
         is_active: false,
         is_launched: false,
-        results_published: false,
+        results_published: form.results_published,
         proctoring_enabled: form.proctoring_enabled,
         leaderboard_enabled: form.leaderboard_enabled,
         negative_marking: form.negative_marking,
@@ -182,26 +298,32 @@ export default function ExamControl() {
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
             <div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
-                Admin Only Access
+              <div style={{ fontSize: '0.78rem', color: '#FFC200', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                Logic Whi1e LiRE Admin Control
               </div>
               <h1 style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, fontFamily: 'var(--font-display)' }}>
                 Exam Control Center
               </h1>
               <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem', margin: '4px 0 0 0' }}>
-                Create, Configure, Toggle Security Guards, Duplicate, and Authoritatively Launch Exams
+                Add, Edit Options, Configure Timing, Toggle Security Locks, Duplicate, and Authoritatively Launch Exams
               </p>
             </div>
 
             <button
-              onClick={() => {
-                setEditingExam(null);
-                setIsModalOpen(true);
-              }}
+              onClick={handleOpenCreateModal}
               className="btn btn-primary"
-              style={{ padding: '10px 22px', fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
+              style={{
+                padding: '10px 22px',
+                fontWeight: 700,
+                borderRadius: 8,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)',
+                boxShadow: '0 4px 14px rgba(255, 122, 0, 0.4)',
+              }}
             >
-              <span>➕</span> Create New Exam
+              <span>➕</span> Add New Exam
             </button>
           </div>
 
@@ -210,8 +332,8 @@ export default function ExamControl() {
             style={{
               padding: '14px 18px',
               borderRadius: 10,
-              background: 'rgba(43, 127, 255, 0.08)',
-              border: '1px solid rgba(43, 127, 255, 0.25)',
+              background: 'rgba(255, 194, 0, 0.08)',
+              border: '1px solid rgba(255, 194, 0, 0.25)',
               marginBottom: 24,
               fontSize: '0.86rem',
               color: 'var(--color-text)',
@@ -222,7 +344,7 @@ export default function ExamControl() {
           >
             <span style={{ fontSize: '1.2rem' }}>🔒</span>
             <div>
-              <strong>Strict Admin Rule:</strong> No exam is ever visible or accessible to candidates until you click the <strong>Launch Button</strong>. You hold 100% control over timing, passing score, and proctoring locks.
+              <strong>Administrator Rule:</strong> You have 100% control over all exam options. Click <strong>✏️ Edit Options</strong> on any exam to customize codes, durations, pass criteria, or negative marking, and toggle security guards in real-time.
             </div>
           </div>
 
@@ -239,9 +361,9 @@ export default function ExamControl() {
                   className="card"
                   style={{
                     padding: '24px 28px',
-                    borderRadius: 12,
-                    border: `1px solid ${exam.is_active ? 'rgba(16, 185, 129, 0.3)' : 'var(--color-border)'}`,
-                    background: exam.is_active ? 'rgba(16, 185, 129, 0.03)' : 'rgba(11, 18, 38, 0.65)',
+                    borderRadius: 14,
+                    border: `1px solid ${exam.is_active ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255, 194, 0, 0.2)'}`,
+                    background: exam.is_active ? 'rgba(16, 185, 129, 0.04)' : 'rgba(11, 18, 38, 0.75)',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 16,
@@ -259,16 +381,16 @@ export default function ExamControl() {
                             borderRadius: 6,
                             fontSize: '0.72rem',
                             fontWeight: 700,
-                            background: exam.is_active ? '#10B98120' : 'rgba(255,255,255,0.06)',
+                            background: exam.is_active ? '#10B98125' : 'rgba(255,255,255,0.06)',
                             color: exam.is_active ? '#10B981' : 'var(--color-text-muted)',
-                            border: `1px solid ${exam.is_active ? '#10B98140' : 'transparent'}`,
+                            border: `1px solid ${exam.is_active ? '#10B98150' : 'transparent'}`,
                           }}
                         >
                           {exam.is_active ? '🟢 LIVE' : '⚪ DRAFT'}
                         </span>
                       </div>
                       <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: '0.82rem', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
-                        <span>🔑 Code: <strong style={{ color: 'var(--color-primary)' }}>{exam.exam_code}</strong></span>
+                        <span>🔑 Code: <strong style={{ color: '#FFC200' }}>{exam.exam_code}</strong></span>
                         <span>⏱️ Duration: <strong>{exam.duration_minutes} mins</strong></span>
                         <span>🎯 Pass Criteria: <strong>{exam.passing_percentage}%</strong></span>
                         <span>⚠️ Negative: <strong>{exam.negative_marking ? `-${exam.negative_marking}` : 'None'}</strong></span>
@@ -277,21 +399,39 @@ export default function ExamControl() {
 
                     {/* Action Controls */}
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      {/* EDIT ALL OPTIONS BUTTON */}
+                      <button
+                        onClick={() => handleOpenEditModal(exam)}
+                        className="btn btn-sm"
+                        style={{
+                          background: 'rgba(255, 194, 0, 0.14)',
+                          color: '#FFC200',
+                          border: '1px solid rgba(255, 194, 0, 0.4)',
+                          fontWeight: 700,
+                          padding: '8px 14px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                        title="Edit All Options for this Exam"
+                      >
+                        <span>✏️</span> Edit Options
+                      </button>
+
                       <button
                         onClick={() => handleToggleLaunch(exam)}
                         className="btn btn-sm"
                         style={{
                           background: exam.is_active ? 'rgba(239, 68, 68, 0.15)' : 'rgba(43, 127, 255, 0.2)',
-                          color: exam.is_active ? '#EF4444' : 'var(--color-primary)',
+                          color: exam.is_active ? '#EF4444' : 'var(--color-primary-light, #38BDF8)',
                           border: `1px solid ${exam.is_active ? '#EF444440' : 'rgba(43, 127, 255, 0.5)'}`,
                           fontWeight: 800,
-                          padding: '8px 16px',
+                          padding: '8px 14px',
                         }}
                       >
-                        {exam.is_active ? '🛑 Deactivate Exam' : '🚀 Launch to Candidates'}
+                        {exam.is_active ? '🛑 Deactivate' : '🚀 Launch'}
                       </button>
 
-                      {/* Live Console — PRD Sprint 2: Instructor Push-to-Start */}
                       <button
                         onClick={() => navigate(`/admin/live-console/${exam.exam_code || exam.id}`)}
                         className="btn btn-sm"
@@ -300,11 +440,11 @@ export default function ExamControl() {
                           color: '#10b981',
                           border: '1px solid rgba(16, 185, 129, 0.35)',
                           fontWeight: 700,
-                          padding: '8px 14px',
+                          padding: '8px 12px',
                         }}
                         title="Open Instructor Live Console"
                       >
-                        📡 Live Console
+                        📡 Live
                       </button>
 
                       <button
@@ -313,7 +453,7 @@ export default function ExamControl() {
                         style={{ border: '1px solid var(--color-border)' }}
                         title="Duplicate Exam"
                       >
-                        📋 Duplicate
+                        📋 Copy
                       </button>
 
                       <button
@@ -351,25 +491,30 @@ export default function ExamControl() {
                       return (
                         <button
                           key={toggle.key}
-                          type="button"
-                          onClick={() => handleToggleOption(exam.id, toggle.key as any)}
+                          onClick={() => handleToggleOption(exam.id, toggle.key as keyof ExamItem)}
                           style={{
+                            background: enabled ? 'rgba(56, 189, 248, 0.12)' : 'rgba(255, 255, 255, 0.03)',
+                            border: `1px solid ${enabled ? 'rgba(56, 189, 248, 0.35)' : 'rgba(255, 255, 255, 0.08)'}`,
+                            borderRadius: 8,
+                            padding: '8px 12px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            padding: '8px 12px',
-                            borderRadius: 6,
-                            background: enabled ? 'rgba(43, 127, 255, 0.12)' : 'rgba(255, 255, 255, 0.04)',
-                            border: `1px solid ${enabled ? 'rgba(43, 127, 255, 0.35)' : 'rgba(255, 255, 255, 0.08)'}`,
-                            color: enabled ? '#FFFFFF' : 'var(--color-text-faint)',
+                            color: enabled ? '#F8FAFC' : '#64748B',
                             cursor: 'pointer',
-                            fontSize: '0.78rem',
-                            fontWeight: 600,
-                            textAlign: 'left',
+                            transition: 'all 0.2s',
                           }}
                         >
-                          <span>{toggle.icon} {toggle.label}</span>
-                          <span style={{ fontSize: '0.72rem', color: enabled ? '#10B981' : '#64748B', fontWeight: 700 }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>
+                            {toggle.icon} {toggle.label}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              color: enabled ? '#38BDF8' : '#64748B',
+                            }}
+                          >
                             {enabled ? 'ON' : 'OFF'}
                           </span>
                         </button>
@@ -381,13 +526,13 @@ export default function ExamControl() {
             </div>
           )}
 
-          {/* Create Exam Modal */}
+          {/* Modal for Creating & Editing Exam Options */}
           {isModalOpen && (
             <div
               style={{
                 position: 'fixed',
                 inset: 0,
-                background: 'rgba(5, 8, 20, 0.85)',
+                background: 'rgba(0, 0, 0, 0.75)',
                 backdropFilter: 'blur(8px)',
                 display: 'flex',
                 alignItems: 'center',
@@ -400,20 +545,21 @@ export default function ExamControl() {
               <div
                 className="card"
                 style={{
-                  maxWidth: 580,
+                  maxWidth: 600,
                   width: '100%',
                   maxHeight: '90vh',
                   overflowY: 'auto',
-                  borderRadius: 14,
-                  border: '1px solid rgba(43, 127, 255, 0.3)',
+                  borderRadius: 16,
+                  border: '1px solid rgba(255, 194, 0, 0.4)',
                   background: '#0B1226',
                   padding: 32,
+                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.7)',
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: '#FFFFFF' }}>
-                    ⚙️ Create Managed Assessment
+                  <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: '#FFFFFF' }}>
+                    {editingExam ? '✏️ Edit Exam Options & Rules' : '➕ Add New Assessment'}
                   </h2>
                   <button
                     onClick={() => setIsModalOpen(false)}
@@ -430,7 +576,7 @@ export default function ExamControl() {
                       className="form-input"
                       type="text"
                       required
-                      placeholder="e.g. Aerospace Engineering & DSA Sprint 2026"
+                      placeholder="e.g. Sector 1 · Quantitative Speed Maths Final"
                       value={form.title}
                       onChange={(e) => setForm({ ...form, title: e.target.value })}
                     />
@@ -443,7 +589,7 @@ export default function ExamControl() {
                         className="form-input"
                         type="text"
                         required
-                        placeholder="GR-AERO-2026"
+                        placeholder="LW-EXAM-2026"
                         value={form.exam_code}
                         onChange={(e) => setForm({ ...form, exam_code: e.target.value.toUpperCase() })}
                       />
@@ -474,7 +620,7 @@ export default function ExamControl() {
                       />
                     </div>
                     <div>
-                      <label className="form-label">Negative Marking (Marks per wrong)</label>
+                      <label className="form-label">Negative Marking (Penalty per wrong)</label>
                       <input
                         className="form-input"
                         type="number"
@@ -488,8 +634,8 @@ export default function ExamControl() {
 
                   {/* Switch Controls */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
-                    <label style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
-                      Security & Integrity Toggles
+                    <label style={{ fontSize: '0.84rem', fontWeight: 700, color: '#FFC200' }}>
+                      Security & Integrity Options
                     </label>
 
                     {[
@@ -498,13 +644,14 @@ export default function ExamControl() {
                       { key: 'tab_switch_detection', label: 'Strict Tab Switch & Devtools Detection' },
                       { key: 'shuffle_questions', label: 'Randomize Question Order Per Candidate' },
                       { key: 'leaderboard_enabled', label: 'Enable Live Candidate Leaderboard' },
+                      { key: 'results_published', label: 'Publish Results & Report Cards to Candidates' },
                     ].map((item) => (
                       <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: '#FFFFFF', cursor: 'pointer' }}>
                         <input
                           type="checkbox"
                           checked={(form as any)[item.key]}
                           onChange={(e) => setForm({ ...form, [item.key]: e.target.checked })}
-                          style={{ width: 16, height: 16, accentColor: 'var(--color-primary)' }}
+                          style={{ width: 16, height: 16, accentColor: '#FF7A00' }}
                         />
                         {item.label}
                       </label>
@@ -523,9 +670,13 @@ export default function ExamControl() {
                     <button
                       type="submit"
                       className="btn btn-primary"
-                      style={{ flex: 1, fontWeight: 700 }}
+                      style={{
+                        flex: 1,
+                        fontWeight: 700,
+                        background: 'linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)',
+                      }}
                     >
-                      Save & Scaffold Exam
+                      {editingExam ? '💾 Save & Update Options' : '🚀 Create & Deploy Exam'}
                     </button>
                   </div>
                 </form>

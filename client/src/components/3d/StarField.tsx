@@ -35,6 +35,22 @@ export default function StarField({ count = 180, speed = 0.6, color = '#6C5CE7',
       speed: (Math.random() * 0.5 + 0.5) * speed,
     }))
 
+    const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) {
+      ctx.fillStyle = 'rgba(7,10,20,1)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const cx = canvas.width / 2, cy = canvas.height / 2;
+      stars.forEach((s) => {
+        const nx = (s.x / s.z) * canvas.width + cx;
+        const ny = (s.y / s.z) * canvas.height + cy;
+        ctx.beginPath();
+        ctx.arc(nx, ny, s.size * 0.8, 0, Math.PI * 2);
+        ctx.fillStyle = color + '99';
+        ctx.fill();
+      });
+      return () => { window.removeEventListener('resize', resize); };
+    }
+
     const render = () => {
       ctx.fillStyle = 'rgba(7,10,20,0.15)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)

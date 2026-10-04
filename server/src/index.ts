@@ -8,6 +8,7 @@ import compression from 'compression';
 import { runProductionBootGuard } from './middleware/productionBootGuard';
 import { generalRateLimit } from './middleware/rateLimiter';
 import { sanitizeInput } from './middleware/sanitize';
+import { ensureCsrfCookie, csrfProtection, getCsrfToken } from './middleware/csrf';
 import authRoutes from './routes/auth';
 import enrollmentRoutes from './routes/enrollment';
 import sessionRoutes from './routes/session';
@@ -17,7 +18,10 @@ import assessmentRoutes from './routes/assessment';
 import ultraRoutes from './routes/ultraRoutes';
 import sectorRoutes from './routes/sectorRoutes';
 import inspectorRoutes from './routes/inspectorRoutes';
+import studentRoutes from './routes/student';
+import contactRoutes from './routes/contactRoutes';
 import { startSessionCron } from './jobs/sessionCron';
+import { startBackupScheduler } from './services/backupScheduler';
 import { validateParams, ExamIdParam } from './middleware/validate';
 import { initSocketIO } from './services/socketService';
 import { verifyDatabaseConnectivity } from './db/supabase';
@@ -29,13 +33,16 @@ const app = express();
 const httpServer = http.createServer(app);
 const PORT = parseInt(process.env.PORT || '3001');
 
+import fs from 'fs';
+import path from 'path';
+
 // Trust proxy (needed for rate limiting by real IP when behind Render/Railway/Nginx)
 app.set('trust proxy', 1);
 
 // ------- CORS & Origin Setup -------
 const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
   .split(',')
-  .map((o) => o.trim())
+  .map((o) => o.trim().replace(/\/+$/, ''))
   .filter(Boolean);
 
 // ------- Performance & Security middleware -------
@@ -58,6 +65,8 @@ app.use(
           "https://fonts.gstatic.com",
         ],
         mediaSrc: ["'self'", "blob:", "data:"],
+        // workerSrc for Three.js / offline IndexedDB sync workers
+        workerSrc: ["'self'", "blob:"],
         frameSrc: ["'none'"],
         objectSrc: ["'none'"],
       },
@@ -66,13 +75,23 @@ app.use(
     crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
+
+// Standard Permissions-Policy header for webcam and screen capture proctoring
+app.use((_req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), display-capture=(self)');
+  next();
+});
+
 app.use(compression());
 
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+      const cleanOrigin = origin.replace(/\/+$/, '');
+      if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
       callback(new Error('CORS: Origin not allowed'));
     },
     credentials: true,
@@ -81,6 +100,18 @@ app.use(
   })
 );
 
+// Serve logo.png from server static assets as resilient fallback
+const clientLogoPath = path.resolve(__dirname, '../../client/public/logo.png');
+const serverLogoPath = path.resolve(__dirname, '../logo.png');
+app.get('/logo.png', (_req, res) => {
+  if (fs.existsSync(clientLogoPath)) {
+    res.sendFile(clientLogoPath);
+  } else if (fs.existsSync(serverLogoPath)) {
+    res.sendFile(serverLogoPath);
+  } else {
+    res.status(404).send('Logo not found');
+  }
+});
 
 // ------- Request ID tracking (Phase J1) -------
 app.use((req, res, next) => {
@@ -96,12 +127,19 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
 app.use(sanitizeInput);
 
+// ------- Double-Submit Cookie CSRF Protection -------
+app.use(ensureCsrfCookie);
+app.use(csrfProtection);
+
 // ------- General rate limit -------
 app.use(generalRateLimit);
 
 // =====================================
 // ROUTES
 // =====================================
+
+// CSRF token retrieval endpoint
+app.get('/api/csrf-token', getCsrfToken);
 
 // Health check — exposes demo mode status and version info
 const isDemo =
@@ -147,6 +185,9 @@ app.get('/health', (_req, res) => {
 // Authentication (Students & Password Reset)
 app.use('/api/auth', authRoutes);
 
+// Student Portal & Dashboard
+app.use('/api/student', studentRoutes);
+
 // Gate Module - Candidate Assessment Registration (AL-SPEC-2026-REG)
 app.use('/api/v1/assessment', assessmentRoutes);
 app.use('/api/assessment', assessmentRoutes);
@@ -179,6 +220,10 @@ app.use('/api/communication', inspectorRoutes);
 // Admin (admin JWT required)
 app.use('/api/admin', adminRoutes);
 
+// Contact & Support Form (Auto-Reply & Admin Alerts)
+app.use('/api/v1/contact', contactRoutes);
+app.use('/api/contact', contactRoutes);
+
 // ------- 404 handler -------
 app.use((_req, res) => {
   res.status(404).json({ success: false, error: 'Route not found' });
@@ -187,7 +232,14 @@ app.use((_req, res) => {
 // ------- Global error handler -------
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('[Server Error]', err);
-  res.status(500).json({ success: false, error: 'Internal server error' });
+  if (err.message && err.message.includes('CORS')) {
+    res.status(403).json({ success: false, error: err.message });
+    return;
+  }
+  res.status(500).json({
+    success: false,
+    error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message || 'Internal server error',
+  });
 });
 
 // ------- Socket.io (Phase 1d: server-authoritative timer) -------
@@ -198,11 +250,19 @@ httpServer.listen(PORT, '0.0.0.0', 2048, async () => {
   console.log(`[Server] Running on port ${PORT} (${process.env.NODE_ENV})`);
   console.log(`[Socket.io] WebSocket server ready on port ${PORT}`);
   startSessionCron();
+  startBackupScheduler();
 
   // Fail-fast database connectivity check
   const dbCheck = await verifyDatabaseConnectivity();
   if (dbCheck.connected) {
     console.log(`✅ [Database] Connection verified healthy (${dbCheck.latencyMs}ms)`);
+    // Resume any pending or interrupted email jobs from database queue
+    try {
+      const { emailQueue } = await import('./services/emailQueue');
+      await emailQueue.resumePendingJobs();
+    } catch (queueErr) {
+      console.warn('[Server] Notice: Email queue boot resumption:', queueErr);
+    }
   } else {
     if (process.env.NODE_ENV === 'production') {
       console.error('================================================================');
@@ -217,7 +277,15 @@ httpServer.listen(PORT, '0.0.0.0', 2048, async () => {
   }
 });
 
-// ------- Graceful shutdown handlers (Phase J1) -------
+// ------- Process Safety & Graceful Shutdown (Phase J1) -------
+process.on('unhandledRejection', (reason: any) => {
+  console.error('[Server] Unhandled Promise Rejection:', reason);
+});
+
+process.on('uncaughtException', (err: Error) => {
+  console.error('[Server] Uncaught Exception:', err);
+});
+
 const handleGracefulShutdown = (signal: string) => {
   console.log(`[Server] Received ${signal}. Starting graceful shutdown...`);
   httpServer.close(() => {
@@ -233,4 +301,5 @@ const handleGracefulShutdown = (signal: string) => {
 process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => handleGracefulShutdown('SIGINT'));
 
+export { app, httpServer };
 export default app;

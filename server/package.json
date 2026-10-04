@@ -10,7 +10,13 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "create-admin": "tsx src/scripts/createAdmin.ts",
-    "test": "node test-registration-specification.js && node test-auth-module.js && node test-auth.js && node test-parser.js && node test-proctoring-sets.js && node test-communication.js && node test-rebrand-exam-codes.js && node test-rebrand-certificates.js && node test-phase1-security.js && node test-phase2-database.js",
+    "test": "node test-phase1-rbac.js && node test-phase2-audit.js && node test-phase3-backups.js && node test-phase4-security-hardening.js && node test-phase6-boundaries.js && node test-registration-specification.js && node test-auth-module.js && node test-auth.js && node test-parser.js && node test-proctoring-sets.js && node test-communication.js && node test-rebrand-exam-codes.js && node test-rebrand-certificates.js && node test-phase1-security.js && node test-phase2-database.js && node test-role-hierarchy.js && node test-student-auth.js && node test-inspector-flow.js && node test-mail-layer.js && node test-backup.js",
+    "test:phase6": "node test-phase6-boundaries.js",
+    "test:inspector": "node test-inspector-flow.js",
+    "test:mail": "node test-mail-layer.js",
+    "test:backup": "node test-backup.js",
+    "test-email": "tsx src/scripts/testEmail.ts",
+    "backup": "tsx src/scripts/backup.ts",
     "test:phase1": "node test-phase1-security.js",
     "test:phase2": "node test-phase2-database.js",
     "test:gate": "node test-registration-specification.js",
@@ -30,6 +36,7 @@
   ],
   "type": "commonjs",
   "devDependencies": {
+    "@types/archiver": "^8.0.0",
     "@types/bcrypt": "^6.0.0",
     "@types/compression": "^1.8.1",
     "@types/cookie-parser": "^1.4.10",
@@ -43,12 +50,12 @@
     "@types/pdfkit": "^0.17.6",
     "@types/qrcode": "^1.5.6",
     "@types/uuid": "^10.0.0",
-    "ts-node-dev": "^2.0.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.0",
+    "archiver": "^8.0.0",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.2",
     "cookie-parser": "^1.4.7",
@@ -65,7 +72,7 @@
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.4",
     "uuid": "^14.0.2",
-    "xlsx": "^0.18.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^4.6.5"
   }
 }

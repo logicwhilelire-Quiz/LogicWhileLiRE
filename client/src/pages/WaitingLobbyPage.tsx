@@ -3,8 +3,6 @@ import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { io as connectSocket, Socket } from "socket.io-client";
 import BrandLogo from "../components/BrandLogo";
 import AnimatedPage from "../components/AnimatedPage";
-import ParticleField from "../components/3d/ParticleField";
-import NodeNetwork from "../components/3d/NodeNetwork";
 import { getAssessmentSystemCheck, authLogout, getExamLobbyStats } from "../lib/api";
 import { SOCKET_URL } from "../lib/config";
 
@@ -135,7 +133,12 @@ export default function WaitingLobbyPage() {
     socket.on("connect", () => {
       setConnected(true);
       addEvent(`Socket connected (${socket.id?.slice(0, 8) || "?"}...)`, "success");
-      socket.emit("lobby:join", { examCode: contestId });
+      socket.emit("lobby:join", {
+        examCode: contestId,
+        hallTicket: candidate?.roll_number || (candidate as any)?.hall_ticket || candidate?.email || 'STUDENT',
+        studentName: candidate?.name || candidate?.first_name || 'Student Candidate',
+        section: candidate?.section || 'General',
+      });
       addEvent(`Joined lobby room: lobby:${contestId.toUpperCase()}`, "info");
     });
 
@@ -262,8 +265,15 @@ export default function WaitingLobbyPage() {
           transition: "background 0.6s ease",
         }}
       >
-        <ParticleField liveCount={lobbyMeta.connected} particleCount={800} color="#a78bfa" />
-        <NodeNetwork nodeCount={lobbyMeta.connected > 80 ? 40 : 25} maxDistance={140} lineColor="#38bdf8" nodeColor="#818cf8" />
+        {/* Distraction-free Lightweight Aura (Zero 3D / WebGL overhead) */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            background: "radial-gradient(ellipse at 50% 10%, rgba(43, 127, 255, 0.12) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%)",
+          }}
+        />
 
         {/* EXAM STARTED OVERLAY */}
         {examStarted && (

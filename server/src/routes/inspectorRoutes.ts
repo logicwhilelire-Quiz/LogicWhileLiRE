@@ -46,11 +46,11 @@ export interface OutboundEmailRecord {
 }
 
 const AUDIT_LEDGER: AuditEvent[] = [];
-const EMAIL_DISPATCH_LEDGER: OutboundEmailRecord[] = [
+const EMAIL_DISPATCH_LEDGER: OutboundEmailRecord[] = process.env.NODE_ENV === 'production' ? [] : [
   {
     id: 'eml-init-1',
     type: 'invitation',
-    recipient: 'student01@logicwhilelire.edu',
+    recipient: 'candidate01@example.com',
     recipientName: 'Candidate 01',
     examCode: 'DEMO123',
     subject: '🎓 Official Hall Ticket & Passcode — DEMO123',
@@ -60,7 +60,7 @@ const EMAIL_DISPATCH_LEDGER: OutboundEmailRecord[] = [
   {
     id: 'eml-init-2',
     type: 'otp',
-    recipient: 'student02@logicwhilelire.edu',
+    recipient: 'candidate02@example.com',
     recipientName: 'Candidate 02',
     examCode: 'DEMO123',
     subject: '🔐 Your Verification Code: 491024 — DEMO123',

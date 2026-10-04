@@ -136,28 +136,56 @@ export const createExamSchema = z.object({
 export const adminLoginSchema = z.object({
   username: z.string().min(1, 'Username or email is required').trim(),
   password: z.string().min(1, 'Password is required'),
+  totp_code: z.string().optional(),
 });
 
 export const studentRegisterSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').max(100).trim(),
+  name: z.string().min(2, 'Full name must be at least 2 characters').max(100).trim().optional(),
+  full_name: z.string().min(2).max(100).trim().optional(),
   email: z.string().email('Invalid email address').toLowerCase().trim(),
-  hall_ticket: z
+  roll_number: z
     .string()
-    .min(3, 'Hall ticket must be at least 3 characters')
+    .min(2, 'Roll number must be at least 2 characters')
     .max(30)
     .trim()
-    .regex(/^[A-Za-z0-9\-_]+$/, 'Hall ticket may only contain letters, numbers, hyphens, underscores')
-    .transform((val) => val.toUpperCase()),
+    .optional(),
+  hall_ticket: z
+    .string()
+    .min(2, 'Hall ticket must be at least 2 characters')
+    .max(30)
+    .trim()
+    .optional(),
+  college_id: z.union([z.number(), z.string()]).optional().default(1),
+  cohort_id: z.union([z.number(), z.string()]).optional(),
+  section_id: z.union([z.number(), z.string()]).optional(),
+  section: z.string().optional(),
   mobile: z
     .string()
     .regex(/^\+?[0-9]{7,15}$/, 'Invalid mobile number')
     .optional()
     .or(z.literal('')),
+  phone: z
+    .string()
+    .regex(/^\+?[0-9]{7,15}$/, 'Invalid phone number')
+    .optional()
+    .or(z.literal('')),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
+export const verifyStudentOtpSchema = z.object({
+  email: z.string().email('Valid email address is required').toLowerCase().trim(),
+  otp: z.string().min(4).max(10).optional(),
+  token: z.string().min(8).optional(),
+});
+
+export const resendStudentOtpSchema = z.object({
+  email: z.string().email('Valid email address is required').toLowerCase().trim(),
+});
+
 export const studentLoginSchema = z.object({
-  login: z.string().min(1, 'Email or hall ticket is required').trim(),
+  login: z.string().trim().optional(),
+  roll_number: z.string().trim().optional(),
+  email: z.string().trim().optional(),
   password: z.string().min(1, 'Password is required'),
 });
 
@@ -171,11 +199,49 @@ export const resetPasswordSchema = z.object({
   new_password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
+/**
+ * Strong password verification policy:
+ * - Minimum 8 characters
+ * - At least one uppercase letter (A-Z)
+ * - At least one lowercase letter (a-z)
+ * - At least one number (0-9)
+ * - At least one special symbol (!@#$%^&*...)
+ */
+export function isStrongPassword(password: string): { valid: boolean; error?: string } {
+  if (!password || typeof password !== 'string') {
+    return { valid: false, error: 'Password is required' };
+  }
+  if (password.length < 8) {
+    return { valid: false, error: 'Password must be at least 8 characters long' };
+  }
+  if (!/[A-Z]/.test(password)) {
+    return { valid: false, error: 'Password must contain at least one uppercase letter (A-Z)' };
+  }
+  if (!/[a-z]/.test(password)) {
+    return { valid: false, error: 'Password must contain at least one lowercase letter (a-z)' };
+  }
+  if (!/[0-9]/.test(password)) {
+    return { valid: false, error: 'Password must contain at least one digit (0-9)' };
+  }
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(password)) {
+    return { valid: false, error: 'Password must contain at least one special character (!@#$%^&*...)' };
+  }
+  return { valid: true };
+}
+
+export const strongPasswordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters long')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter (A-Z)')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter (a-z)')
+  .regex(/[0-9]/, 'Password must contain at least one digit (0-9)')
+  .regex(/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/, 'Password must contain at least one special character');
+
 export const createStaffSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100).trim(),
   email: z.string().email('Invalid email address').toLowerCase().trim(),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  role: z.enum(['super_admin', 'faculty', 'college_admin']),
+  password: z.string().min(6, 'Password must be at least 6 characters').optional(),
+  role: z.enum(['super_admin', 'admin', 'faculty', 'college_admin', 'inspector']),
   college_id: z.union([z.number(), z.string()]).optional(),
 });
 

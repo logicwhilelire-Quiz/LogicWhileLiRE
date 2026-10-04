@@ -9,10 +9,11 @@ import GlowCard from '../components/3d/GlowCard'
 import AltimeterDial from '../components/3d/AltimeterDial'
 import FlightPathLines from '../components/3d/FlightPathLines'
 import LogicCoil from '../components/LogicCoil'
-import SectorsUniverse3D from '../components/3d/SectorsUniverse3D'
 import SectorRadar3D from '../components/3d/SectorRadar3D'
+import api from '../lib/api'
 
 // Lazy-load 3D heavy components
+const SectorsUniverse3D = lazy(() => import('../components/3d/SectorsUniverse3D'))
 const CollegeGlobe = lazy(() => import('../components/3d/CollegeGlobe'))
 const LiquidBlob   = lazy(() => import('../components/3d/LiquidBlob'))
 const ParticleField = lazy(() => import('../components/3d/ParticleField'))
@@ -243,6 +244,18 @@ export default function LandingPage() {
   const heroY       = useTransform(scrollY, [0, 400], [0, -80])
 
   const [activeFaq, setActiveFaq] = useState<number | null>(0)
+  const [studentUser, setStudentUser] = useState<any>(null)
+
+  useEffect(() => {
+    try {
+      const u = localStorage.getItem('student_user')
+      const t = localStorage.getItem('student_token')
+      if (u && t) setStudentUser(JSON.parse(u))
+    } catch {
+      setStudentUser(null)
+    }
+  }, [])
+
   const [demoForm, setDemoForm] = useState({
     name: '',
     email: '',
@@ -253,12 +266,23 @@ export default function LandingPage() {
     loading: false,
   })
 
-  const handleDemoSubmit = (e: React.FormEvent) => {
+  const handleDemoSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setDemoForm(prev => ({ ...prev, loading: true }))
-    setTimeout(() => {
+    try {
+      await api.post('/api/contact', {
+        name: demoForm.name,
+        email: demoForm.email,
+        subject: `Pilot Sandbox Request — ${demoForm.institution}`,
+        message: demoForm.message || `Campus pilot application for ${demoForm.institution} with estimated batch size: ${demoForm.candidateCount}`,
+        institution: demoForm.institution,
+        candidateCount: demoForm.candidateCount,
+      })
+    } catch (err) {
+      console.warn('Contact request submission fallback:', err)
+    } finally {
       setDemoForm(prev => ({ ...prev, loading: false, submitted: true }))
-    }, 700)
+    }
   }
 
   return (
@@ -315,45 +339,57 @@ export default function LandingPage() {
 
               <h1 style={{
                 fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(2.5rem, 6vw, 4.8rem)',
+                fontSize: 'clamp(2.4rem, 5.5vw, 4.4rem)',
                 fontWeight: 800, lineHeight: 1.05,
-                letterSpacing: '-0.035em',
-                marginBottom: 10,
+                letterSpacing: '-0.03em',
+                marginBottom: 8,
               }}>
                 <span style={{
                   display: 'inline-flex',
                   alignItems: 'baseline',
+                  flexWrap: 'wrap',
+                  gap: '0.18em',
                 }}>
+                  <span style={{ color: '#FF7A00' }}>Logic</span>
+                  <span style={{ color: 'var(--color-primary-dark, #0A3F8F)' }}>Whi<span style={{ color: '#FF7A00', fontWeight: 900 }}>1</span>e</span>
                   <span style={{
-                    background: 'linear-gradient(135deg, #1B5FB5 0%, #0A3F8F 55%, #2563EB 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}>
-                    LogicWhile
-                  </span>
-                  <span style={{
-                    background: 'linear-gradient(135deg, #38BDF8 0%, #818CF8 50%, #C084FC 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    fontWeight: 900,
+                    border: '2px solid #FFC200',
+                    padding: '2px 10px',
+                    borderRadius: 8,
+                    background: 'rgba(255, 194, 0, 0.1)',
                     marginLeft: 4,
+                    display: 'inline-flex',
+                    alignItems: 'baseline',
                   }}>
-                    LiRE
+                    <span style={{ color: 'var(--color-primary-dark, #0A3F8F)' }}>Li</span>
+                    <span style={{ color: '#FF7A00' }}>R</span>
+                    <span style={{ color: 'var(--color-primary-dark, #0A3F8F)' }}>E</span>
                   </span>
                 </span>
               </h1>
 
+              <div style={{
+                fontFamily: 'var(--font-mono, monospace)',
+                fontSize: '0.95rem',
+                fontWeight: 700,
+                color: 'var(--color-primary, #1B5FB5)',
+                letterSpacing: '0.12em',
+                marginBottom: 8,
+              }}>
+                Li: Live  •  R: Real  •  E: Engine
+              </div>
+
               <h2
                 style={{
                   fontFamily: 'var(--font-display)',
-                  fontSize: 'clamp(1.2rem, 2.5vw, 1.85rem)',
-                  fontWeight: 600, lineHeight: 1.3,
-                  color: 'var(--color-text-muted)',
-                  marginBottom: 20,
+                  fontSize: 'clamp(1.3rem, 2.5vw, 1.85rem)',
+                  fontWeight: 800, lineHeight: 1.3,
+                  color: '#FF7A00',
+                  marginBottom: 16,
+                  letterSpacing: '0.01em',
                 }}
               >
-                Standardized Examination &amp;<br />
-                <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>Automated Proctoring Engine</span>
+                Elevating Coding Knowledge
               </h2>
 
               <p
@@ -368,47 +404,110 @@ export default function LandingPage() {
               <div
                 style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}
               >
-                <Link to="/enter-exam" id="hero-enter-assessment-cta" style={{ textDecoration: 'none' }}>
-                  <MagneticButton
-                    className="btn btn-primary btn-xl"
-                    style={{
-                      minWidth: 220,
-                      background: 'linear-gradient(135deg, #2563EB 0%, #1B5FB5 50%, #0A3F8F 100%)',
-                      boxShadow: '0 12px 32px -4px rgba(37, 99, 235, 0.5), 0 0 24px rgba(59, 130, 246, 0.35)',
-                      color: '#ffffff',
-                      fontSize: '1.14rem',
-                      fontWeight: 700,
-                      letterSpacing: '0.02em',
-                      padding: '16px 36px',
-                      borderRadius: 14,
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 10,
-                    }}
-                  >
-                    <span>🚀 Enter Assessment</span>
-                    <span style={{ fontSize: '1.2rem' }}>→</span>
-                  </MagneticButton>
-                </Link>
-                <Link to="/gate" style={{ textDecoration: 'none' }}>
-                  <MagneticButton
-                    className="btn btn-secondary btn-xl"
-                    style={{
-                      background: 'var(--color-surface)',
-                      border: '1.5px solid var(--color-border)',
-                      color: 'var(--color-text)',
-                      fontSize: '1.05rem',
-                      fontWeight: 600,
-                      padding: '16px 28px',
-                      borderRadius: 12,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    🛡️ Candidate Gate
-                  </MagneticButton>
-                </Link>
+                {studentUser ? (
+                  <>
+                    <Link to="/enter-exam" id="hero-enter-assessment-cta" style={{ textDecoration: 'none' }}>
+                      <MagneticButton
+                        className="btn btn-primary btn-xl"
+                        style={{
+                          minWidth: 220,
+                          background: 'linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)',
+                          boxShadow: '0 12px 32px -4px rgba(255, 122, 0, 0.45)',
+                          color: '#ffffff',
+                          fontSize: '1.14rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.02em',
+                          padding: '16px 36px',
+                          borderRadius: 14,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 10,
+                        }}
+                      >
+                        <span>🚀 Enter Assigned Exam</span>
+                        <span style={{ fontSize: '1.2rem' }}>→</span>
+                      </MagneticButton>
+                    </Link>
+                    <Link to="/student/dashboard" style={{ textDecoration: 'none' }}>
+                      <MagneticButton
+                        className="btn btn-secondary btn-xl"
+                        style={{
+                          background: 'var(--color-surface)',
+                          border: '1.5px solid var(--color-border)',
+                          color: 'var(--color-text)',
+                          fontSize: '1.05rem',
+                          fontWeight: 600,
+                          padding: '16px 28px',
+                          borderRadius: 12,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        🎓 Candidate Dashboard
+                      </MagneticButton>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login" id="hero-student-portal-cta" style={{ textDecoration: 'none' }}>
+                      <MagneticButton
+                        className="btn btn-primary btn-xl"
+                        style={{
+                          minWidth: 220,
+                          background: 'linear-gradient(135deg, #2563EB 0%, #1B5FB5 50%, #0A3F8F 100%)',
+                          boxShadow: '0 12px 32px -4px rgba(37, 99, 235, 0.5)',
+                          color: '#ffffff',
+                          fontSize: '1.14rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.02em',
+                          padding: '16px 36px',
+                          borderRadius: 14,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 10,
+                        }}
+                      >
+                        <span>🎓 Student Portal Login</span>
+                        <span style={{ fontSize: '1.2rem' }}>→</span>
+                      </MagneticButton>
+                    </Link>
+                    <Link to="/gate" style={{ textDecoration: 'none' }}>
+                      <MagneticButton
+                        className="btn btn-secondary btn-xl"
+                        style={{
+                          background: 'var(--color-surface)',
+                          border: '1.5px solid var(--color-border)',
+                          color: 'var(--color-text)',
+                          fontSize: '1.05rem',
+                          fontWeight: 600,
+                          padding: '16px 28px',
+                          borderRadius: 12,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        🛡️ Candidate Gate
+                      </MagneticButton>
+                    </Link>
+                    <Link to="/practice" style={{ textDecoration: 'none' }}>
+                      <MagneticButton
+                        className="btn btn-ghost btn-xl"
+                        style={{
+                          border: '1px solid var(--color-border)',
+                          color: 'var(--color-text-muted)',
+                          fontSize: '1.02rem',
+                          fontWeight: 600,
+                          padding: '16px 22px',
+                          borderRadius: 12,
+                        }}
+                      >
+                        🪐 Explore 5 Sectors
+                      </MagneticButton>
+                    </Link>
+                  </>
+                )}
               </div>
 
               {/* Trust badges */}
@@ -575,15 +674,26 @@ export default function LandingPage() {
               <span>🪐</span> MULTI-DIMENSIONAL ASSESSMENT ARCHITECTURE
             </div>
             <h2 className="section-title" style={{ fontSize: 'clamp(2rem, 3.8vw, 3rem)', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
-              The 5 Core Technical Sectors of <span style={{ color: 'var(--color-primary)' }}>LogicWhile</span><span style={{ background: 'linear-gradient(135deg, #38BDF8 0%, #818CF8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>LiRE</span>
+              The 5 Core Technical Sectors of <span style={{ color: '#FF7A00' }}>Logic</span> <span style={{ color: 'var(--color-primary-dark, #0A3F8F)' }}>Whi<span style={{ color: '#FF7A00', fontWeight: 900 }}>1</span>e</span> <span style={{ border: '2px solid #FFC200', padding: '0 8px', borderRadius: 8, background: 'rgba(255, 194, 0, 0.1)' }}><span style={{ color: 'var(--color-primary-dark, #0A3F8F)' }}>Li</span><span style={{ color: '#FF7A00' }}>R</span><span style={{ color: 'var(--color-primary-dark, #0A3F8F)' }}>E</span></span>
             </h2>
             <p className="section-subtitle" style={{ maxWidth: 760, margin: '14px auto 0', fontSize: '1.05rem', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
-              Rotate, inspect, and explore all 5 examination sectors in real-time 3D. Every question on LogicWhileLiRE is algorithmically classified across quantitative velocity, deductive logic, core systems, algorithms, and cloud architectures.
+              Rotate, inspect, and explore all 5 examination sectors in real-time 3D. Elevating coding knowledge across quantitative velocity, deductive logic, core systems, algorithms, and distributed cloud architectures.
             </p>
           </motion.div>
 
-          {/* 3D WebGL Interactive Universe */}
-          <SectorsUniverse3D />
+          {/* 3D WebGL Interactive Universe with lazy loading & fallback */}
+          <Suspense
+            fallback={
+              <div style={{ height: 550, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(5,8,20,0.5)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div className="btn-spinner" style={{ width: 36, height: 36, margin: '0 auto 16px' }} />
+                  <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: 600 }}>Loading 3D Technical Sectors Universe...</div>
+                </div>
+              </div>
+            }
+          >
+            <SectorsUniverse3D />
+          </Suspense>
         </div>
       </section>
 

@@ -168,9 +168,9 @@ export default function SectorsUniverse3D({ onSelectSector, className = '' }: Se
     // Central pulsing icosahedron (The LiRE core)
     const coreGeom = new THREE.IcosahedronGeometry(1.2, 1);
     const coreMat = new THREE.MeshStandardMaterial({
-      color: 0x1b5fb5,
-      emissive: 0x0a3f8f,
-      emissiveIntensity: 0.8,
+      color: 0xffb800,
+      emissive: 0xff7a00,
+      emissiveIntensity: 0.65,
       wireframe: true,
       transparent: true,
       opacity: 0.85,
@@ -178,20 +178,20 @@ export default function SectorsUniverse3D({ onSelectSector, className = '' }: Se
     const coreMesh = new THREE.Mesh(coreGeom, coreMat);
     coreGroup.add(coreMesh);
 
-    // Inner glowing sphere
-    const innerCoreGeom = new THREE.SphereGeometry(0.7, 16, 16);
+    // Inner glowing sphere (Electric Blue Engine)
+    const innerCoreGeom = new THREE.SphereGeometry(0.75, 16, 16);
     const innerCoreMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
       wireframe: true,
       transparent: true,
-      opacity: 0.9,
+      opacity: 0.95,
     });
     const innerCoreMesh = new THREE.Mesh(innerCoreGeom, innerCoreMat);
     coreGroup.add(innerCoreMesh);
 
-    // Orbital rings around center
-    const ringGeom = new THREE.TorusGeometry(2.2, 0.02, 16, 64);
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.4 });
+    // Golden Circuit Orbital rings around center
+    const ringGeom = new THREE.TorusGeometry(2.3, 0.03, 16, 64);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0xffc200, transparent: true, opacity: 0.75 });
     const ring1 = new THREE.Mesh(ringGeom, ringMat);
     ring1.rotation.x = Math.PI / 2.5;
     coreGroup.add(ring1);
@@ -504,9 +504,9 @@ export default function SectorsUniverse3D({ onSelectSector, className = '' }: Se
               gap: 8,
               padding: '6px 14px',
               borderRadius: '999px',
-              background: 'rgba(56, 189, 248, 0.12)',
-              border: '1px solid rgba(56, 189, 248, 0.35)',
-              color: '#38BDF8',
+              background: 'rgba(255, 194, 0, 0.12)',
+              border: '1px solid rgba(255, 194, 0, 0.35)',
+              color: '#FFC200',
               fontSize: '0.78rem',
               fontWeight: 700,
               letterSpacing: '0.08em',
@@ -514,8 +514,8 @@ export default function SectorsUniverse3D({ onSelectSector, className = '' }: Se
               marginBottom: 8,
             }}
           >
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#38BDF8', boxShadow: '0 0 10px #38BDF8' }} />
-            LogicWhileLiRE 3D Technical Sectors Hub
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#FFC200', boxShadow: '0 0 10px #FFC200' }} />
+            Logic Whi1e LiRE · 5-Sector Knowledge Galaxy
           </div>
           <h3
             style={{
@@ -527,7 +527,7 @@ export default function SectorsUniverse3D({ onSelectSector, className = '' }: Se
               letterSpacing: '-0.02em',
             }}
           >
-            Interactive 5-Sector Knowledge Galaxy
+            Elevating Coding Knowledge Across All 5 Sectors
           </h3>
         </div>
 

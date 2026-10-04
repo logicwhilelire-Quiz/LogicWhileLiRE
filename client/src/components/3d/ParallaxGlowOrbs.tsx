@@ -4,6 +4,9 @@ export default function ParallaxGlowOrbs() {
   const [mouse, setMouse] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
     const handleMouseMove = (e: MouseEvent) => {
       const cx = window.innerWidth / 2;
       const cy = window.innerHeight / 2;

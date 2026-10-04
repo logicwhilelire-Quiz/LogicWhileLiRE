@@ -18,6 +18,8 @@ export interface StudentJWTPayload {
   email: string;
   hallTicket: string;
   role: 'student';
+  sessionId?: string;
+  must_change_password?: boolean;
   iat?: number;
   exp?: number;
 }
@@ -98,6 +100,7 @@ export async function participantAuth(
  * Student auth middleware.
  * Reads JWT from cookie 'student_token' or Authorization header.
  * Validates signature, expiry, and verifies active student record in DB.
+ * Strictly enforces single active session per student.
  */
 export async function studentAuth(
   req: Request,
@@ -128,7 +131,7 @@ export async function studentAuth(
 
   const { data: student, error } = await supabase
     .from('students')
-    .select('id, is_active, locked_until')
+    .select('id, is_active, is_verified, locked_until, active_session_id')
     .eq('id', payload.studentId)
     .maybeSingle();
 
@@ -144,6 +147,16 @@ export async function studentAuth(
 
   if (student.locked_until && new Date(student.locked_until) > new Date()) {
     res.status(423).json({ success: false, error: 'Account is temporarily locked. Please reset your password.' });
+    return;
+  }
+
+  // Enforce single active session per student
+  if (payload.sessionId && student.active_session_id && payload.sessionId !== student.active_session_id) {
+    res.status(401).json({
+      success: false,
+      error: 'Session expired: Your account has been logged in from another device or browser session.',
+      code: 'SESSION_SUPERSEDED',
+    });
     return;
   }
 

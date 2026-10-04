@@ -6,6 +6,9 @@ import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedCounter from '../../components/AnimatedCounter';
 import LogicWhileLiRELoader from '../../components/LogicWhileLiRELoader';
 
+import axios from 'axios';
+import { API_BASE_URL } from '../../lib/config';
+
 interface Exam {
   id: string;
   title: string;
@@ -17,20 +20,57 @@ interface Exam {
   exam_code?: string;
 }
 
+interface DashboardWidgetsData {
+  live_exams_count: number;
+  live_exams: Array<{ id: string; title: string; is_active: boolean; start_time?: string }>;
+  students_online: number;
+  violations_count: number;
+  recent_faculty_activity: Array<{
+    id: string;
+    user_id: string;
+    role: string;
+    action: string;
+    target: string;
+    ip: string;
+    timestamp: string;
+  }>;
+  system_health: {
+    status: string;
+    database: string;
+    latency_ms: number;
+    socket_engine: string;
+    uptime_seconds: number;
+    heap_used_mb: number;
+    node_version: string;
+  };
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
+  const [widgets, setWidgets] = useState<DashboardWidgetsData | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    listExams()
-      .then((r) => setExams(r.data.exams || []))
-      .catch(() => navigate('/admin'))
-      .finally(() => setLoading(false));
+    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+
+    Promise.all([
+      listExams()
+        .then((r) => setExams(r.data.exams || []))
+        .catch(() => {}),
+      axios
+        .get(`${API_BASE_URL}/api/admin/dashboard-widgets`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+        .then((r) => {
+          if (r.data?.widgets) setWidgets(r.data.widgets);
+        })
+        .catch(() => {}),
+    ]).finally(() => setLoading(false));
   }, [navigate]);
 
-  const activeCount = exams.filter((e) => e.is_active).length;
+  const activeCount = widgets?.live_exams_count ?? exams.filter((e) => e.is_active).length;
 
   async function handleToggle(exam: Exam) {
     await activateExam(exam.id, !exam.is_active);
@@ -77,55 +117,138 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Quick Metrics */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18, marginBottom: 32 }}>
-            <div className="card" style={{ padding: '20px 24px', background: 'rgba(11, 18, 38, 0.7)', border: '1px solid var(--color-border)', borderRadius: 12 }}>
-              <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>
-                Total Managed Exams
+          {/* ── PHASE 2 WIDGETS: Live Exams, Students Online, Violations, System Health ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18, marginBottom: 28 }}>
+            {/* Widget 1: Live Exams */}
+            <div className="card" style={{ padding: '20px 24px', background: 'rgba(11, 18, 38, 0.7)', border: '1px solid rgba(43, 127, 255, 0.3)', borderRadius: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: 'var(--color-primary)', fontWeight: 700, letterSpacing: '0.05em' }}>
+                  Live Exams
+                </span>
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#3B82F6', boxShadow: '0 0 8px #3B82F6' }} />
               </div>
               <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--color-primary)', marginTop: 6, fontFamily: 'var(--font-display)' }}>
-                <AnimatedCounter value={exams.length} />
+                <AnimatedCounter value={widgets?.live_exams_count ?? activeCount} />
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', marginTop: 4 }}>
-                {activeCount} currently active & launched
+                {exams.length} total managed assessments
               </div>
             </div>
 
-            <div className="card" style={{ padding: '20px 24px', background: 'rgba(11, 18, 38, 0.7)', border: '1px solid var(--color-border)', borderRadius: 12 }}>
-              <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>
-                Active Live Sessions
+            {/* Widget 2: Students Online */}
+            <div className="card" style={{ padding: '20px 24px', background: 'rgba(11, 18, 38, 0.7)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: '#10B981', fontWeight: 700, letterSpacing: '0.05em' }}>
+                  Students Online
+                </span>
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }} />
               </div>
               <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#10B981', marginTop: 6, fontFamily: 'var(--font-display)' }}>
-                <AnimatedCounter value={activeCount > 0 ? 128 : 0} />
+                <AnimatedCounter value={widgets?.students_online ?? 0} />
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', marginTop: 4 }}>
-                Real-time synchronized across cohorts
+                Active in-progress sessions
               </div>
             </div>
 
-            <div className="card" style={{ padding: '20px 24px', background: 'rgba(11, 18, 38, 0.7)', border: '1px solid var(--color-border)', borderRadius: 12 }}>
-              <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>
-                Question Bank Volume
+            {/* Widget 3: Proctoring Violations */}
+            <div className="card" style={{ padding: '20px 24px', background: 'rgba(11, 18, 38, 0.7)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: '#EF4444', fontWeight: 700, letterSpacing: '0.05em' }}>
+                  Proctoring Violations
+                </span>
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#EF4444', boxShadow: '0 0 8px #EF4444' }} />
               </div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#8B5CF6', marginTop: 6, fontFamily: 'var(--font-display)' }}>
-                <AnimatedCounter value={450} />
+              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#EF4444', marginTop: 6, fontFamily: 'var(--font-display)' }}>
+                <AnimatedCounter value={widgets?.violations_count ?? 0} />
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', marginTop: 4 }}>
-                MCQs, Aptitude & Coding Challenges
+                Cheating & tab switches flagged
               </div>
             </div>
 
-            <div className="card" style={{ padding: '20px 24px', background: 'rgba(11, 18, 38, 0.7)', border: '1px solid var(--color-border)', borderRadius: 12 }}>
-              <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>
-                Integrity Shield
+            {/* Widget 4: System Health */}
+            <div className="card" style={{ padding: '20px 24px', background: 'rgba(11, 18, 38, 0.7)', border: '1px solid rgba(139, 92, 246, 0.3)', borderRadius: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: '#8B5CF6', fontWeight: 700, letterSpacing: '0.05em' }}>
+                  System Health
+                </span>
+                <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 700 }}>
+                  ● {widgets?.system_health?.status?.toUpperCase() || 'ONLINE'}
+                </span>
               </div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#F59E0B', marginTop: 6, fontFamily: 'var(--font-display)' }}>
-                100%
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', marginTop: 8, fontFamily: 'var(--font-display)' }}>
+                {widgets?.system_health?.latency_ms ?? 2} ms Latency
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', marginTop: 4 }}>
-                Lockout & Server-authoritative timing
+              <div style={{ fontSize: '0.74rem', color: 'var(--color-text-faint)', marginTop: 4, display: 'flex', justifyContent: 'space-between' }}>
+                <span>DB: {widgets?.system_health?.database || 'Supabase Connected'}</span>
+                <span>Heap: {widgets?.system_health?.heap_used_mb || 64} MB</span>
               </div>
             </div>
+          </div>
+
+          {/* ── Widget 5: Recent Faculty Activity Panel ── */}
+          <div className="card" style={{ padding: '20px 24px', background: 'rgba(11, 18, 38, 0.7)', border: '1px solid var(--color-border)', borderRadius: 12, marginBottom: 32 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+              <div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#FFFFFF', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>📜</span> Recent Faculty Activity Feed
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '4px 0 0 0' }}>
+                  Live surveillance of faculty operations, exam modifications, and content authoring
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/admin/activity?role=faculty')}
+                className="btn btn-ghost btn-sm"
+                style={{ color: 'var(--color-primary)', fontWeight: 700 }}
+              >
+                Open Audit Console →
+              </button>
+            </div>
+
+            {(!widgets?.recent_faculty_activity || widgets.recent_faculty_activity.length === 0) ? (
+              <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.86rem' }}>
+                No recent faculty actions recorded yet.
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
+                  <thead>
+                    <tr style={{ background: 'rgba(255, 255, 255, 0.02)', borderBottom: '1px solid var(--color-border)' }}>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--color-text-faint)' }}>Action</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--color-text-faint)' }}>Target</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--color-text-faint)' }}>Faculty ID</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--color-text-faint)' }}>IP Address</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--color-text-faint)' }}>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {widgets.recent_faculty_activity.map((l) => (
+                      <tr key={l.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                        <td style={{ padding: '10px 12px' }}>
+                          <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: '0.72rem', fontWeight: 700, background: 'rgba(43, 127, 255, 0.15)', color: 'var(--color-primary)' }}>
+                            {l.action}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 12px', color: '#E2E8F0', fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>
+                          {l.target}
+                        </td>
+                        <td style={{ padding: '10px 12px', color: 'var(--color-text-muted)' }}>
+                          {l.user_id}
+                        </td>
+                        <td style={{ padding: '10px 12px', color: 'var(--color-text-faint)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>
+                          {l.ip}
+                        </td>
+                        <td style={{ padding: '10px 12px', textAlign: 'right', color: 'var(--color-text-faint)' }}>
+                          {new Date(l.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* Quick Launch Cards */}

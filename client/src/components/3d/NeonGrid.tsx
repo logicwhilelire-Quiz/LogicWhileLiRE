@@ -122,8 +122,11 @@ export default function NeonGrid({
         }
       }
 
-      t += 0.025
-      animId = requestAnimationFrame(render)
+      const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reducedMotion) {
+        t += 0.025;
+        animId = requestAnimationFrame(render);
+      }
     }
 
     render()

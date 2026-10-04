@@ -26,18 +26,20 @@ interface College {
   contact_email: string;
   contact_phone: string;
   is_active: boolean;
+  registration_enabled?: boolean;
   created_at: string;
 }
 
 const SIDEBAR_ITEMS = [
   { id: 'nav-dashboard', label: '📊 Dashboard', path: '/admin/dashboard' },
   { id: 'nav-colleges', label: '🏛️ Colleges', path: '/admin/colleges', active: true },
+  { id: 'nav-hierarchy', label: '🌳 Structure & Roster', path: '/admin/hierarchy' },
   { id: 'nav-exam-codes', label: '🔑 Exam Codes', path: '/admin/exam-codes' },
   { id: 'nav-create-exam', label: '➕ Create Exam', path: '/admin/create-exam' },
   { id: 'nav-import', label: '📥 Import Questions', path: '/admin/import' },
   { id: 'nav-sessions', label: '👥 Sessions', path: '/admin/sessions' },
   { id: 'nav-reports', label: '📈 Reports', path: '/admin/reports' },
-  { id: 'nav-staff', label: '🛡️ Staff', path: '/admin/staff' },
+  { id: 'nav-staff', label: '🛡️ Staff & Matrix', path: '/admin/staff' },
 ];
 
 export default function CollegesPage() {
@@ -57,6 +59,7 @@ export default function CollegesPage() {
     state: 'Andhra Pradesh',
     contact_email: '',
     contact_phone: '',
+    registration_enabled: true,
   });
 
   async function load() {
@@ -75,7 +78,7 @@ export default function CollegesPage() {
 
   function openAdd() {
     setEditCollege(null);
-    setForm({ college_name: '', college_code: '', city: '', state: 'Andhra Pradesh', contact_email: '', contact_phone: '' });
+    setForm({ college_name: '', college_code: '', city: '', state: 'Andhra Pradesh', contact_email: '', contact_phone: '', registration_enabled: true });
     setShowForm(true);
     setError('');
     setSuccess('');
@@ -90,6 +93,7 @@ export default function CollegesPage() {
       state: college.state || 'Andhra Pradesh',
       contact_email: college.contact_email || '',
       contact_phone: college.contact_phone || '',
+      registration_enabled: college.registration_enabled !== false,
     });
     setShowForm(true);
     setError('');
@@ -123,6 +127,17 @@ export default function CollegesPage() {
       setColleges(prev => prev.map(c => c.id === college.id ? { ...c, is_active: !c.is_active } : c));
     } catch {
       setError('Failed to update status');
+    }
+  }
+
+  async function handleToggleRegistration(college: College) {
+    try {
+      const nextVal = !(college.registration_enabled !== false);
+      await api(`/api/admin/colleges/${college.id}`, { method: 'PATCH', data: { registration_enabled: nextVal } });
+      setColleges(prev => prev.map(c => c.id === college.id ? { ...c, registration_enabled: nextVal } : c));
+      setSuccess(`Student registration ${nextVal ? 'ENABLED' : 'DISABLED'} for ${college.college_name}`);
+    } catch {
+      setError('Failed to update registration status');
     }
   }
 
@@ -220,7 +235,8 @@ export default function CollegesPage() {
                   <th>Code</th>
                   <th>City</th>
                   <th>State</th>
-                  <th>Status</th>
+                  <th>Campus Status</th>
+                  <th>Student Registration</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -242,6 +258,18 @@ export default function CollegesPage() {
                       <span className={`badge ${college.is_active ? 'badge-success' : 'badge-neutral'}`}>
                         {college.is_active ? '● Active' : '○ Inactive'}
                       </span>
+                    </td>
+                    <td>
+                      <button
+                        id={`toggle-reg-college-${college.id}`}
+                        type="button"
+                        onClick={() => handleToggleRegistration(college)}
+                        className={`badge ${college.registration_enabled !== false ? 'badge-success' : 'badge-neutral'}`}
+                        style={{ cursor: 'pointer', border: '1px solid currentColor', padding: '4px 10px', fontSize: '0.78rem' }}
+                        title="Click to toggle student registration"
+                      >
+                        {college.registration_enabled !== false ? '✓ Enabled' : '✕ Disabled'}
+                      </button>
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -328,6 +356,22 @@ export default function CollegesPage() {
                   <label className="form-label">Contact Phone</label>
                   <input className="form-input" placeholder="+91 99999 99999" value={form.contact_phone}
                     onChange={e => setForm(p => ({ ...p, contact_phone: e.target.value }))} />
+                </div>
+
+                <div className="form-group" style={{ margin: 0, padding: '10px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', margin: 0 }}>
+                    <input
+                      id="form-registration-toggle"
+                      type="checkbox"
+                      checked={form.registration_enabled}
+                      onChange={e => setForm(p => ({ ...p, registration_enabled: e.target.checked }))}
+                      style={{ width: 18, height: 18, accentColor: 'var(--color-primary)' }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Allow Student Registration</div>
+                      <div className="text-muted text-xs">When enabled, students can select this college on the registration page</div>
+                    </div>
+                  </label>
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>

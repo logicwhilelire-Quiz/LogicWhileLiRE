@@ -1,17 +1,23 @@
 import { Router } from 'express';
 import {
   studentRegister,
+  verifyRegistrationOtp,
+  resendRegistrationOtp,
   studentLogin,
   getStudentMe,
+  getStudentDashboard,
   forgotPassword,
   resetPassword,
   logout,
+  changeStudentPassword,
 } from '../controllers/authController';
-import { authRateLimit, passwordResetRateLimit } from '../middleware/rateLimiter';
+import { authRateLimit, otpRateLimit, passwordResetRateLimit } from '../middleware/rateLimiter';
 import { studentAuth } from '../middleware/auth';
 import {
   validateBody,
   studentRegisterSchema,
+  verifyStudentOtpSchema,
+  resendStudentOtpSchema,
   studentLoginSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
@@ -21,7 +27,7 @@ const router = Router();
 
 /**
  * POST /api/auth/register
- * Student account registration with email & password
+ * Student account self-registration with roster verification and OTP dispatch
  */
 router.post(
   '/register',
@@ -31,8 +37,31 @@ router.post(
 );
 
 /**
+ * POST /api/auth/verify-registration-otp
+ * Verify 6-digit OTP or link token to activate student account
+ */
+router.post(
+  '/verify-registration-otp',
+  otpRateLimit,
+  validateBody(verifyStudentOtpSchema),
+  verifyRegistrationOtp
+);
+
+/**
+ * POST /api/auth/resend-registration-otp
+ * Resend a new 6-digit OTP to student's email
+ */
+router.post(
+  '/resend-registration-otp',
+  otpRateLimit,
+  validateBody(resendStudentOtpSchema),
+  resendRegistrationOtp
+);
+
+/**
  * POST /api/auth/login
- * Student account login with email/hall_ticket & password
+ * Student account login with email/roll_number & password
+ * 5-attempt lockout, single active session enforcement
  */
 router.post(
   '/login',
@@ -49,6 +78,16 @@ router.get(
   '/me',
   studentAuth,
   getStudentMe
+);
+
+/**
+ * GET /api/auth/dashboard
+ * Student assessment dashboard (profile, upcoming exams, results, rank)
+ */
+router.get(
+  '/dashboard',
+  studentAuth,
+  getStudentDashboard
 );
 
 /**
@@ -71,6 +110,16 @@ router.post(
   authRateLimit,
   validateBody(resetPasswordSchema),
   resetPassword
+);
+
+/**
+ * POST /api/auth/change-password
+ * Complete password change for authenticated student
+ */
+router.post(
+  '/change-password',
+  studentAuth,
+  changeStudentPassword
 );
 
 /**

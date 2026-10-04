@@ -64,10 +64,14 @@ async function runTests() {
     CLIENT_ORIGIN: 'http://localhost:5173',
     ADMIN_PASSWORD_HASH: '$2b$12$e0NZhMZbjS8V8/f46P4/r.N3fLwzVp52Yk6K7x7A9B.1234567890',
   });
-  assert(localhostOriginErrors.some((e) => e.includes('CLIENT_ORIGIN must be a real https://')), 'Boot guard must block localhost CLIENT_ORIGIN in production');
+  assert(
+    localhostOriginErrors.some((e) => e.includes('CLIENT_ORIGIN must be a real https://') || e.includes('CLIENT_ORIGIN cannot use placeholder')),
+    'Boot guard must block localhost CLIENT_ORIGIN in production'
+  );
   console.log('  ✅ Boot guard blocks localhost in CLIENT_ORIGIN in production');
   passed++;
 
+  const path = require('path');
   // Test A4: Production Boot Guard passes on valid production configuration
   const cleanErrors = validateProductionEnvironment({
     NODE_ENV: 'production',
@@ -77,10 +81,87 @@ async function runTests() {
     SUPABASE_URL: 'https://actual-mumbai-project.supabase.co',
     SUPABASE_SERVICE_ROLE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.real-key',
     CLIENT_ORIGIN: 'https://app.logicwhilelire.com',
+    FRONTEND_URL: 'https://app.logicwhilelire.com',
+    MAIL_DOMAIN: 'logicwhilelire.com',
+    EMAIL_FROM: 'noreply@logicwhilelire.com',
+    SUPPORT_EMAIL: 'support@logicwhilelire.com',
+    ADMIN_EMAIL: 'admin@logicwhilelire.com',
+    RESEND_API_KEY: 're_real_key_1234567890abcdef',
+    TOTP_ENCRYPTION_KEY: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4',
+    BACKUP_DIR: path.resolve(__dirname, '../../test_external_backups'),
     ADMIN_PASSWORD_HASH: '$2b$12$e0NZhMZbjS8V8/f46P4/r.N3fLwzVp52Yk6K7x7A9B.1234567890',
   });
   assert.strictEqual(cleanErrors.length, 0, `Expected 0 errors on clean config, got: ${cleanErrors.join(', ')}`);
   console.log('  ✅ Boot guard passes cleanly with valid production secrets');
+  passed++;
+
+  // Test A5: Boot guard rejects only placeholder domains (example.com, yourdomain.com, localhost, 127.0.0.1)
+  const placeholderErrors = validateProductionEnvironment({
+    NODE_ENV: 'production',
+    DEMO_MODE: 'false',
+    JWT_SECRET: 'a'.repeat(64),
+    ADMIN_JWT_SECRET: 'b'.repeat(64),
+    SUPABASE_URL: 'https://actual.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: 'key-12345',
+    CLIENT_ORIGIN: 'https://example.com',
+    FRONTEND_URL: 'https://yourdomain.com',
+    MAIL_DOMAIN: 'example.com',
+    EMAIL_FROM: 'noreply@example.com',
+    SUPPORT_EMAIL: 'support@yourdomain.com',
+    ADMIN_EMAIL: 'admin@127.0.0.1',
+    RESEND_API_KEY: 're_12345',
+    TOTP_ENCRYPTION_KEY: 'c'.repeat(32),
+    BACKUP_DIR: path.resolve(__dirname, '../../test_external_backups'),
+    ADMIN_PASSWORD_HASH: '$2b$12$e0NZhMZbjS8V8/f46P4/r.N3fLwzVp52Yk6K7x7A9B.1234567890',
+  });
+  assert(placeholderErrors.some((e) => e.includes('placeholder domains')), 'Must reject placeholder domains');
+  console.log('  ✅ Boot guard strictly rejects placeholder domains (example.com, yourdomain.com, localhost, 127.0.0.1)');
+  passed++;
+
+  // Test A6: Boot guard explicitly DOES NOT block logicwhilelire.com
+  const logicwhilelireCheck = validateProductionEnvironment({
+    NODE_ENV: 'production',
+    DEMO_MODE: 'false',
+    JWT_SECRET: 'a'.repeat(64),
+    ADMIN_JWT_SECRET: 'b'.repeat(64),
+    SUPABASE_URL: 'https://actual.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: 'key-12345',
+    CLIENT_ORIGIN: 'https://app.logicwhilelire.com',
+    FRONTEND_URL: 'https://app.logicwhilelire.com',
+    MAIL_DOMAIN: 'logicwhilelire.com',
+    EMAIL_FROM: 'noreply@logicwhilelire.com',
+    SUPPORT_EMAIL: 'support@logicwhilelire.com',
+    ADMIN_EMAIL: 'admin@logicwhilelire.com',
+    RESEND_API_KEY: 're_12345',
+    TOTP_ENCRYPTION_KEY: 'c'.repeat(32),
+    BACKUP_DIR: path.resolve(__dirname, '../../test_external_backups'),
+    ADMIN_PASSWORD_HASH: '$2b$12$e0NZhMZbjS8V8/f46P4/r.N3fLwzVp52Yk6K7x7A9B.1234567890',
+  });
+  assert.strictEqual(logicwhilelireCheck.length, 0, `logicwhilelire.com must NOT be blocked: ${logicwhilelireCheck.join(', ')}`);
+  console.log('  ✅ Boot guard explicitly permits genuine platform domain logicwhilelire.com');
+  passed++;
+
+  // Test A7: Boot guard flags inconsistent FRONTEND_URL vs CLIENT_ORIGIN
+  const inconsistentErrors = validateProductionEnvironment({
+    NODE_ENV: 'production',
+    DEMO_MODE: 'false',
+    JWT_SECRET: 'a'.repeat(64),
+    ADMIN_JWT_SECRET: 'b'.repeat(64),
+    SUPABASE_URL: 'https://actual.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: 'key-12345',
+    CLIENT_ORIGIN: 'https://portal.logicwhilelire.com',
+    FRONTEND_URL: 'https://other-portal.logicwhilelire.com',
+    MAIL_DOMAIN: 'logicwhilelire.com',
+    EMAIL_FROM: 'noreply@logicwhilelire.com',
+    SUPPORT_EMAIL: 'support@logicwhilelire.com',
+    ADMIN_EMAIL: 'admin@logicwhilelire.com',
+    RESEND_API_KEY: 're_12345',
+    TOTP_ENCRYPTION_KEY: 'c'.repeat(32),
+    BACKUP_DIR: path.resolve(__dirname, '../../test_external_backups'),
+    ADMIN_PASSWORD_HASH: '$2b$12$e0NZhMZbjS8V8/f46P4/r.N3fLwzVp52Yk6K7x7A9B.1234567890',
+  });
+  assert(inconsistentErrors.some((e) => e.includes('inconsistent')), 'Must flag inconsistent FRONTEND_URL and CLIENT_ORIGIN');
+  console.log('  ✅ Boot guard requires MAIL_DOMAIN, FRONTEND_URL, and CLIENT_ORIGIN to be consistent');
   passed++;
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -143,6 +224,34 @@ async function runTests() {
   });
   assert.strictEqual(invalidAction.success, false);
   console.log('  ✅ inspectorCandidateActionSchema restricts actions to allowed enum');
+  passed++;
+
+  // Test C5: Rate Limiter — LOAD_TEST has NO effect when NODE_ENV=production (rate limits always on)
+  const { isLoadTestBypass } = require('./dist/middleware/rateLimiter');
+  const prevEnv = process.env.NODE_ENV;
+  const prevLoadTest = process.env.LOAD_TEST;
+
+  try {
+    process.env.NODE_ENV = 'production';
+    process.env.LOAD_TEST = 'true';
+
+    const reqWithHeader = { headers: { 'x-load-test': 'true' }, ip: '127.0.0.1' };
+    const bypassResult = isLoadTestBypass(reqWithHeader);
+    assert.strictEqual(
+      bypassResult,
+      false,
+      'isLoadTestBypass MUST return false when NODE_ENV=production, regardless of LOAD_TEST=true or x-load-test header'
+    );
+
+    // Verify non-production behavior
+    process.env.NODE_ENV = 'development';
+    process.env.LOAD_TEST = 'true';
+    assert.strictEqual(isLoadTestBypass(reqWithHeader), true, 'isLoadTestBypass should allow bypass in development/test');
+  } finally {
+    process.env.NODE_ENV = prevEnv;
+    process.env.LOAD_TEST = prevLoadTest;
+  }
+  console.log('  ✅ LOAD_TEST has strictly NO effect when NODE_ENV=production (rate limits always on)');
   passed++;
 
   // ──────────────────────────────────────────────────────────────────────────

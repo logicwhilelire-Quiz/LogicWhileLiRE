@@ -3,19 +3,22 @@ import { useNavigate, Link } from 'react-router-dom';
 import { studentLogin } from '../lib/api';
 import BrandLogo from '../components/BrandLogo';
 import AnimatedPage from '../components/AnimatedPage';
+import ParallaxGlowOrbs from '../components/3d/ParallaxGlowOrbs';
 
 export default function StudentLoginPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ login: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [requiresVerification, setRequiresVerification] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
   const [error, setError] = useState('');
   const [isLocked, setIsLocked] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.login.trim()) {
-      setError('Please enter your email or hall ticket number');
+      setError('Please enter your email or roll number / hall ticket');
       return;
     }
     if (!form.password) {
@@ -26,31 +29,56 @@ export default function StudentLoginPage() {
     setLoading(true);
     setError('');
     setIsLocked(false);
+    setRequiresVerification(false);
 
     try {
-      const res = await studentLogin(form);
+      const res = await studentLogin({
+        login: form.login.trim(),
+        password: form.password,
+      });
       if (res.data?.token) {
         localStorage.setItem('student_token', res.data.token);
       }
       if (res.data?.student) {
         localStorage.setItem('student_user', JSON.stringify(res.data.student));
       }
-      // Navigate to contest waiting lobby (Gate Module handoff)
-      navigate('/contest/demo-contest/waiting-lobby');
+      // Navigate to dedicated Student Dashboard
+      navigate('/student/dashboard');
     } catch (err: any) {
       const resp = err?.response?.data;
       if (err?.response?.status === 423 || resp?.locked) {
         setIsLocked(true);
       }
-      setError(resp?.error || 'Login failed. Please check your credentials.');
+      if (resp?.requires_verification) {
+        setRequiresVerification(true);
+        setUnverifiedEmail(resp?.email || form.login);
+      }
+      setError(resp?.error || 'Login failed. Please check your credentials or use 1-Click Demo Login below.');
     } finally {
       setLoading(false);
     }
   }
 
+  function handleQuickDemoLogin() {
+    const demoStudent = {
+      id: 'stu-demo-01',
+      name: 'R. Charan Sai (Candidate)',
+      email: 'candidate@logicwhilelire.com',
+      roll_number: 'HT2026CS01',
+      college_id: 1,
+      college_name: 'Aerospace Engineering & Tech',
+      section: 'CSE-A',
+      batch: '2026',
+    };
+    localStorage.setItem('student_token', 'demo-student-token-2026');
+    localStorage.setItem('student_user', JSON.stringify(demoStudent));
+    navigate('/student/dashboard');
+  }
+
   return (
     <AnimatedPage>
-      <div className="page-center">
+      <ParallaxGlowOrbs />
+      <div className="page-center" style={{ position: 'relative', zIndex: 1 }}>
         <div className="hero-bg">
           <div className="hero-orb hero-orb-1" />
           <div className="hero-orb hero-orb-2" />
@@ -171,6 +199,37 @@ export default function StudentLoginPage() {
                   'Sign In & Access Quiz'
                 )}
               </button>
+
+              {/* 1-Click Fast Track Demo Login */}
+              <div style={{ marginTop: 14, textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '12px 0 10px' }}>
+                  <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.1)' }} />
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>or instant demo</span>
+                  <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.1)' }} />
+                </div>
+                <button
+                  type="button"
+                  id="btn-quick-demo-candidate"
+                  onClick={handleQuickDemoLogin}
+                  className="btn btn-block"
+                  style={{
+                    width: '100%',
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(234, 88, 12, 0.2) 100%)',
+                    border: '1px solid rgba(245, 158, 11, 0.4)',
+                    color: '#fbbf24',
+                    fontWeight: 700,
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <span>⚡</span> 1-Click Quick Candidate Demo Login
+                </button>
+              </div>
             </form>
 
             <div

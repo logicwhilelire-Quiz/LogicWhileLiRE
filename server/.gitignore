@@ -13,6 +13,11 @@ dist/
 logs/
 *.log
 
-# Dumps
+# Dumps & Backups (Strictly gitignored)
 *.dump
 *.sql.gz
+*.zip
+*.csv
+backups/
+test_backups/
+

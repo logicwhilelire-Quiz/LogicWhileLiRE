@@ -4,7 +4,10 @@
  * Target: Candidate Registration Module & Relational Persistence
  */
 
-process.env.DEMO_MODE = 'true';
+const { isRealSupabase, cleanupTestData } = require('./test-helper');
+if (!isRealSupabase) {
+  process.env.DEMO_MODE = 'true';
+}
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret-key-32chars-min-length-2026';
 process.env.PORT = '3099';
@@ -226,12 +229,17 @@ async function runGateSpecificationTests() {
   if (!BRANCH_CODES.some((b) => b.code === 'CSM')) throw new Error('CSM (AI & Machine Learning) branch code missing!');
   console.log('  ✅ Top campuses (' + TOP_CAMPUSES.length + ') and EAMCET branch codes catalog verified.');
 
+  await cleanupTestData(supabase);
+
   console.log('\n================================================================');
   console.log('🎉 ALL 10 GATE MODULE SPECIFICATION TESTS PASSED SUCCESSFULLY! (AL-SPEC-2026-REG)');
   console.log('================================================================');
 }
 
-runGateSpecificationTests().catch((err) => {
+runGateSpecificationTests().catch(async (err) => {
   console.error('\n❌ Specification test failed:', err);
+  try {
+    await cleanupTestData(supabase);
+  } catch {}
   process.exit(1);
 });

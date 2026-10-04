@@ -1,13 +1,22 @@
 import rateLimit from 'express-rate-limit';
 
-const isLoadTestBypass = (req: any) =>
-  process.env.NODE_ENV === 'test' ||
-  (process.env.DEMO_MODE === 'true' && (
-    req.headers['x-load-test'] === 'true' ||
-    req.ip === '127.0.0.1' ||
-    req.ip === '::1' ||
-    req.ip === '::ffff:127.0.0.1'
-  ));
+export const isLoadTestBypass = (req: any): boolean => {
+  // CRITICAL SECURITY RULE: In production, load test bypass has NO effect.
+  // Rate limits are strictly always active to prevent production DDoS/bypass attacks.
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
+  return Boolean(
+    process.env.NODE_ENV === 'test' ||
+    process.env.LOAD_TEST === 'true' ||
+    req?.headers?.['x-load-test'] === 'true' ||
+    (process.env.DEMO_MODE === 'true' && (
+      req?.ip === '127.0.0.1' ||
+      req?.ip === '::1' ||
+      req?.ip === '::ffff:127.0.0.1'
+    ))
+  );
+};
 
 /**
  * Rate limiter for enrollment endpoint — 5 requests per minute per IP
@@ -40,14 +49,18 @@ export const otpRateLimit = rateLimit({
 });
 
 /**
- * Rate limiter for answer submission — 120 requests per minute per IP
- * (generous to allow auto-save, but still bounded)
+ * Rate limiter for answer submission — 120 requests per minute per candidate token
+ * (keyed by auth token or IP so 300 campus students on a single NAT IP don't conflict)
  */
 export const answerRateLimit = rateLimit({
   windowMs: 60 * 1000,
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
+  keyGenerator: (req: any) => {
+    return (req.headers.authorization as string) || (req.ip as string) || 'unknown';
+  },
   skip: isLoadTestBypass,
   message: {
     success: false,
@@ -116,17 +129,37 @@ export const enterExamRateLimit = rateLimit({
 });
 
 /**
+ * Rate limiter for contact inquiry form submissions — 5 per 15 minutes per IP
+ */
+export const contactRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: isLoadTestBypass,
+  message: {
+    success: false,
+    error: 'Too many contact inquiries submitted. Please try again in 15 minutes.',
+  },
+});
+
+/**
  * General API rate limiter
  */
 export const generalRateLimit = rateLimit({
   windowMs: 60 * 1000,
-  max: 200,
+  max: 600,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
+  keyGenerator: (req: any) => {
+    return (req.headers.authorization as string) || (req.ip as string) || 'unknown';
+  },
   skip: isLoadTestBypass,
   message: {
     success: false,
     error: 'Too many requests. Please slow down.',
   },
 });
+
 

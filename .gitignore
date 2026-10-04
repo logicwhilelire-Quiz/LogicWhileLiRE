@@ -40,10 +40,12 @@ Thumbs.db
 *.sw?
 *.tsbuildinfo
 
-# Backups & Dumps
+# Backups & Dumps (Strictly gitignored)
 *.sql.gz
 *.dump
+*.zip
 backups/
+test_backups/
 *.db
 scratch/
 scratch*

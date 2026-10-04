@@ -1,11 +1,11 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = process.env.TEST_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.TEST_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const isProduction = process.env.NODE_ENV === 'production';
 const isDemo =
-  process.env.DEMO_MODE === 'true' ||
+  (process.env.DEMO_MODE === 'true' && !process.env.TEST_SUPABASE_URL) ||
   !supabaseUrl ||
   !supabaseServiceKey ||
   supabaseUrl.includes('your-project') ||
@@ -52,13 +52,19 @@ export const supabase: SupabaseClient = (
  * In production mode, queries the database to confirm reachable credentials.
  * In demo / test mode, verifies mock store readiness.
  */
-export async function verifyDatabaseConnectivity(): Promise<{ connected: boolean; latencyMs: number; error?: string }> {
+export async function verifyDatabaseConnectivity(timeoutMs: number = 5000): Promise<{ connected: boolean; latencyMs: number; error?: string }> {
   const start = Date.now();
   try {
-    const { data, error } = await supabase
+    const queryPromise = supabase
       .from('colleges')
       .select('id')
       .limit(1);
+
+    const timeoutPromise = new Promise<{ data: any; error: any }>((_, reject) =>
+      setTimeout(() => reject(new Error(`Connection timed out after ${timeoutMs}ms`)), timeoutMs)
+    );
+
+    const { data, error } = (await Promise.race([queryPromise, timeoutPromise])) as any;
 
     if (error) {
       return {

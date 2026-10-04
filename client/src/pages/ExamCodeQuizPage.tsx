@@ -877,21 +877,21 @@ export default function QuizPage() {
   }
 
   const getSectorForQuestion = (q: ExamQuestion | undefined, idx: number) => {
-    if (!q) return { name: 'Sector 1 · Quant Velocity', color: '#38BDF8' }
+    if (!q) return { name: 'Sector 1 · Quant Velocity', color: '#F59E0B' }
     if (q.topic) {
       const t = q.topic.toLowerCase()
-      if (t.includes('quant') || t.includes('math') || t.includes('number') || t.includes('arithmetic')) return { name: 'Sector 1 · Quant Velocity', color: '#38BDF8' }
-      if (t.includes('logic') || t.includes('reason') || t.includes('deduct') || t.includes('syllogism')) return { name: 'Sector 2 · Deductive Logic', color: '#818CF8' }
-      if (t.includes('os') || t.includes('system') || t.includes('dbms') || t.includes('network') || t.includes('core')) return { name: 'Sector 3 · Core CS & Systems', color: '#34D399' }
-      if (t.includes('dsa') || t.includes('tree') || t.includes('graph') || t.includes('algo') || t.includes('array')) return { name: 'Sector 4 · Algorithms & DSA', color: '#F472B6' }
-      if (t.includes('web') || t.includes('react') || t.includes('node') || t.includes('distribut') || t.includes('stack')) return { name: 'Sector 5 · Full-Stack Arch', color: '#FBBF24' }
+      if (t.includes('quant') || t.includes('math') || t.includes('number') || t.includes('arithmetic')) return { name: 'Sector 1 · Quant Velocity', color: '#F59E0B' }
+      if (t.includes('logic') || t.includes('reason') || t.includes('deduct') || t.includes('syllogism')) return { name: 'Sector 2 · Deductive Logic', color: '#8B5CF6' }
+      if (t.includes('os') || t.includes('system') || t.includes('dbms') || t.includes('network') || t.includes('core')) return { name: 'Sector 3 · Core CS & Systems', color: '#10B981' }
+      if (t.includes('dsa') || t.includes('tree') || t.includes('graph') || t.includes('algo') || t.includes('array')) return { name: 'Sector 4 · Algorithms & DSA', color: '#38BDF8' }
+      if (t.includes('web') || t.includes('react') || t.includes('node') || t.includes('distribut') || t.includes('stack')) return { name: 'Sector 5 · Full-Stack Arch', color: '#F43F5E' }
     }
     const defaultSectors = [
-      { name: 'Sector 1 · Quantitative Aptitude', color: '#38BDF8' },
-      { name: 'Sector 2 · Deductive Logic', color: '#818CF8' },
-      { name: 'Sector 3 · Core CS & Systems', color: '#34D399' },
-      { name: 'Sector 4 · Data Structures & DSA', color: '#F472B6' },
-      { name: 'Sector 5 · Full-Stack Arch', color: '#FBBF24' },
+      { name: 'Sector 1 · Quantitative Aptitude & Velocity', color: '#F59E0B' },
+      { name: 'Sector 2 · Deductive Logic & Invariants', color: '#8B5CF6' },
+      { name: 'Sector 3 · Core CS & Systems', color: '#10B981' },
+      { name: 'Sector 4 · Data Structures & DSA', color: '#38BDF8' },
+      { name: 'Sector 5 · Full-Stack & Distributed Arch', color: '#F43F5E' },
     ]
     return defaultSectors[idx % 5]
   }
