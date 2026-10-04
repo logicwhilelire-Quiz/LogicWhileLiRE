@@ -17,6 +17,7 @@
     "test:backup": "node test-backup.js",
     "test-email": "tsx src/scripts/testEmail.ts",
     "backup": "tsx src/scripts/backup.ts",
+    "verify-prod": "tsx src/scripts/verifyProd.ts",
     "test:phase1": "node test-phase1-security.js",
     "test:phase2": "node test-phase2-database.js",
     "test:gate": "node test-registration-specification.js",
