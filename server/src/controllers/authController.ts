@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { supabase } from '../db/supabase';
 import { sendPasswordResetEmail, sendStudentVerificationEmail } from '../services/emailService';
 import { StudentJWTPayload } from '../middleware/auth';
+import { isStrongPassword } from '../middleware/validate';
 
 const BCRYPT_ROUNDS = 12;
 const STUDENT_JWT_EXPIRY = (process.env.STUDENT_JWT_EXPIRY || '24h') as any;
@@ -57,6 +58,16 @@ export async function studentRegister(req: Request, res: Response): Promise<void
     res.status(400).json({
       success: false,
       error: 'Full name, roll number, college, section, email, and password are required.',
+    });
+    return;
+  }
+
+  // Enforce strong password policy for student accounts
+  const passwordCheck = isStrongPassword(password);
+  if (!passwordCheck.valid) {
+    res.status(400).json({
+      success: false,
+      error: `Password policy violation: ${passwordCheck.error}`,
     });
     return;
   }
@@ -714,8 +725,17 @@ export async function changeStudentPassword(req: Request, res: Response): Promis
     return;
   }
 
-  if (!new_password || String(new_password).length < 6) {
-    res.status(400).json({ success: false, error: 'New password must be at least 6 characters long' });
+  if (!new_password || String(new_password).length < 8) {
+    res.status(400).json({ success: false, error: 'New password must be at least 8 characters long' });
+    return;
+  }
+
+  const changeCheck = isStrongPassword(new_password);
+  if (!changeCheck.valid) {
+    res.status(400).json({
+      success: false,
+      error: `Password policy violation: ${changeCheck.error}`,
+    });
     return;
   }
 
@@ -917,6 +937,16 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
     res.status(400).json({
       success: false,
       error: 'Invalid password reset token. Please request a new one.',
+    });
+    return;
+  }
+
+  // Enforce strong password policy on password reset
+  const resetCheck = isStrongPassword(new_password);
+  if (!resetCheck.valid) {
+    res.status(400).json({
+      success: false,
+      error: `Password policy violation: ${resetCheck.error}`,
     });
     return;
   }

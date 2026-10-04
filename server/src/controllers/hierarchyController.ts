@@ -853,6 +853,17 @@ export async function resetStudentPassword(req: Request, res: Response): Promise
     }
   }
 
+  if (new_password) {
+    const passwordCheck = isStrongPassword(new_password);
+    if (!passwordCheck.valid) {
+      res.status(400).json({
+        success: false,
+        error: `Password policy violation: ${passwordCheck.error}`,
+      });
+      return;
+    }
+  }
+
   const tempPassword = new_password || `TempStudent#${Math.floor(100000 + Math.random() * 900000)}!`;
   const passwordHash = await bcrypt.hash(tempPassword, 12);
 
@@ -889,6 +900,17 @@ export async function resetStudentPassword(req: Request, res: Response): Promise
 export async function resetStaffPassword(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
   const { new_password } = req.body;
+
+  if (new_password) {
+    const passwordCheck = isStrongPassword(new_password);
+    if (!passwordCheck.valid) {
+      res.status(400).json({
+        success: false,
+        error: `Password policy violation: ${passwordCheck.error}`,
+      });
+      return;
+    }
+  }
 
   const tempPassword = new_password || `TempStaff#${Math.floor(100000 + Math.random() * 900000)}!`;
   const passwordHash = await bcrypt.hash(tempPassword, 12);

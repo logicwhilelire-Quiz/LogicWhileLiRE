@@ -139,66 +139,6 @@ export const adminLoginSchema = z.object({
   totp_code: z.string().optional(),
 });
 
-export const studentRegisterSchema = z.object({
-  name: z.string().min(2, 'Full name must be at least 2 characters').max(100).trim().optional(),
-  full_name: z.string().min(2).max(100).trim().optional(),
-  email: z.string().email('Invalid email address').toLowerCase().trim(),
-  roll_number: z
-    .string()
-    .min(2, 'Roll number must be at least 2 characters')
-    .max(30)
-    .trim()
-    .optional(),
-  hall_ticket: z
-    .string()
-    .min(2, 'Hall ticket must be at least 2 characters')
-    .max(30)
-    .trim()
-    .optional(),
-  college_id: z.union([z.number(), z.string()]).optional().default(1),
-  cohort_id: z.union([z.number(), z.string()]).optional(),
-  section_id: z.union([z.number(), z.string()]).optional(),
-  section: z.string().optional(),
-  mobile: z
-    .string()
-    .regex(/^\+?[0-9]{7,15}$/, 'Invalid mobile number')
-    .optional()
-    .or(z.literal('')),
-  phone: z
-    .string()
-    .regex(/^\+?[0-9]{7,15}$/, 'Invalid phone number')
-    .optional()
-    .or(z.literal('')),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-});
-
-export const verifyStudentOtpSchema = z.object({
-  email: z.string().email('Valid email address is required').toLowerCase().trim(),
-  otp: z.string().min(4).max(10).optional(),
-  token: z.string().min(8).optional(),
-});
-
-export const resendStudentOtpSchema = z.object({
-  email: z.string().email('Valid email address is required').toLowerCase().trim(),
-});
-
-export const studentLoginSchema = z.object({
-  login: z.string().trim().optional(),
-  roll_number: z.string().trim().optional(),
-  email: z.string().trim().optional(),
-  password: z.string().min(1, 'Password is required'),
-});
-
-export const forgotPasswordSchema = z.object({
-  email: z.string().email('Valid email address is required').toLowerCase().trim(),
-});
-
-export const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Reset token is required').trim(),
-  email: z.string().email('Valid email address is required').toLowerCase().trim(),
-  new_password: z.string().min(6, 'Password must be at least 6 characters'),
-});
-
 /**
  * Strong password verification policy:
  * - Minimum 8 characters
@@ -237,10 +177,70 @@ export const strongPasswordSchema = z
   .regex(/[0-9]/, 'Password must contain at least one digit (0-9)')
   .regex(/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/, 'Password must contain at least one special character');
 
+export const studentRegisterSchema = z.object({
+  name: z.string().min(2, 'Full name must be at least 2 characters').max(100).trim().optional(),
+  full_name: z.string().min(2).max(100).trim().optional(),
+  email: z.string().email('Invalid email address').toLowerCase().trim(),
+  roll_number: z
+    .string()
+    .min(2, 'Roll number must be at least 2 characters')
+    .max(30)
+    .trim()
+    .optional(),
+  hall_ticket: z
+    .string()
+    .min(2, 'Hall ticket must be at least 2 characters')
+    .max(30)
+    .trim()
+    .optional(),
+  college_id: z.union([z.number(), z.string()]).optional().default(1),
+  cohort_id: z.union([z.number(), z.string()]).optional(),
+  section_id: z.union([z.number(), z.string()]).optional(),
+  section: z.string().optional(),
+  mobile: z
+    .string()
+    .regex(/^\+?[0-9]{7,15}$/, 'Invalid mobile number')
+    .optional()
+    .or(z.literal('')),
+  phone: z
+    .string()
+    .regex(/^\+?[0-9]{7,15}$/, 'Invalid phone number')
+    .optional()
+    .or(z.literal('')),
+  password: strongPasswordSchema,
+});
+
+export const verifyStudentOtpSchema = z.object({
+  email: z.string().email('Valid email address is required').toLowerCase().trim(),
+  otp: z.string().min(4).max(10).optional(),
+  token: z.string().min(8).optional(),
+});
+
+export const resendStudentOtpSchema = z.object({
+  email: z.string().email('Valid email address is required').toLowerCase().trim(),
+});
+
+export const studentLoginSchema = z.object({
+  login: z.string().trim().optional(),
+  roll_number: z.string().trim().optional(),
+  email: z.string().trim().optional(),
+  password: z.string().min(1, 'Password is required'),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email('Valid email address is required').toLowerCase().trim(),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Reset token is required').trim(),
+  email: z.string().email('Valid email address is required').toLowerCase().trim(),
+  new_password: strongPasswordSchema,
+});
+
 export const createStaffSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100).trim(),
   email: z.string().email('Invalid email address').toLowerCase().trim(),
-  password: z.string().min(6, 'Password must be at least 6 characters').optional(),
+  password: strongPasswordSchema.optional(),
   role: z.enum(['super_admin', 'admin', 'faculty', 'college_admin', 'inspector']),
   college_id: z.union([z.number(), z.string()]).optional(),
 });
