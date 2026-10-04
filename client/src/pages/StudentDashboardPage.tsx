@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getStudentDashboard, authLogout } from '../lib/api';
 import BrandLogo from '../components/BrandLogo';
 import AnimatedPage from '../components/AnimatedPage';
 import SectorRadar3D, { type SectorScore } from '../components/3d/SectorRadar3D';
+
+const SectorsUniverse3D = lazy(() => import('../components/3d/SectorsUniverse3D'));
 
 interface StudentProfile {
   id: string;
@@ -124,6 +126,7 @@ export default function StudentDashboardPage() {
   // Quick Launch Exam Code State
   const [examCodeInput, setExamCodeInput] = useState('');
   const [launchError, setLaunchError] = useState('');
+  const [sectorViewMode, setSectorViewMode] = useState<'galaxy' | 'matrix'>('galaxy');
 
   useEffect(() => {
     // Read cached student from localStorage first for zero-latency instant rendering
@@ -754,25 +757,76 @@ export default function StudentDashboardPage() {
 
           {/* 🌌 5-Sector Competency Matrix & Holographic Radar */}
           <section style={{ marginBottom: 36 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16 }}>
               <div>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#f8fafc' }}>
-                  🌌 5-Sector Competency Matrix & Holographic Radar
+                  🌌 5-Sector Competency Matrix &amp; 3D Interactive Universe
                 </h2>
                 <p style={{ margin: '4px 0 0 0', fontSize: '0.84rem', color: '#94a3b8' }}>
                   Live candidate mastery across the 5 technical sectors of Logic Whi1e LiRE.
                 </p>
               </div>
-              <Link
-                to="/practice"
-                className="btn btn-outline text-xs"
-                style={{ padding: '6px 14px', borderRadius: 6, borderColor: 'rgba(56, 189, 248, 0.4)', color: '#38BDF8' }}
-              >
-                ⚡ Open Sector Arena
-              </Link>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setSectorViewMode('galaxy')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 6,
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    border: sectorViewMode === 'galaxy' ? '1px solid #38BDF8' : '1px solid rgba(255,255,255,0.1)',
+                    background: sectorViewMode === 'galaxy' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(15, 23, 42, 0.6)',
+                    color: sectorViewMode === 'galaxy' ? '#38BDF8' : '#94a3b8',
+                  }}
+                >
+                  🪐 3D Sectors Galaxy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSectorViewMode('matrix')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 6,
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    border: sectorViewMode === 'matrix' ? '1px solid #FFBE00' : '1px solid rgba(255,255,255,0.1)',
+                    background: sectorViewMode === 'matrix' ? 'rgba(255, 190, 0, 0.15)' : 'rgba(15, 23, 42, 0.6)',
+                    color: sectorViewMode === 'matrix' ? '#FFBE00' : '#94a3b8',
+                  }}
+                >
+                  📊 Radar &amp; Breakdown
+                </button>
+                <Link
+                  to="/practice"
+                  className="btn btn-outline text-xs"
+                  style={{ padding: '6px 14px', borderRadius: 6, borderColor: 'rgba(56, 189, 248, 0.4)', color: '#38BDF8' }}
+                >
+                  ⚡ Open Sector Arena
+                </Link>
+              </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 380px) 1fr', gap: 24, alignItems: 'center' }}>
+            {sectorViewMode === 'galaxy' ? (
+              <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(56, 189, 248, 0.25)', background: 'rgba(5, 8, 20, 0.85)', padding: 12 }}>
+                <Suspense
+                  fallback={
+                    <div style={{ height: 480, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div className="btn-spinner" style={{ width: 32, height: 32 }} />
+                    </div>
+                  }
+                >
+                  <SectorsUniverse3D
+                    onSelectSector={(sec) => {
+                      navigate('/practice', { state: { selectedSectorId: sec.id } });
+                    }}
+                  />
+                </Suspense>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 380px) 1fr', gap: 24, alignItems: 'center' }}>
               {/* 3D Holographic Radar */}
               <div
                 style={{
@@ -867,6 +921,7 @@ export default function StudentDashboardPage() {
                 ))}
               </div>
             </div>
+            )}
           </section>
 
           {/* Upcoming & Available Examinations */}

@@ -13,7 +13,6 @@ import SectorRadar3D from '../components/3d/SectorRadar3D'
 import api from '../lib/api'
 
 // Lazy-load 3D heavy components
-const SectorsUniverse3D = lazy(() => import('../components/3d/SectorsUniverse3D'))
 const CollegeGlobe = lazy(() => import('../components/3d/CollegeGlobe'))
 const LiquidBlob   = lazy(() => import('../components/3d/LiquidBlob'))
 const ParticleField = lazy(() => import('../components/3d/ParticleField'))
@@ -447,6 +446,21 @@ export default function LandingPage() {
                         🎓 Candidate Dashboard
                       </MagneticButton>
                     </Link>
+                    <Link to="/practice" style={{ textDecoration: 'none' }}>
+                      <MagneticButton
+                        className="btn btn-ghost btn-xl"
+                        style={{
+                          border: '1px solid var(--color-border)',
+                          color: 'var(--color-text-muted)',
+                          fontSize: '1.02rem',
+                          fontWeight: 600,
+                          padding: '16px 22px',
+                          borderRadius: 12,
+                        }}
+                      >
+                        🪐 5 Technical Sectors
+                      </MagneticButton>
+                    </Link>
                   </>
                 ) : (
                   <>
@@ -489,21 +503,6 @@ export default function LandingPage() {
                         }}
                       >
                         🛡️ Candidate Gate
-                      </MagneticButton>
-                    </Link>
-                    <Link to="/practice" style={{ textDecoration: 'none' }}>
-                      <MagneticButton
-                        className="btn btn-ghost btn-xl"
-                        style={{
-                          border: '1px solid var(--color-border)',
-                          color: 'var(--color-text-muted)',
-                          fontSize: '1.02rem',
-                          fontWeight: 600,
-                          padding: '16px 22px',
-                          borderRadius: 12,
-                        }}
-                      >
-                        🪐 Explore 5 Sectors
                       </MagneticButton>
                     </Link>
                   </>
@@ -660,42 +659,7 @@ export default function LandingPage() {
         </div>
       </motion.section>
 
-      {/* ─── 3D TECHNICAL SECTORS GALAXY ─── */}
-      <section style={{ position: 'relative', zIndex: 2, padding: '96px 0 60px', background: 'linear-gradient(180deg, var(--color-bg) 0%, #060c1e 50%, var(--color-bg) 100%)' }}>
-        <div className="page-content" style={{ maxWidth: 1240, margin: '0 auto', padding: '0 24px' }}>
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            style={{ textAlign: 'center', marginBottom: 44 }}
-          >
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 999, background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.35)', color: '#38BDF8', fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>
-              <span>🪐</span> MULTI-DIMENSIONAL ASSESSMENT ARCHITECTURE
-            </div>
-            <h2 className="section-title" style={{ fontSize: 'clamp(2rem, 3.8vw, 3rem)', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
-              The 5 Core Technical Sectors of <span style={{ color: '#FF7A00' }}>Logic</span> <span style={{ color: 'var(--color-primary-dark, #0A3F8F)' }}>Whi<span style={{ color: '#FF7A00', fontWeight: 900 }}>1</span>e</span> <span style={{ border: '2px solid #FFC200', padding: '0 8px', borderRadius: 8, background: 'rgba(255, 194, 0, 0.1)' }}><span style={{ color: 'var(--color-primary-dark, #0A3F8F)' }}>Li</span><span style={{ color: '#FF7A00' }}>R</span><span style={{ color: 'var(--color-primary-dark, #0A3F8F)' }}>E</span></span>
-            </h2>
-            <p className="section-subtitle" style={{ maxWidth: 760, margin: '14px auto 0', fontSize: '1.05rem', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
-              Rotate, inspect, and explore all 5 examination sectors in real-time 3D. Elevating coding knowledge across quantitative velocity, deductive logic, core systems, algorithms, and distributed cloud architectures.
-            </p>
-          </motion.div>
 
-          {/* 3D WebGL Interactive Universe with lazy loading & fallback */}
-          <Suspense
-            fallback={
-              <div style={{ height: 550, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(5,8,20,0.5)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.08)' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div className="btn-spinner" style={{ width: 36, height: 36, margin: '0 auto 16px' }} />
-                  <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: 600 }}>Loading 3D Technical Sectors Universe...</div>
-                </div>
-              </div>
-            }
-          >
-            <SectorsUniverse3D />
-          </Suspense>
-        </div>
-      </section>
 
       {/* ─── STATS — 4x AltimeterDial ─── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '96px 0' }}>

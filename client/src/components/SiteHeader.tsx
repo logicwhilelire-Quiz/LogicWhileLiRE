@@ -54,13 +54,13 @@ export default function SiteHeader() {
     ? [
         { label: 'Home', to: '/' },
         { label: 'My Dashboard', to: '/student/dashboard' },
+        { label: '5 Technical Sectors', to: '/practice' },
         { label: 'Enter Exam', to: '/enter-exam' },
-        { label: 'Practice Sectors', to: '/practice' },
       ]
     : [
         { label: 'Home', to: '/' },
         { label: 'Candidate Gate', to: '/gate' },
-        { label: '5 Technical Sectors', to: '/practice' },
+        { label: 'Student Login', to: '/login' },
         { label: 'Admin Portal', to: '/admin' },
       ];
 

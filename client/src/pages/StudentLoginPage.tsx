@@ -89,10 +89,52 @@ export default function StudentLoginPage() {
             <div style={{ marginBottom: 16 }}>
               <BrandLogo size="lg" variant="hero" />
             </div>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '5px 12px',
+              borderRadius: 20,
+              background: 'rgba(56, 189, 248, 0.1)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              color: '#38bdf8',
+              fontSize: '0.74rem',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              marginBottom: 10,
+            }}>
+              <span>🪐</span> 5 TECHNICAL SECTORS ASSESSMENT PORTAL
+            </div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 4, color: 'var(--color-text)' }}>
               Student Assessment Portal
             </h2>
-            <p className="text-muted text-sm">Sign in with your email or hall ticket to access quizzes</p>
+            <p className="text-muted text-sm" style={{ marginBottom: 12 }}>
+              Sign in with your email or hall ticket to access quizzes &amp; 5-sector challenges
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+              {[
+                { name: '1. Quant', color: '#F59E0B' },
+                { name: '2. Logic', color: '#8B5CF6' },
+                { name: '3. Core CS', color: '#10B981' },
+                { name: '4. DSA', color: '#38BDF8' },
+                { name: '5. Full-Stack', color: '#F43F5E' },
+              ].map((s) => (
+                <span
+                  key={s.name}
+                  style={{
+                    fontSize: '0.7rem',
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    background: `${s.color}15`,
+                    border: `1px solid ${s.color}35`,
+                    color: s.color,
+                    fontWeight: 600,
+                  }}
+                >
+                  {s.name}
+                </span>
+              ))}
+            </div>
           </div>
 
           <div className="card" style={{ padding: '28px 24px' }}>

@@ -242,6 +242,19 @@ export default function PracticeArenaPage() {
   const [activeTab, setActiveTab] = useState<'coding' | 'blitz' | 'sectors'>('coding');
   const [xpBanner, setXpBanner] = useState<string | null>(null);
 
+  // Require student authentication to access the 5 Technical Sectors Arena
+  useEffect(() => {
+    const token = localStorage.getItem('student_token');
+    if (!token) {
+      navigate('/login', {
+        state: {
+          from: '/practice',
+          message: 'The 5 Technical Sectors Arena is reserved for enrolled candidates. Please sign in to access.',
+        },
+      });
+    }
+  }, [navigate]);
+
   // Filtered challenges based on sector
   const filteredChallenges = DAILY_CHALLENGES.filter((ch) =>
     sectorFilter === 'all' ? true : ch.sectorId === sectorFilter
