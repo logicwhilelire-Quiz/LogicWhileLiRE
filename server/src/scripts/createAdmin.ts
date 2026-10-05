@@ -127,7 +127,7 @@ export async function createAdmin(): Promise<void> {
   const backupCodes = generateBackupCodes(8);
 
   // 6. Insert new Super Admin
-  const adminId = `st000000-${uuidv4().slice(9)}`;
+  const adminId = uuidv4();
   const { error: insertError } = await supabase.from('staff').insert({
     id: adminId,
     name: 'Super Administrator',
@@ -135,8 +135,8 @@ export async function createAdmin(): Promise<void> {
     password_hash: passwordHash,
     role: 'super_admin',
     is_active: true,
+    is_2fa_enabled: true,
     totp_secret: totpEncryptedSecret,
-    totp_enabled: true,
     two_factor_backup_codes: backupCodes.hashed,
     created_at: new Date().toISOString(),
   });
