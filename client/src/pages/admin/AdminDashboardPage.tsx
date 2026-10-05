@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listExams, activateExam, adminLogout, getQRUrl } from '../../lib/api';
 import { API_BASE_URL } from '../../lib/config';
-import BrandLogo from '../../components/BrandLogo';
+import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedPage from '../../components/AnimatedPage';
 import AnimatedCounter from '../../components/AnimatedCounter';
 import BulkEnrollModal from '../../components/BulkEnrollModal';
@@ -69,50 +69,7 @@ export default function AdminDashboardPage() {
     <AnimatedPage>
       <div className="admin-layout">
         {/* Sidebar */}
-        <aside className="admin-sidebar">
-          <div style={{ marginBottom: 24 }}>
-            <BrandLogo size="sm" />
-          </div>
-
-          <div
-            style={{
-              padding: '8px 12px',
-              borderRadius: 8,
-              background: isSuperAdmin ? 'rgba(245, 158, 11, 0.12)' : 'rgba(59, 130, 246, 0.12)',
-              border: `1px solid ${isSuperAdmin ? 'rgba(245, 158, 11, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`,
-              marginBottom: 16,
-            }}
-          >
-            <div style={{ fontSize: '0.72rem', color: isSuperAdmin ? '#fbbf24' : '#93c5fd', fontWeight: 700, textTransform: 'uppercase' }}>
-              Logged in as
-            </div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {currentUser.name || currentUser.email || 'Admin User'}
-            </div>
-            <span className={`badge ${isSuperAdmin ? 'badge-warning' : 'badge-neutral'}`} style={{ fontSize: '0.65rem', marginTop: 4 }}>
-              {isSuperAdmin ? '🛡️ Super Admin' : '👨‍🏫 Faculty / Trainer'}
-            </span>
-          </div>
-
-          <div className="admin-sidebar-title">Exam Management</div>
-          <button id="nav-dashboard" className="admin-nav-item active" onClick={() => navigate('/admin/dashboard')}>📊 Dashboard</button>
-          {isSuperAdmin && (
-            <button id="nav-staff" className="admin-nav-item" onClick={() => navigate('/admin/staff')}>🛡️ Staff Management</button>
-          )}
-          <button id="nav-colleges" className="admin-nav-item" onClick={() => navigate('/admin/colleges')}>🏛️ Colleges</button>
-          <button id="nav-exam-codes" className="admin-nav-item" onClick={() => navigate('/admin/exam-codes')}>🔑 Exam Codes</button>
-          <button id="nav-create-exam" className="admin-nav-item" onClick={() => navigate('/admin/create-exam')}>➕ Create Exam</button>
-          <button id="nav-import" className="admin-nav-item" onClick={() => navigate('/admin/import')}>📥 Import Questions</button>
-          <button id="nav-sessions" className="admin-nav-item" onClick={() => navigate('/admin/sessions')}>👥 Sessions</button>
-          <button id="nav-reports" className="admin-nav-item" onClick={() => navigate('/admin/reports')}>📈 Reports</button>
-          <button id="nav-analytics" className="admin-nav-item" onClick={() => navigate('/admin/analytics')}>🔬 Analytics</button>
-
-          <div style={{ marginTop: 'auto', paddingTop: 24 }}>
-            <button id="admin-logout-btn" className="admin-nav-item" onClick={handleLogout}>
-              🚪 Logout
-            </button>
-          </div>
-        </aside>
+        <AdminSidebar activeTab="dashboard" />
 
         {/* Main content with Module 15: LiquidBlob & Module 16: ParticleField */}
         <main className="admin-content" style={{ position: 'relative', overflow: 'hidden' }}>

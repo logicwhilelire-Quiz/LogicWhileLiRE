@@ -7,7 +7,7 @@ import {
   listSuspiciousActivity,
   resolveSuspiciousActivity,
 } from '../../lib/api';
-import BrandLogo from '../../components/BrandLogo';
+import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedPage from '../../components/AnimatedPage';
 import BulkEnrollModal from '../../components/BulkEnrollModal';
 
@@ -144,17 +144,7 @@ export default function SessionsPage() {
   return (
     <AnimatedPage>
       <div className="admin-layout">
-        <aside className="admin-sidebar">
-          <div style={{ marginBottom: 24 }}>
-            <BrandLogo size="sm" />
-          </div>
-          <button className="admin-nav-item" onClick={() => navigate('/admin/dashboard')}>📊 Dashboard</button>
-          <button className="admin-nav-item" onClick={() => navigate('/admin/create-exam')}>➕ Create Exam</button>
-          <button className="admin-nav-item" onClick={() => navigate('/admin/import')}>📥 Import Questions</button>
-          <button className="admin-nav-item active">👥 Sessions</button>
-          <button className="admin-nav-item" onClick={() => navigate('/admin/reports')}>📈 Reports</button>
-          <button className="admin-nav-item" onClick={() => navigate('/admin/analytics')}>🔬 Analytics</button>
-        </aside>
+        <AdminSidebar activeTab="exams" />
 
         <main className="admin-content">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>

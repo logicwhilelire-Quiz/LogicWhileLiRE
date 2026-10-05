@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listExams, getExcelReportUrl, getPdfReportUrl } from '../../lib/api';
-import BrandLogo from '../../components/BrandLogo';
+import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedPage from '../../components/AnimatedPage';
 
 export default function ReportsPage() {
@@ -16,17 +16,7 @@ export default function ReportsPage() {
   return (
     <AnimatedPage>
       <div className="admin-layout">
-      <aside className="admin-sidebar">
-        <div style={{ marginBottom: 24 }}>
-          <BrandLogo size="sm" />
-        </div>
-        <button className="admin-nav-item" onClick={() => navigate('/admin/dashboard')}>📊 Dashboard</button>
-        <button className="admin-nav-item" onClick={() => navigate('/admin/create-exam')}>➕ Create Exam</button>
-        <button className="admin-nav-item" onClick={() => navigate('/admin/import')}>📥 Import Questions</button>
-        <button className="admin-nav-item" onClick={() => navigate('/admin/sessions')}>👥 Sessions</button>
-        <button className="admin-nav-item active">📈 Reports</button>
-        <button className="admin-nav-item" onClick={() => navigate('/admin/analytics')}>🔬 Analytics</button>
-      </aside>
+        <AdminSidebar activeTab="results" />
 
       <main className="admin-content">
         <h1 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: 4 }}>Reports & Exports</h1>

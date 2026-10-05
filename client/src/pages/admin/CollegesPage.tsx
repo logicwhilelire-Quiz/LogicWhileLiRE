@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import BrandLogo from '../../components/BrandLogo';
+import AdminSidebar from '../../components/layout/AdminSidebar';
 import { API_BASE_URL } from '../../lib/config';
 
 const BASE_URL = API_BASE_URL;
@@ -29,18 +29,6 @@ interface College {
   registration_enabled?: boolean;
   created_at: string;
 }
-
-const SIDEBAR_ITEMS = [
-  { id: 'nav-dashboard', label: '📊 Dashboard', path: '/admin/dashboard' },
-  { id: 'nav-colleges', label: '🏛️ Colleges', path: '/admin/colleges', active: true },
-  { id: 'nav-hierarchy', label: '🌳 Structure & Roster', path: '/admin/hierarchy' },
-  { id: 'nav-exam-codes', label: '🔑 Exam Codes', path: '/admin/exam-codes' },
-  { id: 'nav-create-exam', label: '➕ Create Exam', path: '/admin/create-exam' },
-  { id: 'nav-import', label: '📥 Import Questions', path: '/admin/import' },
-  { id: 'nav-sessions', label: '👥 Sessions', path: '/admin/sessions' },
-  { id: 'nav-reports', label: '📈 Reports', path: '/admin/reports' },
-  { id: 'nav-staff', label: '🛡️ Staff & Matrix', path: '/admin/staff' },
-];
 
 export default function CollegesPage() {
   const navigate = useNavigate();
@@ -154,21 +142,7 @@ export default function CollegesPage() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', system-ui, sans-serif", background: 'var(--color-bg, #070a14)' }}>
       {/* Sidebar */}
-      <aside className="admin-sidebar">
-        <div style={{ marginBottom: 24 }}>
-          <BrandLogo size="sm" />
-        </div>
-        {SIDEBAR_ITEMS.map(item => (
-          <button key={item.id} id={item.id} className={`admin-nav-item ${item.active ? 'active' : ''}`} onClick={() => navigate(item.path)}>
-            {item.label}
-          </button>
-        ))}
-        <div style={{ marginTop: 'auto', paddingTop: 24 }}>
-          <button className="admin-nav-item" onClick={() => { localStorage.removeItem('admin_token'); navigate('/admin'); }}>
-            🚪 Logout
-          </button>
-        </div>
-      </aside>
+      <AdminSidebar activeTab="colleges" />
 
       {/* Main */}
       <main className="admin-content">

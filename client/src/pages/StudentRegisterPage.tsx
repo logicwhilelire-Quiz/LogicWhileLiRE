@@ -7,8 +7,8 @@ import BrandLogo from '../components/BrandLogo';
 import AnimatedPage from '../components/AnimatedPage';
 
 const DEFAULT_COLLEGES = [
-  { id: 1, name: 'Velagapudi Ramakrishna Siddhartha Engineering College (VRSEC)', code: 'VRSEC' },
-  { id: 2, name: 'Koneru Lakshmaiah Education Foundation (KL University)', code: 'KLU' },
+  { id: 3, name: 'Velagapudi Ramakrishna Siddhartha Engineering College', code: 'VRSEC' },
+  { id: 4, name: 'Koneru Lakshmaiah Education Foundation (KL University)', code: 'KLU' },
 ];
 
 const COHORTS = [
@@ -29,7 +29,7 @@ export default function StudentRegisterPage() {
   const [form, setForm] = useState({
     full_name: '',
     roll_number: '',
-    college_id: 1,
+    college_id: 3,
     cohort_id: 'coh-vrsec-2026',
     section: 'B',
     email: '',
@@ -293,8 +293,8 @@ export default function StudentRegisterPage() {
                         onChange={(e) => setForm({ ...form, college_id: Number(e.target.value) })}
                       >
                         {colleges.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.code} — {c.name.split(' ')[0]}
+                          <option key={c.id} value={c.id} title={c.name}>
+                            {c.name} ({c.code})
                           </option>
                         ))}
                       </select>
