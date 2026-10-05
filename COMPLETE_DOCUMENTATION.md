@@ -369,8 +369,34 @@ The LogicWhileLiRE platform was benchmarked under a realistic 500-candidate conc
 
 ---
 
+## 15. Strict Exam Auto-Termination & Multi-Campus Collegiate Governance
+
+### Strict Integrity Auto-Termination Protocol (`ExamCodeQuizPage.tsx`)
+In compliance with high-stakes institutional standards, the examination client enforces an immediate disqualification protocol without second-chance warnings:
+- **Trigger Conditions**:
+  1. Window minimization or tab switching (`visibilitychange` / `document.hidden`).
+  2. Terminal focus loss (`window.onblur`) triggered by clicking outside or third-party notification overlays.
+  3. Fullscreen exit (`fullscreenchange` when `!document.fullscreenElement`).
+  4. Restricted keyboard actions: `Escape`, `Alt`, `Meta` (Windows key), `F11`, `F12`, `Ctrl+W`, `Ctrl+T`, `Ctrl+N`, `Ctrl+Shift+I/J/C`, `Ctrl+U`. Non-alphanumeric keystrokes outside textareas/code editors are intercepted.
+- **Immediate Disqualification Actions**:
+  1. Terminal plays audio security alert tone (`soundFx.playSecurityAlertTone()`).
+  2. Dispatches high-priority Realtime broadcast alert to the Proctor Live Console (`student_violation` with event `EXAM_FORCE_TERMINATED_BREACH`).
+  3. Fires navigator beacon and post request to `/api/v1/inspector/report-issue` logging the exact timestamp, candidate ID, and incident description.
+  4. Auto-submits current answers with status `'terminated_cheating'`.
+  5. Clears local offline IndexedDB answer queues and flushes session tokens (`student_token`, `student_user`, `sessionStorage.clear()`).
+  6. Immediately mounts the persistent red **INTEGRITY VIOLATION LOCKDOWN** screen displaying candidate details, violation reason, and a single exit path back to `/enter-exam`.
+
+### Multi-Campus Collegiate Governance & Unified Admin Experience
+- **College Seed Database**: Real institutions seeded in Supabase (`VRSEC` - Velagapudi Ramakrishna Siddhartha Engineering College, `KLU` - Koneru Lakshmaiah Education Foundation) with proper codes and domains.
+- **Dynamic Exam Code Derivation**: Creating an exam in `/admin/create-exam` automatically derives institutional prefixes (e.g. `GR-VRSEC-XXXXXX`) matching the selected collegiate institution.
+- **Sidebar & Boundary Harmonization**: All 9 admin control modules use the unified `<AdminSidebar />`, eliminating rogue legacy headers (`ENTERPRISE ADMIN`), ensuring consistent navigation across Exams, Questions, Colleges, Students, Sessions, Reports, Analytics, and Live Monitor.
+- **Native OS Cursor**: Standard hardware mouse pointer active across all candidate and administrative routes.
+
+---
+
 ## 👥 Credits & Verification
 
 - **Architect & Author:** R. Charan Sai
 - **Platform:** LogicWhileLiRE — *"Logic. While. LiRE."*
 - **Status:** Release Ready v4.0.0
+
