@@ -70,6 +70,15 @@ ALTER TABLE exams ADD COLUMN IF NOT EXISTS assigned_inspector_id UUID REFERENCES
 ALTER TABLE exams ADD COLUMN IF NOT EXISTS is_locked BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE exams ADD COLUMN IF NOT EXISTS paper_status TEXT DEFAULT 'draft';
 
+-- proctor_logs (Inspector telemetry attempt linking)
+ALTER TABLE IF EXISTS public.proctor_logs
+  ADD COLUMN IF NOT EXISTS attempt_id UUID
+  REFERENCES public.exam_code_attempts(id) ON DELETE CASCADE;
+
+-- email_queue (Retry scheduling)
+ALTER TABLE IF EXISTS public.email_queue
+  ADD COLUMN IF NOT EXISTS next_retry_at TIMESTAMPTZ;
+
 -- Ensure composite uniqueness for students (college_id, roll_number)
 DO $$
 BEGIN

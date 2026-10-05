@@ -505,6 +505,7 @@ CREATE TABLE IF NOT EXISTS suspicious_activity (
 CREATE TABLE IF NOT EXISTS proctor_logs (
   id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   candidate_id  TEXT,
+  attempt_id    UUID REFERENCES exam_code_attempts(id) ON DELETE CASCADE,
   exam_id       TEXT,
   event_type    TEXT NOT NULL,
   metadata      JSONB DEFAULT '{}',
@@ -656,6 +657,7 @@ CREATE TABLE IF NOT EXISTS email_queue (
   max_attempts        INTEGER NOT NULL DEFAULT 3,
   status              TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
   error               TEXT,
+  next_retry_at       TIMESTAMPTZ,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -664,6 +666,14 @@ CREATE TABLE IF NOT EXISTS email_queue (
 CREATE OR REPLACE VIEW candidates WITH (security_invoker = true) AS SELECT * FROM participants;
 CREATE OR REPLACE VIEW sessions WITH (security_invoker = true) AS SELECT * FROM exam_sessions;
 CREATE OR REPLACE VIEW audit_logs WITH (security_invoker = true) AS SELECT * FROM audit_log;
+
+-- ─── 27b. RETROFIT COLUMNS FOR EXISTING / OLDER SCHEMA VERSIONS ───────────────
+ALTER TABLE IF EXISTS public.proctor_logs
+  ADD COLUMN IF NOT EXISTS attempt_id UUID
+  REFERENCES public.exam_code_attempts(id) ON DELETE CASCADE;
+
+ALTER TABLE IF EXISTS public.email_queue
+  ADD COLUMN IF NOT EXISTS next_retry_at TIMESTAMPTZ;
 
 -- ─── 28. PERFORMANCE INDEXES ──────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_colleges_code ON colleges(college_code);
