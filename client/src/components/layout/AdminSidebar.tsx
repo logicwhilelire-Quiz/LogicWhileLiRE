@@ -33,16 +33,16 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
 
   const allNavItems = [
     { id: 'dashboard', label: 'Admin Dashboard', path: '/admin/dashboard', icon: '📊', roles: ['super_admin', 'admin'] },
-    { id: 'exams', label: 'Exam Control', path: '/admin/exams', icon: '⚙️', roles: ['super_admin', 'admin', 'inspector', 'college_admin', 'faculty'] },
+    { id: 'exams', label: 'Exam Control', path: '/admin/exams', icon: '⚙️', roles: ['super_admin', 'admin', 'college_admin', 'faculty'] },
     { id: 'inspector', label: 'Inspector Live Console', path: '/admin/inspector', icon: '📡', roles: ['super_admin', 'admin', 'inspector', 'college_admin'] },
     { id: 'monitor', label: 'Live Monitor Console', path: '/admin/monitor', icon: '📡', roles: ['super_admin', 'admin'] },
-    { id: 'hierarchy', label: 'Structure & Hierarchy', path: '/admin/hierarchy', icon: '🏛️', roles: ['super_admin', 'admin', 'inspector', 'college_admin'] },
+    { id: 'hierarchy', label: 'Structure & Hierarchy', path: '/admin/hierarchy', icon: '🏛️', roles: ['super_admin', 'admin', 'college_admin'] },
     { id: 'questions', label: 'Question Bank', path: '/admin/questions', icon: '📝', roles: ['super_admin', 'admin', 'faculty'] },
     { id: 'import', label: 'Import Questions (Excel)', path: '/admin/import', icon: '📥', roles: ['super_admin', 'admin', 'faculty'] },
-    { id: 'students', label: 'Student Management', path: '/admin/students', icon: '👥', roles: ['super_admin', 'admin', 'inspector', 'college_admin'] },
-    { id: 'results', label: 'Results & Analytics', path: '/admin/results', icon: '📊', roles: ['super_admin', 'admin', 'inspector', 'college_admin', 'faculty'] },
+    { id: 'students', label: 'Student Management', path: '/admin/students', icon: '👥', roles: ['super_admin', 'admin', 'college_admin'] },
+    { id: 'results', label: 'Results & Analytics', path: '/admin/results', icon: '📊', roles: ['super_admin', 'admin', 'college_admin', 'faculty'] },
     { id: 'activity', label: 'Activity & Audit Logs', path: '/admin/activity', icon: '📜', roles: ['super_admin', 'admin'] },
-    { id: 'staff', label: 'Staff Accounts', path: '/admin/staff', icon: '🛡️', roles: ['super_admin', 'admin', 'inspector', 'college_admin'] },
+    { id: 'staff', label: 'Staff Accounts', path: '/admin/staff', icon: '🛡️', roles: ['super_admin', 'admin', 'college_admin'] },
     { id: 'settings', label: 'System & Backups', path: '/admin/settings', icon: '🔒', roles: ['super_admin', 'admin'] },
   ];
 

@@ -84,7 +84,7 @@ export default function InstructorConsolePage() {
   const [totalEnrolled, setTotalEnrolled] = useState(0);
   const [waitingStudents, setWaitingStudents] = useState<WaitingStudent[]>([]);
   const [leaderboard, setLeaderboard] = useState<RankEntry[]>([]);
-  const [activeTab, setActiveTab] = useState<"queue" | "leaderboard" | "monitor">("queue");
+  const [activeTab, setActiveTab] = useState<"queue" | "leaderboard" | "monitor">("leaderboard");
 
   // Exam execution & Clock state
   const [examStarted, setExamStarted] = useState(false);
@@ -260,6 +260,8 @@ export default function InstructorConsolePage() {
     };
   }, [currentCode, adminToken]);
 
+  const [stopping, setStopping] = useState(false);
+
   // Handle Inspector Push to Start
   const handleStartExam = async () => {
     setStarting(true);
@@ -278,6 +280,25 @@ export default function InstructorConsolePage() {
       addLog(`❌ START ERROR: ${msg}`);
     } finally {
       setStarting(false);
+    }
+  };
+
+  // Handle Inspector Push to Stop
+  const handleStopExam = async () => {
+    if (!window.confirm(`Are you sure you want to stop the exam for ${currentCode}? This will end all active candidate sessions.`)) {
+      return;
+    }
+    setStopping(true);
+    try {
+      await axios.post(`${BASE}/api/admin/exams/${currentCode}/end`, {}, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      setExamStarted(false);
+      addLog(`🛑 EXAM STOPPED by Inspector for ${currentCode}.`);
+    } catch (err: any) {
+      addLog(`❌ STOP ERROR: ${err?.message}`);
+    } finally {
+      setStopping(false);
     }
   };
 
@@ -528,19 +549,39 @@ export default function InstructorConsolePage() {
                 Exam Trigger
               </label>
               {examStarted ? (
-                <div
-                  style={{
-                    padding: "9px 16px",
-                    borderRadius: 8,
-                    background: "rgba(16,185,129,0.2)",
-                    border: "1px solid rgba(16,185,129,0.4)",
-                    color: "#10B981",
-                    fontWeight: 800,
-                    textAlign: "center",
-                    fontSize: "0.88rem",
-                  }}
-                >
-                  ✓ Exam Dispatched
+                <div style={{ display: "flex", gap: 8, width: "100%" }}>
+                  <div
+                    style={{
+                      flex: 1,
+                      padding: "9px 12px",
+                      borderRadius: 8,
+                      background: "rgba(16,185,129,0.2)",
+                      border: "1px solid rgba(16,185,129,0.4)",
+                      color: "#10B981",
+                      fontWeight: 800,
+                      textAlign: "center",
+                      fontSize: "0.85rem",
+                    }}
+                  >
+                    ✓ Live Active
+                  </div>
+                  <button
+                    id="inspector-stop-exam-btn"
+                    onClick={handleStopExam}
+                    disabled={stopping}
+                    style={{
+                      padding: "9px 14px",
+                      borderRadius: 8,
+                      background: "rgba(239, 68, 68, 0.2)",
+                      border: "1px solid rgba(239, 68, 68, 0.4)",
+                      color: "#EF4444",
+                      fontWeight: 800,
+                      fontSize: "0.85rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {stopping ? "Ending..." : "🛑 Stop"}
+                  </button>
                 </div>
               ) : (
                 <button

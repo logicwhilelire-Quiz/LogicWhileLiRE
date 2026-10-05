@@ -6,6 +6,7 @@ import { supabase } from '../db/supabase';
 import { sendPasswordResetEmail, sendStudentVerificationEmail } from '../services/emailService';
 import { StudentJWTPayload } from '../middleware/auth';
 import { isStrongPassword } from '../middleware/validate';
+import { isStudentEligibleForExam } from '../utils/academicYear';
 
 const BCRYPT_ROUNDS = 12;
 const STUDENT_JWT_EXPIRY = (process.env.STUDENT_JWT_EXPIRY || '24h') as any;
@@ -593,7 +594,7 @@ export async function getStudentDashboard(req: Request, res: Response): Promise<
 
   const { data: student } = await supabase
     .from('students')
-    .select('id, name, email, roll_number, hall_ticket, mobile, college_id, college_name, academic_year_id, cohort_id, section_id, batch_id, section, batch, must_change_password, is_active, created_at')
+    .select('*, college_name')
     .eq('id', studentPayload.studentId)
     .single();
 
@@ -602,16 +603,40 @@ export async function getStudentDashboard(req: Request, res: Response): Promise<
     return;
   }
 
-  // 1. Fetch upcoming exams matching student's college or universal exams
+  // 1. Fetch upcoming exams matching student targeting (Zero exposure for untargeted students)
+  const { data: allExamCodes } = await supabase
+    .from('exam_codes')
+    .select('*, college:college_id(college_name, college_code)')
+    .eq('is_active', true);
+
   const { data: allExams } = await supabase
     .from('exams')
     .select('id, title, duration_minutes, start_time, end_time, college_id, is_active, is_leaderboard_public')
     .eq('is_active', true);
 
+  const eligibleCodes = (allExamCodes || [])
+    .filter((ec: any) => isStudentEligibleForExam(student, ec))
+    .map((ec: any) => ({
+      id: ec.id,
+      title: ec.exam_name || ec.subject || ec.exam_code,
+      code: ec.exam_code,
+      exam_code: ec.exam_code,
+      duration_minutes: ec.duration_minutes,
+      start_time: ec.start_time,
+      end_time: ec.end_time,
+      college_id: ec.college_id,
+      is_active: ec.is_active,
+      is_leaderboard_public: true,
+      branch: ec.branch,
+      section_ids: ec.section_ids,
+    }));
+
   const studentCollegeId = String(student.college_id || '');
-  const upcomingExams = (allExams || []).filter((exam: any) => {
-    return !exam.college_id || String(exam.college_id) === studentCollegeId;
+  const eligibleExams = (allExams || []).filter((exam: any) => {
+    return isStudentEligibleForExam(student, exam) && (!exam.college_id || String(exam.college_id) === studentCollegeId);
   });
+
+  const upcomingExams = [...eligibleCodes, ...eligibleExams];
 
   // 2. Fetch past results
   const rollNumber = (student.roll_number || student.hall_ticket || '').toUpperCase();

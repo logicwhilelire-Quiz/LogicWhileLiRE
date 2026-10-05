@@ -12,6 +12,8 @@
 import { Server as HttpServer } from 'http';
 import { Server as IOServer, Socket } from 'socket.io';
 import { supabase } from '../db/supabase';
+import { isStudentEligibleForExam } from '../utils/academicYear';
+import { validateStudentEligibility } from '../controllers/examCodeController';
 
 export let io: IOServer | null = null;
 
@@ -242,6 +244,31 @@ export function initSocketIO(httpServer: HttpServer): IOServer {
       sessionToken?: string;
     }) => {
       if (!attemptId || !examCode) return;
+      const code = examCode.toUpperCase();
+
+      const { data: exam } = await supabase
+        .from('exam_codes')
+        .select('*')
+        .eq('exam_code', code)
+        .maybeSingle();
+
+      if (!exam) {
+        socket.emit('error', { status: 404, code: 'EXAM_NOT_FOUND', message: 'Exam not found or unavailable' });
+        return;
+      }
+
+      const { data: att } = await supabase
+        .from('exam_code_attempts')
+        .select('hall_ticket_no')
+        .eq('id', attemptId)
+        .maybeSingle();
+
+      const isEligible = await validateStudentEligibility(exam, att?.hall_ticket_no);
+      if (!isEligible) {
+        socket.emit('error', { status: 404, code: 'EXAM_NOT_FOUND', message: 'Exam not found or unavailable for your section' });
+        return;
+      }
+
       const room = `exam:${attemptId}`;
       socket.join(room);
       await sendTimerTick(socket, examCode);
@@ -263,6 +290,24 @@ export function initSocketIO(httpServer: HttpServer): IOServer {
     }) => {
       if (!data?.examCode) return;
       const code = data.examCode.toUpperCase();
+
+      const { data: exam } = await supabase
+        .from('exam_codes')
+        .select('*')
+        .eq('exam_code', code)
+        .maybeSingle();
+
+      if (!exam) {
+        socket.emit('error', { status: 404, code: 'EXAM_NOT_FOUND', message: 'Exam not found or unavailable' });
+        return;
+      }
+
+      const isEligible = await validateStudentEligibility(exam, data.hallTicket);
+      if (!isEligible) {
+        socket.emit('error', { status: 404, code: 'EXAM_NOT_FOUND', message: 'Exam not found or unavailable for your section' });
+        return;
+      }
+
       socket.join(`lobby:${code}`);
 
       if (!lobbyConnections.has(code)) lobbyConnections.set(code, new Set());

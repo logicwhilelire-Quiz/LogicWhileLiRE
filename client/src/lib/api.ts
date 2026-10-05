@@ -349,6 +349,35 @@ export const bulkImportStudents = (file: File, options?: { college_id?: number; 
   });
 };
 
+export const previewHierarchyImport = (file: File) => {
+  const form = new FormData();
+  form.append('file', file);
+  return api.post<{
+    success: boolean;
+    total: number;
+    valid_count: number;
+    duplicate_count: number;
+    error_count: number;
+    preview: Array<{ row: number; roll_number: string; name: string; email: string; section?: string; branch?: string }>;
+    duplicates: Array<{ row: number; roll_number?: string; email?: string; reason: string }>;
+    errors: Array<{ row: number; reason: string }>;
+  }>('/api/admin/hierarchy/import-preview', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
+export const bulkImportHierarchy = (file: File) => {
+  const form = new FormData();
+  form.append('file', file);
+  return api.post<{
+    success: boolean;
+    summary: { total: number; inserted: number; errors: number; emailsSent: number };
+    errors: Array<{ row: number; reason: string }>;
+  }>('/api/admin/hierarchy/bulk-import', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
 export const exportBatchStudentsUrl = (batchId: number, format: 'xlsx' | 'csv' = 'xlsx') =>
   `${BASE_URL}/api/admin/students/export?batch_id=${batchId}&format=${format}`;
 

@@ -7,7 +7,7 @@ import crypto from 'crypto';
 import { supabase } from '../db/supabase';
 import { adminAuth, requireRole } from '../middleware/adminAuth';
 import { answerRateLimit } from '../middleware/rateLimiter';
-import { verifyExamEntry, deterministicShuffle } from '../controllers/examCodeController';
+import { verifyExamEntry, deterministicShuffle, validateStudentEligibility } from '../controllers/examCodeController';
 
 const router = Router();
 
@@ -586,16 +586,13 @@ router.get('/exam-code/:code/start', async (req: Request, res: Response) => {
       .maybeSingle();
 
     if (!exam) {
-      exam = {
-        id: `ec-${code.toLowerCase()}`,
-        exam_name: `${code} Grand Engineering Assessment`,
-        code,
-        exam_code: code,
-        duration_minutes: 60,
-        total_marks: 100,
-        passing_marks: 40,
-        is_proctored: true,
-      };
+      return res.status(404).json({ success: false, error: 'Exam not found or unavailable', code: 'EXAM_NOT_FOUND' });
+    }
+
+    // Enforce student targeting (returns 404 so untargeted students cannot tell exam exists)
+    const isEligible = await validateStudentEligibility(exam, hallTicket);
+    if (!isEligible) {
+      return res.status(404).json({ success: false, error: 'Exam not found or unavailable for your section', code: 'EXAM_NOT_FOUND' });
     }
 
     // Try questions table, then questions_ec table
@@ -877,6 +874,14 @@ router.post(
       exam_name,
       code,
       subject = 'General',
+      college_id,
+      branch,
+      passout_year,
+      section_id,
+      section_ids,
+      batch_id,
+      assigned_faculty_id,
+      assigned_inspector_id,
       duration_minutes = 60,
       total_marks = 100,
       passing_marks = 40,
@@ -895,13 +900,28 @@ router.post(
     }
 
     const examCodeClean = String(code).trim().toUpperCase();
+    const targetedSections = Array.isArray(section_ids) && section_ids.length > 0
+      ? section_ids
+      : section_id
+      ? [String(section_id).trim()]
+      : [];
 
-    // 1. Insert/Update exam in exam_codes
+    // 1. Insert/Update exam in exam_codes with targeting
     const examRecord = {
       code: examCodeClean,
       exam_code: examCodeClean,
       exam_name: exam_name.trim(),
       subject,
+      college_id: college_id ? parseInt(String(college_id), 10) : null,
+      branch: branch ? String(branch).trim().toUpperCase() : null,
+      passout_year: passout_year ? Number(passout_year) : null,
+      section_id: section_id ? String(section_id).trim() : (targetedSections[0] || null),
+      section_ids: targetedSections,
+      batch_id: batch_id ? String(batch_id).trim() : null,
+      assigned_faculty_id: assigned_faculty_id || null,
+      assigned_inspector_id: assigned_inspector_id || null,
+      is_locked: false,
+      paper_status: assigned_faculty_id ? 'allocated' : 'active',
       duration_minutes: Number(duration_minutes),
       total_marks: Number(total_marks),
       passing_marks: Number(passing_marks),

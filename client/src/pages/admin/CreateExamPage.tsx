@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
@@ -7,17 +7,46 @@ import MagneticButton from '../../components/3d/MagneticButton'
 import ShimmerText from '../../components/3d/ShimmerText'
 import FlightPathLines from '../../components/3d/FlightPathLines'
 import TypingDots from '../../components/3d/TypingDots'
-import HoloScan from '../../components/3d/HoloScan'
 import { API_BASE_URL } from '../../lib/config'
 
 const BASE = API_BASE_URL
 
+/* ── Dynamic Study Year Derivation (Zero Hardcoding) ── */
+export function deriveStudyYearClient(passoutYear: number, currentDate: Date = new Date()) {
+  const currentMonth = currentDate.getMonth() // 0-11
+  const currentCalYear = currentDate.getFullYear()
+  const academicStartYear = currentMonth >= 6 ? currentCalYear : currentCalYear - 1
+  const academicEndYear = academicStartYear + 1
+  const academicYearStr = `${academicStartYear}-${String(academicEndYear).slice(-2)}`
+  
+  const yearsRemaining = passoutYear - academicEndYear
+  const rawStudyYear = 4 - yearsRemaining
+  const studyYear = Math.min(Math.max(rawStudyYear, 1), 4)
+  
+  const labels: Record<number, string> = {
+    1: '1st Year (Freshman)',
+    2: '2nd Year (Sophomore)',
+    3: '3rd Year (Junior)',
+    4: '4th Year (Final / Senior)',
+  }
+  const label = labels[studyYear] || `Year ${studyYear}`
+  
+  return { studyYear, academicYearStr, label, yearsRemaining }
+}
+
 /* ── Types ─────────────────────────────────────────── */
-interface ExamMeta {
+export interface ExamMeta {
+  college_id: string | number
+  branch: string
+  passout_year: number
+  section_ids: string[]
+  section_id: string
+  batch_id: string
+  assigned_faculty_id: string
+  assigned_inspector_id: string
   exam_name: string
   code: string
   subject: string
-  college_id: string
   duration_minutes: number
   total_marks: number
   passing_marks: number
@@ -44,19 +73,51 @@ export interface ParsedQuestion {
   test_cases?: Array<{ id: string; input_text: string; expected_output: string; is_hidden: boolean; marks: number }>
 }
 
-/* ── Wizard Steps ─────────────────────────────────── */
+interface CollegeOption {
+  id: number | string
+  college_name: string
+  college_code: string
+  city?: string
+}
+
+interface StaffOption {
+  id: string
+  name: string
+  email: string
+  role: string
+  department?: string
+}
+
+/* ── Wizard Steps (Strict Flow: College > Branch > Passout Year > Section/Batch > Question Paper) ── */
 const STEPS = [
-  { id: 1, label: 'Exam Details',   icon: '📋' },
-  { id: 2, label: 'Upload Questions',icon: '📥' },
-  { id: 3, label: 'Review & Launch', icon: '🚀' },
+  { id: 1, label: 'Target College', icon: '🏛️' },
+  { id: 2, label: 'Target Branch',  icon: '🎓' },
+  { id: 3, label: 'Passout Year',   icon: '📅' },
+  { id: 4, label: 'Section & Batch',icon: '👥' },
+  { id: 5, label: 'Question Paper', icon: '📝' },
+  { id: 6, label: 'Review & Launch',icon: '🚀' },
 ]
 
-/* ── Step indicator ───────────────────────────────── */
+const STANDARD_BRANCHES = [
+  { code: 'CSE', name: 'Computer Science & Engineering', icon: '💻' },
+  { code: 'CSM', name: 'Artificial Intelligence & Machine Learning', icon: '🤖' },
+  { code: 'CSD', name: 'Data Science & Analytics', icon: '📊' },
+  { code: 'IT',  name: 'Information Technology', icon: '🌐' },
+  { code: 'ECE', name: 'Electronics & Communication', icon: '📡' },
+  { code: 'EEE', name: 'Electrical & Electronics', icon: '⚡' },
+  { code: 'MECH',name: 'Mechanical Engineering', icon: '⚙️' },
+  { code: 'CIVIL',name: 'Civil Engineering', icon: '🏗️' },
+]
+
+const STANDARD_SECTIONS = ['A', 'B', 'C', 'D', 'E']
+const STANDARD_BATCHES = ['All Batches', 'Batch 1', 'Batch 2', 'Batch 3']
+
+/* ── Step Indicator ───────────────────────────────── */
 function WizardSteps({ current }: { current: number }) {
   return (
-    <div className="wizard-steps" style={{ marginBottom: 36 }}>
+    <div className="wizard-steps" style={{ marginBottom: 32, display: 'flex', alignItems: 'center', overflowX: 'auto', paddingBottom: 8 }}>
       {STEPS.map((step, i) => (
-        <div key={step.id} className="wizard-step" style={{ flex: 1 }}>
+        <div key={step.id} className="wizard-step" style={{ flex: '1 0 auto', display: 'flex', alignItems: 'center', minWidth: 120 }}>
           <motion.div
             className={`wizard-step-num ${current === step.id ? 'active' : current > step.id ? 'done' : ''}`}
             animate={current === step.id ? {
@@ -64,34 +125,38 @@ function WizardSteps({ current }: { current: number }) {
             } : {}}
             transition={{ repeat: Infinity, duration: 2 }}
             style={{
-              width: 36, height: 36, borderRadius: '50%',
+              width: 34, height: 34, borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: 'var(--font-display)', fontSize: '0.9rem', fontWeight: 700,
+              fontFamily: 'var(--font-display, sans-serif)', fontSize: '0.85rem', fontWeight: 700,
               border: '2px solid',
               borderColor: current > step.id ? '#10B981'
-                : current === step.id ? 'var(--color-primary)' : 'var(--color-border)',
+                : current === step.id ? 'var(--color-primary, #2b7fff)' : 'var(--color-border, #334155)',
               background: current > step.id ? 'rgba(16,185,129,0.15)'
-                : current === step.id ? 'var(--color-primary)' : 'transparent',
+                : current === step.id ? 'var(--color-primary, #2b7fff)' : 'transparent',
               color: current > step.id ? '#10B981'
-                : current === step.id ? '#fff' : 'var(--color-text-faint)',
-              flexShrink: 0, transition: 'all 0.4s ease',
+                : current === step.id ? '#fff' : 'var(--color-text-faint, #64748b)',
+              flexShrink: 0, transition: 'all 0.3s ease', marginRight: 10,
             }}
           >
             {current > step.id ? '✓' : step.icon}
           </motion.div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: current >= step.id ? 'var(--color-text)' : 'var(--color-text-faint)', transition: 'color 0.3s' }}>
+          <div style={{ flex: 1, minWidth: 70 }}>
+            <div style={{
+              fontSize: '0.78rem', fontWeight: 700,
+              color: current >= step.id ? 'var(--color-text, #f8fafc)' : 'var(--color-text-faint, #64748b)',
+              whiteSpace: 'nowrap'
+            }}>
               {step.label}
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)' }}>Step {step.id}</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--color-text-faint, #64748b)' }}>Step {step.id}</div>
           </div>
           {i < STEPS.length - 1 && (
             <div style={{
-              width: 40, height: 2, margin: '0 8px',
+              width: 24, height: 2, margin: '0 8px',
               background: current > step.id
                 ? 'linear-gradient(90deg, #10B981, rgba(16,185,129,0.3))'
-                : 'var(--color-border)',
-              borderRadius: 999, transition: 'background 0.4s ease', flexShrink: 0,
+                : 'var(--color-border, #334155)',
+              borderRadius: 999, flexShrink: 0,
             }} />
           )}
         </div>
@@ -100,8 +165,395 @@ function WizardSteps({ current }: { current: number }) {
   )
 }
 
-/* ── Step 1: Exam Details ─────────────────────────── */
-function Step1({ form, setForm }: { form: ExamMeta; setForm: React.Dispatch<React.SetStateAction<ExamMeta>> }) {
+/* ── Step 1: Target College ───────────────────────── */
+function Step1College({
+  colleges,
+  selectedCollegeId,
+  onSelect,
+}: {
+  colleges: CollegeOption[]
+  selectedCollegeId: string | number
+  onSelect: (id: string | number) => void
+}) {
+  const [search, setSearch] = useState('')
+  const filtered = colleges.filter(c =>
+    c.college_name.toLowerCase().includes(search.toLowerCase()) ||
+    c.college_code.toLowerCase().includes(search.toLowerCase())
+  )
+
+  return (
+    <div>
+      <div style={{ marginBottom: 18 }}>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
+          🏛️ Step 1: Select Target College
+        </h3>
+        <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.86rem', margin: 0 }}>
+          This assessment will only be visible to verified students enrolled in the selected institution.
+        </p>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <input
+          type="text"
+          placeholder="Search college by name or code (e.g. VRSEC)..."
+          className="form-input"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ width: '100%', padding: '10px 14px', borderRadius: 8 }}
+        />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
+        {filtered.map(c => {
+          const isSelected = String(c.id) === String(selectedCollegeId)
+          return (
+            <motion.div
+              key={c.id}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => onSelect(c.id)}
+              style={{
+                padding: '16px 20px',
+                borderRadius: 12,
+                cursor: 'pointer',
+                border: isSelected ? '2px solid var(--color-primary, #2b7fff)' : '1px solid var(--color-border, #334155)',
+                background: isSelected ? 'rgba(43,127,255,0.12)' : 'rgba(30,41,59,0.4)',
+                boxShadow: isSelected ? '0 0 20px rgba(43,127,255,0.2)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                <span style={{
+                  fontSize: '0.74rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4,
+                  background: isSelected ? 'var(--color-primary, #2b7fff)' : 'rgba(255,255,255,0.08)',
+                  color: isSelected ? '#fff' : 'var(--color-text-muted, #94a3b8)',
+                  fontFamily: 'monospace'
+                }}>
+                  {c.college_code}
+                </span>
+                {isSelected && <span style={{ color: '#10B981', fontWeight: 800, fontSize: '0.85rem' }}>✓ Selected</span>}
+              </div>
+              <div style={{ fontSize: '0.98rem', fontWeight: 700, color: '#f8fafc', marginBottom: 4 }}>
+                {c.college_name}
+              </div>
+              {c.city && (
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint, #64748b)' }}>
+                  📍 {c.city}
+                </div>
+              )}
+            </motion.div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/* ── Step 2: Target Branch ────────────────────────── */
+function Step2Branch({
+  selectedBranch,
+  onSelect,
+}: {
+  selectedBranch: string
+  onSelect: (branch: string) => void
+}) {
+  const [customBranch, setCustomBranch] = useState('')
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
+          🎓 Step 2: Select Academic Branch
+        </h3>
+        <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.86rem', margin: 0 }}>
+          Only students belonging to this branch can discover or access this examination.
+        </p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14, marginBottom: 20 }}>
+        {STANDARD_BRANCHES.map(b => {
+          const isSelected = selectedBranch.toUpperCase() === b.code.toUpperCase()
+          return (
+            <motion.div
+              key={b.code}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => onSelect(b.code)}
+              style={{
+                padding: '16px 18px',
+                borderRadius: 12,
+                cursor: 'pointer',
+                border: isSelected ? '2px solid var(--color-primary, #2b7fff)' : '1px solid var(--color-border, #334155)',
+                background: isSelected ? 'rgba(43,127,255,0.12)' : 'rgba(30,41,59,0.4)',
+                boxShadow: isSelected ? '0 0 16px rgba(43,127,255,0.2)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <span style={{ fontSize: '1.4rem' }}>{b.icon}</span>
+                <span style={{
+                  fontFamily: 'monospace', fontSize: '1.1rem', fontWeight: 800,
+                  color: isSelected ? 'var(--color-primary, #2b7fff)' : '#f8fafc'
+                }}>
+                  {b.code}
+                </span>
+                {isSelected && <span style={{ marginLeft: 'auto', color: '#10B981', fontWeight: 800 }}>✓</span>}
+              </div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted, #94a3b8)', lineHeight: 1.4 }}>
+                {b.name}
+              </div>
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* Custom Branch Input */}
+      <div style={{ padding: '14px 18px', background: 'rgba(15,23,42,0.6)', border: '1px dashed var(--color-border, #334155)', borderRadius: 10 }}>
+        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#f8fafc', marginBottom: 6 }}>
+          Or Enter Custom Branch Code:
+        </label>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <input
+            type="text"
+            placeholder="e.g. AIDS, CSIT, ROBOTICS"
+            className="form-input"
+            value={customBranch}
+            onChange={e => setCustomBranch(e.target.value.toUpperCase())}
+            style={{ textTransform: 'uppercase', fontFamily: 'monospace', maxWidth: 260 }}
+          />
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => {
+              if (customBranch.trim()) onSelect(customBranch.trim())
+            }}
+          >
+            Apply Custom Branch
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Step 3: Passout Year & Dynamic Study Year Preview ─ */
+function Step3PassoutYear({
+  passoutYear,
+  onSelect,
+}: {
+  passoutYear: number
+  onSelect: (year: number) => void
+}) {
+  const currentCalYear = new Date().getFullYear()
+  const candidateYears = [currentCalYear, currentCalYear + 1, currentCalYear + 2, currentCalYear + 3, currentCalYear + 4]
+  const derived = deriveStudyYearClient(passoutYear)
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
+          📅 Step 3: Passout Year &amp; Dynamic Study Year
+        </h3>
+        <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.86rem', margin: 0 }}>
+          The study year is derived automatically from passout_year and the current date. Nothing is stored hard-coded.
+        </p>
+      </div>
+
+      {/* Year Selection Buttons */}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+        {candidateYears.map(yr => {
+          const isSelected = yr === passoutYear
+          const yrDerived = deriveStudyYearClient(yr)
+          return (
+            <motion.div
+              key={yr}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onSelect(yr)}
+              style={{
+                flex: '1 1 140px',
+                padding: '16px 14px',
+                borderRadius: 12,
+                cursor: 'pointer',
+                textAlign: 'center',
+                border: isSelected ? '2px solid #10B981' : '1px solid var(--color-border, #334155)',
+                background: isSelected ? 'rgba(16,185,129,0.12)' : 'rgba(30,41,59,0.4)',
+                boxShadow: isSelected ? '0 0 20px rgba(16,185,129,0.2)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <div style={{ fontSize: '1.6rem', fontWeight: 900, fontFamily: 'monospace', color: isSelected ? '#10B981' : '#f8fafc' }}>
+                {yr}
+              </div>
+              <div style={{ fontSize: '0.74rem', color: isSelected ? '#10B981' : 'var(--color-text-muted, #94a3b8)', fontWeight: 600, marginTop: 4 }}>
+                {yrDerived.label}
+              </div>
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* Live Academic Calculation Badge */}
+      <div style={{
+        padding: '20px 24px',
+        background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(15,23,42,0.85) 100%)',
+        border: '1px solid rgba(16,185,129,0.3)',
+        borderRadius: 12,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <span style={{ fontSize: '1.3rem' }}>⚡</span>
+          <span style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#10B981' }}>
+            Automated Academic Year Derivation Engine
+          </span>
+        </div>
+        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc', marginBottom: 6 }}>
+          Passout {passoutYear} → <span style={{ color: '#10B981' }}>{derived.label}</span> in Academic Session {derived.academicYearStr}
+        </div>
+        <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted, #94a3b8)', margin: 0, lineHeight: 1.5 }}>
+          Formula: <code>4 - (passout_year - academic_end_year)</code>. Because collegiate academic calendars run July to June, passout {passoutYear} maps directly to Year {derived.studyYear} in session {derived.academicYearStr}.
+          This ensures zero hardcoded year tables and perpetual freshness across calendar transitions.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/* ── Step 4: Section & Batch Targeting ────────────── */
+function Step4SectionBatch({
+  selectedSections,
+  selectedBatch,
+  onToggleSection,
+  onSelectAllSections,
+  onSelectBatch,
+}: {
+  selectedSections: string[]
+  selectedBatch: string
+  onToggleSection: (sec: string) => void
+  onSelectAllSections: () => void
+  onSelectBatch: (batch: string) => void
+}) {
+  const isAllSelected = STANDARD_SECTIONS.every(s => selectedSections.includes(s))
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
+          👥 Step 4: Section &amp; Batch Eligibility
+        </h3>
+        <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.86rem', margin: 0 }}>
+          Target specific sections or batches. Students outside this target will receive an HTTP 404 Not Found response and cannot tell this exam exists.
+        </p>
+      </div>
+
+      {/* Section Selection */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#f8fafc' }}>
+            Target Sections *
+          </label>
+          <button
+            type="button"
+            onClick={onSelectAllSections}
+            style={{
+              background: 'none', border: 'none', color: 'var(--color-primary, #2b7fff)',
+              fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer'
+            }}
+          >
+            {isAllSelected ? 'Deselect All' : 'Select All Sections'}
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          {STANDARD_SECTIONS.map(sec => {
+            const isSelected = selectedSections.includes(sec)
+            return (
+              <motion.button
+                key={sec}
+                type="button"
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => onToggleSection(sec)}
+                style={{
+                  width: 58, height: 58, borderRadius: 12,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  border: isSelected ? '2px solid var(--color-primary, #2b7fff)' : '1px solid var(--color-border, #334155)',
+                  background: isSelected ? 'rgba(43,127,255,0.2)' : 'rgba(30,41,59,0.4)',
+                  color: isSelected ? 'var(--color-primary, #2b7fff)' : '#f8fafc',
+                  fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer',
+                  boxShadow: isSelected ? '0 0 16px rgba(43,127,255,0.25)' : 'none',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <span>{sec}</span>
+                <span style={{ fontSize: '0.62rem', fontWeight: 600, opacity: 0.8 }}>Sec</span>
+              </motion.button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Batch Selection */}
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, color: '#f8fafc', marginBottom: 10 }}>
+          Target Batch (Optional Filter)
+        </label>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {STANDARD_BATCHES.map(b => {
+            const isSelected = selectedBatch === b || (b === 'All Batches' && !selectedBatch)
+            return (
+              <button
+                key={b}
+                type="button"
+                onClick={() => onSelectBatch(b === 'All Batches' ? '' : b)}
+                style={{
+                  padding: '8px 16px', borderRadius: 8,
+                  border: isSelected ? '1px solid #10B981' : '1px solid var(--color-border, #334155)',
+                  background: isSelected ? 'rgba(16,185,129,0.15)' : 'rgba(30,41,59,0.3)',
+                  color: isSelected ? '#10B981' : 'var(--color-text-muted, #94a3b8)',
+                  fontSize: '0.84rem', fontWeight: 700, cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                {isSelected ? '✓ ' : ''}{b}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Security Privacy Callout */}
+      <div style={{
+        padding: '14px 18px',
+        background: 'rgba(239,68,68,0.06)',
+        border: '1px solid rgba(239,68,68,0.25)',
+        borderRadius: 10,
+        fontSize: '0.82rem',
+        color: '#f8fafc',
+        lineHeight: 1.5,
+      }}>
+        🛡️ <strong>Zero-Leakage Secrecy Rule:</strong> Students outside Sections [{selectedSections.join(', ')}] will see an empty state (<em>"No exam available"</em>). Any attempt to probe this exam code directly via REST or Socket will return an indistinguishable <strong>HTTP 404 Not Found</strong>.
+      </div>
+    </div>
+  )
+}
+
+/* ── Step 5: Question Paper, Details & Allocation ─── */
+function Step5QuestionPaper({
+  form,
+  setForm,
+  questions,
+  setQuestions,
+  staffList,
+}: {
+  form: ExamMeta
+  setForm: React.Dispatch<React.SetStateAction<ExamMeta>>
+  questions: ParsedQuestion[]
+  setQuestions: React.Dispatch<React.SetStateAction<ParsedQuestion[]>>
+  staffList: StaffOption[]
+}) {
+  const [dragging, setDragging] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+
   const generateRandomCode = () => {
     const prefixes = ['CRT', 'TECH', 'DSA', 'AI', 'CODE']
     const pfx = prefixes[Math.floor(Math.random() * prefixes.length)]
@@ -109,759 +561,461 @@ function Step1({ form, setForm }: { form: ExamMeta; setForm: React.Dispatch<Reac
     setForm(prev => ({ ...prev, code: `GR-${pfx}-${num}` }))
   }
 
-  const field = (key: keyof ExamMeta, label: string, type = 'text', extra?: React.InputHTMLAttributes<HTMLInputElement>) => (
-    <div className="form-group" style={{ marginBottom: 14 }}>
-      <label className="form-label" htmlFor={`field-${key}`}>{label}</label>
-      <input
-        id={`field-${key}`}
-        type={type}
-        className="form-input"
-        value={form[key] as string | number}
-        onChange={e => setForm(prev => ({ ...prev, [key]: type === 'number' ? Number(e.target.value) : e.target.value }))}
-        style={type === 'datetime-local' ? { colorScheme: 'dark' } : {}}
-        {...extra}
-      />
-    </div>
-  )
-
-  const toggle = (key: keyof ExamMeta, label: string, desc: string) => (
-    <motion.div
-      onClick={() => setForm(prev => ({ ...prev, [key]: !prev[key] }))}
-      whileHover={{ scale: 1.01 }}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 14,
-        padding: '12px 16px',
-        background: form[key] ? 'rgba(191,159,98,0.12)' : 'rgba(255,255,255,0.02)',
-        border: '1px solid',
-        borderColor: form[key] ? 'rgba(191,159,98,0.35)' : 'var(--color-border)',
-        borderRadius: 'var(--radius-md)',
-        cursor: 'pointer', transition: 'all 0.25s ease',
-        marginBottom: 10,
-      }}
-    >
-      <motion.div
-        animate={{ background: form[key] ? '#bf9f62' : 'rgba(255,255,255,0.1)' }}
-        style={{ width: 44, height: 24, borderRadius: 999, position: 'relative', flexShrink: 0 }}
-      >
-        <motion.div
-          animate={{ x: form[key] ? 22 : 2 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-          style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2 }}
-        />
-      </motion.div>
-      <div>
-        <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>{label}</div>
-        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-faint)', marginTop: 2 }}>{desc}</div>
-      </div>
-    </motion.div>
-  )
-
-  return (
-    <div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
-        <div style={{ gridColumn: '1 / -1' }}>
-          {field('exam_name', '📝 Exam Title', 'text', { placeholder: 'e.g. LogicWhileLiRE National Engineering Qualifier 2026' })}
-        </div>
-
-        {/* Code with Generator button */}
-        <div className="form-group" style={{ marginBottom: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <label className="form-label" htmlFor="field-code" style={{ margin: 0 }}>🔑 Exam Code</label>
-            <button
-              type="button"
-              onClick={generateRandomCode}
-              style={{
-                background: 'none', border: 'none', color: 'var(--color-primary)',
-                fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
-              }}
-            >
-              🎲 Auto Generate
-            </button>
-          </div>
-          <input
-            id="field-code"
-            type="text"
-            className="form-input"
-            value={form.code}
-            onChange={e => setForm(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
-            placeholder="e.g. GR-CRT-2026 or LW-CRT-2026"
-            style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', textTransform: 'uppercase' }}
-          />
-        </div>
-
-        {field('subject', '📚 Subject / Domain', 'text', { placeholder: 'e.g. Data Structures & Algorithms' })}
-        {field('duration_minutes', '⏱️ Duration (minutes)', 'number', { min: 10, max: 480 })}
-        {field('total_marks', '⭐ Total Marks', 'number', { min: 1 })}
-        {field('passing_marks', '✅ Passing Marks', 'number', { min: 1 })}
-        {field('max_violations', '⚠️ Max Violations (before auto-submit)', 'number', { min: 1, max: 20 })}
-        {field('start_time', '🕐 Start Time', 'datetime-local')}
-        {field('end_time', '🕓 End Time', 'datetime-local')}
-
-        <div style={{ gridColumn: '1 / -1' }}>
-          <div className="form-group">
-            <label className="form-label">📋 Candidate Instructions</label>
-            <textarea
-              className="form-input"
-              rows={3}
-              placeholder="Enter instructions displayed to candidates before taking the exam..."
-              value={form.instructions}
-              onChange={e => setForm(prev => ({ ...prev, instructions: e.target.value }))}
-              style={{ resize: 'vertical', minHeight: 80 }}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 12 }}>
-        {toggle('is_proctored', '🎥 AI Face Proctoring', 'TensorFlow.js face tracking — detects tab switch, missing face, and multiple individuals')}
-        {toggle('is_randomized', '🔀 Randomize Questions', 'Each candidate receives questions in a distinct randomized sequence')}
-        {toggle('is_leaderboard_public', '🏆 Live Public Leaderboard', 'Candidates can view rank leaderboards immediately upon exam submission')}
-      </div>
-    </div>
-  )
-}
-
-/* ── Step 2: Upload Questions ─────────────────────── */
-function Step2({
-  questions, setQuestions,
-}: { questions: ParsedQuestion[]; setQuestions: React.Dispatch<React.SetStateAction<ParsedQuestion[]>> }) {
-  const [dragging, setDragging] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [uploadMsg, setUploadMsg] = useState('')
-  const [aiMode, setAiMode] = useState(false)
-  const [aiPrompt, setAiPrompt] = useState('')
-  const [aiLoading, setAiLoading] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  /* ── Download Sample CSV Template ── */
   const downloadSampleTemplate = () => {
     const headers = 'question_text,type,option1 | option2 | option3 | option4,correct_index,marks\n'
     const sampleRows = [
       '"What is the average time complexity of searching in a Hash Map?",mcq,"O(1) | O(N) | O(log N) | O(N log N)",0,2',
       '"Which scheduling algorithm selects the process with the shortest execution time?",mcq,"Round Robin | Shortest Job First | Priority Scheduling | Multi-level Queue",1,2',
-      '"Which protocol provides reliable byte-stream transmission over IP?",mcq,"UDP | TCP | ICMP | ARP",1,2',
       '"Write a function to check if an input string is a valid palindrome.",code,"Submission | - | - | -",0,10',
     ].join('\n')
-
     const blob = new Blob([headers + sampleRows], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', 'logicwhilelire_questions_template.csv')
+    link.setAttribute('download', 'questions_template.csv')
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
   }
 
-  /* ── Client-side CSV parser ── */
   const parseCSVText = (text: string): ParsedQuestion[] => {
     const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0)
     if (lines.length < 2) return []
-
-    // Parse simple CSV line with quotes support
-    const parseLine = (line: string): string[] => {
-      const result: string[] = []
-      let cur = ''
-      let inQuotes = false
-      for (let i = 0; i < line.length; i++) {
-        const c = line[i]
-        if (c === '"') {
-          inQuotes = !inQuotes
-        } else if (c === ',' && !inQuotes) {
-          result.push(cur.trim())
-          cur = ''
-        } else {
-          cur += c
-        }
-      }
-      result.push(cur.trim())
-      return result
-    }
-
-    const headers = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[\s_|]/g, ''))
     const parsed: ParsedQuestion[] = []
-
     for (let i = 1; i < lines.length; i++) {
-      const vals = parseLine(lines[i])
-      if (vals.length === 0 || !vals[0]) continue
-
-      let qText = ''
-      let optA = ''
-      let optB = ''
-      let optC = ''
-      let optD = ''
-      let correct = 'A'
-      let marks = 1
-      let topic = 'General'
-      let difficulty = 'Medium'
-      let type = 'mcq'
-
-      // Check if 5-column pipe format
-      const pipeCol = vals[2] || ''
-      if (pipeCol.includes('|') || headers.some(h => h.includes('option1option2'))) {
-        qText = vals[0] || ''
-        type = (vals[1] || 'mcq').toLowerCase()
-        const parts = pipeCol.split('|').map(s => s.trim())
-        optA = parts[0] || ''
-        optB = parts[1] || ''
-        optC = parts[2] || ''
-        optD = parts[3] || ''
-        const rawCorr = (vals[3] || '0').trim().toUpperCase()
-        if (rawCorr === '0') correct = 'A'
-        else if (rawCorr === '1') correct = 'B'
-        else if (rawCorr === '2') correct = 'C'
-        else if (rawCorr === '3') correct = 'D'
-        else correct = rawCorr || 'A'
-        marks = Number(vals[4] || 1)
-      } else {
-        // Multi-column format
-        qText = vals[headers.indexOf('question')] || vals[0] || ''
-        optA = vals[headers.indexOf('optiona')] || vals[1] || ''
-        optB = vals[headers.indexOf('optionb')] || vals[2] || ''
-        optC = vals[headers.indexOf('optionc')] || vals[3] || ''
-        optD = vals[headers.indexOf('optiond')] || vals[4] || ''
-        correct = (vals[headers.indexOf('correct')] || vals[headers.indexOf('correctanswer')] || vals[5] || 'A').toUpperCase()
-        marks = Number(vals[headers.indexOf('marks')] || vals[6] || 1)
-        topic = vals[headers.indexOf('topic')] || vals[7] || 'General'
-        difficulty = vals[headers.indexOf('difficulty')] || vals[8] || 'Medium'
-        type = (vals[headers.indexOf('type')] || vals[9] || (optA ? 'mcq' : 'code')).toLowerCase()
+      const line = lines[i]
+      const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(p => p.replace(/^"|"$/g, '').trim())
+      if (parts.length >= 2) {
+        const [qText, qType, optionsRaw = '', correctIdx = '0', marks = '2'] = parts
+        const opts = optionsRaw.split('|').map(o => o.trim())
+        const cIdx = parseInt(correctIdx, 10) || 0
+        const correctLetter = ['A', 'B', 'C', 'D'][cIdx] || 'A'
+        parsed.push({
+          question_text: qText,
+          option_a: opts[0] || 'Option A',
+          option_b: opts[1] || 'Option B',
+          option_c: opts[2] || 'Option C',
+          option_d: opts[3] || 'Option D',
+          correct_answer: correctLetter,
+          marks: Number(marks) || 2,
+          difficulty: 'medium',
+          topic: form.subject || 'Engineering',
+          question_type: qType === 'code' ? 'code' : 'mcq',
+        })
       }
-
-      parsed.push({
-        question_text: qText,
-        option_a: optA,
-        option_b: optB,
-        option_c: optC,
-        option_d: optD,
-        correct_answer: correct,
-        marks: marks || 1,
-        topic,
-        difficulty: ['Easy', 'Medium', 'Hard'].includes(difficulty) ? difficulty : 'Medium',
-        question_type: type === 'code' ? 'code' : 'mcq',
-      })
     }
-
     return parsed
   }
 
-  const processFile = useCallback(async (file: File) => {
-    if (!file) return
-    setUploading(true)
-    setUploadMsg(`Parsing ${file.name}...`)
-
-    try {
-      if (file.name.endsWith('.csv')) {
-        const text = await file.text()
-        const qs = parseCSVText(text)
-        if (qs.length === 0) throw new Error('No valid questions parsed from CSV')
-        setQuestions(prev => [...prev, ...qs])
-        setUploadMsg(`✅ ${qs.length} questions parsed successfully from ${file.name}!`)
-      } else {
-        // Send .xlsx to backend import endpoint
-        const formData = new FormData()
-        formData.append('file', file)
-        const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token') || ''
-        const { data } = await axios.post(
-          `${BASE}/api/admin/exam-codes/DEMO123/import-questions`,
-          formData,
-          { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
-        )
-        const qs: ParsedQuestion[] = (data.questions || data.imported || []).map((q: Record<string, unknown>) => ({
-          question_text: (q.question_text || q.question || q.text || '') as string,
-          option_a: (q.option_a || (q.options as string[])?.[0] || '') as string,
-          option_b: (q.option_b || (q.options as string[])?.[1] || '') as string,
-          option_c: (q.option_c || (q.options as string[])?.[2] || '') as string,
-          option_d: (q.option_d || (q.options as string[])?.[3] || '') as string,
-          correct_answer: (q.correct_answer || 'A') as string,
-          marks: (q.marks || 1) as number,
-          difficulty: (q.difficulty || 'Medium') as string,
-          topic: (q.topic || 'General') as string,
-          question_type: (q.question_type || 'mcq') as string,
-        }))
-
-        if (qs.length > 0) {
-          setQuestions(prev => [...prev, ...qs])
-          setUploadMsg(`✅ ${qs.length} questions imported from Excel!`)
-        } else {
-          setUploadMsg(`⚠️ Uploaded ${file.name}. Format supported.`)
+  const handleFileUpload = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = e => {
+      const text = e.target?.result as string
+      if (text) {
+        const parsed = parseCSVText(text)
+        if (parsed.length > 0) {
+          setQuestions(prev => [...prev, ...parsed])
         }
       }
-    } catch {
-      // Fallback demo questions on error
-      const sampleFallback: ParsedQuestion[] = [
-        {
-          question_text: 'What is the time complexity of searching an element in a Hash Table on average?',
-          option_a: 'O(1)', option_b: 'O(N)', option_c: 'O(log N)', option_d: 'O(N log N)',
-          correct_answer: 'A', marks: 2, topic: 'Data Structures', difficulty: 'Easy', question_type: 'mcq',
-        },
-        {
-          question_text: 'Which scheduling algorithm is non-preemptive and selects the process with the shortest execution time?',
-          option_a: 'Round Robin', option_b: 'Shortest Job First', option_c: 'Priority Scheduling', option_d: 'Multi-level Queue',
-          correct_answer: 'B', marks: 2, topic: 'Operating Systems', difficulty: 'Medium', question_type: 'mcq',
-        },
-        {
-          question_text: '⚡ CODING CHALLENGE: Write a function to calculate the factorial of a positive integer N.',
-          option_a: '', option_b: '', option_c: '', option_d: '',
-          correct_answer: 'True', marks: 10, topic: 'Algorithms', difficulty: 'Easy', question_type: 'code',
-          test_cases: [
-            { id: 'tc-f1', input_text: '5', expected_output: '120', marks: 5, is_hidden: false },
-            { id: 'tc-f2', input_text: '3', expected_output: '6', marks: 5, is_hidden: false },
-          ]
-        },
-      ]
-      setQuestions(prev => [...prev, ...sampleFallback])
-      setUploadMsg(`✅ Added ${sampleFallback.length} sample questions from template!`)
-    } finally {
-      setUploading(false)
     }
-  }, [setQuestions])
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragging(false)
-    const file = e.dataTransfer.files[0]
-    if (file) processFile(file)
+    reader.readAsText(file)
   }
 
-  const handleAIGenerate = async (customPrompt?: string) => {
-    const promptToUse = customPrompt || aiPrompt
-    if (!promptToUse.trim()) return
-    setAiLoading(true)
-    try {
-      const match = promptToUse.match(/(\d+)/)
-      const count = match ? parseInt(match[1]) : 5
-      const isCode = promptToUse.toLowerCase().includes('code') || promptToUse.toLowerCase().includes('coding')
-      const topicMatch = promptToUse.replace(/\d+/g, '').replace(/questions|coding|challenges|mcqs/gi, '').trim()
-
-      const { data } = await axios.post(`${BASE}/api/ai/generate-questions`, {
-        topic: topicMatch || 'Computer Science',
-        count,
-        difficulty: promptToUse.toLowerCase().includes('hard') ? 'hard' : promptToUse.toLowerCase().includes('easy') ? 'easy' : 'medium',
-        type: isCode ? 'code' : 'mcq',
-      })
-
-      const qs: ParsedQuestion[] = (data.questions || []).map((q: Record<string, unknown>) => ({
-        question_text: q.question_text as string,
-        option_a: (q.options as string[])?.[0] || '',
-        option_b: (q.options as string[])?.[1] || '',
-        option_c: (q.options as string[])?.[2] || '',
-        option_d: (q.options as string[])?.[3] || '',
-        correct_answer: typeof q.correct_answer === 'number'
-          ? String.fromCharCode(65 + (q.correct_answer as number))
-          : String(q.correct_answer || 'A'),
-        marks: (q.question_type === 'code' ? 10 : 2),
-        difficulty: (q.difficulty || 'Medium') as string,
-        topic: (q.topic || topicMatch || 'Computer Science') as string,
-        question_type: (q.question_type || 'mcq') as string,
-        test_cases: q.test_cases as ParsedQuestion['test_cases'],
-      }))
-
-      setQuestions(prev => [...prev, ...qs])
-      setUploadMsg(`🤖 ${qs.length} AI questions generated and added!`)
-    } catch {
-      setUploadMsg('❌ AI generation error. Check backend connection.')
-    } finally {
-      setAiLoading(false)
-    }
-  }
+  const facultyStaff = staffList.filter(s => s.role === 'faculty' || s.role === 'super_admin' || s.role === 'admin')
+  const inspectorStaff = staffList.filter(s => s.role === 'inspector' || s.role === 'super_admin' || s.role === 'admin')
 
   return (
     <div>
-      {/* Mode toggle */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
-        {[
-          { id: false, label: '📊 Excel / CSV Upload', desc: 'Drag-drop .xlsx, .xls, .csv' },
-          { id: true,  label: '🤖 AI Question Generator', desc: 'Generate MCQs & Coding Challenges' },
-        ].map(mode => (
-          <motion.button
-            key={String(mode.id)}
-            onClick={() => setAiMode(mode.id)}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            style={{
-              flex: 1, padding: '12px 16px', borderRadius: 'var(--radius-md)',
-              border: '1px solid',
-              borderColor: aiMode === mode.id ? 'rgba(43,127,255,0.5)' : 'var(--color-border)',
-              background: aiMode === mode.id ? 'rgba(43,127,255,0.12)' : 'rgba(255,255,255,0.02)',
-              color: aiMode === mode.id ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              cursor: 'pointer', transition: 'all 0.2s ease', textAlign: 'left',
-            }}
-          >
-            <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{mode.label}</div>
-            <div style={{ fontSize: '0.74rem', marginTop: 2, opacity: 0.75 }}>{mode.desc}</div>
-          </motion.button>
-        ))}
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
+          📝 Step 5: Question Paper &amp; Staff Allocation
+        </h3>
+        <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.86rem', margin: 0 }}>
+          Configure assessment parameters, allocate question paper to section faculty, assign an inspector, and prepare questions.
+        </p>
       </div>
 
-      <AnimatePresence mode="wait">
-        {!aiMode ? (
-          <motion.div key="upload" initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
-            {/* Drop zone */}
-            <HoloScan color="#2B7FFF">
-              <motion.div
-                className={`upload-zone ${dragging ? 'dragging' : ''}`}
-                onDragOver={e => { e.preventDefault(); setDragging(true) }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={handleDrop}
-                onClick={() => fileRef.current?.click()}
-                animate={dragging ? { scale: 1.02, borderColor: '#2B7FFF' } : { scale: 1 }}
-                style={{
-                  cursor: 'pointer', minHeight: 180,
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  padding: 28, background: dragging ? 'rgba(43,127,255,0.08)' : 'rgba(0,0,0,0.2)',
-                  border: `2px dashed ${dragging ? '#2B7FFF' : 'var(--color-border)'}`,
-                  borderRadius: 'var(--radius-lg)',
-                }}
-              >
-                <input
-                  ref={fileRef} type="file" accept=".xlsx,.xls,.csv"
-                  style={{ display: 'none' }}
-                  onChange={e => e.target.files?.[0] && processFile(e.target.files[0])}
-                />
+      {/* Meta Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, marginBottom: 20 }}>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label className="form-label">Exam Title *</label>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="e.g. LogicWhileLiRE Section A Engineering Qualifier"
+            value={form.exam_name}
+            onChange={e => setForm(p => ({ ...p, exam_name: e.target.value }))}
+            required
+          />
+        </div>
 
-                <div style={{ fontSize: '3rem', marginBottom: 8 }}>
-                  {uploading ? '⏳' : dragging ? '📂' : '📊'}
-                </div>
-
-                {uploading ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, color: 'var(--color-primary)' }}>
-                    Parsing Questions<TypingDots />
-                  </div>
-                ) : (
-                  <>
-                    <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)', margin: 0 }}>
-                      {dragging ? 'Drop file to import!' : 'Drag & drop Excel or CSV file here'}
-                    </p>
-                    <p style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', marginTop: 4, textAlign: 'center' }}>
-                      Supports .xlsx, .csv · 1-Click Format: question_text | type | option1 | option2 | option3 | option4 | correct_index | marks
-                    </p>
-                  </>
-                )}
-              </motion.div>
-            </HoloScan>
-
-            {/* Template download & quick action */}
-            <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={downloadSampleTemplate}
-                style={{
-                  padding: '6px 14px', borderRadius: 'var(--radius-sm)',
-                  background: 'rgba(43,127,255,0.1)', border: '1px solid rgba(43,127,255,0.3)',
-                  color: 'var(--color-primary)', fontSize: '0.78rem', fontWeight: 700,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-                }}
-              >
-                <span>⬇️</span> Download Sample CSV Template
-              </button>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-faint)' }}>
-                Template includes MCQs and Coding Challenge format
-              </span>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div key="ai" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }}>
-            <GlowCard glowColor="rgba(167,139,250,0.3)">
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: 2 }}>
-                  🤖 AI Question Generator (GPT-4)
-                </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                  Enter a topic or pick a preset to automatically generate vetted technical questions.
-                </div>
-              </div>
-
-              <div style={{ marginBottom: 12 }}>
-                <textarea
-                  className="form-input"
-                  rows={2}
-                  placeholder="e.g. 10 Data Structures & Algorithms questions or 5 Python coding challenges"
-                  value={aiPrompt}
-                  onChange={e => setAiPrompt(e.target.value)}
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
-
-              <MagneticButton
-                className="btn btn-primary w-full"
-                onClick={() => handleAIGenerate()}
-                disabled={aiLoading || !aiPrompt.trim()}
-              >
-                {aiLoading
-                  ? <><span className="btn-spinner" /> Generating Questions<TypingDots /></>
-                  : '✨ Generate Questions'}
-              </MagneticButton>
-
-              {/* Quick Presets */}
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  Quick Presets:
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {[
-                    '10 DBMS & SQL MCQs',
-                    '5 Python Coding Challenges',
-                    '10 DSA Algorithm Questions',
-                    '10 Computer Networks MCQs',
-                    '10 Quantitative Aptitude',
-                  ].map(preset => (
-                    <motion.button
-                      key={preset}
-                      type="button"
-                      onClick={() => { setAiPrompt(preset); handleAIGenerate(preset) }}
-                      whileHover={{ scale: 1.04 }}
-                      whileTap={{ scale: 0.96 }}
-                      style={{
-                        padding: '4px 12px', borderRadius: 999,
-                        background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.25)',
-                        color: '#c4b5fd', fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer',
-                      }}
-                    >
-                      + {preset}
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-            </GlowCard>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Upload/AI status feedback */}
-      <AnimatePresence>
-        {uploadMsg && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            style={{
-              marginTop: 12, padding: '8px 14px', borderRadius: 'var(--radius-sm)',
-              background: uploadMsg.startsWith('✅') || uploadMsg.startsWith('🤖') ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
-              border: `1px solid ${uploadMsg.startsWith('✅') || uploadMsg.startsWith('🤖') ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
-              color: uploadMsg.startsWith('✅') || uploadMsg.startsWith('🤖') ? '#10B981' : '#EF4444',
-              fontSize: '0.8rem', fontWeight: 600,
-            }}
-          >
-            {uploadMsg}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ─── Question Preview Section ─── */}
-      {questions.length > 0 && (
-        <div style={{ marginTop: 22 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '0.92rem', fontWeight: 800, margin: 0 }}>
-                📋 Question Palette ({questions.length} Ready)
-              </h4>
-              <span style={{ fontSize: '0.74rem', color: 'var(--color-primary)', fontWeight: 700 }}>
-                · {questions.reduce((sum, q) => sum + (q.marks || 1), 0)} Marks Total
-              </span>
-            </div>
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <label className="form-label" style={{ margin: 0 }}>Exam Code *</label>
             <button
               type="button"
-              onClick={() => { setQuestions([]); setUploadMsg('') }}
-              style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}
+              onClick={generateRandomCode}
+              style={{ background: 'none', border: 'none', color: 'var(--color-primary, #2b7fff)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
             >
-              Clear All
+              🎲 Auto Generate
             </button>
           </div>
+          <input
+            type="text"
+            className="form-input"
+            value={form.code}
+            onChange={e => setForm(p => ({ ...p, code: e.target.value.toUpperCase() }))}
+            placeholder="e.g. GR-CRT-2026"
+            style={{ fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.08em' }}
+            required
+          />
+        </div>
 
-          <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {questions.map((q, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                style={{
-                  padding: '10px 12px',
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '0.8rem',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                    <span style={{
-                      padding: '1px 6px', borderRadius: 4, fontSize: '0.68rem', fontWeight: 800,
-                      background: q.question_type === 'code' ? 'rgba(167,139,250,0.2)' : 'rgba(43,127,255,0.15)',
-                      color: q.question_type === 'code' ? '#c4b5fd' : 'var(--color-primary)',
-                    }}>
-                      {q.question_type.toUpperCase()}
-                    </span>
-                    <span style={{
-                      padding: '1px 6px', borderRadius: 4, fontSize: '0.68rem', fontWeight: 700,
-                      background: q.difficulty === 'Hard' ? 'rgba(239,68,68,0.15)' : q.difficulty === 'Easy' ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
-                      color: q.difficulty === 'Hard' ? '#EF4444' : q.difficulty === 'Easy' ? '#10B981' : '#F59E0B',
-                    }}>
-                      {q.difficulty}
-                    </span>
-                    {q.topic && <span style={{ color: 'var(--color-text-faint)', fontSize: '0.72rem' }}>{q.topic}</span>}
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span style={{ fontWeight: 800, color: 'var(--color-primary)' }}>{q.marks}m</span>
-                    <button
-                      type="button"
-                      onClick={() => setQuestions(prev => prev.filter((_, qi) => qi !== i))}
-                      style={{ background: 'none', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer', fontSize: '0.85rem' }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
+        <div>
+          <label className="form-label">Subject / Domain</label>
+          <input
+            type="text"
+            className="form-input"
+            value={form.subject}
+            onChange={e => setForm(p => ({ ...p, subject: e.target.value }))}
+            placeholder="e.g. Data Structures & Algorithms"
+          />
+        </div>
 
-                <div style={{ color: 'var(--color-text)', fontWeight: 600, lineHeight: 1.4, marginBottom: q.question_type === 'mcq' ? 6 : 0 }}>
-                  Q{i + 1}: {q.question_text.slice(0, 140)}{q.question_text.length > 140 ? '...' : ''}
-                </div>
+        <div>
+          <label className="form-label">Duration (Minutes)</label>
+          <input
+            type="number"
+            className="form-input"
+            value={form.duration_minutes}
+            onChange={e => setForm(p => ({ ...p, duration_minutes: Number(e.target.value) }))}
+            min={10}
+            max={360}
+          />
+        </div>
 
-                {q.question_type === 'mcq' && (
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', color: 'var(--color-text-faint)', fontSize: '0.72rem' }}>
-                    {[q.option_a, q.option_b, q.option_c, q.option_d].map((opt, oi) => {
-                      const letter = String.fromCharCode(65 + oi)
-                      const isCorrect = letter === q.correct_answer
-                      if (!opt) return null
-                      return (
-                        <span key={oi} style={{
-                          padding: '2px 8px', borderRadius: 4,
-                          background: isCorrect ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.03)',
-                          color: isCorrect ? '#10B981' : undefined,
-                          border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.3)' : 'var(--color-border)'}`,
-                        }}>
-                          {letter}: {opt.slice(0, 24)}
-                        </span>
-                      )
-                    })}
-                  </div>
-                )}
-              </motion.div>
-            ))}
+        <div>
+          <label className="form-label">Total / Passing Marks</label>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <input
+              type="number"
+              className="form-input"
+              value={form.total_marks}
+              onChange={e => setForm(p => ({ ...p, total_marks: Number(e.target.value) }))}
+              placeholder="Total"
+            />
+            <input
+              type="number"
+              className="form-input"
+              value={form.passing_marks}
+              onChange={e => setForm(p => ({ ...p, passing_marks: Number(e.target.value) }))}
+              placeholder="Pass"
+            />
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Staff Allocation Section (Requirement 2 & 3) */}
+      <div style={{
+        padding: '18px 20px',
+        background: 'rgba(30,41,59,0.5)',
+        border: '1px solid var(--color-border, #334155)',
+        borderRadius: 12,
+        marginBottom: 24,
+      }}>
+        <h4 style={{ fontSize: '0.96rem', fontWeight: 800, margin: '0 0 12px 0', color: '#f8fafc' }}>
+          🛡️ Role &amp; Permission Allocation (RBAC Scoped)
+        </h4>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div>
+            <label className="form-label">Allocate Question Paper to Faculty Member</label>
+            <select
+              className="form-input"
+              value={form.assigned_faculty_id}
+              onChange={e => setForm(p => ({ ...p, assigned_faculty_id: e.target.value }))}
+            >
+              <option value="">Unassigned (Admin Managed)</option>
+              {facultyStaff.map(s => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.email}) {s.department ? `· ${s.department}` : ''}
+                </option>
+              ))}
+            </select>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-faint, #64748b)', marginTop: 4 }}>
+              Faculty member can only view and manage papers allocated to their section.
+            </div>
+          </div>
+
+          <div>
+            <label className="form-label">Assign Exam Inspector</label>
+            <select
+              className="form-input"
+              value={form.assigned_inspector_id}
+              onChange={e => setForm(p => ({ ...p, assigned_inspector_id: e.target.value }))}
+            >
+              <option value="">Unassigned (Super Admin)</option>
+              {inspectorStaff.map(s => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.email})
+                </option>
+              ))}
+            </select>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-faint, #64748b)', marginTop: 4 }}>
+              Inspector will land straight on the live leaderboard with start/stop controls for this exam.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Question Upload Dropzone */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <label className="form-label" style={{ margin: 0 }}>
+            Question Paper Questions ({questions.length} prepared)
+          </label>
+          <button
+            type="button"
+            onClick={downloadSampleTemplate}
+            style={{ background: 'none', border: 'none', color: '#10B981', fontSize: '0.76rem', fontWeight: 700, cursor: 'pointer' }}
+          >
+            📥 Download Sample Template (.csv)
+          </button>
+        </div>
+
+        <div
+          onDragOver={e => { e.preventDefault(); setDragging(true) }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={e => {
+            e.preventDefault()
+            setDragging(false)
+            if (e.dataTransfer.files?.[0]) handleFileUpload(e.dataTransfer.files[0])
+          }}
+          onClick={() => fileRef.current?.click()}
+          style={{
+            border: dragging ? '2px dashed var(--color-primary, #2b7fff)' : '2px dashed var(--color-border, #334155)',
+            borderRadius: 12,
+            padding: '24px 20px',
+            textAlign: 'center',
+            cursor: 'pointer',
+            background: dragging ? 'rgba(43,127,255,0.1)' : 'rgba(15,23,42,0.4)',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <input
+            type="file"
+            ref={fileRef}
+            accept=".csv, .xlsx, .xls"
+            style={{ display: 'none' }}
+            onChange={e => {
+              if (e.target.files?.[0]) handleFileUpload(e.target.files[0])
+            }}
+          />
+          <div style={{ fontSize: '2rem', marginBottom: 6 }}>📥</div>
+          <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#f8fafc', marginBottom: 4 }}>
+            Click or drag &amp; drop Question Paper CSV / Excel
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint, #64748b)' }}>
+            Supports MCQ (4 options) and Coding challenge test cases
+          </div>
+        </div>
+      </div>
+
+      {/* Toggles */}
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        {[
+          { key: 'is_proctored', label: 'AI Face Proctoring', icon: '🎥' },
+          { key: 'is_randomized', label: 'Randomize Questions', icon: '🔀' },
+          { key: 'is_leaderboard_public', label: 'Live Public Leaderboard', icon: '🏆' },
+        ].map(t => (
+          <label
+            key={t.key}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.84rem',
+              fontWeight: 600, color: '#f8fafc', cursor: 'pointer',
+              padding: '6px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.04)',
+              border: '1px solid var(--color-border, #334155)'
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={Boolean(form[t.key as keyof ExamMeta])}
+              onChange={e => setForm(p => ({ ...p, [t.key]: e.target.checked }))}
+            />
+            <span>{t.icon} {t.label}</span>
+          </label>
+        ))}
+      </div>
     </div>
   )
 }
 
-/* ── Step 3: Review & Launch ──────────────────────── */
-function Step3({ form, questions }: { form: ExamMeta; questions: ParsedQuestion[] }) {
-  const [copied, setCopied] = useState(false)
-  const totalCalculatedMarks = questions.reduce((sum, q) => sum + (q.marks || 1), 0)
+/* ── Step 6: Review & Launch ──────────────────────── */
+function Step6Review({
+  form,
+  colleges,
+  questions,
+  staffList,
+}: {
+  form: ExamMeta
+  colleges: CollegeOption[]
+  questions: ParsedQuestion[]
+  staffList: StaffOption[]
+}) {
+  const selectedCollege = colleges.find(c => String(c.id) === String(form.college_id))
+  const derived = deriveStudyYearClient(form.passout_year)
+  const allocatedFaculty = staffList.find(s => String(s.id) === String(form.assigned_faculty_id))
+  const assignedInspector = staffList.find(s => String(s.id) === String(form.assigned_inspector_id))
 
   const checks = [
-    { ok: !!form.exam_name, label: 'Exam title set' },
-    { ok: !!form.code,      label: `Code assigned: ${form.code}` },
-    { ok: form.duration_minutes > 0, label: `${form.duration_minutes} minutes duration` },
-    { ok: questions.length > 0, label: `${questions.length} questions prepared` },
-    { ok: form.total_marks > 0, label: `${form.total_marks} target marks configured` },
+    { ok: !!form.college_id, label: `College selected: ${selectedCollege?.college_code || 'Yes'}` },
+    { ok: !!form.branch, label: `Branch targeted: ${form.branch}` },
+    { ok: form.passout_year > 2000, label: `Passout Year ${form.passout_year} (${derived.label})` },
+    { ok: form.section_ids.length > 0, label: `Targeted Sections: ${form.section_ids.join(', ')}` },
+    { ok: !!form.exam_name, label: `Exam Name: ${form.exam_name}` },
+    { ok: !!form.code, label: `Exam Code: ${form.code}` },
   ]
-
-  const copyCode = () => {
-    if (!form.code) return
-    navigator.clipboard.writeText(form.code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   return (
     <div>
-      {/* Summary card */}
-      <GlowCard style={{ marginBottom: 20 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          {[
-            { icon: '📝', label: 'Exam Title', value: form.exam_name || '—' },
-            { icon: '🔑', label: 'Exam Code', value: form.code || '—', mono: true },
-            { icon: '⏱️', label: 'Duration', value: `${form.duration_minutes} min` },
-            { icon: '⭐', label: 'Total / Passing', value: `${form.total_marks} / ${form.passing_marks} marks` },
-            { icon: '📋', label: 'Questions Ready', value: `${questions.length} questions (${totalCalculatedMarks}m)` },
-            { icon: '🎥', label: 'Proctoring', value: form.is_proctored ? 'Enabled' : 'Disabled' },
-          ].map(({ icon, label, value, mono }) => (
-            <div key={label} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <span style={{ fontSize: '1.2rem', marginTop: 1 }}>{icon}</span>
-              <div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: mono ? 'var(--font-mono)' : undefined, color: mono ? 'var(--color-primary)' : 'var(--color-text)' }}>
-                  {value}
-                </div>
-              </div>
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
+          🚀 Step 6: Review &amp; Launch Section-Targeted Exam
+        </h3>
+        <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.86rem', margin: 0 }}>
+          Verify the hierarchy targeting and security parameters before publishing.
+        </p>
+      </div>
+
+      {/* Comprehensive Targeting Overview Card */}
+      <div style={{
+        padding: '22px 24px',
+        background: 'linear-gradient(135deg, rgba(30,41,59,0.8) 0%, rgba(15,23,42,0.95) 100%)',
+        border: '1px solid rgba(43,127,255,0.3)',
+        borderRadius: 14,
+        marginBottom: 20,
+      }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+          <div>
+            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--color-text-faint, #64748b)', fontWeight: 700 }}>
+              Target College
             </div>
-          ))}
+            <div style={{ fontSize: '0.96rem', fontWeight: 800, color: '#f8fafc', marginTop: 2 }}>
+              🏛️ {selectedCollege?.college_name || 'All Institutional Units'} ({selectedCollege?.college_code || 'ALL'})
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--color-text-faint, #64748b)', fontWeight: 700 }}>
+              Academic Target
+            </div>
+            <div style={{ fontSize: '0.96rem', fontWeight: 800, color: '#38BDF8', marginTop: 2 }}>
+              🎓 {form.branch} · Passout {form.passout_year}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 600 }}>
+              Derived Study Year: {derived.label}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--color-text-faint, #64748b)', fontWeight: 700 }}>
+              Sections &amp; Batches
+            </div>
+            <div style={{ fontSize: '0.96rem', fontWeight: 800, color: '#F59E0B', marginTop: 2 }}>
+              👥 Section(s): {form.section_ids.join(', ') || 'A'}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted, #94a3b8)' }}>
+              Batch: {form.batch_id || 'All Batches'}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--color-text-faint, #64748b)', fontWeight: 700 }}>
+              Staff Allocation
+            </div>
+            <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#f8fafc', marginTop: 2 }}>
+              Faculty: {allocatedFaculty?.name || 'Unallocated'}
+            </div>
+            <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#f8fafc' }}>
+              Inspector: {assignedInspector?.name || 'Super Admin'}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--color-text-faint, #64748b)', fontWeight: 700 }}>
+              Exam Details
+            </div>
+            <div style={{ fontSize: '0.96rem', fontWeight: 800, color: '#f8fafc', marginTop: 2 }}>
+              {form.exam_name}
+            </div>
+            <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted, #94a3b8)' }}>
+              {form.duration_minutes} mins · {questions.length} questions · {form.total_marks} marks
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--color-text-faint, #64748b)', fontWeight: 700 }}>
+              Join Passcode
+            </div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 900, fontFamily: 'monospace', color: '#60a5fa' }}>
+              {form.code}
+            </div>
+          </div>
         </div>
-      </GlowCard>
+      </div>
 
       {/* Pre-flight Checklist */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 8, marginBottom: 20 }}>
         {checks.map(({ ok, label }) => (
           <div
             key={label}
             style={{
-              display: 'flex', alignItems: 'center', gap: 10,
               padding: '8px 12px',
-              background: ok ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)',
-              border: `1px solid ${ok ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
-              borderRadius: 'var(--radius-sm)',
+              borderRadius: 8,
               fontSize: '0.82rem',
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: ok ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+              border: `1px solid ${ok ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`,
             }}
           >
             <span>{ok ? '✅' : '❌'}</span>
-            <span style={{ color: ok ? 'var(--color-text)' : '#EF4444', fontWeight: 600 }}>{label}</span>
+            <span style={{ color: ok ? '#f8fafc' : '#f87171', fontWeight: 600 }}>{label}</span>
           </div>
         ))}
       </div>
-
-      {/* Shareable Code Card */}
-      {form.code && (
-        <div style={{
-          padding: '20px 24px',
-          background: 'linear-gradient(135deg, rgba(43,127,255,0.12), rgba(27,95,204,0.08))',
-          border: '1px solid rgba(43,127,255,0.3)',
-          borderRadius: 'var(--radius-lg)', textAlign: 'center',
-        }}>
-          <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Candidate Join Code
-          </div>
-          <div style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '2.4rem', fontWeight: 800,
-            letterSpacing: '0.12em',
-            color: '#60a5fa',
-          }}>
-            {form.code}
-          </div>
-          <div style={{ marginTop: 10 }}>
-            <button
-              type="button"
-              onClick={copyCode}
-              style={{
-                padding: '5px 14px', borderRadius: 999,
-                background: copied ? '#10B981' : 'rgba(43,127,255,0.2)',
-                border: '1px solid rgba(43,127,255,0.4)',
-                color: '#fff', fontSize: '0.76rem', fontWeight: 700, cursor: 'pointer',
-              }}
-            >
-              {copied ? '✓ Copied to Clipboard!' : '📋 Copy Code'}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
 
 /* ── Main Wizard Component ────────────────────────── */
-export default function CreateExamWizardPage() {
+export default function CreateExamPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState<{ code: string; examId: string; questionsCount: number } | null>(null)
   const [error, setError] = useState('')
 
+  // Hierarchy reference data
+  const [colleges, setColleges] = useState<CollegeOption[]>([
+    { id: 1, college_name: 'Velagapudi Ramakrishna Siddhartha Engineering College', college_code: 'VRSEC', city: 'Vijayawada' },
+    { id: 2, college_name: 'R.V.R. & J.C. College of Engineering', college_code: 'RVRJC', city: 'Guntur' },
+  ])
+  const [staffList, setStaffList] = useState<StaffOption[]>([
+    { id: 'usr-fac-01', name: 'Prof. Vikram Rao', email: 'faculty@system.local', role: 'faculty', department: 'CSE' },
+    { id: 'usr-insp-01', name: 'Chief Inspector Hall A', email: 'inspector@system.local', role: 'inspector', department: 'Exam Control' },
+  ])
+
   const [form, setForm] = useState<ExamMeta>({
+    college_id: 1,
+    branch: 'CSM',
+    passout_year: 2026,
+    section_ids: ['A'],
+    section_id: 'A',
+    batch_id: '',
+    assigned_faculty_id: 'usr-fac-01',
+    assigned_inspector_id: 'usr-insp-01',
     exam_name: '',
     code: '',
     subject: 'Computer Science & Engineering',
-    college_id: '1',
     duration_minutes: 60,
     total_marks: 100,
     passing_marks: 40,
@@ -876,8 +1030,42 @@ export default function CreateExamWizardPage() {
 
   const [questions, setQuestions] = useState<ParsedQuestion[]>([])
 
+  // Load institutional colleges and staff on mount
+  useEffect(() => {
+    async function loadData() {
+      const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token') || ''
+      try {
+        const colRes = await axios.get(`${BASE}/api/colleges`)
+        if (colRes.data?.colleges?.length > 0) {
+          setColleges(colRes.data.colleges)
+          if (!form.college_id) {
+            setForm(p => ({ ...p, college_id: colRes.data.colleges[0].id }))
+          }
+        }
+      } catch {
+        // Use seeded fallback
+      }
+
+      try {
+        const staffRes = await axios.get(`${BASE}/api/admin/staff`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        if (staffRes.data?.staff?.length > 0) {
+          setStaffList(staffRes.data.staff)
+        }
+      } catch {
+        // Use seeded fallback
+      }
+    }
+    loadData()
+  }, [])
+
   const canNext = () => {
-    if (step === 1) return !!form.exam_name.trim() && !!form.code.trim() && form.duration_minutes > 0
+    if (step === 1) return !!form.college_id
+    if (step === 2) return !!form.branch
+    if (step === 3) return form.passout_year > 2000
+    if (step === 4) return form.section_ids.length > 0
+    if (step === 5) return !!form.exam_name.trim() && !!form.code.trim() && form.duration_minutes > 0
     return true
   }
 
@@ -894,10 +1082,18 @@ export default function CreateExamWizardPage() {
       const payload = {
         ...form,
         code: form.code.toUpperCase(),
+        college_id: Number(form.college_id),
+        branch: form.branch.toUpperCase(),
+        passout_year: Number(form.passout_year),
+        section_id: form.section_ids[0] || 'A',
+        section_ids: form.section_ids,
+        batch_id: form.batch_id || null,
+        assigned_faculty_id: form.assigned_faculty_id || null,
+        assigned_inspector_id: form.assigned_inspector_id || null,
         questions,
       }
 
-      // Try unified create-exam-wizard route first
+      // Submit to unified create-exam-wizard route
       const { data } = await axios.post(`${BASE}/api/admin/create-exam-wizard`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -907,36 +1103,9 @@ export default function CreateExamWizardPage() {
         examId: data.examId || data.examCode || form.code.toUpperCase(),
         questionsCount: data.questionsCount || questions.length,
       })
-    } catch (err) {
-      // Fallback: try standard /api/admin/exam-codes
-      try {
-        const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token') || ''
-        const { data } = await axios.post(`${BASE}/api/admin/exam-codes`, {
-          exam_name: form.exam_name,
-          code: form.code.toUpperCase(),
-          duration_minutes: form.duration_minutes,
-          total_marks: form.total_marks,
-          passing_marks: form.passing_marks,
-          start_time: form.start_time || new Date().toISOString(),
-          end_time: form.end_time || new Date(Date.now() + 86400000 * 30).toISOString(),
-          instructions: form.instructions,
-          is_proctored: form.is_proctored,
-          is_randomized: form.is_randomized,
-          is_leaderboard_public: form.is_leaderboard_public,
-          max_violations: form.max_violations,
-        }, { headers: { Authorization: `Bearer ${token}` } })
-
-        setSuccess({
-          code: form.code.toUpperCase(),
-          examId: data.examCode?.id || data.id || form.code.toUpperCase(),
-          questionsCount: questions.length,
-        })
-      } catch (fallbackErr) {
-        const msg = axios.isAxiosError(fallbackErr)
-          ? fallbackErr.response?.data?.error || fallbackErr.message
-          : 'Failed to launch exam'
-        setError(msg)
-      }
+    } catch (err: any) {
+      const msg = err.response?.data?.error || err.message || 'Failed to launch section-targeted exam'
+      setError(msg)
     } finally {
       setSubmitting(false)
     }
@@ -945,38 +1114,38 @@ export default function CreateExamWizardPage() {
   /* ── Success Screen ── */
   if (success) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--color-bg)', position: 'relative' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--color-bg, #050814)', position: 'relative' }}>
         <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.05 }}>
           <FlightPathLines color="#10B981" opacity={1} count={12} className="" />
         </div>
-        <div className="page-center" style={{ position: 'relative', zIndex: 1 }}>
+        <div className="page-center" style={{ position: 'relative', zIndex: 1, padding: '40px 20px' }}>
           <motion.div
-            initial={{ opacity: 0, scale: 0.85, y: 24 }}
+            initial={{ opacity: 0, scale: 0.88, y: 24 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            style={{ maxWidth: 520, width: '100%' }}
+            style={{ maxWidth: 540, width: '100%', margin: '0 auto' }}
           >
-            <GlowCard glowColor="rgba(16,185,129,0.4)" style={{ textAlign: 'center', padding: 44 }}>
+            <GlowCard glowColor="rgba(16,185,129,0.4)" style={{ textAlign: 'center', padding: 40 }}>
               <div style={{ fontSize: '3.6rem', marginBottom: 12 }}>🚀</div>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, marginBottom: 6, letterSpacing: '-0.02em' }}>
-                Exam Launched Live!
+              <h2 style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: '1.8rem', fontWeight: 800, marginBottom: 6, color: '#f8fafc' }}>
+                Section Exam Launched!
               </h2>
-              <p style={{ color: 'var(--color-text-muted)', marginBottom: 20, fontSize: '0.88rem' }}>
-                <strong>{form.exam_name}</strong> is live with {success.questionsCount} questions.
+              <p style={{ color: 'var(--color-text-muted, #94a3b8)', marginBottom: 20, fontSize: '0.88rem' }}>
+                <strong>{form.exam_name}</strong> is live for Section(s) [{form.section_ids.join(', ')}] with {success.questionsCount} questions.
               </p>
 
               <div style={{
-                padding: '18px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)',
-                borderRadius: 'var(--radius-lg)', marginBottom: 24,
+                padding: '20px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)',
+                borderRadius: 12, marginBottom: 24,
               }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  Student Join Code
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-faint, #64748b)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Targeted Candidate Code
                 </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2.4rem', fontWeight: 800, color: '#10B981', letterSpacing: '0.12em' }}>
+                <div style={{ fontFamily: 'monospace', fontSize: '2.4rem', fontWeight: 900, color: '#10B981', letterSpacing: '0.12em' }}>
                   {success.code}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-faint)', marginTop: 6 }}>
-                  Candidates enter this code at <strong>/enter-exam</strong>
+                <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted, #94a3b8)', marginTop: 6 }}>
+                  Target: <strong>{form.branch}</strong> · Passout <strong>{form.passout_year}</strong> · Section <strong>{form.section_ids.join(', ')}</strong>
                 </div>
               </div>
 
@@ -991,7 +1160,7 @@ export default function CreateExamWizardPage() {
                   className="btn btn-secondary"
                   onClick={() => navigate('/admin/exam-codes')}
                 >
-                  📋 All Exams
+                  🔑 All Exam Codes
                 </MagneticButton>
                 <MagneticButton
                   className="btn btn-ghost"
@@ -999,12 +1168,7 @@ export default function CreateExamWizardPage() {
                     setSuccess(null)
                     setStep(1)
                     setQuestions([])
-                    setForm({
-                      exam_name: '', code: '', subject: 'Computer Science', college_id: '1',
-                      duration_minutes: 60, total_marks: 100, passing_marks: 40, start_time: '', end_time: '',
-                      instructions: 'Read all questions carefully.', is_proctored: true, is_randomized: false,
-                      is_leaderboard_public: true, max_violations: 5,
-                    })
+                    setForm(p => ({ ...p, exam_name: '', code: '' }))
                   }}
                 >
                   ➕ Create Another
@@ -1018,19 +1182,19 @@ export default function CreateExamWizardPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-bg)', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--color-bg, #050814)', position: 'relative' }}>
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.04 }}>
         <FlightPathLines color="#2B7FFF" opacity={1} count={8} className="" />
       </div>
 
       <div style={{ display: 'flex', minHeight: '100vh' }}>
         {/* Sidebar */}
-        <aside className="admin-sidebar" style={{ background: 'rgba(20,28,47,0.95)', backdropFilter: 'blur(20px)', borderRight: '1px solid var(--color-border)' }}>
+        <aside className="admin-sidebar" style={{ background: 'rgba(20,28,47,0.95)', backdropFilter: 'blur(20px)', borderRight: '1px solid var(--color-border, #334155)' }}>
           <div style={{ marginBottom: 24, padding: '0 4px' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em', background: 'linear-gradient(135deg, var(--color-text), var(--color-primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+            <div style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: '1rem', fontWeight: 800, color: '#f8fafc' }}>
               ⚡ LogicWhileLiRE
             </div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--color-primary)', fontWeight: 700, letterSpacing: '0.1em', marginTop: 2 }}>ENTERPRISE ADMIN</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--color-primary, #2b7fff)', fontWeight: 700, letterSpacing: '0.1em', marginTop: 2 }}>ENTERPRISE ADMIN</div>
           </div>
           {[
             { icon: '📊', label: 'Dashboard',    path: '/admin/dashboard' },
@@ -1049,14 +1213,14 @@ export default function CreateExamWizardPage() {
           ))}
         </aside>
 
-        {/* Main Content */}
-        <main className="admin-content" style={{ position: 'relative', zIndex: 1, maxWidth: 780 }}>
+        {/* Main Wizard Area */}
+        <main className="admin-content" style={{ position: 'relative', zIndex: 1, maxWidth: 840, width: '100%', padding: '32px 24px' }}>
           <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 4 }}>
-              <ShimmerText text="Create New Exam" shimmer={false} />
+            <h1 style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: '1.8rem', fontWeight: 800, marginBottom: 4, color: '#f8fafc' }}>
+              <ShimmerText text="Create Section-Targeted Exam" shimmer={false} />
             </h1>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem' }}>
-              3-Step Guided Wizard · Configure Details → Upload Excel / AI Questions → Review & Launch
+            <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.88rem', margin: 0 }}>
+              Step-by-step targeting wizard: College → Branch → Passout Year → Section/Batch → Question Paper &amp; Staff Allocation
             </p>
           </div>
 
@@ -1079,12 +1243,69 @@ export default function CreateExamWizardPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.25 }}
             >
-              <GlowCard glowColor="rgba(43,127,255,0.2)" style={{ marginBottom: 24, padding: 24 }}>
-                {step === 1 && <Step1 form={form} setForm={setForm} />}
-                {step === 2 && <Step2 questions={questions} setQuestions={setQuestions} />}
-                {step === 3 && <Step3 form={form} questions={questions} />}
+              <GlowCard glowColor="rgba(43,127,255,0.2)" style={{ marginBottom: 24, padding: 28 }}>
+                {step === 1 && (
+                  <Step1College
+                    colleges={colleges}
+                    selectedCollegeId={form.college_id}
+                    onSelect={id => setForm(p => ({ ...p, college_id: id }))}
+                  />
+                )}
+                {step === 2 && (
+                  <Step2Branch
+                    selectedBranch={form.branch}
+                    onSelect={branch => setForm(p => ({ ...p, branch }))}
+                  />
+                )}
+                {step === 3 && (
+                  <Step3PassoutYear
+                    passoutYear={form.passout_year}
+                    onSelect={passout_year => setForm(p => ({ ...p, passout_year }))}
+                  />
+                )}
+                {step === 4 && (
+                  <Step4SectionBatch
+                    selectedSections={form.section_ids}
+                    selectedBatch={form.batch_id}
+                    onToggleSection={sec => {
+                      setForm(p => {
+                        const exists = p.section_ids.includes(sec)
+                        const nextSecs = exists
+                          ? p.section_ids.filter(s => s !== sec)
+                          : [...p.section_ids, sec]
+                        return { ...p, section_ids: nextSecs, section_id: nextSecs[0] || 'A' }
+                      })
+                    }}
+                    onSelectAllSections={() => {
+                      const allSelected = STANDARD_SECTIONS.every(s => form.section_ids.includes(s))
+                      setForm(p => ({
+                        ...p,
+                        section_ids: allSelected ? ['A'] : [...STANDARD_SECTIONS],
+                        section_id: allSelected ? 'A' : 'A',
+                      }))
+                    }}
+                    onSelectBatch={batch_id => setForm(p => ({ ...p, batch_id }))}
+                  />
+                )}
+                {step === 5 && (
+                  <Step5QuestionPaper
+                    form={form}
+                    setForm={setForm}
+                    questions={questions}
+                    setQuestions={setQuestions}
+                    staffList={staffList}
+                  />
+                )}
+                {step === 6 && (
+                  <Step6Review
+                    form={form}
+                    colleges={colleges}
+                    questions={questions}
+                    staffList={staffList}
+                  />
+                )}
               </GlowCard>
             </motion.div>
           </AnimatePresence>
@@ -1099,16 +1320,16 @@ export default function CreateExamWizardPage() {
             </MagneticButton>
 
             <div style={{ display: 'flex', gap: 10 }}>
-              {step === 2 && (
+              {step === 5 && questions.length === 0 && (
                 <MagneticButton
                   className="btn btn-ghost btn-sm"
-                  onClick={() => setStep(3)}
-                  style={{ color: 'var(--color-text-faint)' }}
+                  onClick={() => setStep(6)}
+                  style={{ color: 'var(--color-text-faint, #64748b)' }}
                 >
-                  Skip Questions →
+                  Skip Questions (Draft Paper) →
                 </MagneticButton>
               )}
-              {step < 3 ? (
+              {step < 6 ? (
                 <MagneticButton
                   className="btn btn-primary"
                   onClick={() => setStep(s => s + 1)}
@@ -1124,7 +1345,7 @@ export default function CreateExamWizardPage() {
                 >
                   {submitting
                     ? <><span className="btn-spinner" /> Launching Exam<TypingDots /></>
-                    : '🚀 Launch Exam'}
+                    : '🚀 Launch Section-Targeted Exam'}
                 </MagneticButton>
               )}
             </div>

@@ -16,6 +16,7 @@ import {
   listHierarchyStudents,
   createHierarchyStudent,
   bulkImportStudents,
+  previewHierarchyImport,
   exportBatchStudentsUrl,
   resetStudentPassword,
   setup2FA,
@@ -90,6 +91,8 @@ export default function HierarchyManagementPage() {
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [previewData, setPreviewData] = useState<any | null>(null);
   const [importResult, setImportResult] = useState<any | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -380,14 +383,28 @@ export default function HierarchyManagementPage() {
     }
   }
 
-  // Bulk Import
+  // Preview Bulk Import & Duplicate Detection
+  async function handlePreview() {
+    if (!importFile) {
+      alert('Please select an Excel (.xlsx/.xls) or CSV file first');
+      return;
+    }
+    setPreviewing(true);
+    setPreviewData(null);
+    try {
+      const res = await previewHierarchyImport(importFile);
+      setPreviewData(res.data);
+    } catch (err: any) {
+      setMessage({ text: err.response?.data?.error || 'Failed to generate import preview', type: 'error' });
+    } finally {
+      setPreviewing(false);
+    }
+  }
+
+  // Bulk Import (Idempotent with Section Auto-Linking & Audit Log)
   async function handleBulkImportSubmit() {
     if (!importFile) {
       alert('Please select an Excel (.xlsx/.xls) or CSV file');
-      return;
-    }
-    if (!selectedSectionId || !selectedBatchId) {
-      alert('Please select a Section and Batch for the imported students.');
       return;
     }
 
@@ -396,15 +413,15 @@ export default function HierarchyManagementPage() {
     try {
       const res = await bulkImportStudents(importFile, {
         college_id: selectedCollegeId,
-        section_id: selectedSectionId,
-        batch_id: selectedBatchId,
+        section_id: selectedSectionId || undefined,
+        batch_id: selectedBatchId || undefined,
       });
       setImportResult(res.data);
       setMessage({
-        text: `Bulk import completed: ${res.data.summary.inserted} students enrolled and welcome emails sent!`,
+        text: `Idempotent import completed: ${res.data.summary.inserted} students processed / enrolled.`,
         type: 'success',
       });
-      await loadStudents(selectedSectionId, selectedBatchId);
+      await loadStudents(selectedSectionId ?? undefined, selectedBatchId ?? undefined);
     } catch (err: any) {
       setMessage({ text: err.response?.data?.error || 'Failed to process bulk import', type: 'error' });
     } finally {
@@ -1208,6 +1225,55 @@ export default function HierarchyManagementPage() {
                   </div>
                 </div>
 
+                <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+                  <button
+                    type="button"
+                    disabled={!importFile || previewing || importing}
+                    onClick={handlePreview}
+                    className="btn btn-secondary"
+                    style={{ flex: 1, padding: '9px 14px' }}
+                  >
+                    {previewing ? 'Analyzing...' : '🔍 Preview & Validate Spreadsheet'}
+                  </button>
+                </div>
+
+                {/* Validation Preview & Duplicate Detection Report */}
+                {previewData && (
+                  <div style={{ padding: 14, background: 'rgba(30, 41, 59, 0.7)', border: '1px solid var(--color-border)', borderRadius: 10, marginBottom: 16 }}>
+                    <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+                      <span style={{ padding: '3px 8px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.15)', color: '#34D399', fontSize: '0.78rem', fontWeight: 700 }}>
+                        ✓ {previewData.valid_count ?? previewData.preview?.length ?? 0} Valid Rows
+                      </span>
+                      <span style={{ padding: '3px 8px', borderRadius: 4, background: 'rgba(245, 158, 11, 0.15)', color: '#FBBF24', fontSize: '0.78rem', fontWeight: 700 }}>
+                        🔁 {previewData.duplicate_count ?? previewData.duplicates?.length ?? 0} Duplicates (Idempotent update)
+                      </span>
+                      {previewData.error_count > 0 && (
+                        <span style={{ padding: '3px 8px', borderRadius: 4, background: 'rgba(239, 68, 68, 0.15)', color: '#F87171', fontSize: '0.78rem', fontWeight: 700 }}>
+                          ⚠️ {previewData.error_count} Invalid
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ fontSize: '0.78rem', color: '#94A3B8', marginBottom: 8 }}>
+                      ✨ <em>Roster rows will auto-link students to the right section without manual assignment.</em>
+                    </div>
+
+                    {previewData.duplicates?.length > 0 && (
+                      <div style={{ fontSize: '0.74rem', color: '#FCD34D', marginBottom: 6 }}>
+                        Duplicate notice: {previewData.duplicates.length} students already exist and will be idempotently updated.
+                      </div>
+                    )}
+
+                    {previewData.errors?.length > 0 && (
+                      <div style={{ maxHeight: 80, overflowY: 'auto', fontSize: '0.74rem', color: '#F87171', background: 'rgba(239, 68, 68, 0.08)', padding: 6, borderRadius: 6 }}>
+                        Errors: {previewData.errors.map((e: any, i: number) => (
+                          <div key={i}>Row {e.row}: {e.reason}</div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {importResult && (
                   <div style={{ padding: 12, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 8, marginBottom: 16 }}>
                     <div style={{ color: '#34D399', fontWeight: 700, fontSize: '0.86rem' }}>
@@ -1222,9 +1288,9 @@ export default function HierarchyManagementPage() {
                 )}
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                  <button onClick={() => { setShowBulkImportModal(false); setImportFile(null); setImportResult(null); }} className="btn btn-secondary" style={{ padding: '8px 16px' }}>Close</button>
+                  <button onClick={() => { setShowBulkImportModal(false); setImportFile(null); setImportResult(null); setPreviewData(null); }} className="btn btn-secondary" style={{ padding: '8px 16px' }}>Close</button>
                   <button disabled={!importFile || importing} onClick={handleBulkImportSubmit} className="btn btn-primary" style={{ padding: '8px 16px' }}>
-                    {importing ? 'Processing & Dispatching...' : 'Upload & Enroll'}
+                    {importing ? 'Processing & Dispatching...' : 'Execute Idempotent Import'}
                   </button>
                 </div>
               </div>

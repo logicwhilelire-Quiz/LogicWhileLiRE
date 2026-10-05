@@ -179,6 +179,15 @@ CREATE TABLE IF NOT EXISTS exams (
   tab_switch_detection  BOOLEAN NOT NULL DEFAULT TRUE,
   college_id            INT REFERENCES colleges(id) ON DELETE SET NULL,
   created_by_staff_id   UUID REFERENCES staff(id) ON DELETE SET NULL,
+  branch                VARCHAR(100),
+  passout_year          INT,
+  section_id            TEXT,
+  section_ids           JSONB DEFAULT '[]'::jsonb,
+  batch_id              TEXT,
+  assigned_faculty_id   UUID REFERENCES staff(id) ON DELETE SET NULL,
+  assigned_inspector_id UUID REFERENCES staff(id) ON DELETE SET NULL,
+  is_locked             BOOLEAN NOT NULL DEFAULT FALSE,
+  paper_status          TEXT DEFAULT 'draft',
   total_score           NUMERIC NOT NULL DEFAULT 100,
   session_id            TEXT,
   participant_id        TEXT,
@@ -366,6 +375,15 @@ CREATE TABLE IF NOT EXISTS exam_codes (
   auto_terminate      BOOLEAN NOT NULL DEFAULT TRUE,
   grace_period_seconds INT NOT NULL DEFAULT 60,
   allowed_languages   TEXT[] NOT NULL DEFAULT ARRAY['python', 'javascript', 'cpp', 'java'],
+  branch              VARCHAR(100),
+  passout_year        INT,
+  section_id          TEXT,
+  section_ids         JSONB DEFAULT '[]'::jsonb,
+  batch_id            TEXT,
+  assigned_faculty_id UUID REFERENCES staff(id) ON DELETE SET NULL,
+  assigned_inspector_id UUID REFERENCES staff(id) ON DELETE SET NULL,
+  is_locked           BOOLEAN NOT NULL DEFAULT FALSE,
+  paper_status        TEXT DEFAULT 'draft',
   created_by_staff_id UUID REFERENCES staff(id) ON DELETE SET NULL,
   created_by          TEXT,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -823,3 +841,14 @@ ALTER TABLE IF EXISTS students ADD COLUMN IF NOT EXISTS failed_attempts INTEGER 
 ALTER TABLE IF EXISTS students ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ;
 ALTER TABLE IF EXISTS students ADD COLUMN IF NOT EXISTS reset_token_hash TEXT;
 ALTER TABLE IF EXISTS students ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ;
+
+ALTER TABLE IF EXISTS exam_codes ADD COLUMN IF NOT EXISTS branch VARCHAR(100);
+ALTER TABLE IF EXISTS exam_codes ADD COLUMN IF NOT EXISTS passout_year INT;
+ALTER TABLE IF EXISTS exam_codes ADD COLUMN IF NOT EXISTS section_id TEXT;
+ALTER TABLE IF EXISTS exam_codes ADD COLUMN IF NOT EXISTS section_ids JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE IF EXISTS exam_codes ADD COLUMN IF NOT EXISTS batch_id TEXT;
+ALTER TABLE IF EXISTS exam_codes ADD COLUMN IF NOT EXISTS assigned_faculty_id UUID;
+ALTER TABLE IF EXISTS exam_codes ADD COLUMN IF NOT EXISTS assigned_inspector_id UUID;
+ALTER TABLE IF EXISTS exam_codes ADD COLUMN IF NOT EXISTS is_locked BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE IF EXISTS exam_codes ADD COLUMN IF NOT EXISTS paper_status TEXT DEFAULT 'draft';
+

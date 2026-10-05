@@ -52,6 +52,21 @@ export default function Dashboard() {
   const [widgets, setWidgets] = useState<DashboardWidgetsData | null>(null);
 
   useEffect(() => {
+    try {
+      const userStr = localStorage.getItem('admin_user');
+      if (userStr) {
+        const u = JSON.parse(userStr);
+        if (u.role === 'inspector' || u.role === 'college_admin') {
+          navigate('/admin/inspector', { replace: true });
+          return;
+        }
+        if (u.role === 'faculty') {
+          navigate('/admin/exams', { replace: true });
+          return;
+        }
+      }
+    } catch {}
+
     setLoading(true);
     const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
 

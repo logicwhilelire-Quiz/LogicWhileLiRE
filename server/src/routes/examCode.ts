@@ -22,6 +22,10 @@ import {
   forceSubmitAttempt,
   reevaluateExamCode,
   getExamCodeAnalytics,
+  allocateQuestionPaper,
+  lockQuestionPaper,
+  replaceQuestionPaper,
+  validateStudentEligibility,
 } from '../controllers/examCodeController';
 import {
   verifyExamEntry,
@@ -73,9 +77,9 @@ router.post('/exam-code/:code/validate', enterExamRateLimit, (req, res) => {
 });
 
 // Start session endpoint: returns exam + questions
-router.get('/exam-code/:code/start', enterExamRateLimit, async (req, res) => {
+const handleExamCodeStart = async (req: any, res: any) => {
   const code = String(req.params.code).toUpperCase();
-  const hallTicket = String(req.query.hallTicket || 'GUEST').toUpperCase();
+  const hallTicket = String(req.query.hallTicket || req.body?.hallTicket || 'GUEST').toUpperCase();
 
   try {
     const { data: exam } = await supabase
@@ -83,6 +87,16 @@ router.get('/exam-code/:code/start', enterExamRateLimit, async (req, res) => {
       .select('*')
       .eq('exam_code', code)
       .maybeSingle();
+
+    if (!exam) {
+      return res.status(404).json({ success: false, error: 'Exam not found or unavailable', code: 'EXAM_NOT_FOUND' });
+    }
+
+    // Enforce student targeting (returns 404 so untargeted students cannot tell exam exists)
+    const isEligible = await validateStudentEligibility(exam, hallTicket);
+    if (!isEligible) {
+      return res.status(404).json({ success: false, error: 'Exam not found or unavailable for your section', code: 'EXAM_NOT_FOUND' });
+    }
 
     const { data: qData } = await supabase
       .from('questions_ec')
@@ -138,19 +152,23 @@ router.get('/exam-code/:code/start', enterExamRateLimit, async (req, res) => {
   } catch (err) {
     return res.status(500).json({ success: false, error: 'Failed to start session' });
   }
-});
+};
+router.get('/exam-code/:code/start', enterExamRateLimit, handleExamCodeStart);
+router.post('/exam-code/:code/start', enterExamRateLimit, handleExamCodeStart);
 
 // Get questions for a quiz session
 router.get('/exam-code/:code/questions', getExamCodeQuestions);
 
 // Per-question autosave (1b)
 router.post('/exam-code/:code/save-answer', answerRateLimit, validateBody(saveExamCodeAnswerSchema), saveExamCodeAnswer);
+router.post('/exam-code/:code/answer', answerRateLimit, saveExamCodeAnswer);
 
 // Resume state after refresh/crash (1b)
 router.get('/exam-code/:code/resume-state', getExamCodeResumeState);
+router.get('/exam-code/:code/resume', getExamCodeResumeState);
 
 // Submit answers
-router.post('/exam-code/:code/submit', validateBody(submitExamCodeSchema), submitExamCodeAttempt);
+router.post('/exam-code/:code/submit', submitExamCodeAttempt);
 
 // Log violation
 router.post('/exam-code/:code/violation', logExamCodeViolation);
@@ -175,6 +193,9 @@ router.post('/admin/exam-codes', adminAuth, requireCollegeScope(), createExamCod
 router.patch('/admin/exam-codes/:id/toggle', adminAuth, requireCollegeScope(), toggleExamCode);
 router.get('/admin/exam-codes/:id/qr', adminAuth, requireCollegeScope(), getExamCodeQR);
 router.get('/admin/exam-codes/:id/report', adminAuth, requireCollegeScope(), getExamCodeReport);
+router.post('/admin/exam-codes/:id/allocate', adminAuth, requireCollegeScope(), allocateQuestionPaper);
+router.post('/admin/exam-codes/:id/lock-paper', adminAuth, requireCollegeScope(), lockQuestionPaper);
+router.post('/admin/exam-codes/:id/replace-paper', adminAuth, requireCollegeScope(), replaceQuestionPaper);
 
 // Question import for exam codes & Faculty 5-column Excel upload with validation and preview
 router.post(

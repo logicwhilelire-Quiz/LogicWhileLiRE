@@ -90,6 +90,7 @@ import {
   updateStudent,
   deleteStudent,
   bulkImportStudents,
+  previewHierarchyImport,
   exportBatchStudents,
   resetStudentPassword,
   resetStaffPassword,
@@ -318,17 +319,74 @@ router.patch('/students/:id', requireFacultyPermission('manage_students'), audit
 router.put('/students/:id', requireFacultyPermission('manage_students'), auditLog('UPDATE_STUDENT', 'students'), updateStudent);
 router.delete('/students/:id', requireRole('super_admin'), auditLog('DELETE_STUDENT', 'students'), deleteStudent);
 router.post(
+  '/students/import-preview',
+  (req, res, next) => {
+    if (req.headers['content-type']?.includes('multipart')) {
+      uploadMiddleware(req, res, (err) => {
+        if (err) {
+          res.status(400).json({ success: false, error: err.message });
+          return;
+        }
+        next();
+      });
+    } else {
+      next();
+    }
+  },
+  previewHierarchyImport
+);
+router.post(
+  '/hierarchy/import-preview',
+  (req, res, next) => {
+    if (req.headers['content-type']?.includes('multipart')) {
+      uploadMiddleware(req, res, (err) => {
+        if (err) {
+          res.status(400).json({ success: false, error: err.message });
+          return;
+        }
+        next();
+      });
+    } else {
+      next();
+    }
+  },
+  previewHierarchyImport
+);
+router.post(
   '/students/bulk-import',
   requireFacultyPermission('upload_excel'),
   auditLog('BULK_IMPORT_STUDENTS', 'students'),
   (req, res, next) => {
-    uploadMiddleware(req, res, (err) => {
-      if (err) {
-        res.status(400).json({ success: false, error: err.message });
-        return;
-      }
+    if (req.headers['content-type']?.includes('multipart')) {
+      uploadMiddleware(req, res, (err) => {
+        if (err) {
+          res.status(400).json({ success: false, error: err.message });
+          return;
+        }
+        next();
+      });
+    } else {
       next();
-    });
+    }
+  },
+  bulkImportStudents
+);
+router.post(
+  '/hierarchy/bulk-import',
+  requireFacultyPermission('upload_excel'),
+  auditLog('BULK_IMPORT_STUDENTS', 'students'),
+  (req, res, next) => {
+    if (req.headers['content-type']?.includes('multipart')) {
+      uploadMiddleware(req, res, (err) => {
+        if (err) {
+          res.status(400).json({ success: false, error: err.message });
+          return;
+        }
+        next();
+      });
+    } else {
+      next();
+    }
   },
   bulkImportStudents
 );

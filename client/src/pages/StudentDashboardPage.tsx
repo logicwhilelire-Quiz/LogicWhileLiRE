@@ -1,6 +1,8 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import { getStudentDashboard, authLogout } from '../lib/api';
+import { API_BASE_URL } from '../lib/config';
 import BrandLogo from '../components/BrandLogo';
 import AnimatedPage from '../components/AnimatedPage';
 import SectorRadar3D, { type SectorScore } from '../components/3d/SectorRadar3D';
@@ -148,40 +150,7 @@ export default function StudentDashboardPage() {
         if (res.data?.success) {
           setStudent(res.data.student || localCandidate);
           setUpcomingExams(
-            res.data.upcoming_exams && res.data.upcoming_exams.length > 0
-              ? res.data.upcoming_exams
-              : [
-                  {
-                    id: 'exam-live-01',
-                    title: 'National Autonomous Aptitude & Coding Assessment 2026',
-                    code: 'DEMO2026',
-                    duration_minutes: 60,
-                    start_time: new Date().toISOString(),
-                    end_time: new Date(Date.now() + 86400000 * 7).toISOString(),
-                    is_active: true,
-                    is_leaderboard_public: true,
-                  },
-                  {
-                    id: 'exam-sec4-01',
-                    title: 'Sector 4: Data Structures & Algorithmic Velocity Sprint',
-                    code: 'DSA-SECTOR-04',
-                    duration_minutes: 45,
-                    start_time: new Date().toISOString(),
-                    end_time: new Date(Date.now() + 86400000 * 5).toISOString(),
-                    is_active: true,
-                    is_leaderboard_public: true,
-                  },
-                  {
-                    id: 'exam-core-01',
-                    title: 'Sector 3: Core Computer Science & Systems Diagnostic',
-                    code: 'CORE-CS-03',
-                    duration_minutes: 40,
-                    start_time: new Date().toISOString(),
-                    end_time: new Date(Date.now() + 86400000 * 10).toISOString(),
-                    is_active: true,
-                    is_leaderboard_public: true,
-                  },
-                ]
+            Array.isArray(res.data.upcoming_exams) ? res.data.upcoming_exams : []
           );
           setPastResults(
             res.data.past_results && res.data.past_results.length > 0
@@ -227,28 +196,7 @@ export default function StudentDashboardPage() {
       } catch (err: any) {
         // Fallback to local student if available rather than kicking to /login
         if (localCandidate) {
-          setUpcomingExams([
-            {
-              id: 'exam-live-01',
-              title: 'National Autonomous Aptitude & Coding Assessment 2026',
-              code: 'DEMO2026',
-              duration_minutes: 60,
-              start_time: new Date().toISOString(),
-              end_time: new Date(Date.now() + 86400000 * 7).toISOString(),
-              is_active: true,
-              is_leaderboard_public: true,
-            },
-            {
-              id: 'exam-sec4-01',
-              title: 'Sector 4: Data Structures & Algorithmic Velocity Sprint',
-              code: 'DSA-SECTOR-04',
-              duration_minutes: 45,
-              start_time: new Date().toISOString(),
-              end_time: new Date(Date.now() + 86400000 * 5).toISOString(),
-              is_active: true,
-              is_leaderboard_public: true,
-            },
-          ]);
+          setUpcomingExams([]);
           setPastResults([
             {
               id: 'res-demo-01',
@@ -291,7 +239,7 @@ export default function StudentDashboardPage() {
     navigate('/login');
   }
 
-  const handleLaunchExam = (codeToLaunch?: string) => {
+  const handleLaunchExam = async (codeToLaunch?: string) => {
     const targetCode = (codeToLaunch || examCodeInput).trim().toUpperCase();
     if (!targetCode) {
       setLaunchError('Please enter a valid Exam Code to launch.');
@@ -299,24 +247,41 @@ export default function StudentDashboardPage() {
     }
     setLaunchError('');
 
-    // Pre-seed candidate attempt context for seamless entry
     const hallTicket = student?.roll_number || 'CANDIDATE';
-    const attemptData = JSON.stringify({
-      attemptId: `att_${Date.now()}`,
-      examCode: targetCode,
-      hallTicket: hallTicket,
-      examDetails: {
-        exam_name: targetCode,
-        duration_minutes: 60,
-        total_questions: 20,
-      },
-    });
-    localStorage.setItem('logicwhilelire_attempt', attemptData);
-    localStorage.setItem('lw_attempt', attemptData);
+    try {
+      const BASE = API_BASE_URL;
+      const { data } = await axios.get(
+        `${BASE}/api/exam-code/${encodeURIComponent(targetCode)}/verify`,
+        { params: { hallTicket } }
+      );
+      if (data.success || data.valid) {
+        const attemptData = JSON.stringify({
+          attemptId: data.attempt_id || data.attemptId || `att_${Date.now()}`,
+          examCode: targetCode,
+          hallTicket: hallTicket,
+          session_token: data.session_token,
+          examDetails: data.examDetails || data.exam || {
+            exam_name: targetCode,
+            duration_minutes: 60,
+            total_questions: 20,
+          },
+        });
+        localStorage.setItem('logicwhilelire_attempt', attemptData);
+        localStorage.setItem('lw_attempt', attemptData);
 
-    navigate(`/instructions/${encodeURIComponent(targetCode)}`, {
-      state: { hallTicket },
-    });
+        navigate(`/instructions/${encodeURIComponent(targetCode)}`, {
+          state: { hallTicket },
+        });
+      } else {
+        setLaunchError('No exam available for your section or invalid exam code.');
+      }
+    } catch (err: any) {
+      setLaunchError(
+        err.response?.status === 404
+          ? 'No exam available or exam code does not exist for your section.'
+          : (err.response?.data?.message || 'Failed to verify exam eligibility.')
+      );
+    }
   };
 
   const radarScores: SectorScore[] = SECTOR_METRICS.map((s) => ({
@@ -619,33 +584,35 @@ export default function StudentDashboardPage() {
               </button>
             </div>
 
-            {/* Quick Presets */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Quick Access Codes:</span>
-              {['DEMO2026', 'DSA-SECTOR-04', 'CORE-CS-03', 'FULLSTACK-05', 'QUANT-01'].map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => {
-                    setExamCodeInput(preset);
-                    handleLaunchExam(preset);
-                  }}
-                  style={{
-                    fontSize: '0.75rem',
-                    fontFamily: 'monospace',
-                    fontWeight: 600,
-                    padding: '3px 10px',
-                    borderRadius: 4,
-                    background: 'rgba(255, 255, 255, 0.06)',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
-                    color: '#fbbf24',
-                    cursor: 'pointer',
-                  }}
-                >
-                  ⚡ {preset}
-                </button>
-              ))}
-            </div>
+            {/* Active Exam Codes for student's section */}
+            {upcomingExams.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Targeted Section Codes:</span>
+                {upcomingExams.map((e) => e.code).filter(Boolean).map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => {
+                      setExamCodeInput(preset!);
+                      handleLaunchExam(preset!);
+                    }}
+                    style={{
+                      fontSize: '0.75rem',
+                      fontFamily: 'monospace',
+                      fontWeight: 600,
+                      padding: '3px 10px',
+                      borderRadius: 4,
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      color: '#fbbf24',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ⚡ {preset}
+                  </button>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Ranking & Performance KPI Grid */}
@@ -945,8 +912,12 @@ export default function StudentDashboardPage() {
                   textAlign: 'center',
                 }}
               >
+                <div style={{ fontSize: '2rem', marginBottom: 8 }}>📭</div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
+                  No exam available
+                </h3>
                 <p className="text-muted text-sm" style={{ margin: 0 }}>
-                  No new examinations are currently scheduled for your institution. Check back before your next scheduled slot.
+                  No examinations are currently active or scheduled for your section. Check back before your next scheduled slot.
                 </p>
               </div>
             ) : (

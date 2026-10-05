@@ -34,6 +34,10 @@ export default function AdminLoginPage() {
         navigate('/admin/inspector');
         return;
       }
+      if (user.role === 'faculty') {
+        navigate('/admin/exams');
+        return;
+      }
     }
     navigate('/admin/dashboard');
   }

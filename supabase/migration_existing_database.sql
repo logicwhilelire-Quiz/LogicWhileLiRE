@@ -37,10 +37,38 @@ ALTER TABLE students ADD COLUMN IF NOT EXISTS active_session_id TEXT;
 ALTER TABLE students ADD COLUMN IF NOT EXISTS cohort_id TEXT;
 ALTER TABLE students ADD COLUMN IF NOT EXISTS section_id TEXT;
 ALTER TABLE students ADD COLUMN IF NOT EXISTS batch_id TEXT;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS branch VARCHAR(100);
+ALTER TABLE students ADD COLUMN IF NOT EXISTS branch_code VARCHAR(100);
+ALTER TABLE students ADD COLUMN IF NOT EXISTS passout_year INT;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS year_of_passing INT;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS section VARCHAR(50);
+ALTER TABLE students ADD COLUMN IF NOT EXISTS batch VARCHAR(50);
 ALTER TABLE students ADD COLUMN IF NOT EXISTS failed_attempts INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE students ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ;
 ALTER TABLE students ADD COLUMN IF NOT EXISTS reset_token_hash TEXT;
 ALTER TABLE students ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ;
+
+-- exam_codes (Section targeting & Question paper allocation)
+ALTER TABLE exam_codes ADD COLUMN IF NOT EXISTS branch VARCHAR(100);
+ALTER TABLE exam_codes ADD COLUMN IF NOT EXISTS passout_year INT;
+ALTER TABLE exam_codes ADD COLUMN IF NOT EXISTS section_id TEXT;
+ALTER TABLE exam_codes ADD COLUMN IF NOT EXISTS section_ids JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE exam_codes ADD COLUMN IF NOT EXISTS batch_id TEXT;
+ALTER TABLE exam_codes ADD COLUMN IF NOT EXISTS assigned_faculty_id UUID REFERENCES staff(id) ON DELETE SET NULL;
+ALTER TABLE exam_codes ADD COLUMN IF NOT EXISTS assigned_inspector_id UUID REFERENCES staff(id) ON DELETE SET NULL;
+ALTER TABLE exam_codes ADD COLUMN IF NOT EXISTS is_locked BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE exam_codes ADD COLUMN IF NOT EXISTS paper_status TEXT DEFAULT 'draft';
+
+-- exams (Section targeting & Question paper allocation)
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS branch VARCHAR(100);
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS passout_year INT;
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS section_id TEXT;
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS section_ids JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS batch_id TEXT;
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS assigned_faculty_id UUID REFERENCES staff(id) ON DELETE SET NULL;
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS assigned_inspector_id UUID REFERENCES staff(id) ON DELETE SET NULL;
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS is_locked BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS paper_status TEXT DEFAULT 'draft';
 
 -- Ensure composite uniqueness for students (college_id, roll_number)
 DO $$
@@ -171,6 +199,9 @@ CREATE INDEX IF NOT EXISTS idx_colleges_code ON colleges(college_code);
 CREATE INDEX IF NOT EXISTS idx_staff_email ON staff(email);
 CREATE INDEX IF NOT EXISTS idx_students_college_roll ON students(college_id, roll_number);
 CREATE INDEX IF NOT EXISTS idx_students_email ON students(email);
+CREATE INDEX IF NOT EXISTS idx_students_targeting ON students(college_id, branch_code, year_of_passing, section);
+CREATE INDEX IF NOT EXISTS idx_exam_codes_targeting ON exam_codes(college_id, branch, passout_year);
+CREATE INDEX IF NOT EXISTS idx_exams_targeting ON exams(college_id, branch, passout_year);
 CREATE INDEX IF NOT EXISTS idx_roster_college_roll ON student_roster(college_id, roll_number);
 CREATE INDEX IF NOT EXISTS idx_email_queue_status ON email_queue(status, created_at);
 CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at DESC);

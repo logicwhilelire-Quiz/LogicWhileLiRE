@@ -652,8 +652,20 @@ export async function createStudent(req: Request, res: Response): Promise<void> 
 
 export async function bulkImportStudents(req: Request, res: Response): Promise<void> {
   const file = req.file;
-  if (!file) {
-    res.status(400).json({ success: false, error: 'Excel (.xlsx) or CSV file is required' });
+  let rows: any[] = [];
+  if (file?.buffer) {
+    try {
+      const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      rows = XLSX.utils.sheet_to_json<Record<string, any>>(workbook.Sheets[sheetName]);
+    } catch (e: any) {
+      res.status(400).json({ success: false, error: 'Failed to read spreadsheet file: ' + e?.message });
+      return;
+    }
+  } else if (Array.isArray(req.body?.rows)) {
+    rows = req.body.rows;
+  } else {
+    res.status(400).json({ success: false, error: 'Excel (.xlsx) or CSV file or rows array is required' });
     return;
   }
 
@@ -665,17 +677,15 @@ export async function bulkImportStudents(req: Request, res: Response): Promise<v
   const defaultBatchId = req.body.batch_id || null;
 
   try {
-    const workbook = XLSX.read(file.buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const rows = XLSX.utils.sheet_to_json<Record<string, any>>(workbook.Sheets[sheetName]);
-
     if (!rows || rows.length === 0) {
-      res.status(400).json({ success: false, error: 'File is empty or contains no valid rows' });
+      res.status(400).json({ success: false, error: 'File or rows list is empty or contains no valid rows' });
       return;
     }
 
     const importedStudents = [];
     const errors = [];
+    let updatedCount = 0;
+    let insertedCount = 0;
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -684,76 +694,144 @@ export async function bulkImportStudents(req: Request, res: Response): Promise<v
       const rawEmail = row['Email'] || row['email'] || row['Student Email'] || '';
       const rawRoll = row['Roll Number'] || row['roll_number'] || row['Roll'] || row['Hall Ticket'] || row['hall_ticket'] || '';
       const rawName = row['Name'] || row['name'] || row['Student Name'] || `${row['First Name'] || ''} ${row['Last Name'] || ''}`.trim();
-      const rawSectionId = row['Section ID'] || row['section_id'] || row['Section'] || defaultSectionId;
-      const rawBatchId = row['Batch ID'] || row['batch_id'] || row['Batch'] || defaultBatchId;
+      const rawSection = row['Section'] || row['section_id'] || row['Section ID'] || defaultSectionId || 'A';
+      const rawBatch = row['Batch'] || row['batch_id'] || row['Batch ID'] || defaultBatchId || 'Batch 1';
+      const rawBranch = row['Branch'] || row['branch_code'] || row['Department'] || 'CSE';
+      const rawYop = row['Passout Year'] || row['YOP'] || row['year_of_passing'] || '2026';
       const rawCollegeId = isScoped ? scopedCollegeId : (row['College ID'] || row['college_id'] || defaultCollegeId);
       const rawAyId = row['Academic Year ID'] || row['academic_year_id'] || defaultAyId;
-      const rawCohortId = row['Cohort ID'] || row['cohort_id'] || row['YOP'] || defaultCohortId;
+      const rawCohortId = row['Cohort ID'] || row['cohort_id'] || defaultCohortId;
 
       if (!rawEmail || !rawRoll) {
         errors.push({ row: rowNum, error: 'Email and Roll Number are required' });
         continue;
       }
 
-      if (!rawSectionId || !rawBatchId) {
-        errors.push({
-          row: rowNum,
-          error: 'Student must belong to exactly one section and batch. Both section and batch are required.',
-        });
-        continue;
-      }
-
       const email = String(rawEmail).trim().toLowerCase();
       const rollNumber = String(rawRoll).trim().toUpperCase();
       const name = rawName ? String(rawName).trim() : rollNumber;
+      const sectionName = String(rawSection).trim().toUpperCase();
+      const branchCode = String(rawBranch).trim().toUpperCase();
+      const yop = parseInt(String(rawYop), 10) || 2026;
 
-      // Temporary password per student
-      const tempPassword = `Student#${Math.floor(100000 + Math.random() * 900000)}!`;
-      const passwordHash = await bcrypt.hash(tempPassword, 12);
-      const studentId = uuidv4();
+      // Auto-link section_id and batch_id
+      const resolvedSectionId = String(row['section_id'] || row['Section ID'] || `sec-${String(rawCollegeId).toLowerCase()}-${branchCode.toLowerCase()}-${sectionName.toLowerCase()}`);
+      const resolvedBatchId = String(row['batch_id'] || row['Batch ID'] || `bat-${String(rawCollegeId).toLowerCase()}-${branchCode.toLowerCase()}-${sectionName.toLowerCase()}-1`);
 
-      const studentRec = {
-        id: studentId,
-        name,
-        first_name: name.split(' ')[0] || '',
-        last_name: name.split(' ').slice(1).join(' ') || '',
-        email,
-        roll_number: rollNumber,
-        hall_ticket: rollNumber,
-        college_id: rawCollegeId,
-        academic_year_id: rawAyId,
-        cohort_id: rawCohortId,
-        section_id: String(rawSectionId),
-        batch_id: String(rawBatchId),
-        section: String(row['Section'] || rawSectionId),
-        batch: String(row['Batch'] || rawBatchId),
-        year_of_passing: parseInt(String(row['YOP'] || row['year_of_passing'] || '2026'), 10),
-        branch_code: String(row['Branch'] || row['branch_code'] || 'CSE').toUpperCase(),
-        password_hash: passwordHash,
-        failed_attempts: 0,
-        must_change_password: true,
-        is_active: true,
-        is_blocked: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+      // Idempotency: Check if student already exists by roll_number or email
+      const { data: existing } = await supabase
+        .from('students')
+        .select('*')
+        .or(`roll_number.eq.${rollNumber},email.eq.${email},hall_ticket.eq.${rollNumber}`)
+        .maybeSingle();
 
-      const { data: created, error: insertErr } = await supabase.from('students').insert(studentRec).select().single();
-      if (insertErr) {
-        errors.push({ row: rowNum, error: insertErr.message });
+      if (existing) {
+        // Update existing record
+        const updateRec: Record<string, any> = {
+          name,
+          first_name: name.split(' ')[0] || '',
+          last_name: name.split(' ').slice(1).join(' ') || '',
+          email,
+          roll_number: rollNumber,
+          hall_ticket: rollNumber,
+          college_id: rawCollegeId,
+          section_id: resolvedSectionId,
+          batch_id: resolvedBatchId,
+          section: sectionName,
+          batch: String(rawBatch).trim(),
+          year_of_passing: yop,
+          branch_code: branchCode,
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        };
+
+        const { data: updated, error: updErr } = await supabase
+          .from('students')
+          .update(updateRec)
+          .eq('id', existing.id)
+          .select()
+          .single();
+
+        if (updErr) {
+          errors.push({ row: rowNum, error: updErr.message });
+        } else {
+          updatedCount++;
+          importedStudents.push(updated);
+        }
       } else {
-        importedStudents.push({ ...created, temporary_password: tempPassword });
-        // Async send welcome email
-        sendWelcomeEmail(email, name, 'student', tempPassword).catch((e) =>
-          console.warn('[WelcomeEmail] Failed to send during bulk import:', e)
-        );
+        // Create new student
+        const tempPassword = `Student#${Math.floor(100000 + Math.random() * 900000)}!`;
+        const passwordHash = await bcrypt.hash(tempPassword, 12);
+        const studentId = uuidv4();
+
+        const studentRec = {
+          id: studentId,
+          name,
+          first_name: name.split(' ')[0] || '',
+          last_name: name.split(' ').slice(1).join(' ') || '',
+          email,
+          roll_number: rollNumber,
+          hall_ticket: rollNumber,
+          college_id: rawCollegeId,
+          academic_year_id: rawAyId,
+          cohort_id: rawCohortId,
+          section_id: resolvedSectionId,
+          batch_id: resolvedBatchId,
+          section: sectionName,
+          batch: String(rawBatch).trim(),
+          year_of_passing: yop,
+          branch_code: branchCode,
+          password_hash: passwordHash,
+          failed_attempts: 0,
+          must_change_password: true,
+          is_active: true,
+          is_blocked: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        const { data: created, error: insertErr } = await supabase.from('students').insert(studentRec).select().single();
+        if (insertErr) {
+          errors.push({ row: rowNum, error: insertErr.message });
+        } else {
+          insertedCount++;
+          importedStudents.push({ ...created, temporary_password: tempPassword });
+          sendWelcomeEmail(email, name, 'student', tempPassword).catch((e) =>
+            console.warn('[WelcomeEmail] Failed to send during bulk import:', e)
+          );
+        }
       }
+    }
+
+    // Audit log
+    if ((req as any).admin) {
+      recordAuditLog(
+        (req as any).admin,
+        'BULK_ROSTER_IMPORT',
+        'students',
+        null,
+        {
+          total_rows: rows.length,
+          inserted_count: insertedCount,
+          updated_count: updatedCount,
+          errors_count: errors.length,
+        },
+        req
+      ).catch(() => {});
     }
 
     res.json({
       success: true,
-      message: `Bulk import completed: ${importedStudents.length} students enrolled, ${errors.length} skipped.`,
+      message: `Bulk import completed: ${insertedCount} inserted, ${updatedCount} updated, ${errors.length} skipped.`,
+      summary: {
+        total: rows.length,
+        inserted: insertedCount,
+        updated: updatedCount,
+        errors: errors.length,
+      },
       imported_count: importedStudents.length,
+      inserted_count: insertedCount,
+      updated_count: updatedCount,
       errors_count: errors.length,
       errors,
       students: importedStudents,
@@ -761,6 +839,106 @@ export async function bulkImportStudents(req: Request, res: Response): Promise<v
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message || 'Failed to process bulk import file' });
   }
+}
+
+/**
+ * POST /api/admin/hierarchy/import-preview
+ * Validates roster import from Excel/CSV, identifies duplicates, and outputs validation report.
+ */
+export async function previewHierarchyImport(req: Request, res: Response): Promise<void> {
+  const file = req.file;
+  let rows: any[] = [];
+
+  if (file?.buffer) {
+    try {
+      const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      rows = XLSX.utils.sheet_to_json<Record<string, any>>(workbook.Sheets[sheetName]);
+    } catch (e: any) {
+      res.status(400).json({ success: false, error: 'Failed to read spreadsheet file: ' + e?.message });
+      return;
+    }
+  } else if (Array.isArray(req.body?.rows)) {
+    rows = req.body.rows;
+  } else {
+    res.status(400).json({ success: false, error: 'No file or rows provided' });
+    return;
+  }
+
+  const { isScoped, collegeId: scopedCollegeId } = resolveCollegeScope(req);
+  const defaultCollegeId = isScoped ? scopedCollegeId : (req.body.college_id || '1');
+
+  // Fetch all existing students for duplicate detection
+  const { data: existingStudents } = await supabase.from('students').select('id, roll_number, hall_ticket, email');
+  const existingSet = new Set<string>();
+  for (const s of existingStudents || []) {
+    if (s.roll_number) existingSet.add(String(s.roll_number).trim().toUpperCase());
+    if (s.hall_ticket) existingSet.add(String(s.hall_ticket).trim().toUpperCase());
+    if (s.email) existingSet.add(String(s.email).trim().toLowerCase());
+  }
+
+  const preview: any[] = [];
+  const errors: any[] = [];
+  let newCount = 0;
+  let duplicateCount = 0;
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNum = i + 2;
+
+    const rawEmail = row['Email'] || row['email'] || row['Student Email'] || '';
+    const rawRoll = row['Roll Number'] || row['roll_number'] || row['Roll'] || row['Hall Ticket'] || row['hall_ticket'] || '';
+    const rawName = row['Name'] || row['name'] || row['Student Name'] || `${row['First Name'] || ''} ${row['Last Name'] || ''}`.trim();
+    const rawSection = row['Section'] || row['section_id'] || row['Section ID'] || 'A';
+    const rawBranch = row['Branch'] || row['branch_code'] || row['Department'] || 'CSE';
+    const rawYop = row['Passout Year'] || row['YOP'] || row['year_of_passing'] || '2026';
+    const rawBatch = row['Batch'] || row['batch_id'] || row['Batch ID'] || 'Batch 1';
+
+    if (!rawEmail || !rawRoll) {
+      errors.push({ row: rowNum, error: 'Email and Roll Number are required' });
+      continue;
+    }
+
+    const email = String(rawEmail).trim().toLowerCase();
+    const rollNumber = String(rawRoll).trim().toUpperCase();
+    const isDuplicate = existingSet.has(rollNumber) || existingSet.has(email);
+
+    if (isDuplicate) {
+      duplicateCount++;
+    } else {
+      newCount++;
+    }
+
+    preview.push({
+      row: rowNum,
+      name: rawName || rollNumber,
+      email,
+      roll_number: rollNumber,
+      college_id: defaultCollegeId,
+      branch: String(rawBranch).trim().toUpperCase(),
+      passout_year: parseInt(String(rawYop), 10) || 2026,
+      section: String(rawSection).trim().toUpperCase(),
+      batch: String(rawBatch).trim(),
+      is_duplicate: isDuplicate,
+      action: isDuplicate ? 'UPDATE' : 'CREATE',
+    });
+  }
+
+  res.json({
+    success: true,
+    total: rows.length,
+    total_rows: rows.length,
+    valid_count: preview.length,
+    valid_rows: preview.length,
+    invalid_rows: errors.length,
+    error_count: errors.length,
+    new_records: newCount,
+    duplicate_count: duplicateCount,
+    duplicate_records: duplicateCount,
+    preview: preview.slice(0, 100),
+    duplicates: preview.filter((p) => p.is_duplicate),
+    errors,
+  });
 }
 
 // ── 8. BATCH-WISE STUDENT LIST EXPORT (Excel / CSV) ──

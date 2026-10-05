@@ -3,6 +3,8 @@ import QRCode from 'qrcode';
 import * as XLSX from 'xlsx';
 import crypto from 'crypto';
 import { supabase } from '../db/supabase';
+import { isStudentEligibleForExam, deriveStudyYear } from '../utils/academicYear';
+import { recordAuditLog } from '../middleware/auditLog';
 
 // ─────────────────────────────────────────────
 // SESSION TOKEN UTILITIES  (1a: concurrent-session block)
@@ -208,19 +210,42 @@ export async function deleteCollege(req: Request, res: Response): Promise<void> 
 
 /**
  * GET /api/admin/exam-codes
- * 1e: super_admin sees all; college_admin/faculty see only their college's codes.
+ * Scoped by role:
+ * - super_admin / admin: sees all
+ * - faculty: sees ONLY allocated sections and papers (assigned_faculty_id or created_by_staff_id)
+ * - inspector: sees ONLY assigned exam or exams in assigned college
+ * - college_admin: sees only exams for caller's college
  */
 export async function listExamCodes(req: Request, res: Response): Promise<void> {
   const admin = (req as any).admin;
-  const isSuperAdmin = admin?.role === 'super_admin' || admin?.role === 'admin';
+  const role = admin?.role;
+  const isSuperAdmin = role === 'super_admin' || role === 'admin';
   const callerCollegeId = admin?.college_id;
+  const staffId = admin?.staff_id || admin?.id || admin?.sub;
+
   let query = supabase
     .from('exam_codes')
     .select('*, college:college_id ( college_name, college_code )')
     .order('created_at', { ascending: false });
-  if (!isSuperAdmin && callerCollegeId) {
+
+  if (role === 'faculty') {
+    // Faculty see only their allocated sections and papers
+    if (staffId) {
+      query = (query as any).or(`assigned_faculty_id.eq.${staffId},created_by_staff_id.eq.${staffId}`);
+    }
+  } else if (role === 'inspector') {
+    // Inspector only sees assigned exam or assigned college
+    if (staffId && callerCollegeId) {
+      query = (query as any).or(`assigned_inspector_id.eq.${staffId},college_id.eq.${callerCollegeId}`);
+    } else if (staffId) {
+      query = (query as any).eq('assigned_inspector_id', staffId);
+    } else if (callerCollegeId) {
+      query = (query as any).eq('college_id', callerCollegeId);
+    }
+  } else if (!isSuperAdmin && callerCollegeId) {
     query = (query as any).eq('college_id', callerCollegeId);
   }
+
   const { data, error } = await query;
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
   res.json({ success: true, exam_codes: data });
@@ -228,13 +253,20 @@ export async function listExamCodes(req: Request, res: Response): Promise<void> 
 
 /**
  * POST /api/admin/exam-codes
- * Creates a new exam code for a college. Auto-generates LW-XXX-XXXXXX code.
+ * Creates a new exam code for a college with section targeting and paper allocation.
  */
 export async function createExamCode(req: Request, res: Response): Promise<void> {
   const {
     college_id,
     exam_name,
     subject,
+    branch,
+    passout_year,
+    section_id,
+    section_ids,
+    batch_id,
+    assigned_faculty_id,
+    assigned_inspector_id,
     total_questions,
     duration_minutes,
     start_time,
@@ -274,24 +306,53 @@ export async function createExamCode(req: Request, res: Response): Promise<void>
     return;
   }
 
+  const targetedSections = Array.isArray(section_ids) && section_ids.length > 0
+    ? section_ids
+    : section_id
+    ? [String(section_id).trim()]
+    : [];
+
+  const insertPayload: Record<string, any> = {
+    exam_code: examCode,
+    college_id: parseInt(college_id, 10),
+    exam_name,
+    subject: subject || null,
+    branch: branch ? String(branch).trim().toUpperCase() : null,
+    passout_year: passout_year ? Number(passout_year) : null,
+    section_id: section_id ? String(section_id).trim() : (targetedSections[0] || null),
+    section_ids: targetedSections,
+    batch_id: batch_id ? String(batch_id).trim() : null,
+    assigned_faculty_id: assigned_faculty_id || null,
+    assigned_inspector_id: assigned_inspector_id || null,
+    is_locked: false,
+    paper_status: assigned_faculty_id ? 'allocated' : 'draft',
+    total_questions: parseInt(total_questions, 10) || 30,
+    duration_minutes: parseInt(duration_minutes, 10) || 60,
+    start_time,
+    end_time,
+    is_active: true,
+    created_by_staff_id: (req as any).admin?.staff_id || (req as any).admin?.sub || null,
+  };
+
   const { data, error } = await supabase
     .from('exam_codes')
-    .insert({
-      exam_code: examCode,
-      college_id: parseInt(college_id, 10),
-      exam_name,
-      subject: subject || null,
-      total_questions: parseInt(total_questions, 10) || 30,
-      duration_minutes: parseInt(duration_minutes, 10) || 60,
-      start_time,
-      end_time,
-      is_active: true,
-      created_by_staff_id: (req as any).admin?.staff_id || null,
-    })
+    .insert(insertPayload)
     .select(`*, college:college_id ( college_name, college_code )`)
     .single();
 
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
+
+  // Log in audit log
+  if ((req as any).admin) {
+    recordAuditLog(
+      (req as any).admin,
+      'CREATE_EXAM_CODE',
+      'exam_codes',
+      String(data.id),
+      { exam_code: examCode, exam_name, college_id, branch, passout_year, section_ids: targetedSections },
+      req
+    ).catch(() => {});
+  }
 
   // Generate QR data URL for the exam entry link
   const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
@@ -299,6 +360,194 @@ export async function createExamCode(req: Request, res: Response): Promise<void>
   const qrDataUrl = await QRCode.toDataURL(entryUrl, { width: 300, margin: 2 });
 
   res.status(201).json({ success: true, exam_code: data, qr: qrDataUrl, entry_url: entryUrl });
+}
+
+/**
+ * POST /api/admin/exam-codes/:id/allocate
+ * Allocates a question paper to a faculty member per section, and optional inspector.
+ */
+export async function allocateQuestionPaper(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { faculty_id, section_id, section_ids, inspector_id } = req.body;
+
+  // Resolve exam by numeric id or exam_code string
+  const isNumeric = /^\d+$/.test(String(id));
+  let examQuery = supabase.from('exam_codes').select('*');
+  if (isNumeric) {
+    examQuery = examQuery.eq('id', Number(id));
+  } else {
+    examQuery = examQuery.or(`exam_code.eq.${id},code.eq.${id}`);
+  }
+  const { data: existingExam } = await examQuery.maybeSingle();
+
+  if (!existingExam) {
+    res.status(404).json({ success: false, error: 'Exam not found' });
+    return;
+  }
+
+  const updates: Record<string, any> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (faculty_id !== undefined) updates.assigned_faculty_id = faculty_id;
+  if (inspector_id !== undefined) updates.assigned_inspector_id = inspector_id;
+  if (section_id !== undefined) updates.section_id = section_id;
+  if (section_ids !== undefined) updates.section_ids = Array.isArray(section_ids) ? section_ids : [section_ids];
+  updates.paper_status = 'allocated';
+
+  const { data, error } = await supabase
+    .from('exam_codes')
+    .update(updates)
+    .eq('id', existingExam.id)
+    .select('*, college:college_id ( college_name, college_code )')
+    .single();
+
+  if (error) {
+    res.status(500).json({ success: false, error: error.message });
+    return;
+  }
+
+  // Record audit log
+  if ((req as any).admin) {
+    recordAuditLog(
+      (req as any).admin,
+      'ALLOCATE_QUESTION_PAPER',
+      'exam_codes',
+      String(existingExam.id),
+      { faculty_id, section_id, section_ids, inspector_id },
+      req
+    ).catch(() => {});
+  }
+
+  res.json({
+    success: true,
+    message: 'Question paper allocated successfully',
+    exam_code: data,
+  });
+}
+
+/**
+ * POST /api/admin/exam-codes/:id/lock-paper
+ * Admin locks the paper so no further edits can occur.
+ */
+export async function lockQuestionPaper(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { is_locked = true } = req.body;
+
+  const isNumeric = /^\d+$/.test(String(id));
+  let examQuery = supabase.from('exam_codes').select('*');
+  if (isNumeric) {
+    examQuery = examQuery.eq('id', Number(id));
+  } else {
+    examQuery = examQuery.or(`exam_code.eq.${id},code.eq.${id}`);
+  }
+  const { data: existingExam } = await examQuery.maybeSingle();
+
+  if (!existingExam) {
+    res.status(404).json({ success: false, error: 'Exam not found' });
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('exam_codes')
+    .update({
+      is_locked: Boolean(is_locked),
+      paper_status: is_locked ? 'locked' : 'active',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', existingExam.id)
+    .select()
+    .single();
+
+  if (error) {
+    res.status(500).json({ success: false, error: error.message });
+    return;
+  }
+
+  if ((req as any).admin) {
+    recordAuditLog(
+      (req as any).admin,
+      is_locked ? 'LOCK_QUESTION_PAPER' : 'UNLOCK_QUESTION_PAPER',
+      'exam_codes',
+      String(existingExam.id),
+      { is_locked },
+      req
+    ).catch(() => {});
+  }
+
+  res.json({
+    success: true,
+    message: is_locked ? 'Question paper locked' : 'Question paper unlocked',
+    is_locked: Boolean(is_locked),
+    exam_code: data,
+  });
+}
+
+/**
+ * POST /api/admin/exam-codes/:id/replace-paper
+ * Admin replaces questions or sets new paper with audit log.
+ */
+export async function replaceQuestionPaper(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { questions, reason } = req.body;
+
+  const isNumeric = /^\d+$/.test(String(id));
+  let examQuery = supabase.from('exam_codes').select('*');
+  if (isNumeric) {
+    examQuery = examQuery.eq('id', Number(id));
+  } else {
+    examQuery = examQuery.or(`exam_code.eq.${id},code.eq.${id}`);
+  }
+  const { data: ec } = await examQuery.maybeSingle();
+
+  if (!ec) {
+    res.status(404).json({ success: false, error: 'Exam code not found' });
+    return;
+  }
+
+  if (Array.isArray(questions) && questions.length > 0) {
+    await supabase.from('questions_ec').delete().eq('exam_code', ec.exam_code);
+
+    const formatted = questions.map((q: any, idx: number) => ({
+      exam_code: ec.exam_code,
+      question: q.question || q.question_text,
+      option_a: q.option_a,
+      option_b: q.option_b,
+      option_c: q.option_c,
+      option_d: q.option_d,
+      correct_answer: (q.correct_answer || q.correct_option || 'A').toUpperCase(),
+      marks: q.marks || 1,
+      penalty: Number(q.penalty ?? q.negative_marks ?? 0),
+      difficulty: q.difficulty || 'Medium',
+      topic: q.topic || 'General',
+      section: q.section || 'General',
+      display_order: q.display_order || idx + 1,
+    }));
+
+    await supabase.from('questions_ec').insert(formatted);
+
+    await supabase.from('exam_codes').update({
+      total_questions: formatted.length,
+      paper_status: 'replaced',
+      updated_at: new Date().toISOString(),
+    }).eq('id', ec.id);
+  }
+
+  if ((req as any).admin) {
+    recordAuditLog(
+      (req as any).admin,
+      'REPLACE_QUESTION_PAPER',
+      'exam_codes',
+      String(id),
+      { question_count: Array.isArray(questions) ? questions.length : 0, reason },
+      req
+    ).catch(() => {});
+  }
+
+  res.json({
+    success: true,
+    message: 'Question paper replaced successfully',
+  });
 }
 
 /**
@@ -333,6 +582,56 @@ export async function getExamCodeQR(req: Request, res: Response): Promise<void> 
   res.send(qrBuffer);
 }
 
+/**
+ * Helper to enforce student eligibility against exam targeting.
+ * Returns true if student is eligible (or if exam is untargeted).
+ * Returns false if student is missing or does not match exam targeting.
+ */
+export async function validateStudentEligibility(
+  exam: any,
+  hallTicketOrRoll?: string | null
+): Promise<boolean> {
+  if (!exam) return false;
+
+  const hasSectionTargeting = Boolean(
+    (exam.section_id && String(exam.section_id).trim() && exam.section_id !== 'ALL') ||
+    (Array.isArray(exam.section_ids) && exam.section_ids.filter((s: any) => s && s !== 'ALL').length > 0) ||
+    (typeof exam.section_ids === 'string' && exam.section_ids.trim() && exam.section_ids !== 'ALL' && exam.section_ids !== '[]') ||
+    (exam.branch && exam.branch !== 'ALL' && exam.branch !== 'ANY') ||
+    (exam.passout_year && Number(exam.passout_year) > 0) ||
+    (exam.batch_id && exam.batch_id !== 'ALL' && exam.batch_id !== 'ANY')
+  );
+
+  const cleanHt = hallTicketOrRoll && typeof hallTicketOrRoll === 'string' ? hallTicketOrRoll.trim().toUpperCase() : null;
+
+  if (hasSectionTargeting) {
+    if (!cleanHt) return false;
+    const { data: student } = await supabase
+      .from('students')
+      .select('*')
+      .or(`hall_ticket.eq.${cleanHt},roll_number.eq.${cleanHt}`)
+      .maybeSingle();
+
+    if (!student) return false;
+    return isStudentEligibleForExam(student, exam);
+  }
+
+  // Untargeted exam with optional college scope
+  if (cleanHt && exam.college_id && exam.college_id !== 'ALL' && exam.college_id !== 0) {
+    const { data: student } = await supabase
+      .from('students')
+      .select('college_id')
+      .or(`hall_ticket.eq.${cleanHt},roll_number.eq.${cleanHt}`)
+      .maybeSingle();
+
+    if (student && student.college_id && String(student.college_id) !== String(exam.college_id)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 // ─────────────────────────────────────────────
 // STUDENT EXAM ENTRY (NO OTP)
 // ─────────────────────────────────────────────
@@ -365,6 +664,17 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
 
   if (examError || !exam) {
     res.status(404).json({ success: false, error: 'Invalid exam code. Please check and try again.' });
+    return;
+  }
+
+  // 1.1 ENFORCE SECTION-TARGETED ELIGIBILITY (Must return 404, not 403)
+  const isEligible = await validateStudentEligibility(exam, ht);
+  if (!isEligible) {
+    res.status(404).json({
+      success: false,
+      error: 'Exam not found or unavailable for your section',
+      code: 'EXAM_NOT_FOUND',
+    });
     return;
   }
 
@@ -474,6 +784,7 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
 
   res.json({
     success: true,
+    valid: true,
     resumed: false,
     attempt_id: attempt.id,
     session_token: newToken,
@@ -500,18 +811,50 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
 export async function getExamCodeQuestions(req: Request, res: Response): Promise<void> {
   const { code } = req.params;
   const { attemptId, session_token } = req.query as { attemptId: string; session_token?: string };
+  const ec = String(code).toUpperCase();
 
-  // ── 1a: verify session token (concurrent-session guard) ──
-  const tokenCheck = await verifyAttemptToken(String(attemptId ?? ""), String(code), session_token ? String(session_token) : undefined);
-  if (!tokenCheck.valid) {
-    if (tokenCheck.evicted) {
-      res.status(409).json({ success: false, error: 'Your session was taken over from another device. Please log in again.', code: 'SESSION_EVICTED' });
-    } else if (tokenCheck.terminated) {
-      res.status(403).json({ success: false, error: 'This exam session has already ended.', code: 'SESSION_ENDED' });
-    } else {
-      res.status(403).json({ success: false, error: 'Invalid or expired attempt', code: 'INVALID_ATTEMPT' });
-    }
+  // 1. Look up exam
+  const { data: exam } = await supabase
+    .from('exam_codes')
+    .select('*')
+    .eq('exam_code', ec)
+    .maybeSingle();
+
+  if (!exam) {
+    res.status(404).json({ success: false, error: 'Exam not found or unavailable', code: 'EXAM_NOT_FOUND' });
     return;
+  }
+
+  // 1.1 Enforce targeting (Return 404 so untargeted students cannot tell exam exists)
+  let studentHt = (req.query.hallTicket || req.query.candidateId || (req as any).student?.hallTicket || (req as any).student?.rollNumber) as string | undefined;
+  if (!studentHt && attemptId) {
+    const { data: att } = await supabase
+      .from('exam_code_attempts')
+      .select('hall_ticket_no')
+      .eq('id', attemptId)
+      .maybeSingle();
+    studentHt = att?.hall_ticket_no;
+  }
+
+  const isEligible = await validateStudentEligibility(exam, studentHt);
+  if (!isEligible) {
+    res.status(404).json({ success: false, error: 'Exam not found or unavailable for your section', code: 'EXAM_NOT_FOUND' });
+    return;
+  }
+
+  // ── 1a: verify session token (concurrent-session guard if attemptId provided) ──
+  if (attemptId) {
+    const tokenCheck = await verifyAttemptToken(String(attemptId ?? ""), String(code), session_token ? String(session_token) : undefined);
+    if (!tokenCheck.valid) {
+      if (tokenCheck.evicted) {
+        res.status(409).json({ success: false, error: 'Your session was taken over from another device. Please log in again.', code: 'SESSION_EVICTED' });
+      } else if (tokenCheck.terminated) {
+        res.status(403).json({ success: false, error: 'This exam session has already ended.', code: 'SESSION_ENDED' });
+      } else {
+        res.status(403).json({ success: false, error: 'Invalid or expired attempt', code: 'INVALID_ATTEMPT' });
+      }
+      return;
+    }
   }
 
   const { data: questions, error } = await supabase
@@ -573,6 +916,18 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
   const { attemptId, answers, codeAnswers, timeTakenSeconds, violationCount, session_token } = req.body;
   const candidateId = req.body.candidateId || req.body.hallTicket;
 
+  // Look up exam to check targeting
+  const { data: exam } = await supabase
+    .from('exam_codes')
+    .select('*')
+    .eq('exam_code', code)
+    .maybeSingle();
+
+  if (!exam) {
+    res.status(404).json({ success: false, error: 'Exam not found or unavailable', code: 'EXAM_NOT_FOUND' });
+    return;
+  }
+
   let attempt: any = null;
 
   // ── 1a & 1.4: verify session token or locate attempt by candidateId ──
@@ -610,6 +965,14 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
 
   if (!attempt) {
     res.status(404).json({ success: false, error: 'Attempt not found' });
+    return;
+  }
+
+  // Enforce targeting check (Return 404 for ineligible/unauthenticated)
+  const studentHt = attempt?.hall_ticket_no || candidateId;
+  const isEligible = await validateStudentEligibility(exam, studentHt);
+  if (!isEligible) {
+    res.status(404).json({ success: false, error: 'Exam not found or unavailable for your section', code: 'EXAM_NOT_FOUND' });
     return;
   }
   if (attempt.status === 'completed') {
@@ -1055,6 +1418,18 @@ export async function saveExamCodeAnswer(req: Request, res: Response): Promise<v
   const { attemptId, question_id, answer, answers, items, current_question_index, session_token } = req.body;
   const candidateId = req.body.candidateId || req.body.hallTicket;
 
+  // Look up exam to check targeting
+  const { data: exam } = await supabase
+    .from('exam_codes')
+    .select('*')
+    .eq('exam_code', code)
+    .maybeSingle();
+
+  if (!exam) {
+    res.status(404).json({ success: false, error: 'Exam not found or unavailable', code: 'EXAM_NOT_FOUND' });
+    return;
+  }
+
   let attempt: any = null;
 
   if (attemptId) {
@@ -1086,6 +1461,14 @@ export async function saveExamCodeAnswer(req: Request, res: Response): Promise<v
 
   if (!attempt) {
     res.status(404).json({ success: false, error: 'Attempt not found or session expired', code: 'INVALID_ATTEMPT' });
+    return;
+  }
+
+  // Enforce targeting check (Return 404 for ineligible/unauthenticated)
+  const studentHt = attempt?.hall_ticket_no || candidateId;
+  const isEligible = await validateStudentEligibility(exam, studentHt);
+  if (!isEligible) {
+    res.status(404).json({ success: false, error: 'Exam not found or unavailable for your section', code: 'EXAM_NOT_FOUND' });
     return;
   }
 
@@ -1146,6 +1529,18 @@ export async function getExamCodeResumeState(req: Request, res: Response): Promi
   const { attemptId, session_token } = req.query as { attemptId?: string; session_token?: string };
   const candidateId = req.query.candidateId || req.query.hallTicket;
 
+  // Look up exam to check targeting
+  const { data: exam } = await supabase
+    .from('exam_codes')
+    .select('*')
+    .eq('exam_code', code)
+    .maybeSingle();
+
+  if (!exam) {
+    res.status(404).json({ success: false, error: 'Exam not found or unavailable', code: 'EXAM_NOT_FOUND' });
+    return;
+  }
+
   let attempt: any = null;
 
   if (attemptId && session_token) {
@@ -1178,6 +1573,14 @@ export async function getExamCodeResumeState(req: Request, res: Response): Promi
 
   if (!attempt) {
     res.status(404).json({ success: false, error: 'Attempt not found' });
+    return;
+  }
+
+  // Enforce targeting check (Return 404 for ineligible/unauthenticated)
+  const studentHt = attempt?.hall_ticket_no || candidateId;
+  const isEligible = await validateStudentEligibility(exam, studentHt);
+  if (!isEligible) {
+    res.status(404).json({ success: false, error: 'Exam not found or unavailable for your section', code: 'EXAM_NOT_FOUND' });
     return;
   }
 
