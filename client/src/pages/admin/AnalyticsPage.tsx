@@ -21,6 +21,7 @@ import {
 } from '../../lib/api';
 import BrandLogo from '../../components/BrandLogo';
 import AnimatedPage from '../../components/AnimatedPage';
+import AdminSidebar from '../../components/layout/AdminSidebar';
 
 interface Exam {
   id: string;
@@ -240,37 +241,8 @@ export default function AnalyticsPage() {
     <AnimatedPage>
       <div className="admin-layout">
         {/* Sidebar */}
-        <aside className="admin-sidebar">
-          <div style={{ marginBottom: 24 }}>
-            <BrandLogo size="sm" />
-          </div>
+        <AdminSidebar activeTab="analytics" />
 
-          <div className="admin-sidebar-title">Exam Management</div>
-          <button id="nav-dashboard" className="admin-nav-item" onClick={() => navigate('/admin/dashboard')}>
-            📊 Dashboard
-          </button>
-          <button id="nav-create-exam" className="admin-nav-item" onClick={() => navigate('/admin/create-exam')}>
-            ➕ Create Exam
-          </button>
-          <button id="nav-import" className="admin-nav-item" onClick={() => navigate('/admin/import')}>
-            📥 Import Questions
-          </button>
-          <button id="nav-sessions" className="admin-nav-item" onClick={() => navigate('/admin/sessions')}>
-            👥 Sessions
-          </button>
-          <button id="nav-reports" className="admin-nav-item" onClick={() => navigate('/admin/reports')}>
-            📈 Reports
-          </button>
-          <button id="nav-analytics" className="admin-nav-item active" onClick={() => navigate('/admin/analytics')}>
-            🔬 Analytics
-          </button>
-
-          <div style={{ marginTop: 'auto', paddingTop: 24 }}>
-            <button id="admin-logout-btn" className="admin-nav-item" onClick={handleLogout}>
-              🚪 Logout
-            </button>
-          </div>
-        </aside>
 
         {/* Main Content */}
         <main className="admin-content">

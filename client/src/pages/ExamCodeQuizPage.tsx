@@ -97,6 +97,11 @@ export default function QuizPage() {
   const fullscreenExitCountRef = useRef(0)
   const exitTimestampRef = useRef<number | null>(null)
   const violationRef = useRef(0)
+
+  /* ── Strict Integrity Auto-Termination State ── */
+  const [isTerminated, setIsTerminated] = useState(false)
+  const [terminationReason, setTerminationReason] = useState('')
+  const hasTerminatedRef = useRef(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
   const sessionIdRef = useRef<string | undefined>(undefined)
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
@@ -658,60 +663,163 @@ export default function QuizPage() {
     }, 0)
   }, [logViolation])
 
-  /* ── 1.1 Fullscreen Enforcement Listener ── */
+  /* ── 1.1 Strict Security Force-Termination Handler ── */
+  const handleForceTermination = useCallback(async (reason: string) => {
+    if (hasTerminatedRef.current || submitting) return
+    hasTerminatedRef.current = true
+    setIsTerminated(true)
+    setTerminationReason(reason)
+
+    if (timerRef.current) clearInterval(timerRef.current)
+    soundFx.playSecurityAlertTone()
+
+    // 1. Send immediate Realtime broadcast for invigilator alert
+    if (realtimeChannelRef.current) {
+      realtimeChannelRef.current.send({
+        type: 'broadcast',
+        event: 'student_violation',
+        payload: {
+          hallTicket,
+          eventType: 'EXAM_FORCE_TERMINATED_BREACH',
+          message: reason,
+          violationCount: (violationRef.current || 0) + 1,
+          timestamp: Date.now(),
+        },
+      })
+    }
+
+    // 2. Beacon/Post violation
+    const violationPayload = JSON.stringify({
+      candidateId: hallTicket,
+      examCode,
+      violationType: 'EXAM_FORCE_TERMINATED_BREACH',
+      notes: reason,
+      is_terminated: true,
+      auto_submitted: true,
+    })
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(`${BASE}/api/exam-code/${examCode}/violation`, new Blob([violationPayload], { type: 'application/json' }))
+    } else {
+      axios.post(`${BASE}/api/exam-code/${examCode}/violation`, JSON.parse(violationPayload)).catch(() => {})
+    }
+
+    // 3. Auto-submit existing answers with terminated_cheating status
+    try {
+      axios.post(`${BASE}/api/exam-code/${examCode}/submit`, {
+        sessionId: sessionIdRef.current,
+        examCode,
+        hallTicket,
+        answers: { ...answers },
+        codeAnswers: { ...codeAnswers },
+        status: 'terminated_cheating',
+      }).catch(() => {})
+      if (examCode && hallTicket) {
+        clearAnswerBuffer(examCode, hallTicket).catch(() => {})
+      }
+    } catch {}
+
+    // 4. Force logout (clear all student credentials from storage)
+    try {
+      localStorage.removeItem('student_token')
+      localStorage.removeItem('student_user')
+      localStorage.removeItem('logicwhilelire_attempt')
+      localStorage.removeItem('growthran_attempt')
+      localStorage.removeItem('lw_attempt')
+      sessionStorage.clear()
+    } catch {}
+  }, [submitting, hallTicket, examCode, answers, codeAnswers])
+
   const handleReturnToFullscreen = useCallback(async () => {
     try {
       if (!document.fullscreenElement) {
         await document.documentElement.requestFullscreen()
       }
       setShowFullscreenOverlay(false)
-    } catch {
-      /* Handled */
-    }
+    } catch {}
   }, [])
 
+  /* ── 1.1 Strict Lockdown: Window Minimize / Tab Blur / Escape / Key Restrictions ── */
   useEffect(() => {
-    if (!session || submitting) return
+    if (!session || submitting || isTerminated || !consentGiven) return
 
-    // Auto-request fullscreen if consent already given
-    if (!document.fullscreenElement && consentGiven) {
+    // Auto-request fullscreen
+    if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {})
     }
 
-    const handleFullscreenChange = () => {
-      const isFs = !!document.fullscreenElement
-      if (!isFs && !submitting) {
-        exitTimestampRef.current = Date.now()
-        fullscreenExitCountRef.current += 1
-        const count = fullscreenExitCountRef.current
-        setFullscreenExitCount(count)
-        setShowFullscreenOverlay(true)
-
-        logViolation('fullscreen_exit', `Candidate exited fullscreen mode (Strike ${count}/3)`, {
-          exitCount: count,
-        })
-
-        if (count >= 3) {
-          setTimeout(() => {
-            setShowFullscreenOverlay(false)
-            handleSubmit()
-          }, 800)
-        }
-      } else if (isFs) {
-        if (exitTimestampRef.current) {
-          const durationSec = Math.max(1, Math.round((Date.now() - exitTimestampRef.current) / 1000))
-          exitTimestampRef.current = null
-          logViolation('fullscreen_restored', `Fullscreen restored after ${durationSec}s outside test window`, {
-            duration_seconds: durationSec,
-          })
-        }
-        setShowFullscreenOverlay(false)
+    // A. Page minimized or tab switched (visibilitychange)
+    const handleVisibilityChange = () => {
+      if (document.hidden && !hasTerminatedRef.current) {
+        handleForceTermination('Window minimized or document hidden during active exam')
       }
     }
 
+    // B. Window lost focus / Alt+Tab / Application switch (blur)
+    const handleWindowBlur = () => {
+      if (!hasTerminatedRef.current) {
+        handleForceTermination('Window lost focus or minimized during active exam')
+      }
+    }
+
+    // C. Fullscreen exit (if user exits fullscreen)
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && !submitting && !hasTerminatedRef.current) {
+        handleForceTermination('Exited full-screen examination environment')
+      }
+    }
+
+    // D. Forbidden keys: Escape, Alt, Meta (Windows key), F11, F12, Ctrl+W, Ctrl+T, Ctrl+N
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.code === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        handleForceTermination('Escape key pressed during active exam')
+        return
+      }
+      if (e.key === 'Alt' || e.altKey) {
+        e.preventDefault()
+        e.stopPropagation()
+        handleForceTermination('Alt key pressed (application switch attempt)')
+        return
+      }
+      if (e.key === 'Meta' || e.key === 'OS' || e.metaKey) {
+        e.preventDefault()
+        e.stopPropagation()
+        handleForceTermination('Windows / Meta key pressed (system menu attempt)')
+        return
+      }
+      if (e.key === 'F11') {
+        e.preventDefault()
+        e.stopPropagation()
+        handleForceTermination('F11 fullscreen toggle pressed')
+        return
+      }
+      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C', 'i', 'j', 'c'].includes(e.key))) {
+        e.preventDefault()
+        e.stopPropagation()
+        handleForceTermination('Developer tools shortcut detected')
+        return
+      }
+      if (e.ctrlKey && ['w', 'W', 't', 'T', 'n', 'N'].includes(e.key)) {
+        e.preventDefault()
+        e.stopPropagation()
+        handleForceTermination('Browser tab/window manipulation shortcut detected')
+        return
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('blur', handleWindowBlur)
     document.addEventListener('fullscreenchange', handleFullscreenChange)
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
-  }, [session, submitting, consentGiven, logViolation, handleSubmit])
+    window.addEventListener('keydown', handleKeyDown, true)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('blur', handleWindowBlur)
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      window.removeEventListener('keydown', handleKeyDown, true)
+    }
+  }, [session, submitting, isTerminated, consentGiven, handleForceTermination])
 
   /* ── 1.2 Screen Share Proctoring ── */
   const [screenShareActive, setScreenShareActive] = useState(false)
@@ -1820,6 +1928,86 @@ export default function QuizPage() {
         candidateName={session?.candidateId}
         commsLog={proctorCommsLog}
       />
+
+      {/* ─── STRICT SECURITY FORCE-TERMINATION LOCKDOWN SCREEN ─── */}
+      {isTerminated && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 999999,
+          background: '#070A12',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          padding: 24, textAlign: 'center', color: '#FFFFFF',
+        }}>
+          <div style={{
+            maxWidth: 580, width: '100%',
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '2px solid #EF4444',
+            borderRadius: 24,
+            padding: '36px 28px',
+            boxShadow: '0 25px 60px rgba(239, 68, 68, 0.35)',
+            backdropFilter: 'blur(20px)',
+          }}>
+            <div style={{ fontSize: '3.6rem', marginBottom: 14 }}>🚨</div>
+            <h2 style={{ fontSize: '1.85rem', fontWeight: 900, color: '#EF4444', margin: '0 0 10px 0' }}>
+              EXAM TERMINATED
+            </h2>
+            <div style={{
+              display: 'inline-block',
+              background: 'rgba(239, 68, 68, 0.2)',
+              border: '1px solid rgba(239, 68, 68, 0.5)',
+              color: '#FCA5A5',
+              fontSize: '0.78rem',
+              fontWeight: 800,
+              padding: '6px 14px',
+              borderRadius: 999,
+              marginBottom: 18,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+            }}>
+              Zero-Tolerance Tamper Lockdown
+            </div>
+            <p style={{ color: '#E2E8F0', fontSize: '1rem', lineHeight: 1.6, marginBottom: 20 }}>
+              {terminationReason || 'A critical security violation was detected. The exam has been immediately shut down.'}
+            </p>
+            <div style={{
+              background: 'rgba(0, 0, 0, 0.45)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: 12,
+              padding: '16px 20px',
+              textAlign: 'left',
+              fontSize: '0.86rem',
+              color: '#94A3B8',
+              marginBottom: 24,
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 12,
+            }}>
+              <div><strong>Candidate:</strong> {hallTicket || 'N/A'}</div>
+              <div><strong>Exam Code:</strong> {examCode || 'N/A'}</div>
+              <div><strong>Status:</strong> <span style={{ color: '#EF4444', fontWeight: 700 }}>TERMINATED &amp; SUBMITTED</span></div>
+              <div><strong>Session:</strong> Automatically Logged Out</div>
+            </div>
+            <button
+              onClick={() => {
+                navigate('/', { replace: true });
+              }}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: 12,
+                fontSize: '1rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                boxShadow: '0 8px 24px rgba(239, 68, 68, 0.4)',
+              }}
+            >
+              Exit to Portal Home
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -7,6 +7,7 @@ import MagneticButton from '../../components/3d/MagneticButton'
 import ShimmerText from '../../components/3d/ShimmerText'
 import FlightPathLines from '../../components/3d/FlightPathLines'
 import TypingDots from '../../components/3d/TypingDots'
+import AdminSidebar from '../../components/layout/AdminSidebar'
 import { API_BASE_URL } from '../../lib/config'
 
 const BASE = API_BASE_URL
@@ -1189,29 +1190,8 @@ export default function CreateExamPage() {
 
       <div style={{ display: 'flex', minHeight: '100vh' }}>
         {/* Sidebar */}
-        <aside className="admin-sidebar" style={{ background: 'rgba(20,28,47,0.95)', backdropFilter: 'blur(20px)', borderRight: '1px solid var(--color-border, #334155)' }}>
-          <div style={{ marginBottom: 24, padding: '0 4px' }}>
-            <div style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: '1rem', fontWeight: 800, color: '#f8fafc' }}>
-              ⚡ LogicWhileLiRE
-            </div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--color-primary, #2b7fff)', fontWeight: 700, letterSpacing: '0.1em', marginTop: 2 }}>ENTERPRISE ADMIN</div>
-          </div>
-          {[
-            { icon: '📊', label: 'Dashboard',    path: '/admin/dashboard' },
-            { icon: '🔑', label: 'Exam Codes',   path: '/admin/exam-codes' },
-            { icon: '➕', label: 'Create Exam',  path: '/admin/create-exam', active: true },
-            { icon: '👁️', label: 'Live Monitor', path: '/admin/monitor' },
-            { icon: '🔬', label: 'Analytics',    path: '/admin/analytics' },
-          ].map(item => (
-            <button
-              key={item.path}
-              className={`admin-nav-item ${item.active ? 'active' : ''}`}
-              onClick={() => !item.active && navigate(item.path)}
-            >
-              <span>{item.icon}</span> {item.label}
-            </button>
-          ))}
-        </aside>
+        <AdminSidebar activeTab="create" />
+
 
         {/* Main Wizard Area */}
         <main className="admin-content" style={{ position: 'relative', zIndex: 1, maxWidth: 840, width: '100%', padding: '32px 24px' }}>

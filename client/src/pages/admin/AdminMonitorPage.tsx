@@ -12,6 +12,7 @@ import AltimeterDial from '../../components/3d/AltimeterDial'
 import ShimmerText from '../../components/3d/ShimmerText'
 import CandidateViolationTimelineModal from '../../components/CandidateViolationTimelineModal'
 import InspectorRadarMatrix3D from '../../components/3d/InspectorRadarMatrix3D'
+import AdminSidebar from '../../components/layout/AdminSidebar'
 
 const BASE_URL = API_BASE_URL
 
@@ -39,62 +40,6 @@ function playWarningChime() {
     osc.start()
     osc.stop(ctx.currentTime + 0.3)
   } catch {}
-}
-
-/* ── Shared Admin Sidebar ─────────────────────────────── */
-function AdminSidebar({ active = '' }: { active?: string }) {
-  const navigate = useNavigate()
-
-  const navItems = [
-    { id: 'dashboard', icon: '📊', label: 'Dashboard',      path: '/admin/dashboard' },
-    { id: 'exam-codes',icon: '🔑', label: 'Exam Codes',     path: '/admin/exam-codes' },
-    { id: 'create',    icon: '➕', label: 'Create Exam',    path: '/admin/create-exam' },
-    { id: 'monitor',   icon: '👁️', label: 'Live Monitor',   path: '/admin/monitor' },
-    { id: 'analytics', icon: '🔬', label: 'Analytics',      path: '/admin/analytics' },
-    { id: 'questions', icon: '🤖', label: 'AI Questions',   path: '/admin/questions' },
-    { id: 'colleges',  icon: '🏛️', label: 'Colleges',       path: '/admin/colleges' },
-  ]
-
-  return (
-    <aside className="admin-sidebar" style={{ background: 'rgba(20,28,47,0.95)', backdropFilter: 'blur(20px)', borderRight: '1px solid var(--color-border)' }}>
-      {/* Brand */}
-      <div style={{ marginBottom: 24, padding: '0 4px' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em', background: 'linear-gradient(135deg, var(--color-text), var(--color-primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-          ⚡ LogicWhileLiRE
-        </div>
-        <div style={{ fontSize: '0.65rem', color: 'var(--color-primary)', fontWeight: 700, letterSpacing: '0.1em', marginTop: 2 }}>ENTERPRISE ADMIN</div>
-      </div>
-
-      {navItems.map(item => (
-        <motion.button
-          key={item.id}
-          className={`admin-nav-item ${active === item.id ? 'active' : ''}`}
-          onClick={() => navigate(item.path)}
-          whileHover={{ x: 3 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-        >
-          <span>{item.icon}</span>
-          {item.label}
-          {item.id === 'monitor' && (
-            <span style={{ marginLeft: 'auto', width: 7, height: 7, borderRadius: '50%', background: '#10B981', animation: 'blink 1.5s infinite', flexShrink: 0 }} />
-          )}
-        </motion.button>
-      ))}
-
-      <div style={{ marginTop: 'auto', paddingTop: 16 }}>
-        <motion.button
-          className="admin-nav-item"
-          onClick={() => {
-            localStorage.removeItem('admin_token')
-            navigate('/admin')
-          }}
-          whileHover={{ x: 3 }}
-        >
-          <span>🚪</span> Logout
-        </motion.button>
-      </div>
-    </aside>
-  )
 }
 
 /* ── 100 Live Students Cohort Generator ────────────────── */
@@ -163,6 +108,11 @@ export default function AdminMonitorPage() {
   const [whisperMessage, setWhisperMessage] = useState('')
   const [isRoomFrozen, setIsRoomFrozen] = useState(false)
 
+  /* ── College & Exam Scoping State ── */
+  const [colleges, setColleges] = useState<Array<{ id: number; college_name: string; college_code: string }>>([])
+  const [selectedCollege, setSelectedCollege] = useState<string>('ALL')
+  const [availableExamCodes, setAvailableExamCodes] = useState<string[]>([])
+
   /* ── Outbound Email Hub State ── */
   const [emailHubOpen, setEmailHubOpen] = useState(false)
   const [emailLogs, setEmailLogs] = useState<Array<{ id: string; type: string; recipient: string; recipientName?: string; examCode: string; subject: string; status: string; timestamp: string }>>([])
@@ -174,6 +124,25 @@ export default function AdminMonitorPage() {
   const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const idleTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
   const simTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  /* ── Initial Mount: Load Colleges & Active Exam Codes ── */
+  useEffect(() => {
+    axios.get(`${BASE_URL}/api/colleges`)
+      .then(res => {
+        if (res.data?.colleges) setColleges(res.data.colleges)
+      })
+      .catch(() => {
+        axios.get(`${BASE_URL}/api/exam-code/colleges`)
+          .then(res => { if (res.data?.colleges) setColleges(res.data.colleges) })
+          .catch(() => {})
+      })
+
+    supabase.from('exam_codes').select('code, title').then(({ data }) => {
+      if (data && data.length > 0) {
+        setAvailableExamCodes(Array.from(new Set(data.map(d => d.code).filter(Boolean))))
+      }
+    })
+  }, [])
 
   /* ── Mark student idle after 30s of no activity ── */
   const resetIdleTimer = useCallback((candidateId: string) => {
@@ -736,7 +705,7 @@ export default function AdminMonitorPage() {
         <FlightPathLines color="#2B7FFF" opacity={1} count={8} className="" />
       </div>
 
-      <AdminSidebar active="monitor" />
+      <AdminSidebar activeTab="monitor" />
 
       <main className="admin-content" style={{ position: 'relative', zIndex: 1, overflow: 'auto' }}>
 
@@ -886,6 +855,62 @@ export default function AdminMonitorPage() {
             >
               <span>📨 Mail Dispatch Hub</span>
             </button>
+          </div>
+        </div>
+
+        {/* ─── College & Exam Scoping Control Bar ─── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap',
+          background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: 14, padding: '14px 20px', marginBottom: 20,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-primary, #38BDF8)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                🏛️ Active College:
+              </span>
+              <select
+                value={selectedCollege}
+                onChange={(e) => setSelectedCollege(e.target.value)}
+                style={{
+                  background: '#0B1120', border: '1px solid rgba(255, 255, 255, 0.18)',
+                  color: '#FFF', padding: '6px 12px', borderRadius: 8, fontSize: '0.86rem', fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="ALL">All Colleges (Global Admin Scope)</option>
+                {colleges.map(c => (
+                  <option key={c.id} value={c.college_name}>{c.college_name} ({c.college_code})</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                🔑 Exam Code:
+              </span>
+              <select
+                value={examCode}
+                onChange={(e) => {
+                  setInputCode(e.target.value)
+                  subscribe(e.target.value)
+                }}
+                style={{
+                  background: '#0B1120', border: '1px solid rgba(255, 255, 255, 0.18)',
+                  color: '#38BDF8', padding: '6px 12px', borderRadius: 8, fontSize: '0.86rem', fontWeight: 700, fontFamily: 'var(--font-mono)'
+                }}
+              >
+                {Array.from(new Set(['DEMO123', 'DEMO100', 'CS2026', ...availableExamCodes])).map(code => (
+                  <option key={code} value={code}>{code}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+              Monitored Scope: <strong style={{ color: '#10B981' }}>{selectedCollege === 'ALL' ? 'All Verified Colleges' : selectedCollege}</strong> &bull; Exam: <strong style={{ color: '#38BDF8', fontFamily: 'var(--font-mono)' }}>{examCode}</strong>
+            </span>
           </div>
         </div>
 

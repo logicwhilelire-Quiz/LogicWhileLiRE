@@ -79,6 +79,43 @@ async function run() {
       fs.rmSync(process.env.BACKUP_DIR, { recursive: true, force: true });
     }
 
+    // Ensure at least one test exam code and attempt exists for backup export testing
+    await supabase.from('exam_code_attempts').delete().eq('exam_code', 'TEST-BCK-01');
+    await supabase.from('exam_codes').delete().eq('exam_code', 'TEST-BCK-01');
+    await supabase.from('colleges').delete().eq('college_code', 'TBC');
+
+    const { data: testCol } = await supabase.from('colleges').insert({
+      college_name: 'Test Backup College',
+      college_code: 'TBC',
+      city: 'Vijayawada',
+      state: 'AP',
+      contact_email: 'test@tbc.edu',
+      is_active: true,
+    }).select().single();
+
+    if (testCol) {
+      await supabase.from('exam_codes').insert({
+        exam_code: 'TEST-BCK-01',
+        college_id: testCol.id,
+        exam_name: 'Automated Backup Test Exam',
+        duration_minutes: 60,
+        start_time: new Date().toISOString(),
+        end_time: new Date(Date.now() + 3600000).toISOString(),
+        is_active: true,
+      });
+
+      await supabase.from('exam_code_attempts').insert({
+        exam_code: 'TEST-BCK-01',
+        hall_ticket_no: 'TEST-HT-999',
+        student_name: 'Backup Test Student',
+        score: 85,
+        max_score: 100,
+        correct_count: 17,
+        wrong_count: 3,
+        status: 'completed',
+      });
+    }
+
     // ── 1. CREDENTIAL SANITIZATION RIGIDITY TEST ──────────────────
     console.log('--- 1. Credential Sanitization Rigidity Check ---');
 

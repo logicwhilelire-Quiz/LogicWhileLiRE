@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { registerCandidate, getAssessmentSystemCheck } from '../lib/api';
+import axios from 'axios';
+import { API_BASE_URL } from '../lib/config';
 import IcosahedronHero from '../components/3d/IcosahedronHero';
 import Confetti from '../components/Confetti';
 
@@ -457,7 +459,23 @@ export default function CandidateRegisterGatePage() {
   const [isCollegeComboOpen, setIsCollegeComboOpen] = useState(false);
   const [collegeSearchQuery, setCollegeSearchQuery] = useState('');
   const [selectedRadioCollege, setSelectedRadioCollege] = useState('COL-VRSEC-001');
+  const [dynamicColleges, setDynamicColleges] = useState<Array<{ id: string; name: string }>>(ALL_COLLEGES);
   const comboContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    axios.get(`${API_BASE_URL}/api/colleges`)
+      .then(res => {
+        if (res.data?.colleges && res.data.colleges.length > 0) {
+          const mapped = res.data.colleges.map((c: any) => ({
+            id: c.college_code || `COL-${c.id}`,
+            name: c.college_name,
+          }));
+          mapped.push({ id: 'COL-OTHR-999', name: 'Other (specify below)' });
+          setDynamicColleges(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Debounced Roll Uniqueness & Email Availability simulation
   const [rollCheckStatus, setRollCheckStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
@@ -601,11 +619,11 @@ export default function CandidateRegisterGatePage() {
   // ── College Handlers ───────────────────────────────────────────────────────
   const filteredColleges = useMemo(() => {
     const q = collegeSearchQuery.trim().toLowerCase();
-    if (!q) return ALL_COLLEGES;
-    return ALL_COLLEGES.filter(
+    if (!q) return dynamicColleges;
+    return dynamicColleges.filter(
       c => c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)
     );
-  }, [collegeSearchQuery]);
+  }, [collegeSearchQuery, dynamicColleges]);
 
   function handleSelectCollege(col: { id: string; name: string }) {
     setSelectedRadioCollege(col.id);
@@ -628,7 +646,7 @@ export default function CandidateRegisterGatePage() {
         college_name: prev.custom_college_name || 'Other Institution',
       }));
     } else {
-      const found = ALL_COLLEGES.find(c => c.id === id);
+      const found = dynamicColleges.find(c => c.id === id);
       if (found) {
         setFormData(prev => ({
           ...prev,

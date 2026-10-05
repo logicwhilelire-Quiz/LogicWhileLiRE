@@ -201,7 +201,6 @@ export default function App() {
         <BrowserRouter>
           <LogicWhileLiREIntro />
           <RouteSweep />
-          <CustomCursor />
           <Suspense fallback={<PageLoader />}>
             <AnimatedRoutes />
           </Suspense>
