@@ -140,7 +140,17 @@ export default function AdminLoginPage() {
     }
   }
 
-  function handleQuickDemoAdminLogin() {
+  async function handleQuickDemoAdminLogin() {
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_BASE_URL}/api/admin/demo-login`, { role: 'super_admin' }, { withCredentials: true });
+      if (res.data?.token) {
+        completeAuth(res.data.token, res.data.user);
+        return;
+      }
+    } catch {} finally {
+      setLoading(false);
+    }
     const demoAdmin = {
       id: 'st000000-0000-0000-0000-000000000001',
       name: 'R. Charan Sai (Super Admin)',
@@ -150,7 +160,17 @@ export default function AdminLoginPage() {
     completeAuth('demo-admin-token-2026', demoAdmin);
   }
 
-  function handleQuickDemoInspectorLogin() {
+  async function handleQuickDemoInspectorLogin() {
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_BASE_URL}/api/admin/demo-login`, { role: 'inspector' }, { withCredentials: true });
+      if (res.data?.token) {
+        completeAuth(res.data.token, res.data.user);
+        return;
+      }
+    } catch {} finally {
+      setLoading(false);
+    }
     const demoInspector = {
       id: 'st000000-0000-0000-0000-000000000004',
       name: 'Dr. K. V. Rao (Principal / Inspector)',
@@ -161,10 +181,20 @@ export default function AdminLoginPage() {
     completeAuth('demo-inspector-token-2026', demoInspector);
   }
 
-  function handleQuickDemoFacultyLogin() {
+  async function handleQuickDemoFacultyLogin() {
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_BASE_URL}/api/admin/demo-login`, { role: 'faculty' }, { withCredentials: true });
+      if (res.data?.token) {
+        completeAuth(res.data.token, res.data.user);
+        return;
+      }
+    } catch {} finally {
+      setLoading(false);
+    }
     const demoFaculty = {
-      id: 'st000000-0000-0000-0000-000000000002',
-      name: 'Dr. Suresh Kumar (Faculty CSM-A)',
+      id: 'st000000-0000-0000-0000-000000000003',
+      name: 'Prof. S. Sharma (Faculty)',
       email: 'faculty@logicwhilelire.com',
       role: 'faculty',
       college_id: 1,

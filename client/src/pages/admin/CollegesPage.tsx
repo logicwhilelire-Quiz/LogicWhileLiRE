@@ -55,8 +55,12 @@ export default function CollegesPage() {
     try {
       const res = await api('/api/admin/colleges');
       setColleges(res.data.colleges || []);
-    } catch {
-      setError('Failed to load colleges');
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        setError('Admin session has expired or is invalid. Please log in again.');
+      } else {
+        setError('Failed to load colleges');
+      }
     } finally {
       setLoading(false);
     }
@@ -103,7 +107,11 @@ export default function CollegesPage() {
       setShowForm(false);
       load();
     } catch (err: any) {
-      setError(err?.response?.data?.error || 'Save failed');
+      if (err?.response?.status === 401) {
+        setError('Admin session has expired. Please log in again to continue.');
+      } else {
+        setError(err?.response?.data?.error || 'Save failed');
+      }
     } finally {
       setSaving(false);
     }
@@ -160,8 +168,18 @@ export default function CollegesPage() {
         <AnimatePresence>
           {error && (
             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="alert alert-error" style={{ marginBottom: 16 }} onClick={() => setError('')}>
-              {error}
+              className="alert alert-error" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <span>{error}</span>
+              {(error.toLowerCase().includes('expired') || error.toLowerCase().includes('token') || error.toLowerCase().includes('authentication') || error.toLowerCase().includes('session')) && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/login')}
+                  className="btn btn-sm btn-primary"
+                  style={{ whiteSpace: 'nowrap', padding: '4px 12px', fontSize: '0.8rem' }}
+                >
+                  🔑 Log In
+                </button>
+              )}
             </motion.div>
           )}
           {success && (
@@ -286,7 +304,33 @@ export default function CollegesPage() {
                 {editCollege ? '✏️ Edit College' : '🏛️ Add New College'}
               </h3>
 
-              {error && <div className="alert alert-error mb-2" style={{ fontSize: '0.88rem' }}>{error}</div>}
+              {error && (
+                <div
+                  className="alert alert-error mb-2"
+                  style={{
+                    fontSize: '0.88rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                  }}
+                >
+                  <span>{error}</span>
+                  {(error.toLowerCase().includes('expired') ||
+                    error.toLowerCase().includes('token') ||
+                    error.toLowerCase().includes('authentication') ||
+                    error.toLowerCase().includes('session')) && (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/admin/login')}
+                      className="btn btn-sm btn-primary"
+                      style={{ whiteSpace: 'nowrap', padding: '4px 12px', fontSize: '0.8rem' }}
+                    >
+                      🔑 Log In
+                    </button>
+                  )}
+                </div>
+              )}
 
               <form id="college-form" onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div className="form-group" style={{ margin: 0 }}>

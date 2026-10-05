@@ -1,9 +1,12 @@
 import { Router } from 'express';
+import jwt from 'jsonwebtoken';
 import {
   adminAuth,
   requireRole,
   requireExamOwnership,
   requireFacultyPermission,
+  getAdminJwtSecret,
+  StaffRole,
 } from '../middleware/adminAuth';
 import { adminLoginRateLimit } from '../middleware/rateLimiter';
 import { auditLog } from '../middleware/auditLog';
@@ -120,6 +123,45 @@ router.post('/login', adminLoginRateLimit, validateBody(adminLoginSchema), admin
 router.post('/request-login-otp', adminLoginRateLimit, requestLoginOtp);
 router.post('/verify-login-otp', adminLoginRateLimit, verifyLoginOtp);
 router.post('/logout', adminLogout);
+router.post('/demo-login', (req, res) => {
+  if (process.env.NODE_ENV === 'production' && process.env.DEMO_MODE !== 'true') {
+    res.status(403).json({ success: false, error: 'Demo login disabled in production' });
+    return;
+  }
+  const role = (req.body?.role || 'super_admin') as StaffRole;
+  const staff = {
+    id: role === 'inspector' ? 'st000000-0000-0000-0000-000000000004' : role === 'faculty' ? 'st000000-0000-0000-0000-000000000003' : 'st000000-0000-0000-0000-000000000001',
+    name: role === 'inspector' ? 'Dr. K. V. Rao (Principal / Inspector)' : role === 'faculty' ? 'Prof. S. Sharma' : 'R. Charan Sai (Super Admin)',
+    email: role === 'inspector' ? 'inspector@logicwhilelire.com' : role === 'faculty' ? 'faculty@logicwhilelire.com' : 'admin@logicwhilelire.com',
+    role,
+    college_id: role === 'super_admin' ? null : 1,
+  };
+  const token = jwt.sign(
+    {
+      sub: staff.email,
+      role: staff.role,
+      staff_id: staff.id,
+      name: staff.name,
+      college_id: staff.college_id,
+      must_change_password: false,
+    },
+    getAdminJwtSecret(),
+    { expiresIn: '8h' }
+  );
+  const isProduction = process.env.NODE_ENV === 'production';
+  res.cookie('admin_token', token, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    maxAge: 8 * 60 * 60 * 1000,
+    path: '/',
+  });
+  res.json({
+    success: true,
+    token,
+    user: staff,
+  });
+});
 
 // ——— 2FA enrollment (pre-auth — accessible via enrollment_token issued at login) ———
 router.post('/2fa/enroll-init', setup2fa);
