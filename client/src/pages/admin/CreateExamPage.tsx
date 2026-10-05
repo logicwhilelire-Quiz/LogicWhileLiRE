@@ -545,22 +545,35 @@ function Step5QuestionPaper({
   questions,
   setQuestions,
   staffList,
+  colleges,
 }: {
   form: ExamMeta
   setForm: React.Dispatch<React.SetStateAction<ExamMeta>>
   questions: ParsedQuestion[]
   setQuestions: React.Dispatch<React.SetStateAction<ParsedQuestion[]>>
   staffList: StaffOption[]
+  colleges: CollegeOption[]
 }) {
   const [dragging, setDragging] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const selectedCollege = colleges.find(c => String(c.id) === String(form.college_id))
+  const collegeCode = (selectedCollege?.college_code || form.branch || 'CAMPUS').toUpperCase().replace(/[^A-Z0-9]/g, '')
+
   const generateRandomCode = () => {
-    const prefixes = ['CRT', 'TECH', 'DSA', 'AI', 'CODE']
-    const pfx = prefixes[Math.floor(Math.random() * prefixes.length)]
-    const num = Math.floor(1000 + Math.random() * 9000)
-    setForm(prev => ({ ...prev, code: `GR-${pfx}-${num}` }))
+    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
+    let rand = ''
+    for (let i = 0; i < 6; i++) {
+      rand += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    setForm(prev => ({ ...prev, code: `GR-${collegeCode}-${rand}` }))
   }
+
+  useEffect(() => {
+    if (!form.code) {
+      generateRandomCode()
+    }
+  }, [form.college_id])
 
   const downloadSampleTemplate = () => {
     const headers = 'question_text,type,option1 | option2 | option3 | option4,correct_index,marks\n'
@@ -997,8 +1010,8 @@ export default function CreateExamPage() {
 
   // Hierarchy reference data
   const [colleges, setColleges] = useState<CollegeOption[]>([
-    { id: 1, college_name: 'Velagapudi Ramakrishna Siddhartha Engineering College', college_code: 'VRSEC', city: 'Vijayawada' },
-    { id: 2, college_name: 'R.V.R. & J.C. College of Engineering', college_code: 'RVRJC', city: 'Guntur' },
+    { id: 3, college_name: 'Velagapudi Ramakrishna Siddhartha Engineering College', college_code: 'VRSEC', city: 'Vijayawada' },
+    { id: 4, college_name: 'Koneru Lakshmaiah Education Foundation (KL University)', college_code: 'KLU', city: 'Vaddeswaram' },
   ])
   const [staffList, setStaffList] = useState<StaffOption[]>([
     { id: 'usr-fac-01', name: 'Prof. Vikram Rao', email: 'faculty@system.local', role: 'faculty', department: 'CSE' },
@@ -1006,7 +1019,7 @@ export default function CreateExamPage() {
   ])
 
   const [form, setForm] = useState<ExamMeta>({
-    college_id: 1,
+    college_id: 3,
     branch: 'CSM',
     passout_year: 2026,
     section_ids: ['A'],
@@ -1039,9 +1052,12 @@ export default function CreateExamPage() {
         const colRes = await axios.get(`${BASE}/api/colleges`)
         if (colRes.data?.colleges?.length > 0) {
           setColleges(colRes.data.colleges)
-          if (!form.college_id) {
-            setForm(p => ({ ...p, college_id: colRes.data.colleges[0].id }))
-          }
+          setForm(p => {
+            if (!colRes.data.colleges.some((c: any) => String(c.id) === String(p.college_id))) {
+              return { ...p, college_id: colRes.data.colleges[0].id }
+            }
+            return p
+          })
         }
       } catch {
         // Use seeded fallback
@@ -1276,6 +1292,7 @@ export default function CreateExamPage() {
                     questions={questions}
                     setQuestions={setQuestions}
                     staffList={staffList}
+                    colleges={colleges}
                   />
                 )}
                 {step === 6 && (

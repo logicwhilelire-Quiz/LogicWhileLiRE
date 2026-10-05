@@ -907,11 +907,14 @@ router.post(
       : [];
 
     // 1. Insert/Update exam in exam_codes with targeting
-    const examRecord = {
-      code: examCodeClean,
+    const passingPct = total_marks > 0
+      ? Math.round((Number(passing_marks || 40) / Number(total_marks)) * 100)
+      : 40;
+
+    const examRecord: Record<string, any> = {
       exam_code: examCodeClean,
       exam_name: exam_name.trim(),
-      subject,
+      subject: subject || null,
       college_id: college_id ? parseInt(String(college_id), 10) : null,
       branch: branch ? String(branch).trim().toUpperCase() : null,
       passout_year: passout_year ? Number(passout_year) : null,
@@ -922,19 +925,15 @@ router.post(
       assigned_inspector_id: assigned_inspector_id || null,
       is_locked: false,
       paper_status: assigned_faculty_id ? 'allocated' : 'active',
-      duration_minutes: Number(duration_minutes),
-      total_marks: Number(total_marks),
-      passing_marks: Number(passing_marks),
+      duration_minutes: Number(duration_minutes) || 60,
+      total_marks: Number(total_marks) || 100,
+      passing_percentage: passingPct,
       start_time: start_time || new Date().toISOString(),
       end_time: end_time || new Date(Date.now() + 86400000 * 30).toISOString(),
-      instructions,
-      is_proctored: Boolean(is_proctored),
-      is_randomized: Boolean(is_randomized),
-      is_leaderboard_public: Boolean(is_leaderboard_public),
-      max_violations: Number(max_violations),
+      proctoring_enabled: Boolean(is_proctored),
+      max_violations: Number(max_violations) || 5,
       is_active: true,
       total_questions: questions.length,
-      created_at: new Date().toISOString(),
     };
 
     const { data: savedExam, error: examError } = await supabase
