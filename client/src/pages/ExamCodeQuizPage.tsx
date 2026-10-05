@@ -315,6 +315,85 @@ export default function QuizPage() {
     }
   }, [submitting, examCode, hallTicket, answers, codeAnswers, session, navigate, syncPendingAnswers])
 
+  /* ── Strict Integrity Auto-Termination Handler ── */
+  const handleForceTermination = useCallback(async (reason: string) => {
+    if (hasTerminatedRef.current || submitting) return
+    hasTerminatedRef.current = true
+    setIsTerminated(true)
+    setTerminationReason(reason)
+
+    if (timerRef.current) clearInterval(timerRef.current)
+    soundFx.playSecurityAlertTone()
+
+    // 1. Send immediate Realtime broadcast for invigilator alert
+    if (realtimeChannelRef.current) {
+      realtimeChannelRef.current.send({
+        type: 'broadcast',
+        event: 'student_violation',
+        payload: {
+          hallTicket,
+          eventType: 'EXAM_FORCE_TERMINATED_BREACH',
+          message: reason,
+          violationCount: (violationRef.current || 0) + 1,
+          timestamp: Date.now(),
+        },
+      })
+    }
+
+    // 2. Beacon/Post violation
+    const violationPayload = JSON.stringify({
+      candidateId: hallTicket,
+      examCode,
+      violationType: 'EXAM_FORCE_TERMINATED_BREACH',
+      notes: reason,
+      is_terminated: true,
+      auto_submitted: true,
+    })
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(`${BASE}/api/exam-code/${examCode}/violation`, new Blob([violationPayload], { type: 'application/json' }))
+    } else {
+      axios.post(`${BASE}/api/exam-code/${examCode}/violation`, JSON.parse(violationPayload)).catch(() => {})
+    }
+
+    // 3. Log critical security incident to inspector console
+    try {
+      await axios.post(`${BASE}/api/v1/inspector/report-issue`, {
+        examCode,
+        hallTicket,
+        candidateName: session?.candidateId || hallTicket,
+        issueType: 'lockdown_auto_termination',
+        severity: 'critical',
+        description: `EXAM AUTO-TERMINATED: ${reason} at ${new Date().toLocaleTimeString()}`,
+      })
+    } catch {}
+
+    // 4. Submit attempt with terminated_cheating status
+    try {
+      await axios.post(`${BASE}/api/exam-code/${examCode}/submit`, {
+        sessionId: sessionIdRef.current,
+        examCode,
+        hallTicket,
+        answers: { ...answers },
+        codeAnswers: { ...codeAnswers },
+        status: 'terminated_cheating',
+        termination_reason: reason,
+      })
+      if (examCode && hallTicket) {
+        await clearAnswerBuffer(examCode, hallTicket).catch(() => {})
+      }
+    } catch {}
+
+    // 5. Purge storage (Auto Logout)
+    try {
+      localStorage.removeItem('logicwhilelire_attempt')
+      localStorage.removeItem('growthran_attempt')
+      localStorage.removeItem('lw_attempt')
+      localStorage.removeItem('student_token')
+      localStorage.removeItem('student_user')
+      sessionStorage.clear()
+    } catch {}
+  }, [examCode, hallTicket, session, answers, codeAnswers, submitting])
+
   /* ── 1.4 Background Sync & Network Listeners ── */
   useEffect(() => {
     if (!session || submitting) return
@@ -543,41 +622,42 @@ export default function QuizPage() {
     return () => clearInterval(timerRef.current)
   }, [session, routerServerStartTime, routerDurationSeconds, handleSubmit])
 
-  /* ── Tab/visibility proctoring & Inspector Anomaly Reporting ── */
+  /* ── Tab/visibility proctoring & Strict Lockdown Auto-Termination ── */
   useEffect(() => {
-    if (!session || submitting) return
+    if (!session || submitting || hasTerminatedRef.current) return
 
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        logViolation('tab_switch', 'Candidate switched browser tab or minimized window')
-        axios.post(`${BASE}/api/v1/inspector/report-issue`, {
-          examCode,
-          hallTicket,
-          candidateName: session?.candidateId || hallTicket,
-          issueType: 'tab_switch',
-          severity: 'high',
-          description: `Candidate tab switch detected at ${new Date().toLocaleTimeString()}`,
-        }).catch(() => {})
+      if (document.hidden && !hasTerminatedRef.current && !submitting) {
+        handleForceTermination('Window was minimized or switched away from the examination terminal.')
       }
     }
 
     const handleWindowBlur = () => {
-      if (!document.fullscreenElement && !submitting) {
-        logViolation('window_blur', 'Exam terminal lost active focus')
+      if (!hasTerminatedRef.current && !submitting) {
+        handleForceTermination('Exam window lost focus (application switch or click outside terminal detected).')
+      }
+    }
+
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && !hasTerminatedRef.current && !submitting) {
+        handleForceTermination('Fullscreen mode was exited during examination.')
       }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('blur', handleWindowBlur)
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('blur', handleWindowBlur)
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
     }
-  }, [session, submitting, logViolation, examCode, hallTicket])
+  }, [session, submitting, handleForceTermination])
 
   /* ── Keyboard, Context Menu & Clipboard Integrity Lockdown ── */
   useEffect(() => {
-    if (!session || submitting) return
+    if (!session || submitting || hasTerminatedRef.current) return
 
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault()
@@ -586,38 +666,59 @@ export default function QuizPage() {
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // DevTools F12
-      if (e.key === 'F12' || e.keyCode === 123) {
+      // Escape key -> immediate termination
+      if (e.key === 'Escape' || e.code === 'Escape') {
         e.preventDefault()
-        logViolation('devtools_attempt', 'Candidate pressed F12 DevTools key')
-        setSecurityBlockNotice('🛡️ Developer inspection tools are strictly restricted')
-        setTimeout(() => setSecurityBlockNotice(''), 3000)
+        e.stopPropagation()
+        handleForceTermination('Escape key was pressed during the examination.')
         return
       }
 
-      // DevTools Ctrl+Shift+I / J / C
+      // Alt key, Windows / Meta key, Command key
+      if (e.key === 'Alt' || e.key === 'Meta' || e.code === 'MetaLeft' || e.code === 'MetaRight') {
+        e.preventDefault()
+        e.stopPropagation()
+        handleForceTermination(`Restricted system key (${e.key}) was pressed during the examination.`)
+        return
+      }
+
+      // DevTools F12, F11, etc.
+      if (e.key === 'F12' || e.keyCode === 123 || e.key === 'F11') {
+        e.preventDefault()
+        e.stopPropagation()
+        handleForceTermination(`Restricted function key (${e.key}) was pressed.`)
+        return
+      }
+
+      // Browser shortcut combinations Ctrl+W, Ctrl+T, Ctrl+N
+      if (e.ctrlKey && ['w', 'W', 't', 'T', 'n', 'N'].includes(e.key)) {
+        e.preventDefault()
+        e.stopPropagation()
+        handleForceTermination(`Restricted browser shortcut (Ctrl+${e.key.toUpperCase()}) was pressed.`)
+        return
+      }
+
       if (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) {
         e.preventDefault()
-        logViolation('devtools_attempt', 'Candidate pressed Ctrl+Shift+I/J/C DevTools shortcut')
-        setSecurityBlockNotice('🛡️ Developer inspection tools are strictly restricted')
-        setTimeout(() => setSecurityBlockNotice(''), 3000)
+        e.stopPropagation()
+        handleForceTermination('Restricted developer inspection shortcut was pressed.')
         return
       }
 
       // Ctrl+U (View Source)
       if (e.ctrlKey && ['u', 'U'].includes(e.key)) {
         e.preventDefault()
-        setSecurityBlockNotice('🛡️ Page source inspection is restricted')
-        setTimeout(() => setSecurityBlockNotice(''), 3000)
+        handleForceTermination('Page source inspection shortcut was pressed.')
         return
       }
 
-      // Ctrl+P (Print)
-      if (e.ctrlKey && ['p', 'P'].includes(e.key)) {
+      // Block any arbitrary keystroke outside text input / code editor
+      const target = e.target as HTMLElement | null
+      const isInput = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.closest('.monaco-editor')
+      if (!isInput && !['Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', ' '].includes(e.key)) {
         e.preventDefault()
-        setSecurityBlockNotice('🛡️ Printing is disabled during exam')
-        setTimeout(() => setSecurityBlockNotice(''), 3000)
-        return
+        setSecurityBlockNotice('🛡️ Keystrokes outside text fields are restricted. Please use mouse to navigate options.')
+        setTimeout(() => setSecurityBlockNotice(''), 2500)
       }
     }
 
@@ -641,7 +742,7 @@ export default function QuizPage() {
       document.removeEventListener('keydown', handleKeyDown)
       document.removeEventListener('copy', handleCopy)
     }
-  }, [session, submitting, logViolation])
+  }, [session, submitting, handleForceTermination, logViolation])
 
   /* ── Face proctoring ── */
   const handleFaceStatus = useCallback((status: FaceStatus) => {
@@ -663,72 +764,6 @@ export default function QuizPage() {
     }, 0)
   }, [logViolation])
 
-  /* ── 1.1 Strict Security Force-Termination Handler ── */
-  const handleForceTermination = useCallback(async (reason: string) => {
-    if (hasTerminatedRef.current || submitting) return
-    hasTerminatedRef.current = true
-    setIsTerminated(true)
-    setTerminationReason(reason)
-
-    if (timerRef.current) clearInterval(timerRef.current)
-    soundFx.playSecurityAlertTone()
-
-    // 1. Send immediate Realtime broadcast for invigilator alert
-    if (realtimeChannelRef.current) {
-      realtimeChannelRef.current.send({
-        type: 'broadcast',
-        event: 'student_violation',
-        payload: {
-          hallTicket,
-          eventType: 'EXAM_FORCE_TERMINATED_BREACH',
-          message: reason,
-          violationCount: (violationRef.current || 0) + 1,
-          timestamp: Date.now(),
-        },
-      })
-    }
-
-    // 2. Beacon/Post violation
-    const violationPayload = JSON.stringify({
-      candidateId: hallTicket,
-      examCode,
-      violationType: 'EXAM_FORCE_TERMINATED_BREACH',
-      notes: reason,
-      is_terminated: true,
-      auto_submitted: true,
-    })
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon(`${BASE}/api/exam-code/${examCode}/violation`, new Blob([violationPayload], { type: 'application/json' }))
-    } else {
-      axios.post(`${BASE}/api/exam-code/${examCode}/violation`, JSON.parse(violationPayload)).catch(() => {})
-    }
-
-    // 3. Auto-submit existing answers with terminated_cheating status
-    try {
-      axios.post(`${BASE}/api/exam-code/${examCode}/submit`, {
-        sessionId: sessionIdRef.current,
-        examCode,
-        hallTicket,
-        answers: { ...answers },
-        codeAnswers: { ...codeAnswers },
-        status: 'terminated_cheating',
-      }).catch(() => {})
-      if (examCode && hallTicket) {
-        clearAnswerBuffer(examCode, hallTicket).catch(() => {})
-      }
-    } catch {}
-
-    // 4. Force logout (clear all student credentials from storage)
-    try {
-      localStorage.removeItem('student_token')
-      localStorage.removeItem('student_user')
-      localStorage.removeItem('logicwhilelire_attempt')
-      localStorage.removeItem('growthran_attempt')
-      localStorage.removeItem('lw_attempt')
-      sessionStorage.clear()
-    } catch {}
-  }, [submitting, hallTicket, examCode, answers, codeAnswers])
-
   const handleReturnToFullscreen = useCallback(async () => {
     try {
       if (!document.fullscreenElement) {
@@ -737,89 +772,6 @@ export default function QuizPage() {
       setShowFullscreenOverlay(false)
     } catch {}
   }, [])
-
-  /* ── 1.1 Strict Lockdown: Window Minimize / Tab Blur / Escape / Key Restrictions ── */
-  useEffect(() => {
-    if (!session || submitting || isTerminated || !consentGiven) return
-
-    // Auto-request fullscreen
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {})
-    }
-
-    // A. Page minimized or tab switched (visibilitychange)
-    const handleVisibilityChange = () => {
-      if (document.hidden && !hasTerminatedRef.current) {
-        handleForceTermination('Window minimized or document hidden during active exam')
-      }
-    }
-
-    // B. Window lost focus / Alt+Tab / Application switch (blur)
-    const handleWindowBlur = () => {
-      if (!hasTerminatedRef.current) {
-        handleForceTermination('Window lost focus or minimized during active exam')
-      }
-    }
-
-    // C. Fullscreen exit (if user exits fullscreen)
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement && !submitting && !hasTerminatedRef.current) {
-        handleForceTermination('Exited full-screen examination environment')
-      }
-    }
-
-    // D. Forbidden keys: Escape, Alt, Meta (Windows key), F11, F12, Ctrl+W, Ctrl+T, Ctrl+N
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.code === 'Escape') {
-        e.preventDefault()
-        e.stopPropagation()
-        handleForceTermination('Escape key pressed during active exam')
-        return
-      }
-      if (e.key === 'Alt' || e.altKey) {
-        e.preventDefault()
-        e.stopPropagation()
-        handleForceTermination('Alt key pressed (application switch attempt)')
-        return
-      }
-      if (e.key === 'Meta' || e.key === 'OS' || e.metaKey) {
-        e.preventDefault()
-        e.stopPropagation()
-        handleForceTermination('Windows / Meta key pressed (system menu attempt)')
-        return
-      }
-      if (e.key === 'F11') {
-        e.preventDefault()
-        e.stopPropagation()
-        handleForceTermination('F11 fullscreen toggle pressed')
-        return
-      }
-      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C', 'i', 'j', 'c'].includes(e.key))) {
-        e.preventDefault()
-        e.stopPropagation()
-        handleForceTermination('Developer tools shortcut detected')
-        return
-      }
-      if (e.ctrlKey && ['w', 'W', 't', 'T', 'n', 'N'].includes(e.key)) {
-        e.preventDefault()
-        e.stopPropagation()
-        handleForceTermination('Browser tab/window manipulation shortcut detected')
-        return
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('blur', handleWindowBlur)
-    document.addEventListener('fullscreenchange', handleFullscreenChange)
-    window.addEventListener('keydown', handleKeyDown, true)
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('blur', handleWindowBlur)
-      document.removeEventListener('fullscreenchange', handleFullscreenChange)
-      window.removeEventListener('keydown', handleKeyDown, true)
-    }
-  }, [session, submitting, isTerminated, consentGiven, handleForceTermination])
 
   /* ── 1.2 Screen Share Proctoring ── */
   const [screenShareActive, setScreenShareActive] = useState(false)
@@ -1023,6 +975,143 @@ export default function QuizPage() {
       </div>
     </div>
   )
+
+  /* ── Strict Integrity Auto-Termination Screen ── */
+  if (isTerminated) {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 999999,
+          background: 'radial-gradient(ellipse at center, #1e0b0e 0%, #0a0405 100%)',
+          color: '#ffffff',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+          fontFamily: 'var(--font-sans)',
+        }}
+      >
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          style={{
+            maxWidth: 620,
+            width: '100%',
+            background: 'rgba(239, 68, 68, 0.06)',
+            border: '2px solid rgba(239, 68, 68, 0.4)',
+            boxShadow: '0 0 50px rgba(239, 68, 68, 0.25)',
+            borderRadius: 20,
+            padding: '40px 32px',
+            textAlign: 'center',
+            backdropFilter: 'blur(20px)',
+          }}
+        >
+          <div style={{ fontSize: '3.5rem', marginBottom: 16 }}>🛑</div>
+          <span
+            style={{
+              display: 'inline-block',
+              background: 'rgba(239, 68, 68, 0.2)',
+              color: '#F87171',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              padding: '4px 14px',
+              borderRadius: 9999,
+              fontSize: '0.8rem',
+              fontWeight: 800,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              marginBottom: 16,
+            }}
+          >
+            INTEGRITY VIOLATION LOCKDOWN
+          </span>
+          <h1
+            style={{
+              fontSize: '1.8rem',
+              fontWeight: 800,
+              fontFamily: 'var(--font-display)',
+              color: '#ffffff',
+              marginBottom: 12,
+            }}
+          >
+            Exam Terminated &amp; Session Shut Down
+          </h1>
+          <p
+            style={{
+              color: 'rgba(255, 255, 255, 0.85)',
+              fontSize: '0.98rem',
+              lineHeight: 1.6,
+              marginBottom: 20,
+            }}
+          >
+            Your examination terminal has been immediately disqualified and terminated due to an unauthorized action:
+          </p>
+
+          <div
+            style={{
+              background: 'rgba(0, 0, 0, 0.5)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: 10,
+              padding: '14px 18px',
+              color: '#FCA5A5',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              marginBottom: 24,
+              fontFamily: 'monospace',
+              textAlign: 'left',
+              wordBreak: 'break-word',
+            }}
+          >
+            ⚠️ Violation: {terminationReason || 'Window minimized, tab switched, or restricted system shortcut triggered.'}
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+              textAlign: 'left',
+              fontSize: '0.8rem',
+              color: '#9CA3AF',
+              background: 'rgba(255, 255, 255, 0.03)',
+              padding: 16,
+              borderRadius: 10,
+              marginBottom: 28,
+            }}
+          >
+            <div>• Candidate: <strong style={{ color: '#fff' }}>{hallTicket}</strong></div>
+            <div>• Exam Code: <strong style={{ color: '#fff' }}>{examCode}</strong></div>
+            <div>• Incident Timestamp: <strong style={{ color: '#fff' }}>{new Date().toLocaleString()}</strong></div>
+            <div>• Recorded Status: <strong style={{ color: '#EF4444' }}>TERMINATED_CHEATING</strong></div>
+            <div>• Action: Candidate session has been logged out and response state closed.</div>
+          </div>
+
+          <button
+            onClick={() => {
+              navigate('/enter-exam')
+            }}
+            className="btn"
+            style={{
+              width: '100%',
+              background: '#EF4444',
+              color: '#ffffff',
+              fontWeight: 700,
+              padding: '14px 24px',
+              borderRadius: 12,
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '0.95rem',
+            }}
+          >
+            Return to Exam Portal
+          </button>
+        </motion.div>
+      </div>
+    )
+  }
 
   if (!session || !currentQuestion) return null
 

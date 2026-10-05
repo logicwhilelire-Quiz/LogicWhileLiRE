@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
 import { API_BASE_URL } from '../lib/config'
@@ -24,13 +24,35 @@ interface ApiError {
 
 export default function EnterExamPage() {
   const navigate = useNavigate()
-  const [form, setForm] = useState<FormState>({ examCode: '', hallTicket: '' })
+  const [searchParams] = useSearchParams()
+  const [form, setForm] = useState<FormState>({
+    examCode: (searchParams.get('code') || searchParams.get('examCode') || '').toUpperCase(),
+    hallTicket: searchParams.get('hallTicket') || searchParams.get('rollNumber') || '',
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [shaking, setShaking] = useState(false)
   const [focusedField, setFocusedField] = useState<string | null>(null)
   const [typingField, setTypingField] = useState<string | null>(null)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  useEffect(() => {
+    try {
+      const codeFromUrl = (searchParams.get('code') || searchParams.get('examCode') || '').toUpperCase()
+      const hallFromUrl = searchParams.get('hallTicket') || searchParams.get('rollNumber') || ''
+      const userStr = localStorage.getItem('student_user')
+      let userHall = ''
+      if (userStr) {
+        const u = JSON.parse(userStr)
+        userHall = u.roll_number || u.hall_ticket || ''
+      }
+
+      setForm(prev => ({
+        examCode: codeFromUrl || prev.examCode,
+        hallTicket: hallFromUrl || prev.hallTicket || userHall,
+      }))
+    } catch {}
+  }, [searchParams])
 
   const handleChange = (field: keyof FormState, value: string) => {
     setForm(prev => ({ ...prev, [field]: field === 'examCode' ? value.toUpperCase() : value }))
