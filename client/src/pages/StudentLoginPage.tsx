@@ -59,20 +59,54 @@ export default function StudentLoginPage() {
     }
   }
 
-  function handleQuickDemoLogin() {
-    const demoStudent = {
-      id: 'stu-demo-01',
-      name: 'R. Charan Sai (Candidate)',
-      email: 'candidate@logicwhilelire.com',
-      roll_number: 'HT2026CS01',
+  function handleQuickLoginStudentA() {
+    const studentA = {
+      id: 's1000000-0000-0000-0000-000000000001',
+      name: 'Aarav Sharma (Section A)',
+      first_name: 'Aarav',
+      last_name: 'Sharma',
+      email: 'aarav.sharma@example.com',
+      roll_number: 'HT2026001',
+      hall_ticket: 'HT2026001',
       college_id: 1,
-      college_name: 'Aerospace Engineering & Tech',
-      section: 'CSE-A',
-      batch: '2026',
+      college_name: 'Velagapudi Ramakrishna Siddhartha Engineering College (VRSEC)',
+      branch_code: 'CSM',
+      section: 'A',
+      section_id: 'sec-vrsec-csm-a',
+      year_of_passing: 2026,
+      passout_year: 2026,
+      batch: 'Batch 1',
     };
-    localStorage.setItem('student_token', 'demo-student-token-2026');
-    localStorage.setItem('student_user', JSON.stringify(demoStudent));
+    localStorage.setItem('student_token', 'demo-student-a-token-2026');
+    localStorage.setItem('student_user', JSON.stringify(studentA));
     navigate('/student/dashboard');
+  }
+
+  function handleQuickLoginStudentB() {
+    const studentB = {
+      id: 's3000000-0000-0000-0000-000000000003',
+      name: 'Rohan Varma (Section B)',
+      first_name: 'Rohan',
+      last_name: 'Varma',
+      email: 'rohan.varma@example.com',
+      roll_number: 'HT2026003',
+      hall_ticket: 'HT2026003',
+      college_id: 1,
+      college_name: 'Velagapudi Ramakrishna Siddhartha Engineering College (VRSEC)',
+      branch_code: 'CSM',
+      section: 'B',
+      section_id: 'sec-vrsec-csm-b',
+      year_of_passing: 2026,
+      passout_year: 2026,
+      batch: 'Batch 1',
+    };
+    localStorage.setItem('student_token', 'demo-student-b-token-2026');
+    localStorage.setItem('student_user', JSON.stringify(studentB));
+    navigate('/student/dashboard');
+  }
+
+  function handleQuickDemoLogin() {
+    handleQuickLoginStudentA();
   }
 
   return (
@@ -246,31 +280,62 @@ export default function StudentLoginPage() {
               <div style={{ marginTop: 14, textAlign: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '12px 0 10px' }}>
                   <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.1)' }} />
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>or instant demo</span>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>1-Click Live Section Demo</span>
                   <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.1)' }} />
                 </div>
-                <button
-                  type="button"
-                  id="btn-quick-demo-candidate"
-                  onClick={handleQuickDemoLogin}
-                  className="btn btn-block"
-                  style={{
-                    width: '100%',
-                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(234, 88, 12, 0.2) 100%)',
-                    border: '1px solid rgba(245, 158, 11, 0.4)',
-                    color: '#fbbf24',
-                    fontWeight: 700,
-                    padding: '10px 14px',
-                    borderRadius: 8,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <span>⚡</span> 1-Click Quick Candidate Demo Login
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <button
+                    type="button"
+                    id="btn-quick-demo-student-a"
+                    onClick={handleQuickLoginStudentA}
+                    className="btn btn-block"
+                    style={{
+                      width: '100%',
+                      background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.25) 100%)',
+                      border: '1px solid rgba(16, 185, 129, 0.5)',
+                      color: '#34d399',
+                      fontWeight: 700,
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      fontSize: '0.86rem',
+                    }}
+                  >
+                    <span>⚡ Student A (Section A · Eligible)</span>
+                    <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.25)', padding: '2px 6px', borderRadius: 4 }}>
+                      Sees TARGET-VRSEC-A
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    id="btn-quick-demo-student-b"
+                    onClick={handleQuickLoginStudentB}
+                    className="btn btn-block"
+                    style={{
+                      width: '100%',
+                      background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(185, 28, 28, 0.2) 100%)',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      color: '#f87171',
+                      fontWeight: 700,
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      fontSize: '0.86rem',
+                    }}
+                  >
+                    <span>🔒 Student B (Section B · Ineligible)</span>
+                    <span style={{ fontSize: '0.72rem', background: 'rgba(239, 68, 68, 0.25)', padding: '2px 6px', borderRadius: 4 }}>
+                      Gets 404 / Hidden
+                    </span>
+                  </button>
+                </div>
               </div>
             </form>
 

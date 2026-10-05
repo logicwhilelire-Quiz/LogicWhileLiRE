@@ -142,12 +142,34 @@ export default function AdminLoginPage() {
 
   function handleQuickDemoAdminLogin() {
     const demoAdmin = {
-      id: 'adm-demo-01',
+      id: 'st000000-0000-0000-0000-000000000001',
       name: 'R. Charan Sai (Super Admin)',
       email: 'admin@logicwhilelire.com',
       role: 'super_admin',
     };
     completeAuth('demo-admin-token-2026', demoAdmin);
+  }
+
+  function handleQuickDemoInspectorLogin() {
+    const demoInspector = {
+      id: 'st000000-0000-0000-0000-000000000004',
+      name: 'Dr. K. V. Rao (Principal / Inspector)',
+      email: 'inspector@logicwhilelire.com',
+      role: 'inspector',
+      college_id: 1,
+    };
+    completeAuth('demo-inspector-token-2026', demoInspector);
+  }
+
+  function handleQuickDemoFacultyLogin() {
+    const demoFaculty = {
+      id: 'st000000-0000-0000-0000-000000000002',
+      name: 'Dr. Suresh Kumar (Faculty CSM-A)',
+      email: 'faculty@logicwhilelire.com',
+      role: 'faculty',
+      college_id: 1,
+    };
+    completeAuth('demo-faculty-token-2026', demoFaculty);
   }
 
   return (
@@ -215,35 +237,92 @@ export default function AdminLoginPage() {
                   {loading ? <><div className="btn-spinner" />Signing in...</> : '🔑 Sign In'}
                 </button>
 
-                {/* 1-Click Fast Track Super Admin Demo Login */}
+                {/* 1-Click Fast Track Staff Role Demos */}
                 <div style={{ marginTop: 14, textAlign: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '12px 0 10px' }}>
                     <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.1)' }} />
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>instant admin access</span>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>1-Click Staff Role Demos</span>
                     <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.1)' }} />
                   </div>
-                  <button
-                    type="button"
-                    id="btn-quick-demo-admin"
-                    onClick={handleQuickDemoAdminLogin}
-                    className="btn btn-block"
-                    style={{
-                      width: '100%',
-                      background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(37, 99, 235, 0.2) 100%)',
-                      border: '1px solid rgba(56, 189, 248, 0.4)',
-                      color: '#38bdf8',
-                      fontWeight: 700,
-                      padding: '10px 14px',
-                      borderRadius: 8,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <span>🛡️</span> 1-Click Super Admin Control Login
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <button
+                      type="button"
+                      id="btn-quick-demo-admin"
+                      onClick={handleQuickDemoAdminLogin}
+                      className="btn btn-block"
+                      style={{
+                        width: '100%',
+                        background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(37, 99, 235, 0.2) 100%)',
+                        border: '1px solid rgba(56, 189, 248, 0.4)',
+                        color: '#38bdf8',
+                        fontWeight: 700,
+                        padding: '9px 12px',
+                        borderRadius: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        fontSize: '0.84rem',
+                      }}
+                    >
+                      <span>👑 Super Admin (Full Control)</span>
+                      <span style={{ fontSize: '0.72rem', background: 'rgba(56, 189, 248, 0.2)', padding: '2px 6px', borderRadius: 4 }}>
+                        /admin/dashboard
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      id="btn-quick-demo-inspector"
+                      onClick={handleQuickDemoInspectorLogin}
+                      className="btn btn-block"
+                      style={{
+                        width: '100%',
+                        background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(126, 34, 206, 0.25) 100%)',
+                        border: '1px solid rgba(168, 85, 247, 0.4)',
+                        color: '#c084fc',
+                        fontWeight: 700,
+                        padding: '9px 12px',
+                        borderRadius: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        fontSize: '0.84rem',
+                      }}
+                    >
+                      <span>🛡️ Inspector (Live Leaderboard)</span>
+                      <span style={{ fontSize: '0.72rem', background: 'rgba(168, 85, 247, 0.2)', padding: '2px 6px', borderRadius: 4 }}>
+                        Direct Leaderboard
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      id="btn-quick-demo-faculty"
+                      onClick={handleQuickDemoFacultyLogin}
+                      className="btn btn-block"
+                      style={{
+                        width: '100%',
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.2) 100%)',
+                        border: '1px solid rgba(16, 185, 129, 0.4)',
+                        color: '#34d399',
+                        fontWeight: 700,
+                        padding: '9px 12px',
+                        borderRadius: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        fontSize: '0.84rem',
+                      }}
+                    >
+                      <span>🎓 Faculty (Section Allocations)</span>
+                      <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.2)', padding: '2px 6px', borderRadius: 4 }}>
+                        Section A Paper
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </form>
             )}
