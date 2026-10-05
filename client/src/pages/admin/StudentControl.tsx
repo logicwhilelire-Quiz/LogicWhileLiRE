@@ -295,15 +295,18 @@ export default function StudentControl() {
     } catch {}
   };
 
+  const [sectionFilter, setSectionFilter] = useState('ALL');
+
   const filtered = students.filter((s) => {
     const matchesBranch = branchFilter === 'ALL' || s.branch === branchFilter;
     const matchesCollege = collegeFilter === 'ALL' || (s.college_name && s.college_name.includes(collegeFilter));
+    const matchesSection = sectionFilter === 'ALL' || s.section === sectionFilter;
     const matchesSearch =
       s.name.toLowerCase().includes(search.toLowerCase()) ||
       s.hall_ticket.toLowerCase().includes(search.toLowerCase()) ||
       s.email.toLowerCase().includes(search.toLowerCase()) ||
       (s.college_name && s.college_name.toLowerCase().includes(search.toLowerCase()));
-    return matchesBranch && matchesCollege && matchesSearch;
+    return matchesBranch && matchesCollege && matchesSection && matchesSearch;
   });
 
   return (
@@ -443,10 +446,32 @@ export default function StudentControl() {
               >
                 <option value="ALL">All Branches</option>
                 <option value="CSE">CSE</option>
+                <option value="CSM">CSM</option>
                 <option value="IT">IT</option>
                 <option value="ECE">ECE</option>
                 <option value="AIML">AIML</option>
                 <option value="MECH">MECH</option>
+              </select>
+            </div>
+
+            {/* Section Filter */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>SECTION:</span>
+              <select
+                className="form-input"
+                style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+                value={sectionFilter}
+                onChange={(e) => setSectionFilter(e.target.value)}
+              >
+                <option value="ALL">All Sections</option>
+                <option value="CSM-A">CSM-A</option>
+                <option value="CSM-B">CSM-B</option>
+                <option value="CSE-A">CSE-A</option>
+                <option value="CSE-B">CSE-B</option>
+                <option value="CSE-C">CSE-C</option>
+                <option value="A">Section A</option>
+                <option value="B">Section B</option>
+                <option value="C">Section C</option>
               </select>
             </div>
           </div>
@@ -716,6 +741,11 @@ export default function StudentControl() {
                         value={newStudent.section}
                         onChange={(e) => setNewStudent({ ...newStudent, section: e.target.value })}
                       >
+                        <option value="CSM-A">CSM-A</option>
+                        <option value="CSM-B">CSM-B</option>
+                        <option value="CSE-A">CSE-A</option>
+                        <option value="CSE-B">CSE-B</option>
+                        <option value="CSE-C">CSE-C</option>
                         <option value="A">Section A</option>
                         <option value="B">Section B</option>
                         <option value="C">Section C</option>
