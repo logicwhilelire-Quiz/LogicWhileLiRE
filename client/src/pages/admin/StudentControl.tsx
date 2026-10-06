@@ -20,6 +20,7 @@ interface StudentRosterItem {
   college_name?: string;
   section?: string;
   passout_year?: number;
+  is_verified?: boolean;
   is_blocked: boolean;
   block_reason?: string;
   attempts_used: number;
@@ -32,10 +33,21 @@ export default function StudentControl() {
   const [search, setSearch] = useState('');
   const [branchFilter, setBranchFilter] = useState('ALL');
   const [collegeFilter, setCollegeFilter] = useState('ALL');
+  const [sectionFilter, setSectionFilter] = useState('ALL');
+  const [verificationFilter, setVerificationFilter] = useState<'ALL' | 'VERIFIED' | 'UNVERIFIED'>('ALL');
   const [uploadMsg, setUploadMsg] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [colleges, setColleges] = useState<College[]>([]);
+
+  const currentUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('admin_user') || sessionStorage.getItem('admin_user') || '{"role":"super_admin"}');
+    } catch {
+      return { role: 'super_admin' };
+    }
+  })();
+  const isSuperAdmin = currentUser.role === 'super_admin' || currentUser.role === 'admin';
 
   // Default authoritative roster
   const [students, setStudents] = useState<StudentRosterItem[]>([
@@ -48,6 +60,7 @@ export default function StudentControl() {
       college_name: 'VR Siddhartha Engineering College',
       section: 'A',
       passout_year: 2026,
+      is_verified: true,
       is_blocked: false,
       attempts_used: 1,
       allowed_attempts: 1,
@@ -62,6 +75,7 @@ export default function StudentControl() {
       college_name: 'VR Siddhartha Engineering College',
       section: 'B',
       passout_year: 2026,
+      is_verified: true,
       is_blocked: false,
       attempts_used: 0,
       allowed_attempts: 1,
@@ -76,6 +90,7 @@ export default function StudentControl() {
       college_name: 'Chaitanya Bharathi Institute (CBIT)',
       section: 'A',
       passout_year: 2027,
+      is_verified: false,
       is_blocked: true,
       block_reason: 'Flagged for multiple devtools and tab-switching violations',
       attempts_used: 1,
@@ -91,6 +106,7 @@ export default function StudentControl() {
       college_name: 'Vasavi College of Engineering',
       section: 'C',
       passout_year: 2028,
+      is_verified: true,
       is_blocked: false,
       attempts_used: 1,
       allowed_attempts: 1,
@@ -132,6 +148,7 @@ export default function StudentControl() {
             college_name: s.college_name || 'Partner Campus',
             section: s.section || 'A',
             passout_year: s.passout_year || 2026,
+            is_verified: s.is_verified !== false,
             is_blocked: Boolean(s.is_blocked),
             block_reason: s.block_reason,
             attempts_used: s.attempts_used || 0,
@@ -154,6 +171,82 @@ export default function StudentControl() {
     section: 'A',
     passout_year: 2026,
   });
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkFeedback, setBulkFeedback] = useState<string | null>(null);
+
+  const handleToggleSelectAll = () => {
+    if (selectedStudentIds.size === filtered.length) {
+      setSelectedStudentIds(new Set());
+    } else {
+      setSelectedStudentIds(new Set(filtered.map((s) => s.id)));
+    }
+  };
+
+  const handleToggleSelect = (id: string) => {
+    const next = new Set(selectedStudentIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedStudentIds(next);
+  };
+
+  const handleBulkVerifySelected = async () => {
+    if (selectedStudentIds.size === 0) return;
+    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    setBulkLoading(true);
+    try {
+      const res = await axios.post(
+        `${API_BASE_URL}/api/admin/students/bulk-verify`,
+        { student_ids: Array.from(selectedStudentIds) },
+        { headers }
+      );
+      if (res.data?.success) {
+        setStudents((prev) =>
+          prev.map((s) => (selectedStudentIds.has(s.id) ? { ...s, is_verified: true } : s))
+        );
+        setBulkFeedback(`✅ Successfully verified ${selectedStudentIds.size} selected student(s)!`);
+        setSelectedStudentIds(new Set());
+        setTimeout(() => setBulkFeedback(null), 5000);
+      }
+    } catch (err: any) {
+      setBulkFeedback(`❌ Bulk verification failed: ${err.response?.data?.error || err.message}`);
+      setTimeout(() => setBulkFeedback(null), 5000);
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleBulkVerifySection = async () => {
+    const currentSec = sectionFilter === 'ALL' ? 'A' : sectionFilter;
+    if (!confirm(`Mark ALL students in section "${currentSec}" as email-verified? This creates an audit log entry so imported students are not locked out.`)) return;
+    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    setBulkLoading(true);
+    try {
+      const res = await axios.post(
+        `${API_BASE_URL}/api/admin/students/bulk-verify`,
+        { section_id: currentSec },
+        { headers }
+      );
+      if (res.data?.success) {
+        setStudents((prev) =>
+          prev.map((s) =>
+            sectionFilter === 'ALL' || (s.section || '').toUpperCase() === currentSec.toUpperCase()
+              ? { ...s, is_verified: true }
+              : s
+          )
+        );
+        setBulkFeedback(`✅ ${res.data.message || `Successfully verified all students in section ${currentSec}!`}`);
+        setTimeout(() => setBulkFeedback(null), 5000);
+      }
+    } catch (err: any) {
+      setBulkFeedback(`❌ Section verification failed: ${err.response?.data?.error || err.message}`);
+      setTimeout(() => setBulkFeedback(null), 5000);
+    } finally {
+      setBulkLoading(false);
+    }
+  };
 
   const handleToggleBlock = async (id: string) => {
     const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
@@ -295,18 +388,42 @@ export default function StudentControl() {
     } catch {}
   };
 
-  const [sectionFilter, setSectionFilter] = useState('ALL');
+  const handleVerifyEmail = async (student: StudentRosterItem) => {
+    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    try {
+      await axios.patch(
+        `${API_BASE_URL}/api/admin/students/${student.id}`,
+        { is_verified: true },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      setStudents((prev) =>
+        prev.map((s) => (s.id === student.id ? { ...s, is_verified: true } : s))
+      );
+      setUploadMsg(`Student ${student.name} (${student.hall_ticket}) email marked as verified.`);
+      setTimeout(() => setUploadMsg(''), 4000);
+    } catch {
+      setStudents((prev) =>
+        prev.map((s) => (s.id === student.id ? { ...s, is_verified: true } : s))
+      );
+      setUploadMsg(`Student ${student.name} email marked as verified.`);
+      setTimeout(() => setUploadMsg(''), 4000);
+    }
+  };
 
   const filtered = students.filter((s) => {
     const matchesBranch = branchFilter === 'ALL' || s.branch === branchFilter;
     const matchesCollege = collegeFilter === 'ALL' || (s.college_name && s.college_name.includes(collegeFilter));
     const matchesSection = sectionFilter === 'ALL' || s.section === sectionFilter;
+    const matchesVerification =
+      verificationFilter === 'ALL' ||
+      (verificationFilter === 'VERIFIED' && s.is_verified !== false) ||
+      (verificationFilter === 'UNVERIFIED' && s.is_verified === false);
     const matchesSearch =
       s.name.toLowerCase().includes(search.toLowerCase()) ||
       s.hall_ticket.toLowerCase().includes(search.toLowerCase()) ||
       s.email.toLowerCase().includes(search.toLowerCase()) ||
       (s.college_name && s.college_name.toLowerCase().includes(search.toLowerCase()));
-    return matchesBranch && matchesCollege && matchesSection && matchesSearch;
+    return matchesBranch && matchesCollege && matchesSection && matchesVerification && matchesSearch;
   });
 
   return (
@@ -325,33 +442,41 @@ export default function StudentControl() {
                 Student & Candidate Control
               </h1>
               <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem', margin: '4px 0 0 0' }}>
-                Strict Collegiate Roster Governance, College ID, Hall Ticket, and Live Gate Pass Authority
+                Strict Collegiate Roster Governance, College ID, Hall Ticket, Email Verification, and Live Gate Pass Authority
               </p>
             </div>
 
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button
-                onClick={() => fileRef.current?.click()}
-                className="btn btn-secondary"
-                style={{ padding: '10px 18px', fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
-              >
-                <span>📥</span> Upload Student Excel
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".xlsx,.csv"
-                style={{ display: 'none' }}
-                onChange={handleExcelUpload}
-              />
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              {!isSuperAdmin ? (
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#38BDF8', fontSize: '0.82rem', fontWeight: 700 }}>
+                  <span>🔒</span> Faculty Read-Only Mode
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    className="btn btn-secondary"
+                    style={{ padding: '10px 18px', fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
+                  >
+                    <span>📥</span> Upload Student Excel
+                  </button>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept=".xlsx,.csv"
+                    style={{ display: 'none' }}
+                    onChange={handleExcelUpload}
+                  />
 
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="btn btn-primary"
-                style={{ padding: '10px 20px', fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
-              >
-                <span>➕</span> Add Candidate
-              </button>
+                  <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="btn btn-primary"
+                    style={{ padding: '10px 20px', fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
+                  >
+                    <span>➕</span> Add Candidate
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -474,7 +599,135 @@ export default function StudentControl() {
                 <option value="C">Section C</option>
               </select>
             </div>
+
+            {/* Email Verification Filter */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>VERIFICATION:</span>
+              <select
+                className="form-input"
+                style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+                value={verificationFilter}
+                onChange={(e) => setVerificationFilter(e.target.value as any)}
+              >
+                <option value="ALL">All Students</option>
+                <option value="VERIFIED">Verified Only (✓)</option>
+                <option value="UNVERIFIED">Pending Verification (⏳)</option>
+              </select>
+            </div>
           </div>
+
+          {!isSuperAdmin && (
+            <div
+              style={{
+                padding: '12px 18px',
+                borderRadius: 8,
+                background: 'rgba(56, 189, 248, 0.08)',
+                border: '1px solid rgba(56, 189, 248, 0.25)',
+                marginBottom: 20,
+                fontSize: '0.84rem',
+                color: '#BAE6FD',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}
+            >
+              <span style={{ fontSize: '1.2rem' }}>ℹ️</span>
+              <div>
+                <strong>Faculty Read-Only Access:</strong> You can monitor collegiate rosters and verification statuses. Only the Super Admin can create/edit student credentials, modify gate passes, or manage extra time.
+              </div>
+            </div>
+          )}
+
+          {bulkFeedback && (
+            <div
+              style={{
+                padding: '12px 18px',
+                borderRadius: 8,
+                background: bulkFeedback.startsWith('✅') ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                border: `1px solid ${bulkFeedback.startsWith('✅') ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+                marginBottom: 16,
+                fontSize: '0.88rem',
+                color: bulkFeedback.startsWith('✅') ? '#6EE7B7' : '#FCA5A5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>{bulkFeedback}</div>
+              <button
+                onClick={() => setBulkFeedback(null)}
+                style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1rem' }}
+              >
+                &times;
+              </button>
+            </div>
+          )}
+
+          {/* Super Admin Bulk Verification Action Bar */}
+          {isSuperAdmin && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 12,
+                padding: '12px 18px',
+                borderRadius: 10,
+                background: 'rgba(30, 41, 59, 0.7)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                marginBottom: 16,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: '0.84rem', color: '#94A3B8' }}>
+                  Selected: <strong style={{ color: '#38BDF8' }}>{selectedStudentIds.size}</strong> of {filtered.length} students
+                </span>
+                {selectedStudentIds.size > 0 && (
+                  <button
+                    onClick={() => setSelectedStudentIds(new Set())}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '0.74rem', padding: '2px 8px' }}
+                  >
+                    Clear Selection
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  id="bulk-verify-selected-btn"
+                  onClick={handleBulkVerifySelected}
+                  disabled={selectedStudentIds.size === 0 || bulkLoading}
+                  className="btn btn-primary btn-sm"
+                  style={{
+                    background: selectedStudentIds.size > 0 ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' : 'rgba(255, 255, 255, 0.1)',
+                    borderColor: selectedStudentIds.size > 0 ? '#10B981' : 'transparent',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    opacity: selectedStudentIds.size > 0 ? 1 : 0.5,
+                  }}
+                >
+                  {bulkLoading ? 'Verifying...' : `✓ Verify Selected (${selectedStudentIds.size})`}
+                </button>
+
+                <button
+                  id="bulk-verify-section-btn"
+                  onClick={handleBulkVerifySection}
+                  disabled={bulkLoading}
+                  className="btn btn-secondary btn-sm"
+                  style={{
+                    background: 'rgba(56, 189, 248, 0.12)',
+                    borderColor: 'rgba(56, 189, 248, 0.35)',
+                    color: '#38BDF8',
+                    fontWeight: 700,
+                  }}
+                >
+                  ⚡ Verify All in this Section ({sectionFilter === 'ALL' ? 'Sec A' : sectionFilter})
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Roster Table */}
           <div
@@ -489,10 +742,22 @@ export default function StudentControl() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', background: 'rgba(0, 0, 0, 0.2)' }}>
+                  {isSuperAdmin && (
+                    <th style={{ padding: '14px 12px', width: 40, textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedStudentIds.size === filtered.length && filtered.length > 0}
+                        onChange={handleToggleSelectAll}
+                        title="Select All Students"
+                        style={{ cursor: 'pointer', width: 16, height: 16 }}
+                      />
+                    </th>
+                  )}
                   <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>HALL TICKET / ROLL NO</th>
                   <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>CANDIDATE NAME</th>
                   <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>COLLEGE &amp; SECTION</th>
                   <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>GATE PASS STATUS</th>
+                  <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>EMAIL STATUS</th>
                   <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>ATTEMPTS</th>
                   <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>EXTRA TIME</th>
                   <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)', textAlign: 'right' }}>ADMIN ACTIONS</th>
@@ -504,9 +769,19 @@ export default function StudentControl() {
                     key={s.id}
                     style={{
                       borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-                      background: s.is_blocked ? 'rgba(239, 68, 68, 0.05)' : 'transparent',
+                      background: s.is_blocked ? 'rgba(239, 68, 68, 0.05)' : selectedStudentIds.has(s.id) ? 'rgba(56, 189, 248, 0.08)' : 'transparent',
                     }}
                   >
+                    {isSuperAdmin && (
+                      <td style={{ padding: '14px 12px', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedStudentIds.has(s.id)}
+                          onChange={() => handleToggleSelect(s.id)}
+                          style={{ cursor: 'pointer', width: 16, height: 16 }}
+                        />
+                      </td>
+                    )}
                     <td style={{ padding: '14px 16px' }}>
                       <span
                         style={{
@@ -569,6 +844,62 @@ export default function StudentControl() {
                         </span>
                       )}
                     </td>
+                    <td style={{ padding: '14px 16px' }}>
+                      {s.is_verified !== false ? (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            padding: '3px 8px',
+                            borderRadius: 4,
+                            background: 'rgba(16, 185, 129, 0.15)',
+                            color: '#34D399',
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                          }}
+                        >
+                          ✓ VERIFIED
+                        </span>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              padding: '3px 8px',
+                              borderRadius: 4,
+                              background: 'rgba(245, 158, 11, 0.15)',
+                              color: '#FBBF24',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              border: '1px solid rgba(245, 158, 11, 0.3)',
+                            }}
+                          >
+                            ⏳ PENDING OTP
+                          </span>
+                          {isSuperAdmin && (
+                            <button
+                              onClick={() => handleVerifyEmail(s)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#38BDF8',
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                textDecoration: 'underline',
+                                cursor: 'pointer',
+                                padding: 0,
+                              }}
+                            >
+                              Verify Now
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
                     <td style={{ padding: '14px 16px', color: '#CBD5E1' }}>
                       {s.attempts_used} / {s.allowed_attempts}
                     </td>
@@ -582,39 +913,45 @@ export default function StudentControl() {
                       )}
                     </td>
                     <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                        <button
-                          onClick={() => handleAddExtraTime(s.id, 5)}
-                          title="Grant +5 min extension"
-                          style={{
-                            padding: '4px 8px',
-                            borderRadius: 4,
-                            background: 'rgba(245, 158, 11, 0.15)',
-                            color: '#FBBF24',
-                            border: '1px solid rgba(245, 158, 11, 0.3)',
-                            fontSize: '0.74rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          +5m
-                        </button>
-                        <button
-                          onClick={() => handleToggleBlock(s.id)}
-                          style={{
-                            padding: '4px 10px',
-                            borderRadius: 4,
-                            background: s.is_blocked ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                            color: s.is_blocked ? '#34D399' : '#F87171',
-                            border: s.is_blocked ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
-                            fontSize: '0.74rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {s.is_blocked ? 'Unblock Gate' : 'Block Candidate'}
-                        </button>
-                      </div>
+                      {!isSuperAdmin ? (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-faint)', fontStyle: 'italic' }}>
+                          Read Only (Faculty)
+                        </span>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={() => handleAddExtraTime(s.id, 5)}
+                            title="Grant +5 min extension"
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: 4,
+                              background: 'rgba(245, 158, 11, 0.15)',
+                              color: '#FBBF24',
+                              border: '1px solid rgba(245, 158, 11, 0.3)',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            +5m
+                          </button>
+                          <button
+                            onClick={() => handleToggleBlock(s.id)}
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: 4,
+                              background: s.is_blocked ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                              color: s.is_blocked ? '#34D399' : '#F87171',
+                              border: s.is_blocked ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {s.is_blocked ? 'Unblock Gate' : 'Block Candidate'}
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

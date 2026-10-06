@@ -55,7 +55,10 @@ export async function participantAuth(
 
   let payload: ParticipantJWTPayload;
   try {
-    const jwtSecret = process.env.JWT_SECRET || 'logicwhilelire_participant_jwt_default_secret_key_demo_2026';
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('[FATAL] JWT_SECRET environment variable is strictly required');
+    }
     payload = jwt.verify(token, jwtSecret) as ParticipantJWTPayload;
   } catch {
     res.status(401).json({ success: false, error: 'Invalid or expired session token' });
@@ -115,9 +118,25 @@ export async function studentAuth(
     return;
   }
 
+  // Reject administrative tokens attempting student portal access
+  try {
+    const decodedAny = jwt.decode(token) as any;
+    if (decodedAny && ['super_admin', 'admin', 'faculty', 'inspector', 'college_admin'].includes(decodedAny.role)) {
+      res.status(403).json({
+        success: false,
+        error: 'Forbidden: Administrative accounts cannot use student portal routes',
+        code: 'ADMIN_TOKEN_REJECTED',
+      });
+      return;
+    }
+  } catch {}
+
   let payload: StudentJWTPayload;
   try {
-    const jwtSecret = process.env.JWT_SECRET || 'logicwhilelire_participant_jwt_default_secret_key_demo_2026';
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('[FATAL] JWT_SECRET environment variable is strictly required');
+    }
     payload = jwt.verify(token, jwtSecret) as StudentJWTPayload;
   } catch {
     res.status(401).json({ success: false, error: 'Invalid or expired student session' });

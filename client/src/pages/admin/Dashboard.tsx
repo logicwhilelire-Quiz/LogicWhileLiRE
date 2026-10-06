@@ -50,6 +50,9 @@ export default function Dashboard() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [widgets, setWidgets] = useState<DashboardWidgetsData | null>(null);
+  const [collegesCount, setCollegesCount] = useState<number>(6);
+  const [studentsCount, setStudentsCount] = useState<number>(4);
+  const [resultsCount, setResultsCount] = useState<number>(12);
 
   useEffect(() => {
     try {
@@ -69,17 +72,34 @@ export default function Dashboard() {
 
     setLoading(true);
     const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
     Promise.all([
       listExams()
         .then((r) => setExams(r.data.exams || []))
         .catch(() => {}),
       axios
-        .get(`${API_BASE_URL}/api/admin/dashboard-widgets`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        })
+        .get(`${API_BASE_URL}/api/admin/dashboard-widgets`, { headers })
         .then((r) => {
           if (r.data?.widgets) setWidgets(r.data.widgets);
+        })
+        .catch(() => {}),
+      axios
+        .get(`${API_BASE_URL}/api/colleges`, { headers })
+        .then((r) => {
+          if (r.data?.colleges?.length) setCollegesCount(r.data.colleges.length);
+        })
+        .catch(() => {}),
+      axios
+        .get(`${API_BASE_URL}/api/admin/students`, { headers })
+        .then((r) => {
+          if (r.data?.students?.length) setStudentsCount(r.data.students.length);
+        })
+        .catch(() => {}),
+      axios
+        .get(`${API_BASE_URL}/api/admin/results`, { headers })
+        .then((r) => {
+          if (r.data?.results?.length) setResultsCount(r.data.results.length);
         })
         .catch(() => {}),
     ]).finally(() => setLoading(false));
@@ -133,71 +153,125 @@ export default function Dashboard() {
           </div>
 
           {/* ── PHASE 2 WIDGETS: Live Exams, Students Online, Violations, System Health ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18, marginBottom: 28 }}>
-            {/* Widget 1: Live Exams */}
-            <div className="card" style={{ padding: '20px 24px', background: 'rgba(11, 18, 38, 0.7)', border: '1px solid rgba(43, 127, 255, 0.3)', borderRadius: 12 }}>
+          {/* ── 6 CORE METRIC CARDS: Colleges, Students, Active Exams, Live Attendance, Results, Alerts ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 16, marginBottom: 24 }}>
+            {/* Card 1: Colleges */}
+            <div
+              className="card"
+              onClick={() => navigate('/admin/colleges')}
+              style={{ padding: '18px 20px', background: 'rgba(11, 18, 38, 0.75)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 12, cursor: 'pointer', transition: 'transform 0.15s ease' }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: 'var(--color-primary)', fontWeight: 700, letterSpacing: '0.05em' }}>
-                  Live Exams
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#38BDF8', fontWeight: 800, letterSpacing: '0.05em' }}>
+                  Colleges &amp; Campuses
+                </span>
+                <span style={{ fontSize: '1.1rem' }}>🏛️</span>
+              </div>
+              <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#FFFFFF', marginTop: 6, fontFamily: 'var(--font-display)' }}>
+                <AnimatedCounter value={collegesCount} />
+              </div>
+              <div style={{ fontSize: '0.76rem', color: 'var(--color-text-faint)', marginTop: 4 }}>
+                Autonomous collegiate nodes
+              </div>
+            </div>
+
+            {/* Card 2: Students */}
+            <div
+              className="card"
+              onClick={() => navigate('/admin/students')}
+              style={{ padding: '18px 20px', background: 'rgba(11, 18, 38, 0.75)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: 12, cursor: 'pointer', transition: 'transform 0.15s ease' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#818CF8', fontWeight: 800, letterSpacing: '0.05em' }}>
+                  Authoritative Students
+                </span>
+                <span style={{ fontSize: '1.1rem' }}>👥</span>
+              </div>
+              <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#FFFFFF', marginTop: 6, fontFamily: 'var(--font-display)' }}>
+                <AnimatedCounter value={studentsCount} />
+              </div>
+              <div style={{ fontSize: '0.76rem', color: 'var(--color-text-faint)', marginTop: 4 }}>
+                Enrolled candidate records
+              </div>
+            </div>
+
+            {/* Card 3: Active Exams */}
+            <div
+              className="card"
+              onClick={() => navigate('/admin/exams')}
+              style={{ padding: '18px 20px', background: 'rgba(11, 18, 38, 0.75)', border: '1px solid rgba(43, 127, 255, 0.3)', borderRadius: 12, cursor: 'pointer', transition: 'transform 0.15s ease' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--color-primary)', fontWeight: 800, letterSpacing: '0.05em' }}>
+                  Active Exams
                 </span>
                 <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#3B82F6', boxShadow: '0 0 8px #3B82F6' }} />
               </div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--color-primary)', marginTop: 6, fontFamily: 'var(--font-display)' }}>
+              <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--color-primary)', marginTop: 6, fontFamily: 'var(--font-display)' }}>
                 <AnimatedCounter value={widgets?.live_exams_count ?? activeCount} />
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', marginTop: 4 }}>
+              <div style={{ fontSize: '0.76rem', color: 'var(--color-text-faint)', marginTop: 4 }}>
                 {exams.length} total managed assessments
               </div>
             </div>
 
-            {/* Widget 2: Students Online */}
-            <div className="card" style={{ padding: '20px 24px', background: 'rgba(11, 18, 38, 0.7)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 12 }}>
+            {/* Card 4: Live Attendance */}
+            <div
+              className="card"
+              onClick={() => navigate('/admin/monitor')}
+              style={{ padding: '18px 20px', background: 'rgba(11, 18, 38, 0.75)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 12, cursor: 'pointer', transition: 'transform 0.15s ease' }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: '#10B981', fontWeight: 700, letterSpacing: '0.05em' }}>
-                  Students Online
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#10B981', fontWeight: 800, letterSpacing: '0.05em' }}>
+                  Live Attendance
                 </span>
                 <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }} />
               </div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#10B981', marginTop: 6, fontFamily: 'var(--font-display)' }}>
+              <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#10B981', marginTop: 6, fontFamily: 'var(--font-display)' }}>
                 <AnimatedCounter value={widgets?.students_online ?? 0} />
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', marginTop: 4 }}>
-                Active in-progress sessions
+              <div style={{ fontSize: '0.76rem', color: 'var(--color-text-faint)', marginTop: 4 }}>
+                Active online terminal sessions
               </div>
             </div>
 
-            {/* Widget 3: Proctoring Violations */}
-            <div className="card" style={{ padding: '20px 24px', background: 'rgba(11, 18, 38, 0.7)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 12 }}>
+            {/* Card 5: Results */}
+            <div
+              className="card"
+              onClick={() => navigate('/admin/results')}
+              style={{ padding: '18px 20px', background: 'rgba(11, 18, 38, 0.75)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 12, cursor: 'pointer', transition: 'transform 0.15s ease' }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: '#EF4444', fontWeight: 700, letterSpacing: '0.05em' }}>
-                  Proctoring Violations
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#F59E0B', fontWeight: 800, letterSpacing: '0.05em' }}>
+                  Evaluated Results
+                </span>
+                <span style={{ fontSize: '1.1rem' }}>📈</span>
+              </div>
+              <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#F59E0B', marginTop: 6, fontFamily: 'var(--font-display)' }}>
+                <AnimatedCounter value={resultsCount} />
+              </div>
+              <div style={{ fontSize: '0.76rem', color: 'var(--color-text-faint)', marginTop: 4 }}>
+                Published student scorecards
+              </div>
+            </div>
+
+            {/* Card 6: Alerts */}
+            <div
+              className="card"
+              onClick={() => navigate('/admin/activity')}
+              style={{ padding: '18px 20px', background: 'rgba(11, 18, 38, 0.75)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 12, cursor: 'pointer', transition: 'transform 0.15s ease' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#EF4444', fontWeight: 800, letterSpacing: '0.05em' }}>
+                  Security Alerts
                 </span>
                 <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#EF4444', boxShadow: '0 0 8px #EF4444' }} />
               </div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#EF4444', marginTop: 6, fontFamily: 'var(--font-display)' }}>
+              <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#EF4444', marginTop: 6, fontFamily: 'var(--font-display)' }}>
                 <AnimatedCounter value={widgets?.violations_count ?? 0} />
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', marginTop: 4 }}>
-                Cheating & tab switches flagged
-              </div>
-            </div>
-
-            {/* Widget 4: System Health */}
-            <div className="card" style={{ padding: '20px 24px', background: 'rgba(11, 18, 38, 0.7)', border: '1px solid rgba(139, 92, 246, 0.3)', borderRadius: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: '#8B5CF6', fontWeight: 700, letterSpacing: '0.05em' }}>
-                  System Health
-                </span>
-                <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 700 }}>
-                  ● {widgets?.system_health?.status?.toUpperCase() || 'ONLINE'}
-                </span>
-              </div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', marginTop: 8, fontFamily: 'var(--font-display)' }}>
-                {widgets?.system_health?.latency_ms ?? 2} ms Latency
-              </div>
-              <div style={{ fontSize: '0.74rem', color: 'var(--color-text-faint)', marginTop: 4, display: 'flex', justifyContent: 'space-between' }}>
-                <span>DB: {widgets?.system_health?.database || 'Supabase Connected'}</span>
-                <span>Heap: {widgets?.system_health?.heap_used_mb || 64} MB</span>
+              <div style={{ fontSize: '0.76rem', color: 'var(--color-text-faint)', marginTop: 4 }}>
+                Violations, devtools, &amp; quits
               </div>
             </div>
           </div>

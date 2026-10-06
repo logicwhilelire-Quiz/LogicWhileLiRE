@@ -1,6 +1,13 @@
 import axios from 'axios';
 import { API_BASE_URL } from './config';
 
+// The base URL must come from an environment variable (for example VITE_API_URL or VITE_API_BASE_URL)
+// and must never default to localhost in production builds.
+const envApiUrl = (import.meta as any).env?.VITE_API_URL || (import.meta as any).env?.VITE_API_BASE_URL;
+if (import.meta.env.PROD && (!envApiUrl || envApiUrl.includes('localhost') || envApiUrl.includes('127.0.0.1'))) {
+  throw new Error('Production builds require VITE_API_URL to be set to a valid non-localhost URL.');
+}
+
 const BASE_URL = API_BASE_URL;
 
 const api = axios.create({
@@ -25,6 +32,24 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Response interceptor to clean up invalidated or rejected demo tokens
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      const url = error.config?.url || '';
+      if (url.startsWith('/api/admin')) {
+        const token = localStorage.getItem('admin_token');
+        if (token && (token.startsWith('demo-') || error.response?.data?.code === 'DEMO_BYPASS_REJECTED')) {
+          localStorage.removeItem('admin_token');
+          sessionStorage.removeItem('admin_token');
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 // ——— Auth (Students & Recovery) ———
 export const studentLogin = (data: { login?: string; roll_number?: string; email?: string; password: string }) =>
@@ -164,6 +189,8 @@ export const listSessions = (examId: string, page: number = 1, limit: number = 2
   api.get(`/api/admin/exams/${examId}/sessions?page=${page}&limit=${limit}`);
 export const terminateSession = (sessionId: string, reason: string) =>
   api.post(`/api/admin/sessions/${sessionId}/terminate`, { reason });
+export const allowExamReentry = (attemptId: string, reason?: string) =>
+  api.post(`/api/admin/attempts/${attemptId}/allow-reentry`, { reason });
 export const getExcelReportUrl = (examId: string) => `${BASE_URL}/api/admin/exams/${examId}/report/excel`;
 export const getPdfReportUrl = (examId: string) => `${BASE_URL}/api/admin/exams/${examId}/report/pdf`;
 

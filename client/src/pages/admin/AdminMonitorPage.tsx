@@ -191,13 +191,14 @@ export default function AdminMonitorPage() {
       if (attempts && attempts.length > 0) {
         const tiles: StudentTile[] = attempts.map(a => {
           const flags = flagMap.get(a.hall_ticket) || 0
+          const isTerminated = a.status === 'terminated_cheating' || a.status === 'terminated' || a.status === 'Terminated - violation'
+          const isCheating = !isTerminated && flags >= 3
           const isDone = !!a.submitted_at || a.status === 'completed'
-          const isCheating = flags >= 3 || a.status === 'terminated_cheating'
           return {
             id: a.hall_ticket,
             name: a.hall_ticket,
             hallTicket: a.hall_ticket,
-            status: isDone ? 'offline' : isCheating ? 'cheating' : 'active',
+            status: isTerminated ? 'terminated' : isCheating ? 'cheating' : isDone ? 'offline' : 'active',
             score: a.percentage ? Math.round(a.percentage) : undefined,
             flagCount: flags,
             joinedAt: a.started_at,

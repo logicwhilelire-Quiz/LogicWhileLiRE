@@ -101,7 +101,9 @@ export default function QuizPage() {
   /* ── Strict Integrity Auto-Termination State ── */
   const [isTerminated, setIsTerminated] = useState(false)
   const [terminationReason, setTerminationReason] = useState('')
+  const isTerminatedRef = useRef(false)
   const hasTerminatedRef = useRef(false)
+  const altMetaWarningCountRef = useRef(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
   const sessionIdRef = useRef<string | undefined>(undefined)
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
@@ -367,7 +369,7 @@ export default function QuizPage() {
       })
     } catch {}
 
-    // 4. Submit attempt with terminated_cheating status
+    // 4. Submit attempt with Terminated - violation status
     try {
       await axios.post(`${BASE}/api/exam-code/${examCode}/submit`, {
         sessionId: sessionIdRef.current,
@@ -375,7 +377,7 @@ export default function QuizPage() {
         hallTicket,
         answers: { ...answers },
         codeAnswers: { ...codeAnswers },
-        status: 'terminated_cheating',
+        status: 'terminated',
         termination_reason: reason,
       })
       if (examCode && hallTicket) {
@@ -393,6 +395,158 @@ export default function QuizPage() {
       sessionStorage.clear()
     } catch {}
   }, [examCode, hallTicket, session, answers, codeAnswers, submitting])
+
+  /* ── Strict Exam Security Listeners (Server & Client Synchronized Lockdown) ── */
+  /**
+   * ALLOWED KEYS in MCQ mode (everything else causes immediate termination):
+   *   - Tab (navigate between questions with accessibility focus)
+   *   - Space / Enter (select radio option with keyboard)
+   *   - Arrow keys: ArrowUp, ArrowDown, ArrowLeft, ArrowRight (question navigation)
+   *   - Number keys: 1, 2, 3, 4 (quick MCQ option selection)
+   *   - Backspace (deselect / clear)
+   *
+   * ALWAYS TERMINATES IMMEDIATELY:
+   *   - Escape
+   *   - F1–F12
+   *   - Alt, Meta (Cmd/Win)
+   *   - Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+U, Ctrl+I, Ctrl+J, Ctrl+S, Ctrl+R, Ctrl+P,
+   *     Ctrl+A, Ctrl+W, Ctrl+T, Ctrl+N, Ctrl+Q, Ctrl+Shift+*
+   *
+   * IN CODE EDITOR (textarea/input): all printable characters are allowed.
+   * Only Escape and system shortcuts are blocked.
+   *
+   * GRACE PERIOD: Window blur / visibility hidden → 2000ms grace before termination.
+   * This tolerates accidental misclicks on the taskbar while keeping strict enforcement.
+   */
+  const BLUR_GRACE_MS = 2000 // 2-second grace period for accidental blur
+  const ALLOWED_MCQ_KEYS = new Set([
+    'Tab', 'Space', 'Enter', ' ',
+    'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+    '1', '2', '3', '4',
+    'Backspace',
+  ])
+  const blurGraceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!session || isTerminated || submitting) return
+
+    // 1. Tab switch — instant termination
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (blurGraceTimerRef.current) clearTimeout(blurGraceTimerRef.current)
+        handleForceTermination('Tab switch or browser minimized during active exam.')
+      }
+    }
+
+    // 2. Window blur — termination after 2-second grace period
+    const handleWindowBlur = () => {
+      if (blurGraceTimerRef.current) clearTimeout(blurGraceTimerRef.current)
+      blurGraceTimerRef.current = setTimeout(() => {
+        handleForceTermination('Application window lost focus (switched app or minimized).')
+      }, BLUR_GRACE_MS)
+    }
+
+    const handleWindowFocus = () => {
+      // User refocused within grace period — cancel blur termination
+      if (blurGraceTimerRef.current) {
+        clearTimeout(blurGraceTimerRef.current)
+        blurGraceTimerRef.current = null
+      }
+    }
+
+    // 3. Fullscreen exit (including Escape key) — immediate termination
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        if (blurGraceTimerRef.current) clearTimeout(blurGraceTimerRef.current)
+        handleForceTermination('Exited fullscreen mode (Escape pressed or cancelled).')
+      }
+    }
+
+    // 4. Block right-click context menu
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault()
+      return false
+    }
+
+    // 5. Block copy / paste / cut
+    const handleClipboard = (e: ClipboardEvent) => {
+      e.preventDefault()
+      return false
+    }
+
+    // 6. Strict keyboard control: Warning first for Alt / Meta, instant termination for Escape/F-keys/Ctrl-shortcuts
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement
+      const isInput = target && (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.isContentEditable)
+
+      // Accidental Alt / Meta / Windows / Command key -> show warning first
+      const isAltOrMeta = e.key === 'Alt' || e.key === 'Meta' || e.code === 'MetaLeft' || e.code === 'MetaRight' || e.altKey || e.metaKey
+      if (isAltOrMeta) {
+        e.preventDefault()
+        e.stopPropagation()
+        if (altMetaWarningCountRef.current === 0) {
+          altMetaWarningCountRef.current = 1
+          setSecurityBlockNotice('⚠️ WARNING: Alt / Windows / Command key is prohibited! A second press will immediately terminate your exam.')
+          setViolationMsg('Accidental Alt / Meta key detected. First warning issued.')
+          setShowViolationModal(true)
+          setTimeout(() => setShowViolationModal(false), 4500)
+          setTimeout(() => setSecurityBlockNotice(''), 4500)
+          logViolation('alt_meta_key_warning', 'Accidental Alt / Meta key detected - first warning issued')
+          return
+        }
+        if (blurGraceTimerRef.current) clearTimeout(blurGraceTimerRef.current)
+        handleForceTermination(`Restricted system key (${e.key}) pressed again after warning.`)
+        return
+      }
+
+      // Always terminate immediately on Escape, F1-F12, or dangerous browser shortcuts
+      if (
+        e.key === 'Escape' ||
+        (e.key.startsWith('F') && e.key.length <= 3 && !isNaN(Number(e.key.slice(1)))) ||
+        (e.ctrlKey && ['c', 'v', 'x', 'u', 'i', 'j', 's', 'r', 'p', 'a', 'w', 't', 'n', 'q'].includes(e.key.toLowerCase())) ||
+        (e.ctrlKey && e.shiftKey)
+      ) {
+        e.preventDefault()
+        if (blurGraceTimerRef.current) clearTimeout(blurGraceTimerRef.current)
+        handleForceTermination(`Restricted shortcut or Escape key pressed (${e.key}).`)
+        return
+      }
+
+      // If inside code editor textarea/input: allow standard typing
+      if (isInput) return
+
+      // Outside code editor (MCQ mode): only allowed navigation keys permitted
+      if (!ALLOWED_MCQ_KEYS.has(e.key)) {
+        e.preventDefault()
+        handleForceTermination(`Unallowed keyboard key pressed outside answer input (${e.key}). Only mouse navigation and keys [Tab, Enter, Space, Arrow, 1-4] are permitted in MCQ mode.`)
+        return
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('blur', handleWindowBlur)
+    window.addEventListener('focus', handleWindowFocus)
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    document.addEventListener('contextmenu', handleContextMenu)
+    document.addEventListener('copy', handleClipboard)
+    document.addEventListener('paste', handleClipboard)
+    document.addEventListener('cut', handleClipboard)
+    window.addEventListener('keydown', handleKeyDown, true)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('blur', handleWindowBlur)
+      window.removeEventListener('focus', handleWindowFocus)
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      document.removeEventListener('contextmenu', handleContextMenu)
+      document.removeEventListener('copy', handleClipboard)
+      document.removeEventListener('paste', handleClipboard)
+      document.removeEventListener('cut', handleClipboard)
+      window.removeEventListener('keydown', handleKeyDown, true)
+      if (blurGraceTimerRef.current) clearTimeout(blurGraceTimerRef.current)
+    }
+  }, [session, isTerminated, submitting, handleForceTermination])
+
 
   /* ── 1.4 Background Sync & Network Listeners ── */
   useEffect(() => {
@@ -622,38 +776,6 @@ export default function QuizPage() {
     return () => clearInterval(timerRef.current)
   }, [session, routerServerStartTime, routerDurationSeconds, handleSubmit])
 
-  /* ── Tab/visibility proctoring & Strict Lockdown Auto-Termination ── */
-  useEffect(() => {
-    if (!session || submitting || hasTerminatedRef.current) return
-
-    const handleVisibilityChange = () => {
-      if (document.hidden && !hasTerminatedRef.current && !submitting) {
-        handleForceTermination('Window was minimized or switched away from the examination terminal.')
-      }
-    }
-
-    const handleWindowBlur = () => {
-      if (!hasTerminatedRef.current && !submitting) {
-        handleForceTermination('Exam window lost focus (application switch or click outside terminal detected).')
-      }
-    }
-
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement && !hasTerminatedRef.current && !submitting) {
-        handleForceTermination('Fullscreen mode was exited during examination.')
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('blur', handleWindowBlur)
-    document.addEventListener('fullscreenchange', handleFullscreenChange)
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('blur', handleWindowBlur)
-      document.removeEventListener('fullscreenchange', handleFullscreenChange)
-    }
-  }, [session, submitting, handleForceTermination])
 
   /* ── Keyboard, Context Menu & Clipboard Integrity Lockdown ── */
   useEffect(() => {
@@ -675,9 +797,19 @@ export default function QuizPage() {
       }
 
       // Alt key, Windows / Meta key, Command key
-      if (e.key === 'Alt' || e.key === 'Meta' || e.code === 'MetaLeft' || e.code === 'MetaRight') {
+      if (e.key === 'Alt' || e.key === 'Meta' || e.code === 'MetaLeft' || e.code === 'MetaRight' || e.altKey || e.metaKey) {
         e.preventDefault()
         e.stopPropagation()
+        if (altMetaWarningCountRef.current === 0) {
+          altMetaWarningCountRef.current = 1
+          setSecurityBlockNotice('⚠️ WARNING: Alt / Windows / Command key is prohibited! A second press will immediately terminate your exam.')
+          setViolationMsg('Accidental Alt / Meta key detected. First warning issued.')
+          setShowViolationModal(true)
+          setTimeout(() => setShowViolationModal(false), 4500)
+          setTimeout(() => setSecurityBlockNotice(''), 4500)
+          logViolation('alt_meta_key_warning', 'Accidental Alt / Meta key detected - first warning issued')
+          return
+        }
         handleForceTermination(`Restricted system key (${e.key}) was pressed during the examination.`)
         return
       }
@@ -1085,8 +1217,9 @@ export default function QuizPage() {
             <div>• Candidate: <strong style={{ color: '#fff' }}>{hallTicket}</strong></div>
             <div>• Exam Code: <strong style={{ color: '#fff' }}>{examCode}</strong></div>
             <div>• Incident Timestamp: <strong style={{ color: '#fff' }}>{new Date().toLocaleString()}</strong></div>
-            <div>• Recorded Status: <strong style={{ color: '#EF4444' }}>TERMINATED_CHEATING</strong></div>
-            <div>• Action: Candidate session has been logged out and response state closed.</div>
+            <div>• Recorded Status: <strong style={{ color: '#EF4444' }}>Terminated - violation</strong></div>
+            <div>• Security Reason: <strong style={{ color: '#FCA5A5' }}>{terminationReason}</strong></div>
+            <div>• Enforcement: Server invalidated session token, saved answers so far, logged student out, and recorded security audit event.</div>
           </div>
 
           <button

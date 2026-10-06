@@ -36,7 +36,7 @@ export async function verifyAttemptToken(
     .maybeSingle();
 
   if (!attempt) return { valid: false, evicted: false, terminated: false, attempt: null };
-  if (attempt.status === 'terminated_cheating' || attempt.status === 'completed') {
+  if (['terminated', 'Terminated - violation', 'terminated_cheating', 'terminated_violation', 'completed', 'submitted'].includes(attempt.status)) {
     return { valid: false, evicted: false, terminated: true, attempt };
   }
   // If no stored token yet (legacy row), accept and migrate
@@ -110,7 +110,25 @@ export async function listColleges(req: Request, res: Response): Promise<void> {
     .select('id, college_name, college_code, city, state, is_active, registration_enabled')
     .order('college_name');
 
-  if (req.query.registration === 'true') {
+  if (req.admin?.role === 'faculty') {
+    const callerStaffId = req.admin.staff_id || (req.admin as any).id;
+    let facultyCollegeId = req.admin.college_id;
+    if (!facultyCollegeId && callerStaffId) {
+      const { data: staffRec } = await supabase
+        .from('staff')
+        .select('college_id')
+        .eq('id', callerStaffId)
+        .maybeSingle();
+      if (staffRec?.college_id) facultyCollegeId = staffRec.college_id;
+    }
+    if (facultyCollegeId) {
+      query = (query as any).eq('id', facultyCollegeId);
+    }
+  } else if (req.admin && (req.admin.role === 'inspector' || req.admin.role === 'college_admin') && req.admin.college_id) {
+    query = (query as any).eq('id', req.admin.college_id);
+  }
+
+  if (req.query?.registration === 'true') {
     query = (query as any).eq('is_active', true).eq('registration_enabled', true);
   }
 
@@ -125,7 +143,7 @@ export async function listColleges(req: Request, res: Response): Promise<void> {
   }));
 
   // Extra guard if query was registration=true
-  const result = req.query.registration === 'true'
+  const result = req.query?.registration === 'true'
     ? colleges.filter((c: any) => c.registration_enabled && c.is_active)
     : colleges;
 
@@ -678,6 +696,38 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
     return;
   }
 
+  // 1.2 ENFORCE STUDENT EMAIL VERIFICATION (Item 9)
+  const { data: studentRecord } = await supabase
+    .from('students')
+    .select('id, email, is_verified')
+    .or(`hall_ticket.eq.${ht},roll_number.eq.${ht}`)
+    .maybeSingle();
+
+  if (studentRecord && studentRecord.is_verified === false) {
+    res.status(403).json({
+      success: false,
+      error: 'Your student email is not verified. Please verify your email before starting this examination.',
+      code: 'EMAIL_NOT_VERIFIED',
+      email: studentRecord.email,
+    });
+    return;
+  }
+
+  // 1.3 ENFORCE INSPECTOR START (Item 3)
+  const isDemoExam = ec.includes('DEMO') || ec === 'CS2026';
+  if (!isDemoExam && !exam.started_at) {
+    const { getExamStartedState } = await import('../services/socketService');
+    const startedState = getExamStartedState(ec);
+    if (!startedState) {
+      res.status(403).json({
+        success: false,
+        error: 'The inspector has not started this examination yet. Please wait in the waiting lobby.',
+        code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
+      });
+      return;
+    }
+  }
+
   // 2. Time window check
   const now = new Date();
   const startTime = new Date(exam.start_time);
@@ -741,6 +791,17 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
       });
       return;
     }
+
+    if (['terminated', 'Terminated - violation', 'terminated_cheating', 'terminated_violation'].includes(existing.status)) {
+      res.status(403).json({
+        success: false,
+        error: 'Your examination attempt was terminated due to a security violation and cannot be restarted. Only an administrator can grant re-entry clearance.',
+        code: 'ATTEMPT_TERMINATED',
+        status: existing.status,
+      });
+      return;
+    }
+
     res.status(409).json({
       success: false,
       error: 'You have already completed this exam. Each student can attempt only once.',
@@ -1107,17 +1168,30 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
   mcqScore = Math.max(0, Math.round(mcqScore * 100) / 100);
 
   const vCount = violationCount !== undefined ? violationCount : (attempt.violation_count || 0);
-  const finalStatus = vCount >= 5
+  const isTerminatedViolation =
+    req.body.status === 'terminated' ||
+    req.body.status === 'terminated_cheating' ||
+    req.body.status === 'terminated_violation' ||
+    req.body.status === 'Terminated - violation' ||
+    req.body.is_terminated ||
+    vCount >= 5;
+
+  const finalStatus = isTerminatedViolation
     ? 'terminated_cheating'
     : isGraceExpired
     ? 'auto_submitted_expired'
     : 'completed';
+
+  const terminationReason = isTerminatedViolation
+    ? (req.body.termination_reason || req.body.notes || 'Exam security lockdown violation')
+    : null;
 
   // Update attempt record
   const { error: updateError } = await supabase
     .from('exam_code_attempts')
     .update({
       status: finalStatus,
+      override_reason: terminationReason,
       end_time: new Date().toISOString(),
       score: totalScore,
       max_score: maxScore,
@@ -1128,10 +1202,43 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
       time_taken_seconds: timeTakenSeconds || Math.round((Date.now() - startTime) / 1000),
       topic_breakdown: topicBreakdown,
       violation_count: vCount,
+      session_token: isTerminatedViolation ? null : attempt.session_token,
     })
     .eq('id', attempt.id);
 
   if (updateError) { res.status(500).json({ success: false, error: updateError.message }); return; }
+
+  // Record audit log entry and invalidate session for termination violations (Item 8)
+  if (isTerminatedViolation) {
+    try {
+      await supabase.from('audit_log').insert({
+        user_id: studentHt || 'student',
+        admin_id: 'system',
+        role: 'student',
+        action: 'STUDENT_EXAM_TERMINATED_VIOLATION',
+        target: `exam_code_attempts:${attempt.id}`,
+        target_table: 'exam_code_attempts',
+        target_id: attempt.id,
+        payload: {
+          exam_code: code,
+          hall_ticket: studentHt,
+          reason: terminationReason,
+          answers_saved: Object.keys(finalAnswers).length,
+          timestamp: new Date().toISOString(),
+        },
+        timestamp: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      });
+
+      // Invalidate student active session in database
+      if (studentHt) {
+        await supabase
+          .from('students')
+          .update({ active_session_id: null })
+          .or(`hall_ticket.eq.${studentHt},roll_number.eq.${studentHt}`);
+      }
+    } catch {}
+  }
 
   // Persist attempt to results table for institutional record keeping
   try {
@@ -1231,7 +1338,6 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
   const currentTimeline = Array.isArray(attempt.violation_timeline) ? attempt.violation_timeline : [];
   const currentCount = Number(attempt.violation_count) || 0;
   const newCount = isGrace ? currentCount : currentCount + 1;
-  const shouldTerminate = autoTerminate && newCount >= maxViolations;
 
   const vItem = {
     id: `viol_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -1249,6 +1355,10 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
     reviewed_at: null,
   };
 
+  const isForceBreach = violationType === 'EXAM_FORCE_TERMINATED_BREACH' || req.body.is_terminated === true;
+  const shouldTerminate = (autoTerminate && newCount >= maxViolations) || isForceBreach;
+  const terminationReason = isForceBreach ? (notes || 'Lockdown security violation (minimize/blur/fullscreen exit/unallowed key)') : 'Exceeded maximum permitted proctoring violations';
+
   const updatedTimeline = [...currentTimeline, vItem];
 
   await supabase
@@ -1256,9 +1366,44 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
     .update({
       violation_count: newCount,
       violation_timeline: updatedTimeline,
-      ...(shouldTerminate ? { status: 'terminated_cheating', end_time: new Date().toISOString() } : {}),
+      ...(shouldTerminate ? {
+        status: 'terminated_cheating',
+        override_reason: terminationReason,
+        end_time: new Date().toISOString(),
+        session_token: null,
+      } : {}),
     })
     .eq('id', attempt.id);
+
+  if (shouldTerminate) {
+    const candId = attempt.hall_ticket_no || attempt.hall_ticket || String(attempt.id);
+    try {
+      await supabase.from('audit_log').insert({
+        user_id: candId,
+        admin_id: 'system',
+        role: 'student',
+        action: 'STUDENT_EXAM_TERMINATED_VIOLATION',
+        target: `exam_code_attempts:${attempt.id}`,
+        target_table: 'exam_code_attempts',
+        target_id: attempt.id,
+        payload: {
+          exam_code: code,
+          hall_ticket: candId,
+          reason: terminationReason,
+          violation_type: violationType,
+          timestamp: new Date().toISOString(),
+        },
+        timestamp: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      });
+
+      // Invalidate student active session
+      await supabase
+        .from('students')
+        .update({ active_session_id: null })
+        .or(`hall_ticket.eq.${candId},roll_number.eq.${candId}`);
+    } catch {}
+  }
 
   try {
     await supabase.from('proctor_logs').insert({
@@ -1266,7 +1411,7 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
       exam_id: code,
       candidate_id: attempt.hall_ticket_no || attempt.hall_ticket || String(attempt.id),
       event_type: violationType,
-      metadata: { message: notes || `${violationType} detected`, count: newCount, snapshot_thumb: vItem.snapshot_thumb },
+      metadata: { message: notes || `${violationType} detected`, count: newCount, snapshot_thumb: vItem.snapshot_thumb, terminated: shouldTerminate },
       created_at: vItem.timestamp,
     });
   } catch {}
@@ -1279,10 +1424,12 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
     max_violations: maxViolations,
     in_grace_period: isGrace,
     terminated: shouldTerminate,
-    message: isGrace
+    message: isForceBreach
+      ? `EXAM TERMINATED: ${terminationReason}`
+      : isGrace
       ? `Grace period active: ${notes || violationType} noted without strike.`
       : shouldTerminate
-      ? `Exam auto-submitted due to reaching ${maxViolations} violations.`
+      ? `Exam auto-terminated due to reaching ${maxViolations} violations.`
       : `Warning ${newCount}/${maxViolations}: ${notes || violationType}.`,
   });
 }
@@ -1615,7 +1762,7 @@ export async function getExamCodeLeaderboard(req: Request, res: Response): Promi
     .from('exam_code_attempts')
     .select('hall_ticket_no, student_name, score, max_score, correct_count, wrong_count, time_taken_seconds, topic_breakdown, status, created_at')
     .eq('exam_code', cacheKey)
-    .in('status', ['completed', 'terminated_cheating'])
+    .in('status', ['completed', 'submitted'])
     .order('score', { ascending: false })
     .order('time_taken_seconds', { ascending: true });
 
@@ -2194,7 +2341,8 @@ export async function getExamCodeAnalytics(req: Request, res: Response): Promise
     .eq('exam_code', ec.exam_code);
 
   const totalAttempts = attempts?.length || 0;
-  const completedAttempts = attempts?.filter((a) => a.status === 'completed') || [];
+  const completedAttempts = attempts?.filter((a) => a.status === 'completed' || a.status === 'submitted') || [];
+  const terminatedAttempts = attempts?.filter((a) => a.status === 'terminated_cheating' || a.status === 'terminated' || a.status === 'Terminated - violation') || [];
 
   // 1. Question Difficulty Index (% correct per question)
   const questionDifficulty = (questions || []).map((q) => {
@@ -2261,6 +2409,7 @@ export async function getExamCodeAnalytics(req: Request, res: Response): Promise
     summary: {
       total_candidates: totalAttempts,
       completed_count: completedAttempts.length,
+      terminated_count: terminatedAttempts.length,
       average_time_taken_seconds: avgTimeTakenSec,
     },
     question_difficulty: questionDifficulty,
@@ -2287,28 +2436,35 @@ export async function getExamCodeReport(req: Request, res: Response): Promise<vo
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
 
   const total = data?.length || 0;
-  const completed = data?.filter(d => d.status === 'completed').length || 0;
+  const completed = data?.filter(d => d.status === 'completed' || d.status === 'submitted').length || 0;
+  const terminatedCount = data?.filter(d => d.status === 'terminated_cheating' || d.status === 'terminated' || d.status === 'Terminated - violation').length || 0;
   const avgScore = total > 0 ? (data!.reduce((s, d) => s + Number(d.score), 0) / total).toFixed(2) : '0';
   const avgPercent = total > 0
     ? (data!.reduce((s, d) => s + (d.max_score > 0 ? (Number(d.score) / Number(d.max_score)) * 100 : 0), 0) / total).toFixed(1)
     : '0';
 
+  let rankCounter = 1;
   res.json({
     success: true,
-    summary: { total_attempts: total, completed, avg_score: avgScore, avg_percent: avgPercent, exam_name: ec.exam_name },
-    attempts: (data || []).map((d, i) => ({
-      rank: i + 1,
-      hall_ticket: d.hall_ticket_no,
-      name: d.student_name,
-      score: d.score,
-      max_score: d.max_score,
-      percentage: d.max_score > 0 ? Math.round((Number(d.score) / Number(d.max_score)) * 100) : 0,
-      correct: d.correct_count,
-      wrong: d.wrong_count,
-      time_taken: d.time_taken_seconds,
-      violations: d.violation_count,
-      status: d.status,
-    })),
+    summary: { total_attempts: total, completed, terminated: terminatedCount, avg_score: avgScore, avg_percent: avgPercent, exam_name: ec.exam_name },
+    attempts: (data || []).map((d) => {
+      const isTerm = d.status === 'terminated_cheating' || d.status === 'terminated' || d.status === 'Terminated - violation';
+      const rank = isTerm ? null : rankCounter++;
+      return {
+        rank,
+        is_disqualified: isTerm,
+        hall_ticket: d.hall_ticket_no,
+        name: d.student_name,
+        score: isTerm ? 0 : d.score,
+        max_score: d.max_score,
+        percentage: isTerm ? 0 : (d.max_score > 0 ? Math.round((Number(d.score) / Number(d.max_score)) * 100) : 0),
+        correct: d.correct_count,
+        wrong: d.wrong_count,
+        time_taken: d.time_taken_seconds,
+        violations: d.violation_count,
+        status: isTerm ? 'terminated_cheating' : d.status,
+      };
+    }),
   });
 }
 

@@ -19,13 +19,9 @@ const CTR_IV_LENGTH = 16;
 const ENCODING = 'hex' as const;
 
 function getDerivedKey(): Buffer {
-  const raw = process.env.TOTP_ENCRYPTION_KEY || '';
+  const raw = process.env.TOTP_ENCRYPTION_KEY;
   if (!raw) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('[TOTP] TOTP_ENCRYPTION_KEY is required in production. Generate with: openssl rand -hex 32');
-    }
-    // Dev fallback — consistent deterministic key for local testing only
-    return crypto.createHash('sha256').update('logicwhilelire_dev_totp_key_2026').digest();
+    throw new Error('[TOTP] TOTP_ENCRYPTION_KEY environment variable is strictly required. Generate with: openssl rand -hex 32');
   }
   // Derive a 32-byte key regardless of input length
   return crypto.createHash('sha256').update(raw).digest();

@@ -130,9 +130,12 @@ export async function emitBatchRoomTelemetry(examCode: string): Promise<void> {
     .eq('exam_code', code);
 
   const attemptList = attempts || [];
-  const submittedList = attemptList.filter(
-    (a) => a.status === 'completed' || a.status === 'terminated_cheating' || a.status === 'auto_submitted_expired'
+  const completedList = attemptList.filter(
+    (a) => a.status === 'completed' || a.status === 'auto_submitted_expired' || a.status === 'submitted'
   );
+  const terminatedCount = attemptList.filter(
+    (a) => a.status === 'terminated_cheating' || a.status === 'terminated' || a.status === 'Terminated - violation'
+  ).length;
 
   // 3. Compute live rankings
   const { data: examData } = await supabase
@@ -143,7 +146,7 @@ export async function emitBatchRoomTelemetry(examCode: string): Promise<void> {
 
   const totalDurationSec = (examData?.duration_minutes ?? 60) * 60;
 
-  const ranked = submittedList
+  const ranked = completedList
     .map((r) => ({
       ...r,
       percentage: (r.max_score || 0) > 0 ? Math.round(((r.score || 0) / r.max_score) * 100) : 0,
@@ -173,7 +176,8 @@ export async function emitBatchRoomTelemetry(examCode: string): Promise<void> {
     exam_code: code,
     queue_count: waitingSockets.length,
     joined_count: connectedCount,
-    submitted_count: submittedList.length,
+    submitted_count: completedList.length,
+    terminated_count: terminatedCount,
     total_enrolled: Math.max(attemptList.length, connectedCount),
     live_ranks: ranked.slice(0, 50),
     waiting_students: waitingFormatted,
@@ -193,7 +197,8 @@ export async function emitBatchRoomTelemetry(examCode: string): Promise<void> {
       connected: connectedCount,
       pending: Math.max(0, payload.total_enrolled - connectedCount),
       queue_count: waitingSockets.length,
-      submitted_count: submittedList.length,
+      submitted_count: completedList.length,
+      terminated_count: terminatedCount,
     },
   });
 
@@ -201,7 +206,7 @@ export async function emitBatchRoomTelemetry(examCode: string): Promise<void> {
     event: 'LEADERBOARD_SNAPSHOT',
     exam_id: code,
     top_ranks: ranked.slice(0, 50),
-    total_active: submittedList.length,
+    total_active: completedList.length,
     timestamp: Date.now(),
   };
   io.to(`leaderboard:${code}`).emit('LEADERBOARD_SNAPSHOT', snapshot);

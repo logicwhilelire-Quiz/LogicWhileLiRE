@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { supabase } from '../db/supabase';
 
@@ -76,7 +77,8 @@ async function seedEverything() {
 
   console.log(`Found ${colleges.length} colleges:`, colleges.map(c => `${c.college_code} (id: ${c.id})`).join(', '));
 
-  const passwordHash = await bcrypt.hash('Student@123', 10);
+  const defaultStudentPassword = process.env.INITIAL_STUDENT_PASSWORD || process.env.STUDENT_DEFAULT_PASSWORD || ('Stud#' + crypto.randomBytes(6).toString('hex') + '!');
+  const passwordHash = await bcrypt.hash(defaultStudentPassword, 12);
   const studentsToInsert: any[] = [];
 
   for (const college of colleges) {

@@ -156,7 +156,10 @@ export async function registerCandidate(req: Request, res: Response): Promise<vo
     role: 'student' as const,
   };
 
-  const jwtSecret = process.env.JWT_SECRET || 'logicwhilelire_participant_jwt_default_secret_key_demo_2026';
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error('[FATAL] JWT_SECRET environment variable is strictly required');
+  }
   const token = jwt.sign(payload, jwtSecret, { expiresIn: STUDENT_JWT_EXPIRY });
   setStudentCookie(res, token);
 

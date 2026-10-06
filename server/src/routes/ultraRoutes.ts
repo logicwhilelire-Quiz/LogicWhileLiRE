@@ -6,6 +6,7 @@ import os from 'os';
 import crypto from 'crypto';
 import { supabase } from '../db/supabase';
 import { adminAuth, requireRole } from '../middleware/adminAuth';
+import { auditLog } from '../middleware/auditLog';
 import { answerRateLimit } from '../middleware/rateLimiter';
 import { verifyExamEntry, deterministicShuffle, validateStudentEligibility } from '../controllers/examCodeController';
 
@@ -539,12 +540,12 @@ router.get('/leaderboard/:examCode', async (req: Request, res: Response) => {
       return res.json({ success: true, data: rows });
     }
 
-    // Fallback: compute from attempts using canonical score DESC, time_taken_seconds ASC
+    // Fallback: compute from legitimate completed attempts using canonical score DESC, time_taken_seconds ASC
     const { data: attempts } = await supabase
       .from('exam_code_attempts')
       .select('hall_ticket_no, student_name, score, max_score, time_taken_seconds, status')
       .eq('exam_code', examCode)
-      .in('status', ['completed', 'terminated_cheating'])
+      .in('status', ['completed', 'submitted'])
       .order('score', { ascending: false })
       .order('time_taken_seconds', { ascending: true })
       .limit(50);
@@ -593,6 +594,35 @@ router.get('/exam-code/:code/start', async (req: Request, res: Response) => {
     const isEligible = await validateStudentEligibility(exam, hallTicket);
     if (!isEligible) {
       return res.status(404).json({ success: false, error: 'Exam not found or unavailable for your section', code: 'EXAM_NOT_FOUND' });
+    }
+
+    // Enforce student email verification (Item 9)
+    const { data: studentRecord } = await supabase
+      .from('students')
+      .select('id, email, is_verified')
+      .or(`hall_ticket.eq.${hallTicket},roll_number.eq.${hallTicket}`)
+      .maybeSingle();
+
+    if (studentRecord && studentRecord.is_verified === false) {
+      return res.status(403).json({
+        success: false,
+        error: 'Your email address is not verified. Please verify your email before starting this examination.',
+        code: 'EMAIL_NOT_VERIFIED',
+      });
+    }
+
+    // Enforce inspector start (Item 3)
+    const isDemoExam = code.includes('DEMO') || code === 'CS2026';
+    if (!isDemoExam && !exam.started_at) {
+      const { getExamStartedState } = await import('../services/socketService');
+      const startedState = getExamStartedState(code);
+      if (!startedState) {
+        return res.status(403).json({
+          success: false,
+          error: 'The inspector has not started this examination yet. Please wait in the waiting lobby.',
+          code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
+        });
+      }
     }
 
     // Try questions table, then questions_ec table
@@ -839,21 +869,26 @@ router.get('/exam-code/:code/result', async (req: Request, res: Response) => {
     const mcqScore = attempt.score || 0;
     const mcqPercentage = mcqMaxMarks > 0 ? Math.round((mcqScore / mcqMaxMarks) * 100) : (attempt.percentage || 0);
 
+    const isTerminated = attempt.status === 'terminated_cheating' || attempt.status === 'terminated' || attempt.status === 'Terminated - violation';
+
     res.json({
       success: true,
       data: {
-        score: attempt.score || 0,
+        status: attempt.status,
+        is_terminated: isTerminated,
+        termination_reason: attempt.termination_reason || (isTerminated ? 'Proctoring security violation' : null),
+        score: isTerminated ? 0 : (attempt.score || 0),
         totalMarks: attempt.total_marks || attempt.max_score || 100,
-        percentage: attempt.percentage || 0,
+        percentage: isTerminated ? 0 : (attempt.percentage || 0),
         correctAnswers: attempt.correct_answers || attempt.correct_count || 0,
         wrongAnswers: attempt.wrong_answers || attempt.wrong_count || 0,
         unanswered: attempt.unanswered || 0,
         timeTaken: attempt.time_taken || attempt.time_taken_seconds || 0,
         qrToken: attempt.qr_token || `token_${code}_${attempt.hall_ticket}`,
         code_answers: codeAns,
-        mcq_score: mcqScore,
+        mcq_score: isTerminated ? 0 : mcqScore,
         mcq_max_score: mcqMaxMarks > 0 ? mcqMaxMarks : (attempt.total_marks || attempt.max_score || 100),
-        mcq_percentage: mcqPercentage,
+        mcq_percentage: isTerminated ? 0 : mcqPercentage,
         coding_questions: codingQList,
         has_coding_questions: hasCoding,
       },
@@ -863,11 +898,12 @@ router.get('/exam-code/:code/result', async (req: Request, res: Response) => {
   }
 });
 
-// ─── ADMIN: CREATE EXAM WIZARD (Unified Metadata + Questions) ──
+// ─── ADMIN: CREATE EXAM WIZARD (Unified Metadata + Questions — super_admin only) ──
 router.post(
   '/admin/create-exam-wizard',
   adminAuth,
-  requireRole('super_admin', 'inspector', 'faculty'),
+  requireRole('super_admin'),
+  auditLog('CREATE_EXAM_WIZARD', 'exam_codes'),
   async (req: Request, res: Response) => {
   try {
     const {

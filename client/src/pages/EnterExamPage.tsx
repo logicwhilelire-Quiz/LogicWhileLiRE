@@ -120,10 +120,10 @@ export default function EnterExamPage() {
 
       {/* Background */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <FlightPathLines color="#bf9f62" opacity={0.06} count={10} className="" />
+        <FlightPathLines color="#00b4d8" opacity={0.06} count={10} className="" />
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(191,159,98,0.08), transparent)',
+          background: 'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(0,180,216,0.08), transparent)',
         }} />
       </div>
 
@@ -141,23 +141,23 @@ export default function EnterExamPage() {
           style={{ width: '100%', maxWidth: 480 }}
         >
           {/* HoloScan border at top */}
-          <HoloScan color="#bf9f62">
+          <HoloScan color="#00b4d8">
             <motion.div
               className={shaking ? 'shake-animation' : ''}
               style={{ willChange: 'transform' }}
             >
-              <GlowCard glowColor="rgba(191,159,98,0.35)">
+              <GlowCard glowColor="rgba(0,180,216,0.35)">
                 {/* Header */}
                 <div style={{ textAlign: 'center', marginBottom: 32 }}>
                   <motion.div
                     style={{
                       width: 64, height: 64, borderRadius: 16,
-                      background: 'linear-gradient(135deg, #bf9f62, #a28b40)',
+                      background: 'linear-gradient(135deg, #0284c7, #1d4ed8)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '2rem', margin: '0 auto 16px',
-                      boxShadow: '0 0 32px rgba(191,159,98,0.4)',
+                      boxShadow: '0 0 32px rgba(0,180,216,0.4)',
                     }}
-                    animate={{ boxShadow: ['0 0 20px rgba(191,159,98,0.3)', '0 0 40px rgba(191,159,98,0.5)', '0 0 20px rgba(191,159,98,0.3)'] }}
+                    animate={{ boxShadow: ['0 0 20px rgba(0,180,216,0.3)', '0 0 40px rgba(0,180,216,0.5)', '0 0 20px rgba(0,180,216,0.3)'] }}
                     transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
                   >
                     🚀

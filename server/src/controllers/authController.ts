@@ -614,8 +614,17 @@ export async function getStudentDashboard(req: Request, res: Response): Promise<
     .select('id, title, duration_minutes, start_time, end_time, college_id, is_active, is_leaderboard_public')
     .eq('is_active', true);
 
+  const { getExamStartedState } = await import('../services/socketService');
+
   const eligibleCodes = (allExamCodes || [])
-    .filter((ec: any) => isStudentEligibleForExam(student, ec))
+    .filter((ec: any) => {
+      // Must be eligible for student's section & cohort
+      if (!isStudentEligibleForExam(student, ec)) return false;
+      // Must have been started by the inspector (or demo exam)
+      const isDemo = String(ec.exam_code || '').includes('DEMO') || ec.exam_code === 'CS2026';
+      const isStarted = Boolean(ec.started_at) || Boolean(getExamStartedState(ec.exam_code));
+      return isDemo || isStarted;
+    })
     .map((ec: any) => ({
       id: ec.id,
       title: ec.exam_name || ec.subject || ec.exam_code,

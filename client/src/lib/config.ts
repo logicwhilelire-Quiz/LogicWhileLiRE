@@ -3,14 +3,17 @@
  * Single authoritative source of truth for API, WebSocket, and Environment settings.
  */
 
-const rawApiUrl = (import.meta as any).env?.VITE_API_BASE_URL || (import.meta as any).env?.VITE_API_URL;
+// Priority: VITE_API_URL or VITE_API_BASE_URL
+const rawApiUrl = (import.meta as any).env?.VITE_API_URL || (import.meta as any).env?.VITE_API_BASE_URL;
 const rawSocketUrl = (import.meta as any).env?.VITE_SOCKET_URL;
 
-// In production builds, throw a clear and actionable error if the API URL is missing
-if (import.meta.env.PROD && !rawApiUrl) {
-  const errorMsg = '🚨 [Configuration Fatal] Missing VITE_API_BASE_URL in production environment. Please configure VITE_API_BASE_URL in Netlify/hosting dashboard.';
-  console.error(errorMsg);
-  throw new Error(errorMsg);
+// In production builds, base URL must come from environment and never default to localhost
+if (import.meta.env.PROD) {
+  if (!rawApiUrl || rawApiUrl.includes('localhost') || rawApiUrl.includes('127.0.0.1')) {
+    const errorMsg = '🚨 [Configuration Fatal] VITE_API_URL / VITE_API_BASE_URL must be configured with a valid remote URL in production builds, and must never default to localhost.';
+    console.error(errorMsg);
+    throw new Error(errorMsg);
+  }
 }
 
 export const API_BASE_URL: string = (rawApiUrl || 'http://localhost:3001').replace(/\/+$/, '');

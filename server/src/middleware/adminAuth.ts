@@ -8,11 +8,10 @@ import { supabase } from '../db/supabase';
  */
 export function getAdminJwtSecret(): string {
   const secret = process.env.ADMIN_JWT_SECRET;
-  if (secret) return secret;
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('[FATAL] ADMIN_JWT_SECRET is required in production');
+  if (!secret) {
+    throw new Error('[FATAL] ADMIN_JWT_SECRET environment variable is strictly required');
   }
-  return 'dev_only_admin_jwt_secret_not_for_production_use';
+  return secret;
 }
 
 export type StaffRole = 'super_admin' | 'faculty' | 'college_admin' | 'inspector' | 'admin';
@@ -52,45 +51,70 @@ export function adminAuth(req: Request, res: Response, next: NextFunction): void
     return;
   }
 
-  // 1. Support development / demo tokens when running locally
-  if (process.env.NODE_ENV !== 'production' || process.env.DEMO_MODE === 'true') {
-    if (token === 'demo-admin-token-2026' || token === 'demo-super-admin-token' || token === 'demo-admin-token') {
-      req.admin = {
-        sub: 'admin@logicwhilelire.com',
-        role: 'super_admin',
-        staff_id: 'st000000-0000-0000-0000-000000000001',
-        name: 'R. Charan Sai (Super Admin)',
-        college_id: null,
-        permissions: ['*'],
-      };
-      next();
-      return;
-    }
-    if (token === 'demo-inspector-token-2026') {
-      req.admin = {
-        sub: 'inspector@logicwhilelire.com',
-        role: 'inspector',
-        staff_id: 'st000000-0000-0000-0000-000000000004',
-        name: 'Dr. K. V. Rao (Principal / Inspector)',
-        college_id: 1,
-        permissions: ['monitor_live', 'terminate_sessions'],
-      };
-      next();
-      return;
-    }
-    if (token === 'demo-faculty-token-2026') {
-      req.admin = {
-        sub: 'faculty@logicwhilelire.com',
-        role: 'faculty',
-        staff_id: 'st000000-0000-0000-0000-000000000003',
-        name: 'Prof. S. Sharma',
-        college_id: 1,
-        permissions: ['manage_exams'],
-      };
-      next();
+  // 1. Support demo tokens ONLY when DEMO_MODE=true is explicitly set.
+  //    When DEMO_MODE=false (or unset), all demo token strings MUST immediately return 401.
+  const isDemoToken = typeof token === 'string' && (token.startsWith('demo-') || token === 'demo-super-admin-token' || token.includes('demo-'));
+  if (isDemoToken) {
+    if (process.env.DEMO_MODE === 'true') {
+      if (token === 'demo-admin-token-2026' || token === 'demo-super-admin-token' || token === 'demo-admin-token') {
+        req.admin = {
+          sub: 'admin@logicwhilelire.com',
+          role: 'super_admin',
+          staff_id: 'st000000-0000-0000-0000-000000000001',
+          name: 'R. Charan Sai (Super Admin)',
+          college_id: null,
+          permissions: ['*'],
+        };
+        next();
+        return;
+      }
+      if (token === 'demo-inspector-token-2026') {
+        req.admin = {
+          sub: 'inspector@logicwhilelire.com',
+          role: 'inspector',
+          staff_id: 'st000000-0000-0000-0000-000000000004',
+          name: 'Dr. K. V. Rao (Principal / Inspector)',
+          college_id: 1,
+          permissions: ['monitor_live', 'terminate_sessions'],
+        };
+        next();
+        return;
+      }
+      if (token === 'demo-faculty-token-2026') {
+        req.admin = {
+          sub: 'faculty@logicwhilelire.com',
+          role: 'faculty',
+          staff_id: 'st000000-0000-0000-0000-000000000003',
+          name: 'Prof. S. Sharma',
+          college_id: 1,
+          permissions: ['manage_exams'],
+        };
+        next();
+        return;
+      }
+    } else {
+      res.status(401).json({
+        success: false,
+        error: 'Unauthorized: Demo tokens and bypasses are strictly forbidden when DEMO_MODE is false',
+        code: 'DEMO_BYPASS_REJECTED',
+      });
       return;
     }
   }
+
+
+  // 2. Reject student tokens attempting cross-portal access
+  try {
+    const decodedAny = jwt.decode(token) as any;
+    if (decodedAny && (decodedAny.role === 'student' || decodedAny.studentId)) {
+      res.status(403).json({
+        success: false,
+        error: 'Forbidden: Student credentials cannot access administrative portals',
+        code: 'STUDENT_TOKEN_REJECTED',
+      });
+      return;
+    }
+  } catch {}
 
   try {
     const adminJwtSecret = getAdminJwtSecret();
@@ -303,15 +327,15 @@ export function requireExamOwnership(paramKey: 'examId' | 'id' | 'sessionId' = '
     // Check ownership in database (check exams table, then exam_codes table)
     const { data: exam } = await supabase
       .from('exams')
-      .select('id, created_by_staff_id, college_id')
+      .select('id, created_by_staff_id, assigned_faculty_id, college_id, section_id, section_ids')
       .eq('id', examId)
       .maybeSingle();
 
-    let examRecord = exam;
+    let examRecord: any = exam;
     if (!examRecord) {
       const { data: ec } = await supabase
         .from('exam_codes')
-        .select('id, created_by_staff_id, college_id')
+        .select('id, created_by_staff_id, assigned_faculty_id, college_id, section_id')
         .or(`id.eq.${examId},exam_code.eq.${examId},code.eq.${examId}`)
         .maybeSingle();
       examRecord = ec;
@@ -333,6 +357,50 @@ export function requireExamOwnership(paramKey: 'examId' | 'id' | 'sessionId' = '
         });
         return;
       }
+      next();
+      return;
+    }
+
+    // Faculty: only allow access if exam is allocated to their college and either created by them,
+    // explicitly assigned to them, or belongs to a section they are allocated to.
+    if (req.admin.role === 'faculty') {
+      const callerStaffId = req.admin.staff_id || (req.admin as any).id;
+      const { data: staffRec } = await supabase
+        .from('staff')
+        .select('college_id, section_ids')
+        .eq('id', callerStaffId)
+        .maybeSingle();
+
+      const facultyCollegeId = staffRec?.college_id ?? req.admin.college_id;
+      const facultySectionIds: string[] = Array.isArray(staffRec?.section_ids) ? staffRec!.section_ids : [];
+
+      if (facultyCollegeId && examRecord.college_id && String(examRecord.college_id) !== String(facultyCollegeId)) {
+        res.status(403).json({
+          success: false,
+          error: 'Forbidden: You do not have permission to access exams or results from another college',
+          code: 'CROSS_COLLEGE_FORBIDDEN',
+        });
+        return;
+      }
+
+      const isCreator = Boolean(examRecord.created_by_staff_id && examRecord.created_by_staff_id === callerStaffId);
+      const isAssigned = Boolean(examRecord.assigned_faculty_id && examRecord.assigned_faculty_id === callerStaffId);
+      const examSec = examRecord.section_id;
+      const examSecList: string[] = Array.isArray(examRecord.section_ids) ? examRecord.section_ids : [];
+      const isSectionMatch = facultySectionIds.length > 0 && (
+        (examSec && facultySectionIds.includes(String(examSec))) ||
+        examSecList.some((s) => facultySectionIds.includes(String(s)))
+      );
+
+      if (!isCreator && !isAssigned && !isSectionMatch) {
+        res.status(403).json({
+          success: false,
+          error: 'Forbidden: You do not have permission to view or manage assessments/results outside your allocation',
+          code: 'FORBIDDEN_NOT_EXAM_OWNER',
+        });
+        return;
+      }
+
       next();
       return;
     }

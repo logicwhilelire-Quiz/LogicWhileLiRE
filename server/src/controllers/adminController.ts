@@ -629,10 +629,36 @@ export async function verifyLoginOtp(req: Request, res: Response): Promise<void>
 export async function listExams(req: Request, res: Response): Promise<void> {
   let query = supabase.from('exams').select('*');
 
-  // If faculty role, restrict to their created exams only
-  if (req.admin?.role === 'faculty') {
-    query = query.eq('created_by_staff_id', req.admin.staff_id);
+  const admin = req.admin;
+  if (admin?.role === 'faculty') {
+    // Faculty scope: restrict to exams allocated to their college AND created by/assigned to them or their allocated sections
+    const callerStaffId = admin.staff_id || (admin as any).id;
+    const { data: staffRec } = await supabase
+      .from('staff')
+      .select('college_id, section_ids, permissions')
+      .eq('id', callerStaffId)
+      .maybeSingle();
+
+    const facultyCollegeId = staffRec?.college_id ?? admin.college_id;
+    const facultySectionIds: string[] = Array.isArray(staffRec?.section_ids) ? staffRec!.section_ids : [];
+
+    if (facultyCollegeId) {
+      query = query.eq('college_id', facultyCollegeId);
+    }
+
+    if (facultySectionIds.length > 0) {
+      const secFilters = facultySectionIds.map((s) => `section_id.eq.${s}`).join(',');
+      query = query.or(`created_by_staff_id.eq.${callerStaffId},assigned_faculty_id.eq.${callerStaffId},${secFilters}`);
+    } else {
+      query = query.or(`created_by_staff_id.eq.${callerStaffId},assigned_faculty_id.eq.${callerStaffId}`);
+    }
+  } else if (admin?.role === 'inspector') {
+    // Inspector scope: restrict to their assigned college
+    if (admin.college_id) {
+      query = query.eq('college_id', admin.college_id);
+    }
   }
+  // super_admin: no filter — sees all exams
 
   const { data: exams, error } = await query.order('created_at', { ascending: false });
 
@@ -1246,6 +1272,48 @@ export async function getTopicAnalytics(req: Request, res: Response): Promise<vo
  */
 export async function getParticipantHistoryHandler(req: Request, res: Response): Promise<void> {
   const hallTicket = ((req.params.hallTicket as string) || (req.query.hallTicket as string)).trim();
+
+  // If faculty, verify candidate belongs to allocated college/sections
+  if (req.admin?.role === 'faculty') {
+    const callerStaffId = req.admin.staff_id || (req.admin as any).id;
+    const { data: staffRec } = await supabase
+      .from('staff')
+      .select('college_id, section_ids')
+      .eq('id', callerStaffId)
+      .maybeSingle();
+
+    const facultyCollegeId = staffRec?.college_id ?? req.admin.college_id;
+    const facultySectionIds: string[] = Array.isArray(staffRec?.section_ids) ? staffRec!.section_ids : [];
+
+    const { data: student } = await supabase
+      .from('students')
+      .select('college_id, section_id, section')
+      .or(`hall_ticket.eq.${hallTicket},roll_number.eq.${hallTicket}`)
+      .maybeSingle();
+
+    if (student) {
+      if (facultyCollegeId && String(student.college_id) !== String(facultyCollegeId)) {
+        res.status(403).json({
+          success: false,
+          error: 'Forbidden: Candidate belongs to another college outside your allocation',
+          code: 'CROSS_COLLEGE_FORBIDDEN',
+        });
+        return;
+      }
+      if (facultySectionIds.length > 0) {
+        const studentSec = student.section_id || student.section;
+        if (studentSec && !facultySectionIds.includes(String(studentSec))) {
+          res.status(403).json({
+            success: false,
+            error: 'Forbidden: Candidate belongs to a section outside your allocation',
+            code: 'SECTION_FORBIDDEN',
+          });
+          return;
+        }
+      }
+    }
+  }
+
   try {
     const result = await getParticipantHistory(hallTicket);
     res.json({ success: true, ...result });

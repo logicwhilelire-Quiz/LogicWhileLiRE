@@ -212,12 +212,21 @@ export default function CollegesPage() {
             {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 60, borderRadius: 10 }} />)}
           </div>
         ) : colleges.length === 0 ? (
-          <div className="card text-center" style={{ padding: 60 }}>
-            <div style={{ fontSize: '3rem', marginBottom: 12 }}>🏛️</div>
-            <p className="font-bold mb-1">No colleges added yet</p>
-            <p className="text-muted text-sm mb-2">Add your first college to start generating exam codes.</p>
-            <button className="btn btn-primary" onClick={openAdd}>Add First College</button>
-          </div>
+          error ? (
+            <div className="card text-center" style={{ padding: 60 }}>
+              <div style={{ fontSize: '3rem', marginBottom: 12 }}>⚠️</div>
+              <p className="font-bold mb-1" style={{ color: 'var(--color-danger)' }}>Could not load colleges</p>
+              <p className="text-muted text-sm mb-3">{error}</p>
+              <button className="btn btn-primary" onClick={() => navigate('/admin/login')}>🔑 Log In to View Colleges</button>
+            </div>
+          ) : (
+            <div className="card text-center" style={{ padding: 60 }}>
+              <div style={{ fontSize: '3rem', marginBottom: 12 }}>🏛️</div>
+              <p className="font-bold mb-1">No colleges added yet</p>
+              <p className="text-muted text-sm mb-2">Add your first college to start generating exam codes.</p>
+              <button className="btn btn-primary" onClick={openAdd}>Add First College</button>
+            </div>
+          )
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table className="data-table">

@@ -83,10 +83,24 @@ export default function AltimeterDial({
     ctx.stroke()
 
     if (progress > 0) {
+      // Resolve CSS variable if provided or fallback to safe hex
+      let safeColor = color;
+      if (typeof window !== 'undefined' && safeColor?.startsWith('var(')) {
+        const varName = safeColor.replace(/var\(|\)/g, '').trim();
+        const resolved = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        if (resolved) safeColor = resolved;
+      }
+      if (!safeColor || safeColor.startsWith('var(')) safeColor = '#00b4d8';
+
       // Filled arc with gradient
       const grad = ctx.createLinearGradient(0, 0, size, size)
-      grad.addColorStop(0, color)
-      grad.addColorStop(1, '#60a5fa')
+      try {
+        grad.addColorStop(0, safeColor)
+        grad.addColorStop(1, '#60a5fa')
+      } catch {
+        grad.addColorStop(0, '#00b4d8')
+        grad.addColorStop(1, '#60a5fa')
+      }
       ctx.beginPath()
       ctx.arc(cx, cy, radius, startAngle, startAngle + sweep * progress)
       ctx.strokeStyle = grad
@@ -95,7 +109,11 @@ export default function AltimeterDial({
       ctx.stroke()
 
       // Glow effect
-      ctx.shadowColor = color
+      try {
+        ctx.shadowColor = safeColor
+      } catch {
+        ctx.shadowColor = '#00b4d8'
+      }
       ctx.shadowBlur = 12
       ctx.beginPath()
       ctx.arc(cx, cy, radius, startAngle, startAngle + sweep * progress)

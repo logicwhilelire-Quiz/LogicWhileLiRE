@@ -3,12 +3,13 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 
-const colleges = [
-  { name: 'VRSEC', lat: 16.50, lng: 80.64, color: '#6C5CE7' },
-  { name: 'KLU', lat: 16.44, lng: 80.62, color: '#06B6D4' },
-  { name: 'RVR&JC', lat: 16.30, lng: 80.44, color: '#10B981' },
-  { name: 'GITAM', lat: 17.78, lng: 83.37, color: '#F59E0B' },
-  { name: 'Tenali', lat: 16.24, lng: 80.64, color: '#EF4444' }, // Your location
+// Dynamic telemetry coordinates for active institutional nodes
+const telemetryNodes = [
+  { lat: 16.50, lng: 80.64, color: '#6C5CE7' },
+  { lat: 16.44, lng: 80.62, color: '#06B6D4' },
+  { lat: 16.30, lng: 80.44, color: '#10B981' },
+  { lat: 17.78, lng: 83.37, color: '#F59E0B' },
+  { lat: 16.24, lng: 80.64, color: '#38BDF8' },
 ]
 
 function latLngToVec3(lat: number, lng: number, radius: number) {
@@ -170,7 +171,7 @@ function Globe() {
     }
   })
 
-  const markers = useMemo(() => colleges.map(c => {
+  const markers = useMemo(() => telemetryNodes.map(c => {
     // 1.02 radius places points right above sphere surface
     const pos = latLngToVec3(c.lat, c.lng, 1.02)
     return { ...c, pos }

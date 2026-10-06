@@ -54,3 +54,15 @@ scratch*
 lighthouse-after.json
 lighthouse-report.json
 screenshots/
+
+# Test scripts & walkthroughs (Untracked)
+walkthrough.js
+walkthrough-report.json
+load-test.js
+server/load-test.js
+test-*
+test_*
+*.test.*
+server/test-*
+client/test-*
+server/src/scripts/testEmail.ts

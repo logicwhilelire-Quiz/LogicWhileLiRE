@@ -5,7 +5,7 @@ export interface StudentTile {
   id: string
   name: string
   hallTicket?: string
-  status: 'active' | 'idle' | 'cheating' | 'offline'
+  status: 'active' | 'idle' | 'cheating' | 'terminated' | 'offline'
   score?: number
   flagCount?: number
   joinedAt?: string
@@ -26,10 +26,11 @@ interface LiveGridWallProps {
 }
 
 export const STATUS_CONFIG: Record<StudentTile['status'], { color: string; label: string; dot: string; bg: string }> = {
-  active:   { color: '#10B981', label: 'Active',    dot: 'status-active',   bg: 'rgba(16,185,129,0.12)' },
-  idle:     { color: '#F59E0B', label: 'Idle',      dot: 'status-idle',     bg: 'rgba(245,158,11,0.12)' },
-  cheating: { color: '#EF4444', label: 'Flagged!',  dot: 'status-cheating', bg: 'rgba(239,68,68,0.15)' },
-  offline:  { color: '#64748B', label: 'Submitted', dot: 'status-offline',  bg: 'rgba(100,116,139,0.12)' },
+  active:     { color: '#10B981', label: 'Active',     dot: 'status-active',     bg: 'rgba(16,185,129,0.12)' },
+  idle:       { color: '#F59E0B', label: 'Idle',       dot: 'status-idle',       bg: 'rgba(245,158,11,0.12)' },
+  cheating:   { color: '#EF4444', label: 'Flagged!',   dot: 'status-cheating',   bg: 'rgba(239,68,68,0.15)' },
+  terminated: { color: '#DC2626', label: 'Terminated', dot: 'status-terminated', bg: 'rgba(220,38,38,0.22)' },
+  offline:    { color: '#64748B', label: 'Submitted',  dot: 'status-offline',    bg: 'rgba(100,116,139,0.12)' },
 }
 
 export default function LiveGridWall({

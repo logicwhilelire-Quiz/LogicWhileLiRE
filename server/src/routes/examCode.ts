@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { adminAuth, requireRole, requireCollegeScope } from '../middleware/adminAuth';
+import { auditLog } from '../middleware/auditLog';
 import { supabase } from '../db/supabase';
 import {
   listColleges,
@@ -98,6 +99,35 @@ const handleExamCodeStart = async (req: any, res: any) => {
       return res.status(404).json({ success: false, error: 'Exam not found or unavailable for your section', code: 'EXAM_NOT_FOUND' });
     }
 
+    // Enforce student email verification (Item 9)
+    const { data: studentRecord } = await supabase
+      .from('students')
+      .select('id, email, is_verified')
+      .or(`hall_ticket.eq.${hallTicket},roll_number.eq.${hallTicket}`)
+      .maybeSingle();
+
+    if (studentRecord && studentRecord.is_verified === false) {
+      return res.status(403).json({
+        success: false,
+        error: 'Your email address is not verified. Please verify your email before starting this examination.',
+        code: 'EMAIL_NOT_VERIFIED',
+      });
+    }
+
+    // Enforce inspector start (Item 3)
+    const isDemoExam = code.includes('DEMO') || code === 'CS2026';
+    if (!isDemoExam && !exam.started_at) {
+      const { getExamStartedState } = await import('../services/socketService');
+      const startedState = getExamStartedState(code);
+      if (!startedState) {
+        return res.status(403).json({
+          success: false,
+          error: 'The inspector has not started this examination yet. Please wait in the waiting lobby.',
+          code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
+        });
+      }
+    }
+
     const { data: qData } = await supabase
       .from('questions_ec')
       .select('*')
@@ -183,55 +213,63 @@ router.get('/exam-code/:code/leaderboard', getExamCodeLeaderboard);
 
 // Colleges management (mutations restricted to super_admin)
 router.get('/admin/colleges', adminAuth, listColleges);
-router.post('/admin/colleges', adminAuth, requireRole('super_admin'), createCollege);
-router.patch('/admin/colleges/:id', adminAuth, requireRole('super_admin'), updateCollege);
-router.delete('/admin/colleges/:id', adminAuth, requireRole('super_admin'), deleteCollege);
+router.post('/admin/colleges', adminAuth, requireRole('super_admin'), auditLog('CREATE_COLLEGE', 'colleges'), createCollege);
+router.patch('/admin/colleges/:id', adminAuth, requireRole('super_admin'), auditLog('UPDATE_COLLEGE', 'colleges'), updateCollege);
+router.delete('/admin/colleges/:id', adminAuth, requireRole('super_admin'), auditLog('DELETE_COLLEGE', 'colleges'), deleteCollege);
 
-// Exam codes management
+// Exam codes management (super_admin only)
 router.get('/admin/exam-codes', adminAuth, listExamCodes);
-router.post('/admin/exam-codes', adminAuth, requireCollegeScope(), createExamCode);
-router.patch('/admin/exam-codes/:id/toggle', adminAuth, requireCollegeScope(), toggleExamCode);
-router.get('/admin/exam-codes/:id/qr', adminAuth, requireCollegeScope(), getExamCodeQR);
-router.get('/admin/exam-codes/:id/report', adminAuth, requireCollegeScope(), getExamCodeReport);
-router.post('/admin/exam-codes/:id/allocate', adminAuth, requireCollegeScope(), allocateQuestionPaper);
-router.post('/admin/exam-codes/:id/lock-paper', adminAuth, requireCollegeScope(), lockQuestionPaper);
-router.post('/admin/exam-codes/:id/replace-paper', adminAuth, requireCollegeScope(), replaceQuestionPaper);
+router.post('/admin/exam-codes', adminAuth, requireRole('super_admin'), auditLog('CREATE_EXAM_CODE', 'exam_codes'), createExamCode);
+router.patch('/admin/exam-codes/:id/toggle', adminAuth, requireRole('super_admin'), auditLog('TOGGLE_EXAM_CODE', 'exam_codes'), toggleExamCode);
+router.get('/admin/exam-codes/:id/qr', adminAuth, getExamCodeQR);
+router.get('/admin/exam-codes/:id/report', adminAuth, getExamCodeReport);
+router.post('/admin/exam-codes/:id/allocate', adminAuth, requireRole('super_admin'), auditLog('ALLOCATE_PAPER', 'exam_codes'), allocateQuestionPaper);
+router.post('/admin/exam-codes/:id/lock-paper', adminAuth, requireRole('super_admin'), auditLog('LOCK_PAPER', 'exam_codes'), lockQuestionPaper);
+router.post('/admin/exam-codes/:id/replace-paper', adminAuth, requireRole('super_admin'), auditLog('REPLACE_PAPER', 'exam_codes'), replaceQuestionPaper);
 
-// Question import for exam codes & Faculty 5-column Excel upload with validation and preview
+// Question import for exam codes (super_admin only)
 router.post(
   '/admin/exam-codes/:id/import-questions',
   adminAuth,
-  requireCollegeScope(),
+  requireRole('super_admin'),
+  auditLog('IMPORT_QUESTIONS', 'exam_codes'),
   upload.single('file'),
   importQuestionsForExamCode
 );
 router.post(
   '/admin/questions/validate-preview',
   adminAuth,
+  requireRole('super_admin'),
   upload.single('file'),
   validateAndPreviewQuestions
 );
 router.post(
   '/admin/questions/confirm-import',
   adminAuth,
+  requireRole('super_admin'),
+  auditLog('CONFIRM_IMPORT_QUESTIONS', 'questions'),
   confirmImportQuestions
 );
 router.post(
   '/admin/exam-codes/:id/validate-preview',
   adminAuth,
-  requireCollegeScope(),
+  requireRole('super_admin'),
   upload.single('file'),
   validateAndPreviewQuestions
 );
 
 // Phase 2: Violation timeline & false-positive review
 router.get('/admin/attempts/:id/violations', adminAuth, getAttemptViolations);
-router.patch('/admin/attempts/:id/violations/:violationId/review', adminAuth, reviewAttemptViolation);
+router.patch('/admin/attempts/:id/violations/:violationId/review', adminAuth, requireRole('super_admin'), auditLog('REVIEW_VIOLATION', 'proctor_logs'), reviewAttemptViolation);
 
 // Phase 3: Live Monitor, Analytics & Results Vault
-router.post('/admin/attempts/:id/extend-time', adminAuth, extendAttemptTime);
-router.post('/admin/attempts/:id/force-submit', adminAuth, forceSubmitAttempt);
-router.post('/admin/exam-codes/:id/reevaluate', adminAuth, requireCollegeScope(), reevaluateExamCode);
-router.get('/admin/exam-codes/:id/analytics', adminAuth, requireCollegeScope(), getExamCodeAnalytics);
+router.post('/admin/attempts/:id/extend-time', adminAuth, requireRole('super_admin', 'inspector'), auditLog('EXTEND_ATTEMPT_TIME', 'exam_code_attempts'), extendAttemptTime);
+router.post('/admin/attempts/:id/force-submit', adminAuth, requireRole('super_admin', 'inspector'), auditLog('FORCE_SUBMIT_ATTEMPT', 'exam_code_attempts'), forceSubmitAttempt);
+
+// Allow Re-Entry: reopens a wrongly-terminated attempt (super_admin only)
+// Also accessible from /api/admin/attempts/:id/allow-reentry (registered in admin.ts)
+router.post('/admin/exam-codes/:id/reevaluate', adminAuth, requireRole('super_admin'), auditLog('REEVALUATE_EXAM_CODE', 'exam_codes'), reevaluateExamCode);
+router.get('/admin/exam-codes/:id/analytics', adminAuth, getExamCodeAnalytics);
+
 
 export default router;

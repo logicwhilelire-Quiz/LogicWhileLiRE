@@ -683,9 +683,9 @@ export default function AnalyticsPage() {
                           <td>
                             <span
                               className={`badge ${
-                                h.sessionStatus === 'submitted'
+                                h.sessionStatus === 'submitted' || h.sessionStatus === 'completed'
                                   ? 'badge-success'
-                                  : h.sessionStatus === 'terminated'
+                                  : h.sessionStatus === 'terminated' || h.sessionStatus === 'terminated_cheating' || h.sessionStatus === 'Terminated - violation'
                                   ? 'badge-danger'
                                   : 'badge-warning'
                               }`}

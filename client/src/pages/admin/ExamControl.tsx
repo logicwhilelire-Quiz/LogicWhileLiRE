@@ -29,6 +29,15 @@ export default function ExamControl() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<ExamItem | null>(null);
 
+  const currentUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('admin_user') || sessionStorage.getItem('admin_user') || '{"role":"super_admin"}');
+    } catch {
+      return { role: 'super_admin' };
+    }
+  })();
+  const isSuperAdmin = currentUser.role === 'super_admin' || currentUser.role === 'admin';
+
   // Form State
   const [form, setForm] = useState({
     title: '',
@@ -309,22 +318,28 @@ export default function ExamControl() {
               </p>
             </div>
 
-            <button
-              onClick={handleOpenCreateModal}
-              className="btn btn-primary"
-              style={{
-                padding: '10px 22px',
-                fontWeight: 700,
-                borderRadius: 8,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                background: 'linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)',
-                boxShadow: '0 4px 14px rgba(255, 122, 0, 0.4)',
-              }}
-            >
-              <span>➕</span> Add New Exam
-            </button>
+            {!isSuperAdmin ? (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#38BDF8', fontSize: '0.82rem', fontWeight: 700 }}>
+                <span>🔒</span> Faculty Read-Only Mode
+              </div>
+            ) : (
+              <button
+                onClick={handleOpenCreateModal}
+                className="btn btn-primary"
+                style={{
+                  padding: '10px 22px',
+                  fontWeight: 700,
+                  borderRadius: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  background: 'linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)',
+                  boxShadow: '0 4px 14px rgba(255, 122, 0, 0.4)',
+                }}
+              >
+                <span>➕</span> Add New Exam
+              </button>
+            )}
           </div>
 
           {/* Quick Notice */}
@@ -332,8 +347,8 @@ export default function ExamControl() {
             style={{
               padding: '14px 18px',
               borderRadius: 10,
-              background: 'rgba(255, 194, 0, 0.08)',
-              border: '1px solid rgba(255, 194, 0, 0.25)',
+              background: isSuperAdmin ? 'rgba(255, 194, 0, 0.08)' : 'rgba(56, 189, 248, 0.08)',
+              border: `1px solid ${isSuperAdmin ? 'rgba(255, 194, 0, 0.25)' : 'rgba(56, 189, 248, 0.25)'}`,
               marginBottom: 24,
               fontSize: '0.86rem',
               color: 'var(--color-text)',
@@ -342,9 +357,13 @@ export default function ExamControl() {
               gap: 12,
             }}
           >
-            <span style={{ fontSize: '1.2rem' }}>🔒</span>
+            <span style={{ fontSize: '1.2rem' }}>{isSuperAdmin ? '🔒' : 'ℹ️'}</span>
             <div>
-              <strong>Administrator Rule:</strong> You have 100% control over all exam options. Click <strong>✏️ Edit Options</strong> on any exam to customize codes, durations, pass criteria, or negative marking, and toggle security guards in real-time.
+              {isSuperAdmin ? (
+                <><strong>Administrator Authority:</strong> You have 100% control over all exam options. Click <strong>✏️ Edit Options</strong> on any exam to customize codes, durations, pass criteria, or negative marking, and toggle security guards in real-time.</>
+              ) : (
+                <><strong>Faculty View (Read-Only):</strong> You can review exam configuration and view live telemetric sessions. Creating exams, modifying parameters, and launching attempts are reserved for the Administrator.</>
+              )}
             </div>
           </div>
 
@@ -399,71 +418,95 @@ export default function ExamControl() {
 
                     {/* Action Controls */}
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      {/* EDIT ALL OPTIONS BUTTON */}
-                      <button
-                        onClick={() => handleOpenEditModal(exam)}
-                        className="btn btn-sm"
-                        style={{
-                          background: 'rgba(255, 194, 0, 0.14)',
-                          color: '#FFC200',
-                          border: '1px solid rgba(255, 194, 0, 0.4)',
-                          fontWeight: 700,
-                          padding: '8px 14px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6,
-                        }}
-                        title="Edit All Options for this Exam"
-                      >
-                        <span>✏️</span> Edit Options
-                      </button>
+                      {isSuperAdmin ? (
+                        <>
+                          {/* EDIT ALL OPTIONS BUTTON */}
+                          <button
+                            onClick={() => handleOpenEditModal(exam)}
+                            className="btn btn-sm"
+                            style={{
+                              background: 'rgba(255, 194, 0, 0.14)',
+                              color: '#FFC200',
+                              border: '1px solid rgba(255, 194, 0, 0.4)',
+                              fontWeight: 700,
+                              padding: '8px 14px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                            title="Edit All Options for this Exam"
+                          >
+                            <span>✏️</span> Edit Options
+                          </button>
 
-                      <button
-                        onClick={() => handleToggleLaunch(exam)}
-                        className="btn btn-sm"
-                        style={{
-                          background: exam.is_active ? 'rgba(239, 68, 68, 0.15)' : 'rgba(43, 127, 255, 0.2)',
-                          color: exam.is_active ? '#EF4444' : 'var(--color-primary-light, #38BDF8)',
-                          border: `1px solid ${exam.is_active ? '#EF444440' : 'rgba(43, 127, 255, 0.5)'}`,
-                          fontWeight: 800,
-                          padding: '8px 14px',
-                        }}
-                      >
-                        {exam.is_active ? '🛑 Deactivate' : '🚀 Launch'}
-                      </button>
+                          <button
+                            onClick={() => handleToggleLaunch(exam)}
+                            className="btn btn-sm"
+                            style={{
+                              background: exam.is_active ? 'rgba(239, 68, 68, 0.15)' : 'rgba(43, 127, 255, 0.2)',
+                              color: exam.is_active ? '#EF4444' : 'var(--color-primary-light, #38BDF8)',
+                              border: `1px solid ${exam.is_active ? '#EF444440' : 'rgba(43, 127, 255, 0.5)'}`,
+                              fontWeight: 800,
+                              padding: '8px 14px',
+                            }}
+                          >
+                            {exam.is_active ? '🛑 Deactivate' : '🚀 Launch'}
+                          </button>
 
-                      <button
-                        onClick={() => navigate(`/admin/live-console/${exam.exam_code || exam.id}`)}
-                        className="btn btn-sm"
-                        style={{
-                          background: 'rgba(16, 185, 129, 0.12)',
-                          color: '#10b981',
-                          border: '1px solid rgba(16, 185, 129, 0.35)',
-                          fontWeight: 700,
-                          padding: '8px 12px',
-                        }}
-                        title="Open Instructor Live Console"
-                      >
-                        📡 Live
-                      </button>
+                          <button
+                            onClick={() => navigate(`/admin/live-console/${exam.exam_code || exam.id}`)}
+                            className="btn btn-sm"
+                            style={{
+                              background: 'rgba(16, 185, 129, 0.12)',
+                              color: '#10b981',
+                              border: '1px solid rgba(16, 185, 129, 0.35)',
+                              fontWeight: 700,
+                              padding: '8px 12px',
+                            }}
+                            title="Open Instructor Live Console"
+                          >
+                            📡 Live
+                          </button>
 
-                      <button
-                        onClick={() => handleDuplicate(exam)}
-                        className="btn btn-ghost btn-sm"
-                        style={{ border: '1px solid var(--color-border)' }}
-                        title="Duplicate Exam"
-                      >
-                        📋 Copy
-                      </button>
+                          <button
+                            onClick={() => handleDuplicate(exam)}
+                            className="btn btn-ghost btn-sm"
+                            style={{ border: '1px solid var(--color-border)' }}
+                            title="Duplicate Exam"
+                          >
+                            📋 Copy
+                          </button>
 
-                      <button
-                        onClick={() => handleDelete(exam.id)}
-                        className="btn btn-ghost btn-sm"
-                        style={{ color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)' }}
-                        title="Delete Exam"
-                      >
-                        🗑️ Delete
-                      </button>
+                          <button
+                            onClick={() => handleDelete(exam.id)}
+                            className="btn btn-ghost btn-sm"
+                            style={{ color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)' }}
+                            title="Delete Exam"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => navigate(`/admin/live-console/${exam.exam_code || exam.id}`)}
+                            className="btn btn-sm"
+                            style={{
+                              background: 'rgba(16, 185, 129, 0.12)',
+                              color: '#10b981',
+                              border: '1px solid rgba(16, 185, 129, 0.35)',
+                              fontWeight: 700,
+                              padding: '8px 14px',
+                            }}
+                            title="Open Instructor Live Console"
+                          >
+                            📡 View Live Telemetry
+                          </button>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', fontStyle: 'italic', padding: '6px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: 6 }}>
+                            Faculty Read-Only
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -491,7 +534,10 @@ export default function ExamControl() {
                       return (
                         <button
                           key={toggle.key}
-                          onClick={() => handleToggleOption(exam.id, toggle.key as keyof ExamItem)}
+                          onClick={() => {
+                            if (!isSuperAdmin) return;
+                            handleToggleOption(exam.id, toggle.key as keyof ExamItem);
+                          }}
                           style={{
                             background: enabled ? 'rgba(56, 189, 248, 0.12)' : 'rgba(255, 255, 255, 0.03)',
                             border: `1px solid ${enabled ? 'rgba(56, 189, 248, 0.35)' : 'rgba(255, 255, 255, 0.08)'}`,
@@ -501,8 +547,9 @@ export default function ExamControl() {
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             color: enabled ? '#F8FAFC' : '#64748B',
-                            cursor: 'pointer',
+                            cursor: isSuperAdmin ? 'pointer' : 'default',
                             transition: 'all 0.2s',
+                            opacity: isSuperAdmin ? 1 : 0.85,
                           }}
                         >
                           <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>

@@ -263,6 +263,26 @@ export async function listSections(req: Request, res: Response): Promise<void> {
   if (cohort_id) query = query.eq('cohort_id', String(cohort_id));
   if (academic_year_id) query = query.eq('academic_year_id', String(academic_year_id));
 
+  // Faculty scope: restrict to allocated college and sections
+  if (req.admin?.role === 'faculty') {
+    const callerStaffId = req.admin.staff_id || (req.admin as any).id;
+    const { data: staffRec } = await supabase
+      .from('staff')
+      .select('college_id, section_ids')
+      .eq('id', callerStaffId)
+      .maybeSingle();
+
+    const facultyCollegeId = staffRec?.college_id ?? req.admin.college_id;
+    const facultySectionIds: string[] = Array.isArray(staffRec?.section_ids) ? staffRec!.section_ids : [];
+
+    if (facultyCollegeId) {
+      query = query.eq('college_id', facultyCollegeId);
+    }
+    if (facultySectionIds.length > 0) {
+      query = query.in('id', facultySectionIds);
+    }
+  }
+
   const { data, error } = await query;
   if (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -452,12 +472,24 @@ export async function deleteBatch(req: Request, res: Response): Promise<void> {
 export async function getHierarchyOverview(req: Request, res: Response): Promise<void> {
   const { isScoped, collegeId } = resolveCollegeScope(req);
 
+  let facultyCollegeId = collegeId;
+  let facultySectionIds: string[] = [];
+  if (req.admin?.role === 'faculty') {
+    const callerStaffId = req.admin.staff_id || (req.admin as any).id;
+    const { data: staffRec } = await supabase
+      .from('staff')
+      .select('college_id, section_ids')
+      .eq('id', callerStaffId)
+      .maybeSingle();
+
+    if (staffRec?.college_id) facultyCollegeId = staffRec.college_id;
+    if (Array.isArray(staffRec?.section_ids)) facultySectionIds = staffRec.section_ids;
+  }
+
   // Fetch all entities
   let collegesQuery = supabase.from('colleges').select('id, college_name, college_code, city, state, is_active');
-  if (isScoped && collegeId) {
-    collegesQuery = collegesQuery.eq('id', collegeId);
-  } else if (collegeId) {
-    collegesQuery = collegesQuery.eq('id', collegeId);
+  if (facultyCollegeId) {
+    collegesQuery = collegesQuery.eq('id', facultyCollegeId);
   }
   const { data: colleges } = await collegesQuery;
 
@@ -466,11 +498,16 @@ export async function getHierarchyOverview(req: Request, res: Response): Promise
   let secQuery = supabase.from('sections').select('*');
   let batQuery = supabase.from('batches').select('*');
 
-  if (collegeId) {
-    ayQuery = ayQuery.eq('college_id', collegeId);
-    cohQuery = cohQuery.eq('college_id', collegeId);
-    secQuery = secQuery.eq('college_id', collegeId);
-    batQuery = batQuery.eq('college_id', collegeId);
+  if (facultyCollegeId) {
+    ayQuery = ayQuery.eq('college_id', facultyCollegeId);
+    cohQuery = cohQuery.eq('college_id', facultyCollegeId);
+    secQuery = secQuery.eq('college_id', facultyCollegeId);
+    batQuery = batQuery.eq('college_id', facultyCollegeId);
+  }
+
+  if (facultySectionIds.length > 0) {
+    secQuery = secQuery.in('id', facultySectionIds);
+    batQuery = batQuery.in('section_id', facultySectionIds);
   }
 
   const [ays, cohs, secs, bats] = await Promise.all([
@@ -498,7 +535,7 @@ export async function listStudents(req: Request, res: Response): Promise<void> {
 
   let query = supabase
     .from('students')
-    .select('id, name, first_name, last_name, email, roll_number, hall_ticket, college_id, college_name, academic_year_id, cohort_id, section_id, batch_id, section, batch, year_of_passing, is_active, is_blocked, must_change_password, created_at')
+    .select('id, name, first_name, last_name, email, roll_number, hall_ticket, college_id, college_name, academic_year_id, cohort_id, section_id, batch_id, section, batch, year_of_passing, is_active, is_verified, is_blocked, must_change_password, created_at')
     .order('created_at', { ascending: false });
 
   if (isScoped && collegeId) {
@@ -510,6 +547,29 @@ export async function listStudents(req: Request, res: Response): Promise<void> {
   if (cohort_id) query = query.eq('cohort_id', String(cohort_id));
   if (section_id) query = query.eq('section_id', String(section_id));
   if (batch_id) query = query.eq('batch_id', String(batch_id));
+  if (req.query.verified === 'true') query = query.eq('is_verified', true);
+  if (req.query.verified === 'false') query = query.eq('is_verified', false);
+
+  // Faculty: enforce live section_ids restriction from staff record
+  if (req.admin?.role === 'faculty') {
+    const { data: staffRec } = await supabase
+      .from('staff')
+      .select('college_id, section_ids')
+      .eq('id', req.admin.staff_id)
+      .maybeSingle();
+
+    const facultyCollegeId = staffRec?.college_id ?? req.admin.college_id;
+    const facultySectionIds: string[] = Array.isArray(staffRec?.section_ids) ? staffRec!.section_ids : [];
+
+    // Always restrict to faculty college
+    if (facultyCollegeId) {
+      query = query.eq('college_id', facultyCollegeId);
+    }
+    // If specific sections are allocated, restrict to those sections
+    if (facultySectionIds.length > 0) {
+      query = query.in('section_id', facultySectionIds);
+    }
+  }
 
   const { data: students, error } = await query;
   if (error) {
@@ -531,6 +591,7 @@ export async function listStudents(req: Request, res: Response): Promise<void> {
 
   res.json({ success: true, count: filtered.length, students: filtered });
 }
+
 
 export async function createStudent(req: Request, res: Response): Promise<void> {
   const {
@@ -622,6 +683,9 @@ export async function createStudent(req: Request, res: Response): Promise<void> 
     reset_token_expires: null,
     must_change_password: true, // Mandatory password change on first login
     is_active: true,
+    is_verified: false,
+    verification_otp: Math.floor(100000 + Math.random() * 900000).toString(),
+    verification_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     is_blocked: false,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -785,6 +849,9 @@ export async function bulkImportStudents(req: Request, res: Response): Promise<v
           failed_attempts: 0,
           must_change_password: true,
           is_active: true,
+          is_verified: false,
+          verification_otp: Math.floor(100000 + Math.random() * 900000).toString(),
+          verification_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           is_blocked: false,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -960,6 +1027,34 @@ export async function exportBatchStudents(req: Request, res: Response): Promise<
   if (batch_id) query = query.eq('batch_id', String(batch_id));
   if (section_id) query = query.eq('section_id', String(section_id));
 
+  // Faculty scope: restrict to allocated college and sections
+  if (req.admin?.role === 'faculty') {
+    const callerStaffId = req.admin.staff_id || (req.admin as any).id;
+    const { data: staffRec } = await supabase
+      .from('staff')
+      .select('college_id, section_ids')
+      .eq('id', callerStaffId)
+      .maybeSingle();
+
+    const facultyCollegeId = staffRec?.college_id ?? req.admin.college_id;
+    const facultySectionIds: string[] = Array.isArray(staffRec?.section_ids) ? staffRec!.section_ids : ((req.admin as any).section_ids || []);
+
+    if (facultyCollegeId) {
+      query = query.eq('college_id', facultyCollegeId);
+    }
+    if (facultySectionIds.length > 0) {
+      query = query.in('section_id', facultySectionIds);
+      if (section_id && !facultySectionIds.includes(String(section_id))) {
+        res.status(403).json({
+          success: false,
+          error: 'Forbidden: You do not have permission to export students from a section outside your allocation',
+          code: 'FACULTY_SECTION_FORBIDDEN',
+        });
+        return;
+      }
+    }
+  }
+
   const { data: students, error } = await query;
   if (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -1004,6 +1099,254 @@ export async function exportBatchStudents(req: Request, res: Response): Promise<
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     res.send(buffer);
   }
+}
+
+// ── 8b. BULK STUDENT EMAIL VERIFICATION (super_admin) ──
+
+/**
+ * POST /api/admin/students/bulk-verify
+ * Mark selected students (or all in a section) as email-verified.
+ * Intended for imported students who cannot self-verify before exam day.
+ * Produces an audit log entry.
+ */
+export async function bulkVerifyStudents(req: Request, res: Response): Promise<void> {
+  const { student_ids, section_id, college_id } = req.body;
+
+  if (!student_ids?.length && !section_id) {
+    res.status(400).json({
+      success: false,
+      error: 'Provide student_ids array or section_id to verify a whole section.',
+    });
+    return;
+  }
+
+  let targetIds: string[] = [];
+
+  if (Array.isArray(student_ids) && student_ids.length > 0) {
+    targetIds = student_ids.map(String);
+  } else if (section_id) {
+    // Verify all students in the section (matching section_id or section code, or ALL)
+    const secStr = String(section_id).trim();
+    let q = supabase.from('students').select('id');
+    if (secStr.toUpperCase() !== 'ALL') {
+      q = q.or(`section_id.eq.${secStr},section.eq.${secStr},section.ilike.${secStr},section_id.ilike.${secStr}`);
+    }
+    if (college_id) q = q.eq('college_id', String(college_id));
+    const { data, error } = await q;
+    if (error) {
+      res.status(500).json({ success: false, error: error.message });
+      return;
+    }
+    targetIds = (data || []).map((s: any) => s.id);
+  }
+
+  if (targetIds.length === 0) {
+    res.json({ success: true, verified_count: 0, message: 'No students matched the criteria.' });
+    return;
+  }
+
+  const { error: updateError, count } = await supabase
+    .from('students')
+    .update({
+      is_verified: true,
+      is_active: true,
+      verification_otp: null,
+      verification_token: null,
+      verification_expires_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .in('id', targetIds);
+
+  if (updateError) {
+    res.status(500).json({ success: false, error: updateError.message });
+    return;
+  }
+
+  // Audit log
+  if (req.admin) {
+    recordAuditLog(
+      req.admin,
+      'BULK_VERIFY_STUDENTS',
+      'students',
+      section_id || 'multiple',
+      {
+        student_ids: targetIds,
+        section_id: section_id || null,
+        college_id: college_id || null,
+        verified_count: targetIds.length,
+      },
+      req
+    ).catch(() => {});
+  }
+
+  res.json({
+    success: true,
+    verified_count: targetIds.length,
+    message: `${targetIds.length} student(s) marked as verified successfully.`,
+  });
+}
+
+// ── 8c. ADMIN ALLOW RE-ENTRY (super_admin: reopen terminated attempt) ──
+
+/**
+ * POST /api/admin/attempts/:id/allow-reentry
+ * Reopens a wrongly-terminated exam attempt by resetting status to 'in-progress'
+ * and clearing the termination reason. Writes an audit log entry.
+ * A student with a terminated attempt cannot restart without this action.
+ */
+export async function allowExamReentry(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  let targetTable = 'exam_code_attempts';
+  let { data: attempt, error: fetchError } = await supabase
+    .from('exam_code_attempts')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  let sessionRecord: any = null;
+  if (!attempt) {
+    // Check exam_sessions for traditional exams
+    const { data: session } = await supabase
+      .from('exam_sessions')
+      .select('id, status, end_time, submitted_at, started_at, termination_reason, participant:participant_id ( hall_ticket, exam_id )')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (session) {
+      targetTable = 'exam_sessions';
+      sessionRecord = session;
+      attempt = {
+        id: session.id,
+        hall_ticket: (session as any).participant?.hall_ticket || 'STUDENT',
+        exam_code: (session as any).participant?.exam_id || 'EXAM',
+        status: session.status,
+        termination_reason: session.termination_reason,
+      };
+    }
+  }
+
+  if (!attempt) {
+    res.status(404).json({ success: false, error: 'Attempt or session not found.' });
+    return;
+  }
+
+  // Only terminated attempts can be reopened
+  const terminatedStatuses = ['Terminated - violation', 'terminated_cheating', 'terminated', 'terminated_violation'];
+  if (!terminatedStatuses.includes(attempt.status)) {
+    res.status(400).json({
+      success: false,
+      error: `Attempt status is '${attempt.status}'. Only terminated attempts may be reopened.`,
+      code: 'ATTEMPT_NOT_TERMINATED',
+    });
+    return;
+  }
+
+  let remainingSeconds = 300;
+  let savedAnswersCount = 0;
+
+  if (targetTable === 'exam_sessions') {
+    // Compute remaining time from when session was terminated
+    const prevEnd = sessionRecord?.end_time ? new Date(sessionRecord.end_time).getTime() : 0;
+    const termAt = sessionRecord?.submitted_at ? new Date(sessionRecord.submitted_at).getTime() : Date.now();
+    let computedRem = Math.max(120, Math.floor((prevEnd - termAt) / 1000));
+    if (isNaN(computedRem) || computedRem <= 0) {
+      computedRem = 300;
+    }
+    remainingSeconds = computedRem;
+    const newEndTime = new Date(Date.now() + remainingSeconds * 1000).toISOString();
+
+    // Check count of saved answers in session_answers
+    const { count: ansCount } = await supabase
+      .from('session_answers')
+      .select('id', { count: 'exact', head: true })
+      .eq('session_id', id);
+    savedAnswersCount = ansCount || 0;
+
+    const { error: sessUpdErr } = await supabase
+      .from('exam_sessions')
+      .update({
+        status: 'in_progress',
+        end_time: newEndTime,
+        submitted_at: null,
+        termination_reason: null,
+        violation_count: 0,
+      })
+      .eq('id', id);
+
+    if (sessUpdErr) {
+      res.status(500).json({ success: false, error: sessUpdErr.message });
+      return;
+    }
+  } else {
+    // Preserve saved answers strictly from answers and partial_answers
+    const preservedAnswers = attempt.partial_answers || attempt.answers || {};
+    const preservedCodeAnswers = attempt.code_answers || {};
+    savedAnswersCount = Object.keys(preservedAnswers).length;
+
+    // Calculate remaining time from duration and time taken
+    const { data: ecExam } = await supabase
+      .from('exam_codes')
+      .select('duration_minutes')
+      .eq('exam_code', attempt.exam_code)
+      .maybeSingle();
+    const examDurSec = (ecExam?.duration_minutes || 60) * 60;
+    const timeTaken = attempt.time_taken_seconds || 0;
+    remainingSeconds = Math.max(120, examDurSec - timeTaken);
+
+    const { error: updateError } = await supabase
+      .from('exam_code_attempts')
+      .update({
+        status: 'in_progress',
+        override_reason: null,
+        end_time: null,
+        submitted_at: null,
+        time_taken_seconds: timeTaken,
+        partial_answers: preservedAnswers,
+        answers: preservedAnswers,
+        code_answers: preservedCodeAnswers,
+      })
+      .eq('id', id);
+
+    if (updateError) {
+      res.status(500).json({ success: false, error: updateError.message });
+      return;
+    }
+  }
+
+  // Audit log
+  if (req.admin) {
+    recordAuditLog(
+      req.admin,
+      'ALLOW_EXAM_REENTRY',
+      targetTable,
+      String(id),
+      {
+        attempt_id: id,
+        target_table: targetTable,
+        hall_ticket: attempt.hall_ticket || attempt.hall_ticket_no,
+        exam_code: attempt.exam_code,
+        original_status: attempt.status,
+        original_termination_reason: attempt.termination_reason,
+        remaining_seconds_restored: remainingSeconds,
+        saved_answers_preserved_count: savedAnswersCount,
+        admin_reason: reason || 'Admin-granted re-entry',
+      },
+      req
+    ).catch(() => {});
+  }
+
+  res.json({
+    success: true,
+    message: `Re-entry granted for ${attempt.hall_ticket || attempt.hall_ticket_no}. Remaining time (${remainingSeconds}s) and ${savedAnswersCount} saved answers preserved.`,
+    attempt_id: id,
+    target_table: targetTable,
+    hall_ticket: attempt.hall_ticket || attempt.hall_ticket_no,
+    exam_code: attempt.exam_code,
+    remaining_seconds: remainingSeconds,
+    saved_answers_count: savedAnswersCount,
+  });
 }
 
 // ── 9. ADMIN & INSPECTOR PASSWORD RESETS ──

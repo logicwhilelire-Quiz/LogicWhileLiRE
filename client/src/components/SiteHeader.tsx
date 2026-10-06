@@ -65,107 +65,146 @@ export default function SiteHeader() {
       ];
 
   return (
-    <motion.header
-      className={`site-header ${scrolled ? 'scrolled' : ''}`}
-      initial={{ y: -80, opacity: 0 }}
-      animate={{ y: mounted ? 0 : -80, opacity: mounted ? 1 : 0 }}
-      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-    >
-      {/* Official Logic Whi1e LiRE Logo */}
-      <Link to="/" style={{ textDecoration: 'none' }}>
-        <motion.div
-          className="navbar-brand"
-          style={{ display: 'flex', alignItems: 'center' }}
-          whileHover={{ scale: 1.02 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+    <>
+      {/* Top Utility Helpline Bar */}
+      <div
+        style={{
+          background: 'var(--hp-navy, #080d2a)',
+          color: '#94a3b8',
+          fontSize: '12px',
+          fontWeight: 600,
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '6px 20px',
+          position: 'relative',
+          zIndex: 501,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1060,
+            margin: '0 auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 8,
+          }}
         >
-          <BrandLogo size="sm" variant="notag" />
-        </motion.div>
-      </Link>
-
-      {/* Desktop Nav */}
-      <nav className="navbar-links" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        {navLinks.map(({ label, to }) => (
-          <Link key={to} to={to} style={{ textDecoration: 'none' }}>
-            <motion.div
-              className={`navbar-link ${location.pathname === to ? 'active' : ''}`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {label}
-            </motion.div>
-          </Link>
-        ))}
-
-        <ThemeToggle className="ml-2" />
-
-        {/* Dynamic Action Call-to-Action: Only show Enter Exam if student is authenticated */}
-        {isLoggedIn ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 8 }}>
-            <Link to="/enter-exam" style={{ textDecoration: 'none' }}>
-              <MagneticButton
-                className="btn btn-primary btn-sm"
-                style={{
-                  borderRadius: 'var(--radius-sm)',
-                  fontFamily: 'var(--font-display)',
-                  fontWeight: 700,
-                  background: 'linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)',
-                  boxShadow: '0 4px 14px rgba(255, 122, 0, 0.35)',
-                }}
-              >
-                🚀 Enter Exam
-              </MagneticButton>
-            </Link>
-
-            <Link
-              to="/student/dashboard"
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-display)' }}>
+            <span
               style={{
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '5px 10px',
-                borderRadius: '8px',
-                background: 'rgba(56, 189, 248, 0.12)',
-                border: '1px solid rgba(56, 189, 248, 0.3)',
-                color: 'var(--color-primary-light, #38BDF8)',
-                fontSize: '0.8rem',
-                fontWeight: 700,
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: '#10b981',
+                boxShadow: '0 0 8px #10b981',
+                display: 'inline-block',
               }}
-              title={`Logged in as ${studentUser.name || 'Candidate'}`}
-            >
-              <span>🎓</span>
-              <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {studentUser.name?.split(' ')[0] || 'Dashboard'}
-              </span>
-            </Link>
+            />
+            <span style={{ color: '#38bdf8', letterSpacing: '0.06em', fontWeight: 800 }}>LOGIC WHI1E LiRE</span>
+            <span style={{ color: '#475569' }}>•</span>
+            <span style={{ color: '#cbd5e1' }}>AUTONOMOUS ASSESSMENT ENGINE</span>
+            <span style={{ color: '#475569' }}>•</span>
+            <span style={{ color: '#f59e0b', fontWeight: 700 }}>5 TECHNICAL SECTORS</span>
+          </div>
 
-            <button
-              onClick={handleLogout}
-              className="btn btn-ghost btn-xs"
-              style={{ color: '#EF4444', fontSize: '0.75rem', padding: '4px 8px' }}
-              title="Log out of student account"
-            >
-              Logout
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: '11.5px', fontFamily: 'var(--font-display)' }}>
+            <span style={{ color: '#94a3b8' }}>SYSTEM INTEGRITY:</span>
+            <span style={{ color: '#10b981', fontWeight: 800 }}>● 100% AUTHORITATIVE</span>
           </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8 }}>
-            <Link to="/login" style={{ textDecoration: 'none' }}>
-              <MagneticButton
-                className="btn btn-primary btn-sm"
-                style={{
-                  borderRadius: 'var(--radius-sm)',
-                  fontFamily: 'var(--font-display)',
-                  fontWeight: 700,
-                }}
+        </div>
+      </div>
+
+      <motion.header
+        className={`site-header ${scrolled ? 'scrolled' : ''}`}
+        initial={{ y: -80, opacity: 0 }}
+        animate={{ y: mounted ? 0 : -80, opacity: mounted ? 1 : 0 }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+      >
+        {/* Official Brand Logo */}
+        <Link to="/" style={{ textDecoration: 'none' }}>
+          <motion.div
+            className="navbar-brand"
+            style={{ display: 'flex', alignItems: 'center' }}
+            whileHover={{ scale: 1.02 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <BrandLogo size="sm" variant="notag" />
+          </motion.div>
+        </Link>
+
+        {/* Desktop Nav */}
+        <nav className="navbar-links" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {navLinks.map(({ label, to }) => (
+            <Link key={to} to={to} style={{ textDecoration: 'none' }}>
+              <motion.div
+                className={`navbar-link ${location.pathname === to ? 'active' : ''}`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                🎓 Student Portal
-              </MagneticButton>
+                {label}
+              </motion.div>
             </Link>
-          </div>
-        )}
-      </nav>
+          ))}
+
+          <ThemeToggle className="ml-2" />
+
+          {/* Dynamic Action Call-to-Action */}
+          {isLoggedIn ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 8 }}>
+              <Link to="/enter-exam" className="nav-cta">
+                <span>🚀 Enter Exam</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </Link>
+
+              <Link
+                to="/student/dashboard"
+                style={{
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: '10px',
+                  background: 'rgba(2, 132, 199, 0.08)',
+                  border: '1px solid rgba(2, 132, 199, 0.25)',
+                  color: 'var(--color-primary)',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-display)',
+                }}
+                title={`Logged in as ${studentUser.name || 'Candidate'}`}
+              >
+                <span>🎓</span>
+                <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {studentUser.name?.split(' ')[0] || 'Dashboard'}
+                </span>
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                className="btn btn-ghost btn-xs"
+                style={{ color: '#EF4444', fontSize: '0.75rem', padding: '4px 8px' }}
+                title="Log out of student account"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8 }}>
+              <Link to="/gate" className="nav-cta">
+                <span>Candidate Gate</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </Link>
+            </div>
+          )}
+        </nav>
 
       {/* Mobile hamburger */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -241,5 +280,6 @@ export default function SiteHeader() {
         )}
       </AnimatePresence>
     </motion.header>
+    </>
   );
 }

@@ -108,6 +108,8 @@ import {
   inspectorStartExam,
   inspectorEndExam,
   getInspectorDashboardData,
+  bulkVerifyStudents,
+  allowExamReentry,
 } from '../controllers/hierarchyController';
 import {
   listColleges,
@@ -124,8 +126,12 @@ router.post('/request-login-otp', adminLoginRateLimit, requestLoginOtp);
 router.post('/verify-login-otp', adminLoginRateLimit, verifyLoginOtp);
 router.post('/logout', adminLogout);
 router.post('/demo-login', (req, res) => {
-  if (process.env.NODE_ENV === 'production' && process.env.DEMO_MODE !== 'true') {
-    res.status(403).json({ success: false, error: 'Demo login disabled in production' });
+  if (process.env.DEMO_MODE !== 'true') {
+    res.status(401).json({
+      success: false,
+      error: 'Unauthorized: Demo login bypass is disabled when DEMO_MODE is false',
+      code: 'DEMO_BYPASS_REJECTED',
+    });
     return;
   }
   const role = (req.body?.role || 'super_admin') as StaffRole;
@@ -203,37 +209,35 @@ router.patch('/colleges/:id', requireRole('super_admin'), auditLog('UPDATE_COLLE
 router.put('/colleges/:id', requireRole('super_admin'), auditLog('UPDATE_COLLEGE', 'colleges'), updateCollege);
 router.delete('/colleges/:id', requireRole('super_admin'), auditLog('DELETE_COLLEGE', 'colleges'), deleteCollege);
 
-// ——— Exams ———
+// ——— Exams (super_admin only creates & modifies) ———
 router.get('/exams', listExams);
 router.post(
   '/exams',
-  requireFacultyPermission('manage_exams'),
+  requireRole('super_admin'),
   auditLog('CREATE_EXAM', 'exams'),
   validateBody(createExamSchema),
   createExam
 );
 router.patch(
   '/exams/:id/activate',
-  requireFacultyPermission('manage_exams'),
-  requireExamOwnership('id'),
+  requireRole('super_admin'),
   auditLog('TOGGLE_EXAM_ACTIVE', 'exams'),
   validateParams(UUIDParam),
   activateExam
 );
 router.delete('/exams/:id', requireRole('super_admin'), auditLog('DELETE_EXAM', 'exams'), deleteExam);
-router.get('/exams/:examId/qr', requireExamOwnership('examId'), validateParams(ExamIdParam), getEnrollmentQR);
-router.patch('/exams/:id/settings', requireFacultyPermission('manage_exams'), requireExamOwnership('id'), auditLog('UPDATE_EXAM_SETTINGS', 'exams'), updateExamSettings);
+router.get('/exams/:examId/qr', validateParams(ExamIdParam), getEnrollmentQR);
+router.patch('/exams/:id/settings', requireRole('super_admin'), auditLog('UPDATE_EXAM_SETTINGS', 'exams'), updateExamSettings);
 
-// ——— Questions & Question Papers CRUD ———
+// ——— Questions & Question Papers CRUD (super_admin only) ———
 router.get('/questions', listQuestions);
-router.post('/questions', requireFacultyPermission('create_questions'), auditLog('CREATE_QUESTION', 'questions'), createQuestion);
-router.patch('/questions/:id', requireFacultyPermission('create_questions'), auditLog('UPDATE_QUESTION', 'questions'), updateQuestion);
-router.put('/questions/:id', requireFacultyPermission('create_questions'), auditLog('UPDATE_QUESTION', 'questions'), updateQuestion);
-router.delete('/questions/:id', requireFacultyPermission('create_questions'), auditLog('DELETE_QUESTION', 'questions'), deleteQuestion);
+router.post('/questions', requireRole('super_admin'), auditLog('CREATE_QUESTION', 'questions'), createQuestion);
+router.patch('/questions/:id', requireRole('super_admin'), auditLog('UPDATE_QUESTION', 'questions'), updateQuestion);
+router.put('/questions/:id', requireRole('super_admin'), auditLog('UPDATE_QUESTION', 'questions'), updateQuestion);
+router.delete('/questions/:id', requireRole('super_admin'), auditLog('DELETE_QUESTION', 'questions'), deleteQuestion);
 router.post(
   '/exams/:examId/import-questions',
-  requireFacultyPermission('create_questions'),
-  requireExamOwnership('examId'),
+  requireRole('super_admin'),
   auditLog('IMPORT_QUESTIONS', 'questions'),
   validateParams(ExamIdParam),
   (req, res, next) => {
@@ -255,12 +259,11 @@ router.patch('/curriculum/:id', requireRole('super_admin'), auditLog('UPDATE_CUR
 router.put('/curriculum/:id', requireRole('super_admin'), auditLog('UPDATE_CURRICULUM', 'curriculum'), updateCurriculum);
 router.delete('/curriculum/:id', requireRole('super_admin'), auditLog('DELETE_CURRICULUM', 'curriculum'), deleteCurriculum);
 
-// ——— Bulk Enrollment ———
+// ——— Bulk Enrollment (super_admin only) ———
 router.get('/bulk-enroll/template', getBulkEnrollTemplate);
 router.post(
   '/exams/:examId/bulk-enroll',
-  requireFacultyPermission('upload_excel'),
-  requireExamOwnership('examId'),
+  requireRole('super_admin'),
   auditLog('BULK_ENROLL', 'participants'),
   validateParams(ExamIdParam),
   (req, res, next) => {
@@ -354,14 +357,15 @@ router.delete('/batches/:id', requireRole('super_admin'), auditLog('DELETE_BATCH
 router.get('/hierarchy', requireRole('super_admin', 'inspector', 'faculty'), getHierarchyOverview);
 router.get('/hierarchy/overview', requireRole('super_admin', 'inspector', 'faculty'), getHierarchyOverview);
 
-// ——— Student Management (super_admin full CRUD; faculty scoped by permissions) ———
+// ——— Student Management (super_admin full CRUD; faculty read-only roster) ———
 router.get('/students', requireRole('super_admin', 'inspector', 'faculty'), listStudents);
-router.post('/students', requireFacultyPermission('manage_students'), auditLog('CREATE_STUDENT', 'students'), createStudent);
-router.patch('/students/:id', requireFacultyPermission('manage_students'), auditLog('UPDATE_STUDENT', 'students'), updateStudent);
-router.put('/students/:id', requireFacultyPermission('manage_students'), auditLog('UPDATE_STUDENT', 'students'), updateStudent);
+router.post('/students', requireRole('super_admin'), auditLog('CREATE_STUDENT', 'students'), createStudent);
+router.patch('/students/:id', requireRole('super_admin'), auditLog('UPDATE_STUDENT', 'students'), updateStudent);
+router.put('/students/:id', requireRole('super_admin'), auditLog('UPDATE_STUDENT', 'students'), updateStudent);
 router.delete('/students/:id', requireRole('super_admin'), auditLog('DELETE_STUDENT', 'students'), deleteStudent);
 router.post(
   '/students/import-preview',
+  requireRole('super_admin'),
   (req, res, next) => {
     if (req.headers['content-type']?.includes('multipart')) {
       uploadMiddleware(req, res, (err) => {
@@ -379,6 +383,7 @@ router.post(
 );
 router.post(
   '/hierarchy/import-preview',
+  requireRole('super_admin'),
   (req, res, next) => {
     if (req.headers['content-type']?.includes('multipart')) {
       uploadMiddleware(req, res, (err) => {
@@ -396,7 +401,7 @@ router.post(
 );
 router.post(
   '/students/bulk-import',
-  requireFacultyPermission('upload_excel'),
+  requireRole('super_admin'),
   auditLog('BULK_IMPORT_STUDENTS', 'students'),
   (req, res, next) => {
     if (req.headers['content-type']?.includes('multipart')) {
@@ -415,7 +420,7 @@ router.post(
 );
 router.post(
   '/hierarchy/bulk-import',
-  requireFacultyPermission('upload_excel'),
+  requireRole('super_admin'),
   auditLog('BULK_IMPORT_STUDENTS', 'students'),
   (req, res, next) => {
     if (req.headers['content-type']?.includes('multipart')) {
@@ -432,8 +437,14 @@ router.post(
   },
   bulkImportStudents
 );
-router.get('/students/export', requireFacultyPermission('export_data'), exportBatchStudents);
-router.post('/students/:id/reset-password', requireFacultyPermission('manage_students'), auditLog('RESET_STUDENT_PASSWORD', 'students'), resetStudentPassword);
+router.get('/students/export', requireRole('super_admin', 'faculty'), exportBatchStudents);
+router.post('/students/:id/reset-password', requireRole('super_admin'), auditLog('RESET_STUDENT_PASSWORD', 'students'), resetStudentPassword);
+
+// ——— Bulk Email Verification (super_admin only) ———
+router.post('/students/bulk-verify', requireRole('super_admin'), auditLog('BULK_VERIFY_STUDENTS', 'students'), bulkVerifyStudents);
+
+// ——— Admin Allow Exam Re-Entry (super_admin only) ———
+router.post('/attempts/:id/allow-reentry', requireRole('super_admin'), auditLog('ALLOW_EXAM_REENTRY', 'exam_code_attempts'), allowExamReentry);
 
 // ——— System Backups & Google Drive Cloud Sync (super_admin only) ———
 router.get('/backup', requireRole('super_admin'), auditLog('RUN_SYSTEM_BACKUP', 'system'), runSystemBackup);

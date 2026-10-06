@@ -29,6 +29,9 @@ export interface CodingQuestionItem {
 }
 
 interface ResultData {
+  status?: string
+  is_terminated?: boolean
+  termination_reason?: string
   score: number
   totalMarks: number
   percentage: number
@@ -250,7 +253,16 @@ export default function ResultECPage() {
   const mcqScoreColor = effectiveMcqPct >= 80 ? '#10B981' : effectiveMcqPct >= 50 ? '#F59E0B' : '#EF4444'
   const mcqPassed = effectiveMcqPct >= 40
 
-  const passed = hasCodingQuestions ? mcqPassed : pct >= 60
+  const isTerminated = Boolean(
+    activeResult.is_terminated ||
+    activeResult.status === 'terminated_cheating' ||
+    activeResult.status === 'terminated' ||
+    activeResult.status === 'Terminated - violation' ||
+    rawState?.status === 'terminated' ||
+    rawState?.isTerminated
+  )
+
+  const passed = isTerminated ? false : (hasCodingQuestions ? mcqPassed : pct >= 60)
 
   const animatedPct = useAnimatedCounter(pct, 1400)
   const animatedScore = useAnimatedCounter(activeResult.score ?? 0, 1200)
@@ -274,12 +286,47 @@ export default function ResultECPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)', position: 'relative', overflow: 'hidden' }}>
-      {/* Celebration Confetti when qualified */}
-      {passed && <Confetti particleCount={140} durationMs={4500} />}
+      {/* Celebration Confetti when qualified (never on terminated attempts) */}
+      {passed && !isTerminated && <Confetti particleCount={140} durationMs={4500} />}
 
       <SiteHeader />
 
       <div className="page-content" style={{ paddingTop: 96, position: 'relative', zIndex: 1 }}>
+
+        {/* ─── SECURITY TERMINATION ALERT BANNER ─── */}
+        {isTerminated && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              maxWidth: 820,
+              margin: '0 auto 28px',
+              padding: '16px 24px',
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1.5px solid #EF4444',
+              borderRadius: 'var(--radius-md)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+              color: '#FCA5A5',
+              fontSize: '0.92rem',
+              boxShadow: '0 4px 20px rgba(239, 68, 68, 0.2)',
+            }}
+          >
+            <div style={{ fontSize: '2rem' }}>🚫</div>
+            <div>
+              <div style={{ fontWeight: 800, color: '#EF4444', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Attempt Terminated &amp; Disqualified
+              </div>
+              <div style={{ marginTop: 3 }}>
+                Reason: <strong>{activeResult.termination_reason || 'Proctoring Lockdown Violation (tab switch, blur, or unauthorized keys)'}</strong>
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#FDA4AF', marginTop: 4 }}>
+                This attempt was flagged by the autonomous proctoring engine and submitted with status <code>terminated_cheating</code>.
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* ─── DEMO FALLBACK ALERT BANNER (Step 2 safety) ─── */}
         {isDemoFallback && (
@@ -596,9 +643,13 @@ export default function ResultECPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.5 }}
-              style={{ fontSize: '1.25rem', color: passed ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 700, marginBottom: 8 }}
+              style={{ fontSize: '1.25rem', color: isTerminated ? '#EF4444' : passed ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 700, marginBottom: 8 }}
             >
-              {passed ? 'Assessment Qualified — Passing Threshold Met' : 'Assessment Completed — Below Passing Threshold'}
+              {isTerminated
+                ? 'DISQUALIFIED — Attempt Terminated for Security Violation'
+                : passed
+                ? 'Assessment Qualified — Passing Threshold Met'
+                : 'Assessment Completed — Below Passing Threshold'}
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 15 }}

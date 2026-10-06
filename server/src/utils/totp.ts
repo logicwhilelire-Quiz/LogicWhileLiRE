@@ -13,12 +13,9 @@ const CTR_ALGORITHM = 'aes-256-ctr';
 const CTR_IV_LENGTH = 16;
 
 function getDerivedKey(): Buffer {
-  const raw = process.env.TOTP_ENCRYPTION_KEY || '';
+  const raw = process.env.TOTP_ENCRYPTION_KEY;
   if (!raw) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('[TOTP] TOTP_ENCRYPTION_KEY is required in production. Generate with: openssl rand -hex 32');
-    }
-    return Buffer.alloc(32, 0); // deterministic dev-only key
+    throw new Error('[TOTP] TOTP_ENCRYPTION_KEY environment variable is strictly required. Generate with: openssl rand -hex 32');
   }
   return crypto.createHash('sha256').update(raw).digest();
 }

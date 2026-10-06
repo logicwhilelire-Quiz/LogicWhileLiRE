@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import ErrorBoundary from './components/ErrorBoundary';
 import PageLoader from './components/PageLoader';
-import CustomCursor from './components/CustomCursor';
 import LogicWhileLiREIntro from './components/LogicWhileLiREIntro';
 import PageTransition from './components/3d/PageTransition';
 

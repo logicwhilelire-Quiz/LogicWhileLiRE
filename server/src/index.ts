@@ -182,6 +182,11 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', demo_mode: isDemo, timestamp: new Date().toISOString() });
 });
 
+// Direct alias for public colleges
+app.get('/colleges', (_req, res) => {
+  res.redirect(307, '/api/colleges');
+});
+
 // Authentication (Students & Password Reset)
 app.use('/api/auth', authRoutes);
 

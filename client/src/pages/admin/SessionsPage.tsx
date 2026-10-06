@@ -4,6 +4,7 @@ import {
   listExams,
   listSessions,
   terminateSession,
+  allowExamReentry,
   listSuspiciousActivity,
   resolveSuspiciousActivity,
 } from '../../lib/api';
@@ -50,7 +51,10 @@ const STATUS_BADGE: Record<string, string> = {
   not_started: 'badge-neutral',
   in_progress: 'badge-primary',
   submitted: 'badge-success',
+  completed: 'badge-success',
   terminated: 'badge-danger',
+  terminated_cheating: 'badge-danger',
+  'Terminated - violation': 'badge-danger',
 };
 
 export default function SessionsPage() {
@@ -107,6 +111,25 @@ export default function SessionsPage() {
       );
     } finally {
       setTerminatingId(null);
+    }
+  }
+
+  const [reentryLoadingId, setReentryLoadingId] = useState<string | null>(null);
+
+  async function handleAllowReentry(id: string) {
+    const reason = prompt('Enter justification for allowing re-entry (this will be permanently logged in audit trails):', 'Admin verified accidental hardware/network drop');
+    if (!reason) return;
+    setReentryLoadingId(id);
+    try {
+      await allowExamReentry(id, reason);
+      setSessions((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, status: 'in_progress', termination_reason: null } : s))
+      );
+      alert('✅ Re-entry permitted. The candidate can now resume their examination.');
+    } catch (err: any) {
+      alert(`❌ Failed to allow re-entry: ${err?.response?.data?.error || err.message}`);
+    } finally {
+      setReentryLoadingId(null);
     }
   }
 
@@ -252,6 +275,18 @@ export default function SessionsPage() {
                                 disabled={terminatingId === s.id}
                               >
                                 {terminatingId === s.id ? '...' : '🚫 Terminate'}
+                              </button>
+                            )}
+                            {(s.status === 'terminated' || s.status === 'terminated_cheating' || s.status === 'Terminated - violation') && (
+                              <button
+                                id={`allow-reentry-${s.id}`}
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => handleAllowReentry(s.id)}
+                                disabled={reentryLoadingId === s.id}
+                                style={{ background: 'rgba(16, 185, 129, 0.15)', borderColor: '#10B981', color: '#10B981', fontWeight: 700 }}
+                                title="Admin Override: Reopen wrongly terminated session with audit logging"
+                              >
+                                {reentryLoadingId === s.id ? '...' : '🔓 Allow Re-entry'}
                               </button>
                             )}
                             {s.termination_reason && (
