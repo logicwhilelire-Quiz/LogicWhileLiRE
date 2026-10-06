@@ -12,8 +12,18 @@
 -- ─── 1. EXTENSIONS ───────────────────────────────────────────────────────────
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-CREATE EXTENSION IF NOT EXISTS "hypopg";
-CREATE EXTENSION IF NOT EXISTS "index_advisor";
+
+-- Optional performance extensions (guarded so missing binaries won't abort migration)
+DO $$ BEGIN
+  CREATE EXTENSION IF NOT EXISTS "hypopg";
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE EXTENSION IF NOT EXISTS "index_advisor";
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
 
 -- ─── 2. NEW COLUMNS ON EXISTING TABLES ────────────────────────────────────────
 

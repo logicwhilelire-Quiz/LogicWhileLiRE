@@ -7,21 +7,24 @@ import CosmicCanvas from '../components/CosmicCanvas';
 import MagneticButton from '../components/3d/MagneticButton';
 import ShimmerText from '../components/3d/ShimmerText';
 import GlowCard from '../components/3d/GlowCard';
+import TiltCard from '../components/3d/TiltCard';
 import AltimeterDial from '../components/3d/AltimeterDial';
 import LogicCoil from '../components/LogicCoil';
+import { SECTORS_3D_LIST } from '../components/3d/SectorsUniverse3D';
 import api from '../lib/api';
 
 // Lazy-load 3D components for peak performance
 const CollegeGlobe = lazy(() => import('../components/3d/CollegeGlobe'));
 const ParticleField = lazy(() => import('../components/3d/ParticleField'));
 const NodeNetwork = lazy(() => import('../components/3d/NodeNetwork'));
+const SectorsUniverse3D = lazy(() => import('../components/3d/SectorsUniverse3D'));
 
-// ─── 100% AUTHENTIC LOGIC WHI1E LIRE PLATFORM DATA ───
+// ─── AUTHENTIC LOGIC WHI1E LIRE PLATFORM DATA ───
 const STATS = [
-  { value: 10000, label: 'Concurrent Capacity', suffix: '+', color: '#00b4d8', numStr: '10,000+' },
-  { value: 50, label: 'WebSocket Latency', suffix: 'ms', color: '#0284c7', numStr: '<50ms' },
-  { value: 100, label: 'Server Timing Integrity', suffix: '%', color: '#f59e0b', numStr: '100%' },
-  { value: 99.9, label: 'Telemetry Reliability', suffix: '%', color: '#ea580c', numStr: '99.9%' },
+  { value: 5, label: 'Technical Sectors', suffix: '', color: '#00d2ff', numStr: '5 Sectors' },
+  { value: 100, label: 'Live Socket Dispatch', suffix: '%', color: '#0284c7', numStr: 'Real-Time' },
+  { value: 100, label: 'Server Clock Sync', suffix: '%', color: '#f59e0b', numStr: 'Authoritative' },
+  { value: 99.9, label: 'Heartbeat Reliability', suffix: '%', color: '#10b981', numStr: '99.9%' },
 ];
 
 const DOMAINS = [
@@ -44,28 +47,28 @@ const FEATURES = [
     icon: '⚡',
     title: 'Synchronous Live Exam Dispatch',
     desc: 'Instant global exam initialization over Socket.io with waiting lobbies, late-join time adjustments, and microsecond reconnection synchronization.',
-    trackColor: '#00b4d8',
+    trackColor: '#00d2ff',
     tags: ['Socket.io', 'Sub-50ms', 'Auto-Sync'],
   },
   {
     icon: '👁️',
     title: 'Client-Side AI Proctoring',
-    desc: 'On-device facial landmarking and active gaze tracking running entirely in browser Web Workers. Zero raw video ever transmitted to servers.',
+    desc: 'On-device facial landmarking and active gaze tracking running locally in browser Web Workers. Zero raw video ever transmitted to servers.',
     trackColor: '#10b981',
-    tags: ['MediaPipe', 'Web Worker', '100% On-Device'],
+    tags: ['MediaPipe', 'Web Worker', 'Edge AI Vision'],
   },
   {
     icon: '⏱️',
     title: 'Server-Authoritative Timing',
     desc: 'Eliminates client-side clock tampering. Server drives authoritative ticks and remaining duration calculations across all candidate stations.',
     trackColor: '#f59e0b',
-    tags: ['Zero Drift', 'Anti-Tamper', 'Heartbeat'],
+    tags: ['Server Ticks', 'Anti-Tamper', 'Heartbeat'],
   },
   {
     icon: '🛡️',
     title: 'Anti-Leak Forensic Ledger',
     desc: 'Dynamic candidate watermark tiles, browser devtools detection, tab-switch monitoring, and real-time invigilator anomaly logging.',
-    trackColor: '#ea580c',
+    trackColor: '#f43f5e',
     tags: ['Watermarks', 'Audit Log', 'Tab Guard'],
   },
   {
@@ -73,13 +76,13 @@ const FEATURES = [
     title: 'Offline Answer Resilience',
     desc: 'Local IndexedDB write-ahead answer buffer with automatic background synchronization upon network reconnection to protect student responses.',
     trackColor: '#0284c7',
-    tags: ['IndexedDB', 'Zero Data Loss', 'Auto-Retry'],
+    tags: ['IndexedDB', 'Local Buffer', 'Auto-Retry'],
   },
   {
     icon: '📊',
     title: 'Real-Time Invigilator Console',
     desc: 'Comprehensive multi-candidate monitor wall with live status indicators, remote proctor warnings, time extensions, and session terminations.',
-    trackColor: '#1d4ed8',
+    trackColor: '#8b5cf6',
     tags: ['Live Monitor', 'Multi-Room', 'Instant Evict'],
   },
 ];
@@ -90,8 +93,8 @@ const PROCTORING_PILLARS = [
     title: 'Client-Side AI Sentinel',
     subtitle: 'Low-CPU Web Worker Inference',
     desc: 'Continuous facial landmarking via TensorFlow & MediaPipe running in background threads. Detects absence, multiple persons, or sustained gaze aversion (~1.5s interval).',
-    badge: '100% On-Device',
-    color: '#00b4d8',
+    badge: 'Local Edge AI',
+    color: '#00d2ff',
   },
   {
     icon: '🔒',
@@ -113,9 +116,9 @@ const PROCTORING_PILLARS = [
     icon: '📡',
     title: 'Offline Resilience Engine',
     subtitle: 'IndexedDB & Service Worker Queue',
-    desc: 'Zero lost answers during campus WiFi drops. Responses buffer instantaneously to IndexedDB and automatically sync with the server once connectivity is restored.',
-    badge: 'Zero Data Loss',
-    color: '#ea580c',
+    desc: 'Responses buffer locally to IndexedDB and automatically sync with the server once connectivity is restored after campus network drops.',
+    badge: 'Write-Ahead Buffer',
+    color: '#f43f5e',
   },
 ];
 
@@ -124,7 +127,7 @@ const DEPLOYMENT_MODES = [
     name: 'University Semester & Midterm Examinations',
     short: 'Academic Finals',
     city: 'Campus Scale',
-    metric: 'Zero-Drift Timer',
+    metric: 'Server Timer',
     desc: 'Locked full-screen environment, randomized multi-set question distribution, and microsecond-synchronized server timing preventing peer collaboration.',
     tag: 'University Scale',
   },
@@ -290,13 +293,15 @@ export default function LandingPage() {
     message: '',
     submitted: false,
     loading: false,
+    referenceId: '',
+    error: '',
   });
 
   const handleDemoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setDemoForm((prev) => ({ ...prev, loading: true }));
+    setDemoForm((prev) => ({ ...prev, loading: true, error: '' }));
     try {
-      await api.post('/api/contact', {
+      const res = await api.post('/api/contact', {
         name: demoForm.name,
         email: demoForm.email,
         subject: `Pilot Sandbox Request — ${demoForm.institution}`,
@@ -304,10 +309,28 @@ export default function LandingPage() {
         institution: demoForm.institution,
         candidateCount: demoForm.candidateCount,
       });
-    } catch (err) {
-      console.warn('Contact request submission fallback:', err);
-    } finally {
-      setDemoForm((prev) => ({ ...prev, loading: false, submitted: true }));
+      if (res.data?.success) {
+        setDemoForm((prev) => ({
+          ...prev,
+          loading: false,
+          submitted: true,
+          referenceId: res.data.reference_id || '',
+          error: '',
+        }));
+      } else {
+        throw new Error(res.data?.error || 'Failed to submit pilot request');
+      }
+    } catch (err: any) {
+      const errorMsg =
+        err?.response?.data?.error ||
+        err?.message ||
+        'Unable to process application right now. Please verify network or email format.';
+      setDemoForm((prev) => ({
+        ...prev,
+        loading: false,
+        submitted: false,
+        error: errorMsg,
+      }));
     }
   };
 
@@ -377,29 +400,57 @@ export default function LandingPage() {
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             >
               {/* Live Status Pulse Badge */}
-              <div className="live-badge">
-                <span className="pulse-dot" />
-                <span>AUTONOMOUS ASSESSMENT ENGINE • 5 TECHNICAL SECTORS</span>
+              <div
+                className="live-badge float-3d-element"
+                style={{
+                  background: 'rgba(0, 210, 255, 0.08)',
+                  border: '1px solid rgba(0, 210, 255, 0.35)',
+                  boxShadow: '0 0 16px rgba(0, 210, 255, 0.2)',
+                }}
+              >
+                <span className="pulse-dot" style={{ background: '#00d2ff', boxShadow: '0 0 10px #00d2ff' }} />
+                <span style={{ color: '#00d2ff', fontWeight: 800, letterSpacing: '0.06em' }}>
+                  AUTONOMOUS ASSESSMENT ENGINE • 5 TECHNICAL SECTORS
+                </span>
               </div>
 
               {/* Main Headline with HackPradesh Dual-Gradient Typography */}
               <h1 className="hp-hero-title">
-                <span className="brand-hack">LOGIC</span>
-                <span className="brand-pradesh">WHI1E</span>
                 <span
+                  className="brand-hack"
+                  style={{
+                    background: 'linear-gradient(135deg, #00d2ff 0%, #0284c7 50%, #1d4ed8 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  LOGIC
+                </span>
+                <span
+                  className="brand-pradesh"
+                  style={{
+                    background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #ea580c 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  WHI1E
+                </span>
+                <span
+                  className="float-3d-reverse"
                   style={{
                     display: 'inline-block',
                     marginLeft: 12,
                     padding: '2px 14px',
                     borderRadius: 12,
                     border: '2px solid var(--hp-amber, #f59e0b)',
-                    background: 'rgba(245, 158, 11, 0.12)',
+                    background: 'rgba(245, 158, 11, 0.15)',
                     color: 'var(--hp-amber, #f59e0b)',
                     fontSize: 'clamp(26px, 3.8vw, 42px)',
                     fontWeight: 800,
                     letterSpacing: '0.04em',
                     verticalAlign: 'middle',
-                    boxShadow: '0 0 20px rgba(245, 158, 11, 0.25)',
+                    boxShadow: '0 0 24px rgba(245, 158, 11, 0.35), inset 0 0 12px rgba(245, 158, 11, 0.15)',
                   }}
                 >
                   LiRE
@@ -422,43 +473,90 @@ export default function LandingPage() {
 
               {/* Meta Feature Pills */}
               <div className="hero-meta">
-                <div className="hp-pill">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" strokeWidth="2.5">
+                <div
+                  className="hp-pill"
+                  style={{
+                    background: 'rgba(0, 210, 255, 0.08)',
+                    border: '1px solid rgba(0, 210, 255, 0.3)',
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00d2ff" strokeWidth="2.5">
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
-                  <span>Server-Authoritative Timing (Zero Drift)</span>
+                  <span>Server-Authoritative Timing</span>
                 </div>
-                <div className="hp-pill">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" strokeWidth="2.5">
+                <div
+                  className="hp-pill"
+                  style={{
+                    background: 'rgba(16, 185, 129, 0.08)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
-                  <span>Client-Side AI Vision (100% Privacy)</span>
+                  <span>Client-Side AI Vision (Zero Raw Video Stored)</span>
                 </div>
-                <div className="hp-pill">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" strokeWidth="2.5">
+                <div
+                  className="hp-pill"
+                  style={{
+                    background: 'rgba(245, 158, 11, 0.08)',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5">
                     <path d="M5 12.55a11 11 0 0 1 14.08 0" />
                     <path d="M1.42 9a16 16 0 0 1 21.16 0" />
                     <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
                     <line x1="12" y1="20" x2="12.01" y2="20" />
                   </svg>
-                  <span>Offline Answer Resilience (Zero Loss)</span>
+                  <span>Offline Answer Resilience (IndexedDB Buffer)</span>
+                </div>
+                <div
+                  className="hp-pill"
+                  style={{
+                    background: 'rgba(139, 92, 246, 0.08)',
+                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                  }}
+                >
+                  <span style={{ fontSize: '13px' }}>🪐</span>
+                  <span>5 Autonomous Technical Sectors</span>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="cta-row" style={{ marginTop: 24 }}>
+              <div className="cta-row" style={{ marginTop: 24, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
                 {studentUser ? (
                   <>
                     <button
                       className="btn-hp btn-hp-primary"
                       onClick={() => navigate('/enter-exam')}
+                      style={{
+                        background: 'linear-gradient(135deg, #00d2ff 0%, #0284c7 50%, #1d4ed8 100%)',
+                        boxShadow: '0 0 20px rgba(0, 210, 255, 0.35)',
+                      }}
                     >
                       <span>🚀 Enter Assigned Exam</span>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <line x1="5" y1="12" x2="19" y2="12" />
                         <polyline points="12 5 19 12 12 19" />
                       </svg>
+                    </button>
+                    <button
+                      className="btn-hp btn-hp-ghost"
+                      onClick={() => {
+                        const el = document.getElementById('sectors-3d');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        else navigate('/practice');
+                      }}
+                      style={{
+                        border: '1.5px solid rgba(0, 210, 255, 0.45)',
+                        color: '#00d2ff',
+                        background: 'rgba(0, 210, 255, 0.08)',
+                      }}
+                    >
+                      <span>🪐 5 Sectors 3D Universe</span>
                     </button>
                     <button
                       className="btn-hp btn-hp-ghost"
@@ -472,12 +570,31 @@ export default function LandingPage() {
                     <button
                       className="btn-hp btn-hp-primary"
                       onClick={() => navigate('/enter-exam')}
+                      style={{
+                        background: 'linear-gradient(135deg, #00d2ff 0%, #0284c7 50%, #1d4ed8 100%)',
+                        boxShadow: '0 0 20px rgba(0, 210, 255, 0.35)',
+                      }}
                     >
                       <span>⚡ Quick Exam Code Entry</span>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <line x1="5" y1="12" x2="19" y2="12" />
                         <polyline points="12 5 19 12 12 19" />
                       </svg>
+                    </button>
+                    <button
+                      className="btn-hp btn-hp-ghost"
+                      onClick={() => {
+                        const el = document.getElementById('sectors-3d');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        else navigate('/practice');
+                      }}
+                      style={{
+                        border: '1.5px solid rgba(245, 158, 11, 0.45)',
+                        color: '#f59e0b',
+                        background: 'rgba(245, 158, 11, 0.08)',
+                      }}
+                    >
+                      <span>🪐 5 Sectors 3D Universe</span>
                     </button>
                     <button
                       className="btn-hp btn-hp-ghost"
@@ -498,8 +615,8 @@ export default function LandingPage() {
 
               {/* Trust Endorsement */}
               <div className="hero-trust" style={{ marginTop: 20 }}>
-                <span className="trust-icon">✓</span>
-                <span>Sub-50ms WebSocket Dispatch • WebAssembly On-Device Vision • Microsecond Synchronization</span>
+                <span className="trust-icon" style={{ color: '#10b981' }}>✓</span>
+                <span>Live WebSocket Dispatch • WebAssembly On-Device Vision • Microsecond Synchronization</span>
               </div>
             </motion.div>
 
@@ -515,8 +632,15 @@ export default function LandingPage() {
                 <div className="card-glow-bg" />
 
                 {/* HUD Live Pulse Badge */}
-                <div className="hud-pill">
-                  <span className="hud-pulse" />
+                <div
+                  className="hud-pill"
+                  style={{
+                    background: 'rgba(0, 210, 255, 0.1)',
+                    border: '1px solid rgba(0, 210, 255, 0.35)',
+                    color: '#00d2ff',
+                  }}
+                >
+                  <span className="hud-pulse" style={{ background: '#00d2ff', boxShadow: '0 0 8px #00d2ff' }} />
                   <span>AUTONOMOUS ENGINE TELEMETRY</span>
                 </div>
 
@@ -525,29 +649,57 @@ export default function LandingPage() {
                   <GlobeSection />
                 </div>
 
-                {/* Real-time Status Metric Boxes */}
+                {/* Real-time Status Metric Boxes with Multi-Color Neon Accents */}
                 <div className="countdown" style={{ margin: '8px 0 14px' }}>
-                  <div className="cd-box">
-                    <span className="cd-num" style={{ color: 'var(--hp-cyan)' }}>10K+</span>
-                    <span className="cd-label">CAPACITY</span>
+                  <div
+                    className="cd-box"
+                    style={{
+                      border: '1.5px solid rgba(0, 210, 255, 0.45)',
+                      background: 'rgba(0, 210, 255, 0.08)',
+                      boxShadow: '0 0 14px rgba(0, 210, 255, 0.2)',
+                    }}
+                  >
+                    <span className="cd-num" style={{ color: '#00d2ff', textShadow: '0 0 10px rgba(0, 210, 255, 0.4)' }}>5 SECTORS</span>
+                    <span className="cd-label">DOMAINS</span>
                   </div>
-                  <div className="cd-box">
-                    <span className="cd-num" style={{ color: 'var(--hp-blue)' }}>&lt;50ms</span>
-                    <span className="cd-label">LATENCY</span>
+                  <div
+                    className="cd-box"
+                    style={{
+                      border: '1.5px solid rgba(2, 132, 199, 0.45)',
+                      background: 'rgba(2, 132, 199, 0.08)',
+                      boxShadow: '0 0 14px rgba(2, 132, 199, 0.2)',
+                    }}
+                  >
+                    <span className="cd-num" style={{ color: '#38bdf8', textShadow: '0 0 10px rgba(56, 189, 248, 0.4)' }}>LIVE</span>
+                    <span className="cd-label">DISPATCH</span>
                   </div>
-                  <div className="cd-box">
-                    <span className="cd-num" style={{ color: 'var(--hp-amber)' }}>100%</span>
-                    <span className="cd-label">INTEGRITY</span>
+                  <div
+                    className="cd-box"
+                    style={{
+                      border: '1.5px solid rgba(245, 158, 11, 0.45)',
+                      background: 'rgba(245, 158, 11, 0.08)',
+                      boxShadow: '0 0 14px rgba(245, 158, 11, 0.2)',
+                    }}
+                  >
+                    <span className="cd-num" style={{ color: '#fbbf24', textShadow: '0 0 10px rgba(251, 191, 36, 0.4)' }}>SERVER</span>
+                    <span className="cd-label">AUTHORITATIVE</span>
                   </div>
-                  <div className="cd-box">
-                    <span className="cd-num" style={{ color: 'var(--hp-flame)' }}>0 LOST</span>
-                    <span className="cd-label">DATA LOSS</span>
+                  <div
+                    className="cd-box"
+                    style={{
+                      border: '1.5px solid rgba(16, 185, 129, 0.45)',
+                      background: 'rgba(16, 185, 129, 0.08)',
+                      boxShadow: '0 0 14px rgba(16, 185, 129, 0.2)',
+                    }}
+                  >
+                    <span className="cd-num" style={{ color: '#34d399', textShadow: '0 0 10px rgba(52, 211, 153, 0.4)' }}>BUFFERED</span>
+                    <span className="cd-label">OFFLINE SYNC</span>
                   </div>
                 </div>
 
                 <div className="cd-footer-status">
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                  <span>CORE DISPATCH ENGINE: ACTIVE &bull; 100% AUTHORITATIVE</span>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 6px #10b981' }} />
+                  <span>CORE DISPATCH ENGINE: ACTIVE &bull; SERVER-AUTHORITATIVE TIMING</span>
                 </div>
               </div>
             </motion.div>
@@ -555,7 +707,7 @@ export default function LandingPage() {
         </motion.header>
 
         {/* ─── 4. THREE CENTRALIZED ACCESS PORTALS ─── */}
-        <section style={{ position: 'relative', zIndex: 1, padding: '40px 0 60px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <section style={{ position: 'relative', zIndex: 1, padding: '40px 0 60px', width: '100%', display: 'flex', justifyContent: 'center' }} id="gates">
           <div className="wrap" style={{ margin: '0 auto', width: '100%' }}>
             <div className="sec-head-center">
               <span className="eyebrow">CENTRALIZED EVALUATION ACCESS</span>
@@ -582,104 +734,371 @@ export default function LandingPage() {
                   transition={{ duration: 0.5, delay: idx * 0.12, ease: [0.16, 1, 0.3, 1] }}
                   style={{ display: 'flex' }}
                 >
-                  <GlowCard
-                    glowColor={card.glowColor}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      background: 'var(--glass-bg)',
-                      border: `1.5px solid ${card.borderColor}`,
-                      borderRadius: 20,
-                      padding: '30px 24px',
-                      backdropFilter: 'blur(16px)',
-                      WebkitBackdropFilter: 'blur(16px)',
-                      boxShadow: 'var(--shadow-glass)',
-                      position: 'relative',
-                    }}
+                  <TiltCard
+                    perspective={950}
+                    sensitivity={24}
+                    glareEffect
+                    style={{ width: '100%', display: 'flex', borderRadius: 20 }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '4px 12px',
-                          borderRadius: 999,
-                          background: 'rgba(255, 255, 255, 0.08)',
-                          border: `1px solid ${card.borderColor}`,
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                          color: card.badgeColor,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.06em',
-                          fontFamily: 'var(--font-display)',
-                        }}
-                      >
-                        <span
-                          style={{
-                            width: 6,
-                            height: 6,
-                            borderRadius: '50%',
-                            background: card.badgeColor,
-                            boxShadow: `0 0 8px ${card.badgeColor}`,
-                          }}
-                        />
-                        {card.badge}
-                      </span>
-                      <span style={{ fontSize: '2.2rem' }}>{card.icon}</span>
-                    </div>
-
-                    <h3 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-pure)', margin: '0 0 10px 0', fontFamily: 'var(--font-heading)' }}>
-                      {card.title}
-                    </h3>
-
-                    <p style={{ fontSize: '0.92rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 24px 0', flex: 1 }}>
-                      {card.description}
-                    </p>
-
-                    <button
-                      onClick={() => navigate(card.path)}
+                    <GlowCard
+                      glowColor={card.glowColor}
                       style={{
                         width: '100%',
-                        padding: '12px 20px',
-                        background: card.btnGradient,
-                        color: '#FFFFFF',
-                        border: 'none',
-                        borderRadius: 12,
-                        fontSize: '0.95rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        boxShadow: '0 4px 14px rgba(0,0,0,0.25)',
-                        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                        fontFamily: 'var(--font-body)',
+                        flexDirection: 'column',
+                        background: 'var(--glass-bg)',
+                        border: `1.5px solid ${card.borderColor}`,
+                        borderRadius: 20,
+                        padding: '30px 24px',
+                        backdropFilter: 'blur(16px)',
+                        WebkitBackdropFilter: 'blur(16px)',
+                        boxShadow: `0 8px 32px rgba(0,0,0,0.25), 0 0 20px ${card.glowColor}`,
+                        position: 'relative',
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
                     >
-                      <span>{card.primaryActionText}</span>
-                      <span>&rarr;</span>
-                    </button>
-                  </GlowCard>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '4px 12px',
+                            borderRadius: 999,
+                            background: 'rgba(255, 255, 255, 0.08)',
+                            border: `1px solid ${card.borderColor}`,
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            color: card.badgeColor,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                            fontFamily: 'var(--font-display)',
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              background: card.badgeColor,
+                              boxShadow: `0 0 8px ${card.badgeColor}`,
+                            }}
+                          />
+                          {card.badge}
+                        </span>
+                        <span style={{ fontSize: '2.2rem' }}>{card.icon}</span>
+                      </div>
+
+                      <h3 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-pure)', margin: '0 0 10px 0', fontFamily: 'var(--font-heading)' }}>
+                        {card.title}
+                      </h3>
+
+                      <p style={{ fontSize: '0.92rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 24px 0', flex: 1 }}>
+                        {card.description}
+                      </p>
+
+                      <button
+                        onClick={() => navigate(card.path)}
+                        style={{
+                          width: '100%',
+                          padding: '12px 20px',
+                          background: card.btnGradient,
+                          color: '#FFFFFF',
+                          border: 'none',
+                          borderRadius: 12,
+                          fontSize: '0.95rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 8,
+                          boxShadow: '0 4px 14px rgba(0,0,0,0.25)',
+                          transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                          fontFamily: 'var(--font-body)',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+                      >
+                        <span>{card.primaryActionText}</span>
+                        <span>&rarr;</span>
+                      </button>
+                    </GlowCard>
+                  </TiltCard>
                 </motion.div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ─── 5. INFINITE MARQUEE TICKER — 5 TECHNICAL SECTORS & CORE DISCIPLINES ─── */}
+        {/* ─── 5. 3D INTERACTIVE SECTOR UNIVERSE (THE 5 AUTONOMOUS TECHNICAL SECTORS) ─── */}
+        <section
+          id="sectors-3d"
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            padding: '70px 0 60px',
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <div className="wrap" style={{ margin: '0 auto', width: '100%' }}>
+            {/* Header */}
+            <div className="sec-head-center">
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '6px 16px',
+                  borderRadius: 999,
+                  background: 'rgba(0, 210, 255, 0.1)',
+                  border: '1px solid rgba(0, 210, 255, 0.35)',
+                  color: '#00d2ff',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  marginBottom: 14,
+                }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#00d2ff', boxShadow: '0 0 10px #00d2ff' }} />
+                3D CURRICULUM ARCHITECTURE • 5 AUTONOMOUS TECHNICAL SECTORS
+              </div>
+              <h2 className="sec-title" style={{ fontSize: 'clamp(2rem, 3.8vw, 3.2rem)' }}>
+                The 5-Sector <span className="grad-text-multi">3D Knowledge Galaxy</span>
+              </h2>
+              <p className="sec-body" style={{ maxWidth: 760 }}>
+                Interactive 3D WebGL environment modeling all 5 core technical assessment sectors.
+                Orbiting crystal nodes map real-time curriculum domains, benchmark statistics, and interactive coding sprint launchers.
+              </p>
+            </div>
+
+            {/* 3D WebGL Canvas Component */}
+            <div style={{ position: 'relative', margin: '30px 0 40px', width: '100%' }}>
+              <Suspense
+                fallback={
+                  <div
+                    style={{
+                      width: '100%',
+                      height: 520,
+                      borderRadius: 24,
+                      background: 'radial-gradient(ellipse at 50% 30%, #0d1a38 0%, #050814 70%)',
+                      border: '1px solid rgba(0, 210, 255, 0.3)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 16,
+                      color: '#38bdf8',
+                    }}
+                  >
+                    <div style={{ width: 44, height: 44, border: '3px solid rgba(0,210,255,0.2)', borderTopColor: '#00d2ff', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem', letterSpacing: '0.06em' }}>
+                      INITIALIZING 3D SECTORS UNIVERSE...
+                    </span>
+                  </div>
+                }
+              >
+                <SectorsUniverse3D />
+              </Suspense>
+            </div>
+
+            {/* 5 Multi-Colored Sector Grid Cards */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: 20,
+                width: '100%',
+                marginTop: 20,
+              }}
+            >
+              {SECTORS_3D_LIST.map((sector) => (
+                <motion.div
+                  key={sector.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.45, delay: (sector.num - 1) * 0.08 }}
+                  whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                  style={{ display: 'flex' }}
+                >
+                  <div
+                    className="multi-glow-card"
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      padding: '24px 22px',
+                      border: `1.5px solid ${sector.color}55`,
+                      background: 'rgba(13, 21, 54, 0.85)',
+                      boxShadow: `0 8px 30px rgba(0, 0, 0, 0.45), 0 0 16px ${sector.glow}`,
+                      position: 'relative',
+                    }}
+                  >
+                    {/* Top Bar: Sector Code & Sets */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 800,
+                          letterSpacing: '0.08em',
+                          padding: '4px 10px',
+                          borderRadius: 8,
+                          background: `${sector.color}22`,
+                          border: `1px solid ${sector.color}60`,
+                          color: sector.color,
+                          fontFamily: 'var(--font-display)',
+                        }}
+                      >
+                        {sector.code} • SECTOR {sector.num}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>
+                        {sector.questionCount} Sets
+                      </span>
+                    </div>
+
+                    {/* Sector Title */}
+                    <h3
+                      style={{
+                        fontSize: '1.25rem',
+                        fontWeight: 800,
+                        color: '#ffffff',
+                        margin: '0 0 6px 0',
+                        fontFamily: 'var(--font-heading)',
+                      }}
+                    >
+                      {sector.title}
+                    </h3>
+
+                    {/* Tagline */}
+                    <div
+                      style={{
+                        fontSize: '0.82rem',
+                        color: sector.color,
+                        fontWeight: 700,
+                        marginBottom: 12,
+                        fontFamily: 'var(--font-display)',
+                      }}
+                    >
+                      {sector.tagline}
+                    </div>
+
+                    {/* Description */}
+                    <p style={{ fontSize: '0.86rem', color: '#94a3b8', lineHeight: 1.5, margin: '0 0 16px 0', flex: 1 }}>
+                      {sector.description}
+                    </p>
+
+                    {/* Subtopic Mastery Chips */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 18 }}>
+                      {sector.topics.slice(0, 3).map((topic, tIdx) => (
+                        <span
+                          key={tIdx}
+                          style={{
+                            fontSize: '0.72rem',
+                            padding: '2px 8px',
+                            borderRadius: 6,
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            color: '#e2e8f0',
+                          }}
+                        >
+                          {topic}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Benchmark Metrics Strip */}
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: 8,
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        background: 'rgba(0, 0, 0, 0.25)',
+                        border: '1px solid rgba(255, 255, 255, 0.07)',
+                        marginBottom: 16,
+                      }}
+                    >
+                      <div>
+                        <span style={{ fontSize: '0.68rem', color: '#64748b', textTransform: 'uppercase', display: 'block' }}>Target Benchmark</span>
+                        <span style={{ fontSize: '0.98rem', fontWeight: 800, color: sector.color }}>{sector.accuracy}</span>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', color: '#64748b', textTransform: 'uppercase', display: 'block' }}>Target Pace</span>
+                        <span style={{ fontSize: '0.98rem', fontWeight: 800, color: '#f8fafc' }}>{sector.avgTime}</span>
+                      </div>
+                    </div>
+
+                    {/* Interactive Launch Buttons */}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => navigate('/practice', { state: { selectedSectorId: sector.id } })}
+                        style={{
+                          flex: 1,
+                          padding: '10px 14px',
+                          borderRadius: 10,
+                          border: 'none',
+                          background: `linear-gradient(135deg, ${sector.color}, #0284c7)`,
+                          color: '#ffffff',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          boxShadow: `0 4px 14px ${sector.glow}`,
+                          transition: 'transform 0.15s ease',
+                          fontFamily: 'var(--font-body)',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+                      >
+                        <span>🚀 Practice Sector {sector.num}</span>
+                      </button>
+                      <button
+                        onClick={() => navigate('/enter-exam')}
+                        title="Take Full 5-Sector Assessment"
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: 10,
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          background: 'rgba(255, 255, 255, 0.06)',
+                          color: '#e2e8f0',
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <span>🔑 Exam</span>
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ─── 6. INFINITE MARQUEE TICKER — 5 TECHNICAL SECTORS & CORE DISCIPLINES ─── */}
         <section className="marquee-wrap">
           <div className="marquee-content">
-            {[...DOMAINS, ...DOMAINS].map((name, i) => (
-              <div key={i} className="marquee-item">
-                <span className="symbol">⚡</span>
-                <span>{name}</span>
-              </div>
-            ))}
+            {[...DOMAINS, ...DOMAINS].map((name, i) => {
+              const sectorColors = ['#f59e0b', '#8b5cf6', '#10b981', '#00d2ff', '#f43f5e'];
+              const col = sectorColors[i % sectorColors.length];
+              return (
+                <div key={i} className="marquee-item" style={{ borderLeft: `2px solid ${col}` }}>
+                  <span className="symbol" style={{ color: col }}>●</span>
+                  <span>{name}</span>
+                </div>
+              );
+            })}
           </div>
         </section>
 
@@ -699,16 +1118,21 @@ export default function LandingPage() {
                 <motion.div
                   key={i}
                   className="stat-card"
+                  style={{
+                    border: `1.5px solid ${stat.color}40`,
+                    boxShadow: `0 4px 20px rgba(0, 0, 0, 0.25), 0 0 16px ${stat.color}25`,
+                  }}
                   initial={{ opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1, duration: 0.5 }}
+                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
                 >
-                  <div className="num" style={{ color: stat.color }}>
+                  <div className="num" style={{ color: stat.color, textShadow: `0 0 12px ${stat.color}50` }}>
                     {stat.numStr}
                   </div>
                   <div className="lbl">{stat.label}</div>
-                  <div className="corner-accent">●</div>
+                  <div className="corner-accent" style={{ color: stat.color }}>●</div>
                 </motion.div>
               ))}
             </div>
@@ -716,21 +1140,24 @@ export default function LandingPage() {
             {/* Altimeter Dials Visual Showcase */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20, marginTop: 24 }}>
               {STATS.map((stat, i) => (
-                <div
+                <motion.div
                   key={i}
+                  whileHover={{ scale: 1.02, y: -4 }}
+                  transition={{ duration: 0.2 }}
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     background: 'var(--glass-bg)',
-                    border: '1px solid var(--panel-border)',
+                    border: `1.5px solid ${stat.color}45`,
                     borderRadius: 16,
                     padding: '24px 20px',
                     backdropFilter: 'blur(10px)',
+                    boxShadow: `0 8px 24px rgba(0, 0, 0, 0.25), 0 0 16px ${stat.color}20`,
                   }}
                 >
                   <AltimeterDial value={stat.value} label={stat.label} suffix={stat.suffix} color={stat.color} size={130} />
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -1014,12 +1441,31 @@ export default function LandingPage() {
                     <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981', marginBottom: 8, fontFamily: 'var(--font-heading)' }}>
                       Pilot Application Received!
                     </h3>
+                    {demoForm.referenceId && (
+                      <div
+                        style={{
+                          display: 'inline-block',
+                          padding: '6px 16px',
+                          borderRadius: 8,
+                          background: 'rgba(0, 180, 216, 0.12)',
+                          border: '1px solid rgba(0, 180, 216, 0.3)',
+                          color: 'var(--hp-cyan)',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          marginBottom: 16,
+                          letterSpacing: '0.04em',
+                        }}
+                      >
+                        REFERENCE ID: {demoForm.referenceId}
+                      </div>
+                    )}
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', maxWidth: 500, margin: '0 auto 20px auto' }}>
-                      Thank you, <strong>{demoForm.name}</strong>. Our engineering team will reach out to <strong>{demoForm.email}</strong> within 4 business hours to provision your dedicated institutional sandbox.
+                      Thank you, <strong>{demoForm.name}</strong>. Your campus pilot application has been recorded. Our engineering team will reach out to <strong>{demoForm.email}</strong> to provision your dedicated institutional sandbox.
                     </p>
                     <button
                       className="btn-hp btn-hp-ghost"
-                      onClick={() => setDemoForm((prev) => ({ ...prev, submitted: false }))}
+                      onClick={() => setDemoForm((prev) => ({ ...prev, submitted: false, referenceId: '', error: '' }))}
                       style={{ padding: '10px 20px', borderRadius: 10 }}
                     >
                       Submit Another Request
@@ -1027,6 +1473,25 @@ export default function LandingPage() {
                   </div>
                 ) : (
                   <form onSubmit={handleDemoSubmit}>
+                    {demoForm.error && (
+                      <div
+                        style={{
+                          padding: '12px 16px',
+                          marginBottom: 18,
+                          borderRadius: 10,
+                          background: 'rgba(239, 68, 68, 0.15)',
+                          border: '1px solid rgba(239, 68, 68, 0.4)',
+                          color: '#fca5a5',
+                          fontSize: '0.9rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                        }}
+                      >
+                        <span>⚠️</span>
+                        <span>{demoForm.error}</span>
+                      </div>
+                    )}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 18, marginBottom: 16 }}>
                       <div>
                         <label htmlFor="pilot-name" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-pure)', marginBottom: 6 }}>

@@ -17,21 +17,37 @@ export default function CosmicCanvas() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
     let animId: number;
+    let isPaused = false;
 
-    const particleCount = Math.min(window.innerWidth < 768 ? 35 : 70, 80);
+    // Adapt particle count to device capability and screen size
+    const isMobile = window.innerWidth < 768;
+    const isLowPower = typeof navigator !== 'undefined' && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
+    const particleCount = isMobile ? 22 : (isLowPower ? 35 : 65);
+    const filamentMaxDist = isMobile ? 80 : 105;
+
     const mouse: { x: number | null; y: number | null; radius: number } = {
       x: null,
       y: null,
-      radius: 120,
+      radius: isMobile ? 80 : 120,
     };
 
     const handleResize = () => {
       if (!canvas) return;
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
+    };
+
+    const handleVisibility = () => {
+      isPaused = document.hidden;
+      if (!isPaused) {
+        animId = requestAnimationFrame(animate);
+      }
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -45,6 +61,7 @@ export default function CosmicCanvas() {
     };
 
     window.addEventListener('resize', handleResize);
+    window.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseout', handleMouseOut);
 
@@ -110,20 +127,21 @@ export default function CosmicCanvas() {
     }
 
     const animate = () => {
+      if (isPaused) return;
       ctx.clearRect(0, 0, width, height);
 
-      // Connecting filaments
+      // Connecting filaments with adaptive distance
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x;
           const dy = particles[i].y - particles[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
-          if (dist < 110) {
+          if (dist < filamentMaxDist) {
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(0, 180, 216, ${0.12 * (1 - dist / 110)})`;
+            ctx.strokeStyle = `rgba(0, 180, 216, ${0.12 * (1 - dist / filamentMaxDist)})`;
             ctx.lineWidth = 0.8;
             ctx.stroke();
           }
@@ -143,6 +161,7 @@ export default function CosmicCanvas() {
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseout', handleMouseOut);
     };

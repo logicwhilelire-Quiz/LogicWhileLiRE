@@ -8,8 +8,18 @@
 -- ─── 0. EXTENSIONS ────────────────────────────────────────────────────────────
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-CREATE EXTENSION IF NOT EXISTS "hypopg";
-CREATE EXTENSION IF NOT EXISTS "index_advisor";
+
+-- Optional performance extensions (guarded so missing binaries won't abort schema creation)
+DO $$ BEGIN
+  CREATE EXTENSION IF NOT EXISTS "hypopg";
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE EXTENSION IF NOT EXISTS "index_advisor";
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
 
 -- ─── 1. CUSTOM ENUMS & TYPES ──────────────────────────────────────────────────
 DO $$ BEGIN
@@ -664,6 +674,23 @@ CREATE TABLE IF NOT EXISTS email_queue (
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ─── 26b. TABLE: pilot_inquiries (Institutional & Campus Pilot Applications) ──
+CREATE TABLE IF NOT EXISTS pilot_inquiries (
+  id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  reference_id        VARCHAR(64) UNIQUE NOT NULL,
+  name                VARCHAR(150) NOT NULL,
+  email               VARCHAR(255) NOT NULL,
+  institution         VARCHAR(255),
+  candidate_count     VARCHAR(100),
+  subject             VARCHAR(255),
+  message             TEXT NOT NULL,
+  ip_address          TEXT,
+  status              VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'contacted', 'sandbox_provisioned', 'archived')),
+  admin_notes         TEXT,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- ─── 27. COMPATIBILITY VIEWS (security_invoker = true) ──────────────────────────
 CREATE OR REPLACE VIEW candidates WITH (security_invoker = true) AS SELECT * FROM participants;
 CREATE OR REPLACE VIEW sessions WITH (security_invoker = true) AS SELECT * FROM exam_sessions;
@@ -738,7 +765,11 @@ CREATE INDEX IF NOT EXISTS idx_email_queue_retry ON email_queue(status, next_ret
 CREATE INDEX IF NOT EXISTS idx_audit_log_target ON audit_log(target_table, target_id);
 CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at DESC);
 
--- ─── 29. ROW LEVEL SECURITY (RLS) POLICIES ON ALL 26 TABLES ───────────────────
+CREATE INDEX IF NOT EXISTS idx_pilot_inquiries_ref ON pilot_inquiries(reference_id);
+CREATE INDEX IF NOT EXISTS idx_pilot_inquiries_email ON pilot_inquiries(email);
+CREATE INDEX IF NOT EXISTS idx_pilot_inquiries_status ON pilot_inquiries(status);
+
+-- ─── 29. ROW LEVEL SECURITY (RLS) POLICIES ON ALL 27 TABLES ───────────────────
 ALTER TABLE IF EXISTS academic_years ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS audit_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS batches ENABLE ROW LEVEL SECURITY;
@@ -752,6 +783,7 @@ ALTER TABLE IF EXISTS exam_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS exams ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS leaderboard ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS pilot_inquiries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS platform_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS proctor_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS questions ENABLE ROW LEVEL SECURITY;
@@ -782,6 +814,7 @@ DECLARE
     'exams',
     'leaderboard',
     'participants',
+    'pilot_inquiries',
     'platform_settings',
     'proctor_logs',
     'questions',

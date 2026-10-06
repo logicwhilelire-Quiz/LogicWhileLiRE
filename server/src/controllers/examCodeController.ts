@@ -394,7 +394,7 @@ export async function allocateQuestionPaper(req: Request, res: Response): Promis
   if (isNumeric) {
     examQuery = examQuery.eq('id', Number(id));
   } else {
-    examQuery = examQuery.or(`exam_code.eq.${id},code.eq.${id}`);
+    examQuery = examQuery.eq('exam_code', id);
   }
   const { data: existingExam } = await examQuery.maybeSingle();
 
@@ -457,7 +457,7 @@ export async function lockQuestionPaper(req: Request, res: Response): Promise<vo
   if (isNumeric) {
     examQuery = examQuery.eq('id', Number(id));
   } else {
-    examQuery = examQuery.or(`exam_code.eq.${id},code.eq.${id}`);
+    examQuery = examQuery.eq('exam_code', id);
   }
   const { data: existingExam } = await examQuery.maybeSingle();
 
@@ -514,7 +514,7 @@ export async function replaceQuestionPaper(req: Request, res: Response): Promise
   if (isNumeric) {
     examQuery = examQuery.eq('id', Number(id));
   } else {
-    examQuery = examQuery.or(`exam_code.eq.${id},code.eq.${id}`);
+    examQuery = examQuery.eq('exam_code', id);
   }
   const { data: ec } = await examQuery.maybeSingle();
 

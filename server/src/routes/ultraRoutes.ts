@@ -583,7 +583,7 @@ router.get('/exam-code/:code/start', async (req: Request, res: Response) => {
     let { data: exam } = await supabase
       .from('exam_codes')
       .select('*')
-      .or(`code.eq.${code},exam_code.eq.${code}`)
+      .eq('exam_code', code)
       .maybeSingle();
 
     if (!exam) {

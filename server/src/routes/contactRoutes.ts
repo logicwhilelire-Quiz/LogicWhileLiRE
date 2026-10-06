@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { supabase } from '../db/supabase';
 import { emailQueue } from '../services/emailQueue';
 import { dailyEmailQuota } from '../services/emailService';
 import { contactRateLimit } from '../middleware/rateLimiter';
@@ -7,7 +8,8 @@ const router = Router();
 
 /**
  * POST /api/contact
- * Handles contact form submissions, dispatches non-blocking auto-reply to candidate and admin notification
+ * Handles contact form submissions, stores in Supabase pilot_inquiries,
+ * dispatches non-blocking auto-reply to candidate and admin notification
  */
 router.post('/', contactRateLimit, async (req: Request, res: Response): Promise<void> => {
   try {
@@ -39,6 +41,35 @@ router.post('/', contactRateLimit, async (req: Request, res: Response): Promise<
     const trimmedCandidateCount = candidateCount && typeof candidateCount === 'string' ? candidateCount.trim() : undefined;
 
     const referenceId = `REF-${Date.now().toString().slice(-6)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+
+    // Persist to Supabase database so submissions survive Render deploys
+    try {
+      const { error: dbError } = await supabase.from('pilot_inquiries').insert({
+        reference_id: referenceId,
+        name: trimmedName,
+        email: trimmedEmail,
+        institution: trimmedInstitution || 'Not Specified',
+        candidate_count: trimmedCandidateCount || 'Not Specified',
+        subject: finalSubject,
+        message: trimmedMessage,
+        ip_address: req.ip || null,
+        status: 'pending',
+      });
+      if (dbError) {
+        console.warn('⚠️ [Contact] Notice: DB insert warning (pilot_inquiries):', dbError.message);
+      }
+    } catch (dbErr: any) {
+      console.warn('⚠️ [Contact] Notice: DB write exception:', dbErr?.message || dbErr);
+    }
+
+    console.log('📬 [Pilot Form Submitted]', {
+      referenceId,
+      name: trimmedName,
+      email: trimmedEmail,
+      institution: trimmedInstitution || 'Not Specified',
+      candidateCount: trimmedCandidateCount || 'Not Specified',
+      subject: finalSubject,
+    });
 
     // 1. Asynchronously enqueue auto-reply to the user (non-blocking)
     emailQueue.enqueueContactAutoReply({

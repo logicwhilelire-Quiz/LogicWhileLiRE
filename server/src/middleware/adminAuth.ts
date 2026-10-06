@@ -333,11 +333,16 @@ export function requireExamOwnership(paramKey: 'examId' | 'id' | 'sessionId' = '
 
     let examRecord: any = exam;
     if (!examRecord) {
-      const { data: ec } = await supabase
+      const isNumeric = /^\d+$/.test(String(examId));
+      let ecQuery = supabase
         .from('exam_codes')
-        .select('id, created_by_staff_id, assigned_faculty_id, college_id, section_id')
-        .or(`id.eq.${examId},exam_code.eq.${examId},code.eq.${examId}`)
-        .maybeSingle();
+        .select('id, created_by_staff_id, assigned_faculty_id, college_id, section_id');
+      if (isNumeric) {
+        ecQuery = ecQuery.or(`id.eq.${examId},exam_code.eq.${examId}`);
+      } else {
+        ecQuery = ecQuery.eq('exam_code', examId);
+      }
+      const { data: ec } = await ecQuery.maybeSingle();
       examRecord = ec;
     }
 

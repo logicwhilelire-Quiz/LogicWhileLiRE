@@ -53,15 +53,16 @@ export default function SiteHeader() {
   const navLinks = isLoggedIn
     ? [
         { label: 'Home', to: '/' },
+        { label: '5 Sectors 3D', to: '/practice' },
         { label: 'My Dashboard', to: '/student/dashboard' },
-        { label: '5 Technical Sectors', to: '/practice' },
         { label: 'Enter Exam', to: '/enter-exam' },
       ]
     : [
         { label: 'Home', to: '/' },
+        { label: '5 Sectors 3D', to: '/practice' },
         { label: 'Candidate Gate', to: '/gate' },
-        { label: 'Student Login', to: '/login' },
-        { label: 'Admin Portal', to: '/admin' },
+        { label: 'Enter Exam', to: '/enter-exam' },
+        { label: 'Admin', to: '/admin' },
       ];
 
   return (

@@ -36,9 +36,13 @@ export function useLeaderboard(examId: string) {
     }
   }, [examId]);
 
-  // Initial fetch
+  // Initial fetch and automatic polling fallback (every 15s) to guarantee freshness regardless of RLS CDC policies
   useEffect(() => {
     refresh();
+    const interval = setInterval(() => {
+      refresh();
+    }, 15000);
+    return () => clearInterval(interval);
   }, [refresh]);
 
   // Supabase Realtime — subscribe to results table inserts for live updates

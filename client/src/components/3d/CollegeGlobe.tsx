@@ -258,12 +258,13 @@ function Globe() {
 }
 
 export default function CollegeGlobe({ className = 'w-[400px] h-[400px]' }: { className?: string; [key: string]: any }) {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   return (
     <div className={className} style={{ width: 400, height: 400, margin: '0 auto', maxWidth: '100%' }}>
       <Canvas
         camera={{ position: [0, 0, 3.2], fov: 45 }}
-        dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: true }}
+        dpr={isMobile ? [1, 1] : [1, 1.5]}
+        gl={{ antialias: !isMobile, alpha: true, powerPreference: 'low-power' }}
       >
         <ambientLight intensity={0.9} />
         <pointLight position={[5, 5, 5]} intensity={1.8} />

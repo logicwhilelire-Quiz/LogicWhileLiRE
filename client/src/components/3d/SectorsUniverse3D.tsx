@@ -127,6 +127,11 @@ export default function SectorsUniverse3D({ onSelectSector, className = '' }: Se
   const activeSectorIndexRef = useRef<number>(0);
   activeSectorIndexRef.current = SECTORS_3D_LIST.findIndex((s) => s.id === selectedSector.id);
 
+  const autoRotateRef = useRef<boolean>(true);
+  useEffect(() => {
+    autoRotateRef.current = autoRotate;
+  }, [autoRotate]);
+
   useEffect(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
@@ -134,6 +139,16 @@ export default function SectorsUniverse3D({ onSelectSector, className = '' }: Se
 
     let width = container.clientWidth || 800;
     let height = container.clientHeight || 550;
+
+    // Check reduced motion preference
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      autoRotateRef.current = false;
+      setAutoRotate(false);
+    }
 
     // --- THREE.JS SETUP ---
     const scene = new THREE.Scene();
@@ -350,17 +365,26 @@ export default function SectorsUniverse3D({ onSelectSector, className = '' }: Se
       }
     };
 
-    canvas.addEventListener('mousemove', onPointerMove);
-    canvas.addEventListener('click', onPointerDown);
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerdown', onPointerDown);
 
     // --- ANIMATION LOOP ---
     let reqId = 0;
     let orbitClock = 0;
+    let isTabVisible = true;
+
+    const onVisibilityChange = () => {
+      isTabVisible = document.visibilityState === 'visible';
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     const renderLoop = () => {
       reqId = requestAnimationFrame(renderLoop);
+      if (!isTabVisible) return;
 
-      orbitClock += 0.007;
+      if (autoRotateRef.current) {
+        orbitClock += 0.007;
+      }
 
       // Central core pulse & spin
       coreMesh.rotation.x += 0.006;
@@ -431,8 +455,9 @@ export default function SectorsUniverse3D({ onSelectSector, className = '' }: Se
     return () => {
       cancelAnimationFrame(reqId);
       window.removeEventListener('resize', handleResize);
-      canvas.removeEventListener('mousemove', onPointerMove);
-      canvas.removeEventListener('click', onPointerDown);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerdown', onPointerDown);
 
       // Disposal
       coreGeom.dispose();
@@ -709,13 +734,13 @@ export default function SectorsUniverse3D({ onSelectSector, className = '' }: Se
             {/* Micro Metrics Strip */}
             <div style={{ display: 'flex', gap: 20 }}>
               <div>
-                <span style={{ fontSize: '0.7rem', color: '#64748B', textTransform: 'uppercase' }}>Target Accuracy</span>
+                <span style={{ fontSize: '0.7rem', color: '#64748B', textTransform: 'uppercase' }}>Target Benchmark (Sample)</span>
                 <div style={{ fontSize: '1.15rem', fontWeight: 800, color: selectedSector.color }}>
                   {selectedSector.accuracy}
                 </div>
               </div>
               <div>
-                <span style={{ fontSize: '0.7rem', color: '#64748B', textTransform: 'uppercase' }}>Avg Pace</span>
+                <span style={{ fontSize: '0.7rem', color: '#64748B', textTransform: 'uppercase' }}>Target Velocity</span>
                 <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#F8FAFC' }}>
                   {selectedSector.avgTime}
                 </div>
