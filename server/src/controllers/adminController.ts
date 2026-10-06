@@ -284,7 +284,9 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  if (roleRequires2FA && !staffRecord.totp_enabled && process.env.NODE_ENV === 'production' && process.env.DEMO_MODE !== 'true') {
+  const is2faActive = Boolean(staffRecord.is_2fa_enabled ?? staffRecord.totp_enabled);
+
+  if (roleRequires2FA && !is2faActive && process.env.NODE_ENV === 'production' && process.env.DEMO_MODE !== 'true') {
     // First login after account creation in production — prompt 2FA enrollment flow
     // Issue a short-lived enrollment token (no access granted yet)
     const enrollToken = jwt.sign(
@@ -312,7 +314,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  if (roleRequires2FA && staffRecord.totp_enabled && staffRecord.totp_secret) {
+  if (roleRequires2FA && is2faActive && staffRecord.totp_secret) {
     const totpCode = req.body.totp_code;
     if (!totpCode) {
       res.status(200).json({
@@ -344,7 +346,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
         return;
       }
     }
-  } else if (staffRecord.totp_enabled && staffRecord.totp_secret) {
+  } else if (is2faActive && staffRecord.totp_secret) {
     // Non-mandatory roles that voluntarily have 2FA
     const totpCode = req.body.totp_code;
     if (!totpCode) {
@@ -427,7 +429,8 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       role: staffRecord.role,
       college_id: staffRecord.college_id || null,
       must_change_password: Boolean(staffRecord.must_change_password),
-      totp_enabled: Boolean(staffRecord.totp_enabled),
+      totp_enabled: is2faActive,
+      is_2fa_enabled: is2faActive,
     },
   });
 }
@@ -1543,7 +1546,7 @@ export async function createStaff(req: Request, res: Response): Promise<void> {
       failed_attempts: 0,
       locked_until: null,
       must_change_password: true,
-      totp_enabled: false,
+      is_2fa_enabled: false,
       is_active: true,
       created_at: new Date().toISOString(),
     })

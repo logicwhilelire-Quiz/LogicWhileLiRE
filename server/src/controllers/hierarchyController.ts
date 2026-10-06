@@ -1627,7 +1627,7 @@ export async function verifyAndEnable2fa(req: Request, res: Response): Promise<v
     .from('staff')
     .update({
       totp_secret: encryptedSecret,
-      totp_enabled: true,
+      is_2fa_enabled: true,
       two_factor_backup_codes: backupCodes.hashed,
     })
     .eq('id', admin.staff_id);
@@ -1692,7 +1692,7 @@ export async function disable2fa(req: Request, res: Response): Promise<void> {
     .from('staff')
     .update({
       totp_secret: null,
-      totp_enabled: false,
+      is_2fa_enabled: false,
     })
     .eq('id', admin.staff_id);
 
