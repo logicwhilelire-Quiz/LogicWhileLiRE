@@ -19,6 +19,5 @@
   </g>
 
   <!-- Subtitle & Credit -->
-  <text x="600" y="500" text-anchor="middle" font-family="'Inter', -apple-system, sans-serif" font-size="22" font-weight="600" fill="#94A3B8" letter-spacing="0.05em">Autonomous AI Proctoring • Server-Authoritative Timing • Real-Time Analytics</text>
-  <text x="600" y="545" text-anchor="middle" font-family="'Inter', -apple-system, sans-serif" font-size="18" font-weight="500" fill="#64748B">Developed by R. Charan Sai</text>
+  <text x="600" y="545" text-anchor="middle" font-family="'Inter', -apple-system, sans-serif" font-size="18" font-weight="500" fill="#64748B">Elevating Coding Knowledge</text>
 </svg>

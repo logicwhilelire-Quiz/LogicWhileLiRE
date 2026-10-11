@@ -94,7 +94,7 @@ export default function IcosahedronHero({
           const pB = projected[b];
           const avgZ = (pA.z + pB.z) / 2;
           const alpha = Math.max(0.1, Math.min(0.8, 0.4 - avgZ * 0.002));
-          ctx.strokeStyle = `rgba(108, 92, 231, ${alpha})`;
+          ctx.strokeStyle = `rgba(0, 210, 255, ${alpha})`;
           ctx.beginPath();
           ctx.moveTo(pA.px, pA.py);
           ctx.lineTo(pB.px, pB.py);
@@ -106,9 +106,9 @@ export default function IcosahedronHero({
       projected.forEach(p => {
         ctx.beginPath();
         ctx.arc(p.px, p.py, 3.2, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(108, 92, 231, ${0.4 + p.scale * 0.6})`;
+        ctx.fillStyle = `rgba(0, 210, 255, ${0.4 + p.scale * 0.6})`;
         ctx.shadowBlur = 16;
-        ctx.shadowColor = '#6C5CE7';
+        ctx.shadowColor = '#00d2ff';
         ctx.fill();
         ctx.shadowBlur = 0;
       });

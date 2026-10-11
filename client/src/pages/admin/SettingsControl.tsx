@@ -94,7 +94,7 @@ export default function SettingsControl() {
       if (saved) return JSON.parse(saved);
     } catch {}
     return {
-      platformName: 'Logic Whi1e LiRE',
+      platformName: 'LogicWhileLiRE',
       tagline: 'Elevating Coding Knowledge',
       engineBrand: 'Li: Live • R: Real • E: Engine',
       institutionName: 'Aerospace Engineering & Tech Partner',
@@ -102,7 +102,7 @@ export default function SettingsControl() {
       electricBlue: '#2B7FFF',
       midnightNavy: '#050814',
       maintenanceMode: false,
-      maintenanceMsg: 'Logic Whi1e LiRE portal is undergoing scheduled administrative maintenance.',
+      maintenanceMsg: 'LogicWhileLiRE portal is undergoing scheduled administrative maintenance.',
     };
   });
 
@@ -120,6 +120,20 @@ export default function SettingsControl() {
       strictFullscreenLock: true,
       mandatoryWebcamMonitoring: true,
       showLeaderboardAfterExam: true,
+    };
+  });
+
+  // OTP & Login Mail Dispatch Texts (Admin Controlled)
+  const [emailTemplates, setEmailTemplates] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lw_email_templates');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      otpSubject: 'LogicWhile LiRE Verification Code',
+      otpBody: 'Your LogicWhile LiRE verification code is: {{OTP}}\n\nThis one-time passcode is valid for 10 minutes. Please do not share this code with anyone.',
+      loginSubject: 'LogicWhile LiRE - Candidate Portal Credentials',
+      loginBody: 'Dear {{NAME}},\n\nYour institutional candidate account for LogicWhile LiRE has been authorized.\n\nHall Ticket: {{HALL_TICKET}}\nTemporary Password: {{PASSWORD}}\nExam Portal URL: {{PORTAL_URL}}\n\nPlease sign in and verify your section details before your exam slot.',
     };
   });
 
@@ -154,7 +168,7 @@ export default function SettingsControl() {
 
   // Audit Logs
   const [auditLogs] = useState([
-    { id: 'aud-1', admin: 'R. Charan Sai', action: 'UPDATE_BRANDING', target: 'Branding: Logic Whi1e LiRE', time: '2026-10-04 11:25:12' },
+    { id: 'aud-1', admin: 'R. Charan Sai', action: 'UPDATE_BRANDING', target: 'Branding: LogicWhileLiRE', time: '2026-10-04 11:25:12' },
     { id: 'aud-2', admin: 'R. Charan Sai', action: 'PORTAL_RULES_SYNC', target: 'Enforce Student Login to Enter Exam', time: '2026-10-04 11:32:00' },
     { id: 'aud-3', admin: 'R. Charan Sai', action: 'SECTOR_MATRIX_ADJUST', target: '5 Sectors: 20% Uniform Distribution', time: '2026-10-04 11:38:45' },
     { id: 'aud-4', admin: 'R. Charan Sai', action: 'PROCTOR_POLICY_UPDATE', target: 'Anti-Tab Switch Limit = 3', time: '2026-10-04 11:42:10' },
@@ -165,10 +179,11 @@ export default function SettingsControl() {
     try {
       localStorage.setItem('lw_platform_settings', JSON.stringify(platform));
       localStorage.setItem('lw_portal_rules', JSON.stringify(portalRules));
+      localStorage.setItem('lw_email_templates', JSON.stringify(emailTemplates));
       localStorage.setItem('lw_sectors_settings', JSON.stringify(sectors));
       localStorage.setItem('lw_engine_settings', JSON.stringify(engine));
     } catch {}
-    setSavedMsg('✅ All administrative platform options, 5-sector matrix, proctoring rules, and branding successfully persisted!');
+    setSavedMsg('✅ All administrative platform options, OTP & login mail templates, 5-sector matrix, proctoring rules, and branding successfully persisted!');
     setTimeout(() => setSavedMsg(''), 4000);
   };
 
@@ -544,7 +559,89 @@ export default function SettingsControl() {
             </div>
           </div>
 
-          {/* Section 4: Automated Database Backups & Google Drive Cloud Disaster Recovery */}
+          {/* Section 4: Admin-Controlled OTP & Login Mail Notification Templates */}
+          <div className="card" style={{ padding: '24px 28px', borderRadius: 12, border: '1px solid var(--color-border)', background: 'rgba(11, 18, 38, 0.7)', marginBottom: 32 }}>
+            <div style={{ marginBottom: 20 }}>
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#FFFFFF', margin: '0 0 6px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>✉️</span> Admin-Controlled OTP &amp; Candidate Login Email Templates
+              </h2>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem', margin: 0 }}>
+                Configure the authoritative text dispatched to candidates for authentication OTPs and official credentials issuance.
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
+              {/* OTP Dispatch Configuration */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '18px', borderRadius: 8, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#38BDF8' }}>
+                    🔑 Authentication OTP Email
+                  </span>
+                  <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Triggered on Login / Verification</span>
+                </div>
+
+                <div>
+                  <label className="form-label">Email Subject</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={emailTemplates.otpSubject}
+                    onChange={(e) => setEmailTemplates({ ...emailTemplates, otpSubject: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Email Message Body</label>
+                  <textarea
+                    className="form-input"
+                    rows={5}
+                    value={emailTemplates.otpBody}
+                    onChange={(e) => setEmailTemplates({ ...emailTemplates, otpBody: e.target.value })}
+                    style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '0.82rem' }}
+                  />
+                  <div style={{ fontSize: '0.74rem', color: '#94A3B8', marginTop: 4 }}>
+                    Supported Token: <code style={{ color: '#FFC200' }}>{`{{OTP}}`}</code>
+                  </div>
+                </div>
+              </div>
+
+              {/* Login Welcome & Credentials Configuration */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '18px', borderRadius: 8, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10B981' }}>
+                    🎓 Candidate Credentials Welcome Email
+                  </span>
+                  <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Triggered on Roster / Registration Approval</span>
+                </div>
+
+                <div>
+                  <label className="form-label">Email Subject</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={emailTemplates.loginSubject}
+                    onChange={(e) => setEmailTemplates({ ...emailTemplates, loginSubject: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Email Message Body</label>
+                  <textarea
+                    className="form-input"
+                    rows={5}
+                    value={emailTemplates.loginBody}
+                    onChange={(e) => setEmailTemplates({ ...emailTemplates, loginBody: e.target.value })}
+                    style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '0.82rem' }}
+                  />
+                  <div style={{ fontSize: '0.74rem', color: '#94A3B8', marginTop: 4 }}>
+                    Supported Tokens: <code style={{ color: '#FFC200' }}>{`{{NAME}}`}</code>, <code style={{ color: '#FFC200' }}>{`{{HALL_TICKET}}`}</code>, <code style={{ color: '#FFC200' }}>{`{{PASSWORD}}`}</code>, <code style={{ color: '#FFC200' }}>{`{{PORTAL_URL}}`}</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 5: Automated Database Backups & Google Drive Cloud Disaster Recovery */}
           <div className="card" style={{ padding: '24px 28px', borderRadius: 12, border: '1px solid var(--color-border)', background: 'rgba(11, 18, 38, 0.7)', marginBottom: 32 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
               <div>

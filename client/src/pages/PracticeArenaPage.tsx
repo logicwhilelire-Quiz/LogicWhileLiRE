@@ -42,8 +42,9 @@ const SECTOR_CATEGORIES = [
 ];
 
 const DAILY_CHALLENGES: Challenge[] = [
+  // ── SECTOR 1: QUANTITATIVE APTITUDE & VELOCITY ──
   {
-    id: 'ch-quant',
+    id: 'ch-quant-1',
     title: 'Velocity Equations: Fuel Burn Vector',
     difficulty: 'Easy',
     xp: 100,
@@ -72,14 +73,81 @@ if __name__ == '__main__':
     ],
   },
   {
-    id: 'ch-logic',
+    id: 'ch-quant-2',
+    title: 'Orbital Synchronizer: Clock Angle Invariant',
+    difficulty: 'Medium',
+    xp: 140,
+    topic: 'Quantitative Aptitude (Angular Velocity & Geometry)',
+    sectorId: 'sector-quant',
+    sectorName: 'Quantitative Aptitude & Velocity',
+    sectorBadge: '📐 Sector 1 · Set B',
+    sectorColor: '#F59E0B',
+    description: `Calculate the acute angle (in degrees, rounded to the nearest integer) between the hour hand and minute hand of an analog celestial chronometer for a given time H hours and M minutes (12-hour format).\n\nInput:\nH M\n\nExample:\nInput:\n3 30\nOutput:\n75`,
+    starterCode: `import sys
+
+def clock_angle():
+    data = sys.stdin.read().split()
+    if len(data) < 2:
+        return
+    h, m = int(data[0]), int(data[1])
+    # Hour angle: 30*h + 0.5*m, Minute angle: 6*m
+    h_angle = (h % 12) * 30 + m * 0.5
+    m_angle = m * 6
+    diff = abs(h_angle - m_angle)
+    angle = min(diff, 360 - diff)
+    print(round(angle))
+
+if __name__ == '__main__':
+    clock_angle()
+`,
+    testCases: [
+      { id: '1', input_text: '3 30', expected_output: '75', is_hidden: false, marks: 50 },
+      { id: '2', input_text: '12 0', expected_output: '0', is_hidden: false, marks: 30 },
+      { id: '3', input_text: '9 0', expected_output: '90', is_hidden: true, marks: 20 },
+    ],
+  },
+  {
+    id: 'ch-quant-3',
+    title: 'Probabilistic Combinatorics: Packet Loss Resilience',
+    difficulty: 'Hard',
+    xp: 180,
+    topic: 'Quantitative Aptitude (Permutations & Probability)',
+    sectorId: 'sector-quant',
+    sectorName: 'Quantitative Aptitude & Velocity',
+    sectorBadge: '📐 Sector 1 · Set C',
+    sectorColor: '#F59E0B',
+    description: `Given N redundant transmission packets where at least K packets must arrive safely for message reconstruction. If each packet arrives independently with probability 1/2, compute the number of successful combinations out of the 2^N possible transmission outcomes.\n\nInput:\nN K\n\nExample:\nInput:\n4 3\nOutput:\n5`,
+    starterCode: `import sys
+import math
+
+def packet_comb():
+    data = sys.stdin.read().split()
+    if len(data) < 2:
+        return
+    n, k = int(data[0]), int(data[1])
+    total = sum(math.comb(n, i) for i in range(k, n + 1))
+    print(total)
+
+if __name__ == '__main__':
+    packet_comb()
+`,
+    testCases: [
+      { id: '1', input_text: '4 3', expected_output: '5', is_hidden: false, marks: 50 },
+      { id: '2', input_text: '5 5', expected_output: '1', is_hidden: false, marks: 30 },
+      { id: '3', input_text: '6 4', expected_output: '22', is_hidden: true, marks: 20 },
+    ],
+  },
+
+  // ── SECTOR 2: LOGICAL REASONING & DEDUCTION ──
+  {
+    id: 'ch-logic-1',
     title: 'LogicWhile Cipher: Deductive Invariant Decryptor',
     difficulty: 'Easy',
     xp: 110,
     topic: 'Logical Reasoning (Pattern Decoders)',
     sectorId: 'sector-logic',
     sectorName: 'Logical Reasoning & Deduction',
-    sectorBadge: '🧩 Sector 2 · Set B',
+    sectorBadge: '🧩 Sector 2 · Set A',
     sectorColor: '#8B5CF6',
     description: `The LogicWhileLiRE platform encodes transmission packets by shifting uppercase letters by +1 then +2 alternately (A->B, B->D). Write a program that takes an encrypted uppercase string from stdin and prints the deciphered word.\n\nExample:\nInput:\nMQHKE\nOutput:\nLOGIC`,
     starterCode: `import sys
@@ -105,14 +173,95 @@ if __name__ == '__main__':
     ],
   },
   {
-    id: 'ch-corecs',
+    id: 'ch-logic-2',
+    title: 'Circular Seating Matrix: Opposite Invariant Resolver',
+    difficulty: 'Medium',
+    xp: 150,
+    topic: 'Logical Reasoning (Constraint Networks & Seating)',
+    sectorId: 'sector-logic',
+    sectorName: 'Logical Reasoning & Deduction',
+    sectorBadge: '🧩 Sector 2 · Set B',
+    sectorColor: '#8B5CF6',
+    description: `N persons (even integer, N >= 4) sit uniformly around a circular console numbered 1 to N clockwise. Given person X, determine who sits diametrically opposite to person X.\n\nInput:\nN X\n\nExample:\nInput:\n8 3\nOutput:\n7`,
+    starterCode: `import sys
+
+def opposite_person():
+    data = sys.stdin.read().split()
+    if len(data) < 2:
+        return
+    n, x = int(data[0]), int(data[1])
+    half = n // 2
+    opp = ((x - 1 + half) % n) + 1
+    print(opp)
+
+if __name__ == '__main__':
+    opposite_person()
+`,
+    testCases: [
+      { id: '1', input_text: '8 3', expected_output: '7', is_hidden: false, marks: 50 },
+      { id: '2', input_text: '6 1', expected_output: '4', is_hidden: false, marks: 30 },
+      { id: '3', input_text: '10 8', expected_output: '3', is_hidden: true, marks: 20 },
+    ],
+  },
+  {
+    id: 'ch-logic-3',
+    title: 'Syllogistic Deductive Engine: Boolean Truth Matrix',
+    difficulty: 'Hard',
+    xp: 190,
+    topic: 'Logical Reasoning (Syllogisms & Constraint Networks)',
+    sectorId: 'sector-logic',
+    sectorName: 'Logical Reasoning & Deduction',
+    sectorBadge: '🧩 Sector 2 · Set C',
+    sectorColor: '#8B5CF6',
+    description: `Given N deductive premise implications of format "A->B" and a query "X->Y", output "VALID" if X implies Y by transitive syllogism, otherwise output "INVALID".\n\nInput:\nLine 1: N\nNext N lines: Pairs of characters separated by space representing A B (A implies B)\nLine N+2: Query X Y\n\nExample:\nInput:\n2\nA B\nB C\nA C\nOutput:\nVALID`,
+    starterCode: `import sys
+from collections import defaultdict, deque
+
+def syllogism_eval():
+    lines = sys.stdin.read().splitlines()
+    if not lines:
+        return
+    n = int(lines[0].strip())
+    adj = defaultdict(list)
+    for i in range(1, n + 1):
+        u, v = lines[i].split()
+        adj[u].append(v)
+    q_start, q_end = lines[n + 1].split()
+    
+    # BFS reachability
+    visited = set()
+    queue = deque([q_start])
+    while queue:
+        curr = queue.popleft()
+        if curr == q_end:
+            print("VALID")
+            return
+        for neighbor in adj[curr]:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(neighbor)
+    print("INVALID")
+
+if __name__ == '__main__':
+    syllogism_eval()
+`,
+    testCases: [
+      { id: '1', input_text: '2\nA B\nB C\nA C', expected_output: 'VALID', is_hidden: false, marks: 50 },
+      { id: '2', input_text: '2\nA B\nC D\nA D', expected_output: 'INVALID', is_hidden: false, marks: 30 },
+      { id: '3', input_text: '3\nP Q\nQ R\nR S\nP S', expected_output: 'VALID', is_hidden: true, marks: 20 },
+    ],
+  },
+
+  // ── SECTOR 3: CORE COMPUTER SCIENCE SYSTEMS ──
+  {
+    id: 'ch-corecs-1',
     title: 'Operating Systems: FIFO Page Faults',
     difficulty: 'Medium',
     xp: 140,
     topic: 'Operating Systems (Virtual Memory)',
     sectorId: 'sector-core-cs',
     sectorName: 'Core Computer Science Systems',
-    sectorBadge: '💻 Sector 3 · Set C',
+    sectorBadge: '💻 Sector 3 · Set A',
     sectorColor: '#10B981',
     description: `Given a page reference string and number of physical memory frames K, compute the total number of page faults using the FIFO page replacement algorithm.\n\nInput:\nLine 1: Integer K (frame capacity)\nLine 2: Space-separated page requests\n\nExample:\nInput:\n3\n7 0 1 2 0 3 0 4 2 3 0 3 2\nOutput:\n12`,
     starterCode: `import sys
@@ -143,14 +292,95 @@ if __name__ == '__main__':
     ],
   },
   {
-    id: 'ch-dsa',
-    title: 'Flight Envelope: Maximum Peak Velocity',
+    id: 'ch-corecs-2',
+    title: 'Concurrency & Deadlock: Banker\'s Safety Verifier',
+    difficulty: 'Hard',
+    xp: 180,
+    topic: 'Operating Systems (Deadlock Avoidance)',
+    sectorId: 'sector-core-cs',
+    sectorName: 'Core Computer Science Systems',
+    sectorBadge: '💻 Sector 3 · Set B',
+    sectorColor: '#10B981',
+    description: `Given 1 resource type with Available units A, and N processes with Current Allocation and Maximum Need, determine if the system is in a SAFE state. Output SAFE or UNSAFE.\n\nInput:\nLine 1: Available A\nLine 2: N (number of processes)\nLine 3: N space-separated allocated integers\nLine 4: N space-separated max need integers\n\nExample:\nInput:\n3\n3\n1 2 3\n3 4 5\nOutput:\nSAFE`,
+    starterCode: `import sys
+
+def bankers_safety():
+    lines = sys.stdin.read().splitlines()
+    if len(lines) < 4:
+        return
+    avail = int(lines[0].strip())
+    n = int(lines[1].strip())
+    alloc = [int(x) for x in lines[2].split()]
+    max_need = [int(x) for x in lines[3].split()]
+    need = [max_need[i] - alloc[i] for i in range(n)]
+    
+    finished = [False] * n
+    work = avail
+    
+    for _ in range(n):
+        found = False
+        for i in range(n):
+            if not finished[i] and need[i] <= work:
+                work += alloc[i]
+                finished[i] = True
+                found = True
+                break
+        if not found:
+            break
+            
+    print("SAFE" if all(finished) else "UNSAFE")
+
+if __name__ == '__main__':
+    bankers_safety()
+`,
+    testCases: [
+      { id: '1', input_text: '3\n3\n1 2 3\n3 4 5', expected_output: 'SAFE', is_hidden: false, marks: 50 },
+      { id: '2', input_text: '1\n2\n2 2\n5 5', expected_output: 'UNSAFE', is_hidden: false, marks: 30 },
+      { id: '3', input_text: '5\n4\n0 1 2 1\n4 2 3 3', expected_output: 'SAFE', is_hidden: true, marks: 20 },
+    ],
+  },
+  {
+    id: 'ch-corecs-3',
+    title: 'Computer Networks: TCP Sliding Window Invariant',
+    difficulty: 'Medium',
+    xp: 150,
+    topic: 'Computer Networks (Sliding Window & Flow Control)',
+    sectorId: 'sector-core-cs',
+    sectorName: 'Core Computer Science Systems',
+    sectorBadge: '💻 Sector 3 · Set C',
+    sectorColor: '#10B981',
+    description: `A TCP sender has a congestion window of W packets and base sequence number B. Given cumulative ACK packet sequence A from receiver, output the new window base and number of packets newly acknowledged.\n\nInput:\nB W A\n\nExample:\nInput:\n100 5 103\nOutput:\n103 3`,
+    starterCode: `import sys
+
+def tcp_window():
+    data = sys.stdin.read().split()
+    if len(data) < 3:
+        return
+    b, w, a = int(data[0]), int(data[1]), int(data[2])
+    new_base = max(b, a)
+    acked = max(0, new_base - b)
+    print(f"{new_base} {acked}")
+
+if __name__ == '__main__':
+    tcp_window()
+`,
+    testCases: [
+      { id: '1', input_text: '100 5 103', expected_output: '103 3', is_hidden: false, marks: 50 },
+      { id: '2', input_text: '50 10 50', expected_output: '50 0', is_hidden: false, marks: 30 },
+      { id: '3', input_text: '1 4 4', expected_output: '4 3', is_hidden: true, marks: 20 },
+    ],
+  },
+
+  // ── SECTOR 4: DATA STRUCTURES & ALGORITHMS ──
+  {
+    id: 'ch-dsa-1',
+    title: 'Flight Envelope: Maximum Peak Velocity (LIS)',
     difficulty: 'Medium',
     xp: 150,
     topic: 'Data Structures & Algorithms (LIS)',
     sectorId: 'sector-dsa',
     sectorName: 'Data Structures & Algorithms',
-    sectorBadge: '⚡ Sector 4 · Set D',
+    sectorBadge: '⚡ Sector 4 · Set A',
     sectorColor: '#38BDF8',
     description: `A spacecraft's altitude readings are captured across consecutive sensor intervals. Write a program to read N altitude values from stdin and output the length of the longest strictly increasing sub-sequence of sensor values.\n\nInput:\n10 9 2 5 3 7 101 18\nOutput:\n4`,
     starterCode: `import sys
@@ -182,14 +412,107 @@ if __name__ == '__main__':
     ],
   },
   {
-    id: 'ch-fullstack',
+    id: 'ch-dsa-2',
+    title: 'Monotonic Stack: Telemetry Sensor Next Greater Peak',
+    difficulty: 'Easy',
+    xp: 120,
+    topic: 'Data Structures & Algorithms (Monotonic Stack)',
+    sectorId: 'sector-dsa',
+    sectorName: 'Data Structures & Algorithms',
+    sectorBadge: '⚡ Sector 4 · Set B',
+    sectorColor: '#38BDF8',
+    description: `Given a sequence of sensor temperature readings, for each position, find the next strictly greater reading that appears to its right. If none exists, output -1.\n\nInput:\n4 5 2 25\nOutput:\n5 25 25 -1`,
+    starterCode: `import sys
+
+def next_greater():
+    data = sys.stdin.read().split()
+    if not data:
+        return
+    nums = [int(x) for x in data]
+    n = len(nums)
+    res = [-1] * n
+    stack = []
+    
+    for i in range(n - 1, -1, -1):
+        while stack and stack[-1] <= nums[i]:
+            stack.pop()
+        if stack:
+            res[i] = stack[-1]
+        stack.append(nums[i])
+    print(" ".join(map(str, res)))
+
+if __name__ == '__main__':
+    next_greater()
+`,
+    testCases: [
+      { id: '1', input_text: '4 5 2 25', expected_output: '5 25 25 -1', is_hidden: false, marks: 50 },
+      { id: '2', input_text: '13 7 6 12', expected_output: '-1 12 12 -1', is_hidden: false, marks: 30 },
+      { id: '3', input_text: '1 2 3 4', expected_output: '2 3 4 -1', is_hidden: true, marks: 20 },
+    ],
+  },
+  {
+    id: 'ch-dsa-3',
+    title: 'Minimal Spanning Tree: Orbital Relay Network',
+    difficulty: 'Hard',
+    xp: 190,
+    topic: 'Data Structures & Algorithms (Kruskal & Disjoint Set)',
+    sectorId: 'sector-dsa',
+    sectorName: 'Data Structures & Algorithms',
+    sectorBadge: '⚡ Sector 4 · Set C',
+    sectorColor: '#38BDF8',
+    description: `Connect V space probes with minimum cost using bidirectional quantum links. Given V, E and E triplets (u v weight), compute the minimal total weight required to connect all probes.\n\nInput:\nLine 1: V E\nNext E lines: u v w\n\nExample:\nInput:\n3 3\n0 1 1\n1 2 2\n0 2 5\nOutput:\n3`,
+    starterCode: `import sys
+
+def mst_cost():
+    lines = sys.stdin.read().splitlines()
+    if not lines:
+        return
+    v, e = [int(x) for x in lines[0].split()]
+    edges = []
+    for i in range(1, e + 1):
+        u, val, w = [int(x) for x in lines[i].split()]
+        edges.append((w, u, val))
+    edges.sort()
+    
+    parent = list(range(v))
+    def find(x):
+        if parent[x] != x:
+            parent[x] = find(parent[x])
+        return parent[x]
+        
+    total = 0
+    count = 0
+    for w, u, val in edges:
+        root_u = find(u)
+        root_v = find(val)
+        if root_u != root_v:
+            parent[root_u] = root_v
+            total += w
+            count += 1
+            if count == v - 1:
+                break
+    print(total)
+
+if __name__ == '__main__':
+    mst_cost()
+`,
+    testCases: [
+      { id: '1', input_text: '3 3\n0 1 1\n1 2 2\n0 2 5', expected_output: '3', is_hidden: false, marks: 50 },
+      { id: '2', input_text: '4 5\n0 1 10\n0 2 6\n0 3 5\n1 3 15\n2 3 4', expected_output: '19', is_hidden: false, marks: 30 },
+      { id: '3', input_text: '2 1\n0 1 42', expected_output: '42', is_hidden: true, marks: 20 },
+    ],
+  },
+
+  // ── SECTOR 5: FULL-STACK & SYSTEMS ARCHITECTURE ──
+  {
+    id: 'ch-fullstack-1',
     title: 'Distributed System: Token Bucket Rate Limiter',
     difficulty: 'Hard',
     xp: 180,
     topic: 'Full-Stack Architecture (Rate Limiting)',
     sectorId: 'sector-fullstack',
     sectorName: 'Full-Stack & Distributed Architecture',
-    sectorBadge: '🌐 Sector 5 · Set E',
+    sectorBadge: '🌐 Sector 5 · Set A',
     sectorColor: '#F43F5E',
     description: `Simulate a token bucket rate limiter with burst capacity C and refill rate R (tokens per second). Given arrival timestamps of request packet arrivals, output 1 if packet is accepted, 0 if rate-limited.\n\nInput:\nLine 1: Capacity C and Refill Rate R\nLine 2: Integer N (number of arrivals)\nLine 3: N space-separated arrival seconds (strictly increasing integers)\n\nExample:\nInput:\n2 1\n3\n0 0 1\nOutput:\n1 1 1`,
     starterCode: `import sys
@@ -224,6 +547,96 @@ if __name__ == '__main__':
       { id: '2', input_text: '1 1\n3\n0 0 1', expected_output: '1 0 1', is_hidden: false, marks: 40 },
     ],
   },
+  {
+    id: 'ch-fullstack-2',
+    title: 'Event Loop Simulator: Microtask Priority Engine',
+    difficulty: 'Medium',
+    xp: 150,
+    topic: 'Full-Stack Systems (Async Event Loop)',
+    sectorId: 'sector-fullstack',
+    sectorName: 'Full-Stack & Distributed Architecture',
+    sectorBadge: '🌐 Sector 5 · Set B',
+    sectorColor: '#F43F5E',
+    description: `Given a sequence of task declarations: S (synchronous execution), M (microtask promise), and T (macrotask timer), output the execution ordering IDs according to modern JavaScript/Node.js event loop semantics.\n\nInput:\nLine 1: N\nNext N lines: TYPE ID (e.g., T 1, S 2, M 3)\n\nExample:\nInput:\n3\nT 1\nS 2\nM 3\nOutput:\n2 3 1`,
+    starterCode: `import sys
+
+def event_loop():
+    lines = sys.stdin.read().splitlines()
+    if not lines:
+        return
+    n = int(lines[0].strip())
+    sync_tasks, micro_tasks, macro_tasks = [], [], []
+    for i in range(1, n + 1):
+        t_type, t_id = lines[i].split()
+        if t_type == 'S':
+            sync_tasks.append(t_id)
+        elif t_type == 'M':
+            micro_tasks.append(t_id)
+        else:
+            macro_tasks.append(t_id)
+    ordered = sync_tasks + micro_tasks + macro_tasks
+    print(" ".join(ordered))
+
+if __name__ == '__main__':
+    event_loop()
+`,
+    testCases: [
+      { id: '1', input_text: '3\nT 1\nS 2\nM 3', expected_output: '2 3 1', is_hidden: false, marks: 50 },
+      { id: '2', input_text: '4\nM 4\nT 1\nS 5\nT 2', expected_output: '5 4 1 2', is_hidden: false, marks: 30 },
+      { id: '3', input_text: '2\nT 9\nM 8', expected_output: '8 9', is_hidden: true, marks: 20 },
+    ],
+  },
+  {
+    id: 'ch-fullstack-3',
+    title: 'Cache Invalidation: LRU Buffer Eviction',
+    difficulty: 'Hard',
+    xp: 190,
+    topic: 'Full-Stack Systems (In-Memory Key-Value Eviction)',
+    sectorId: 'sector-fullstack',
+    sectorName: 'Full-Stack & Distributed Architecture',
+    sectorBadge: '🌐 Sector 5 · Set C',
+    sectorColor: '#F43F5E',
+    description: `Given cache capacity C and a sequence of key GET / PUT operations, output the value returned by each GET operation (or -1 if missing).\n\nInput:\nLine 1: Capacity C and total Ops Q\nNext Q lines: 'PUT K V' or 'GET K'\n\nExample:\nInput:\n2 4\nPUT 1 10\nPUT 2 20\nGET 1\nGET 3\nOutput:\n10 -1`,
+    starterCode: `import sys
+from collections import OrderedDict
+
+def lru_cache_sim():
+    lines = sys.stdin.read().splitlines()
+    if not lines:
+        return
+    cap, q = [int(x) for x in lines[0].split()]
+    cache = OrderedDict()
+    outputs = []
+    
+    for i in range(1, q + 1):
+        parts = lines[i].split()
+        op = parts[0]
+        k = int(parts[1])
+        if op == 'GET':
+            if k in cache:
+                cache.move_to_end(k)
+                outputs.append(str(cache[k]))
+            else:
+                outputs.append("-1")
+        elif op == 'PUT':
+            v = int(parts[2])
+            if k in cache:
+                cache.move_to_end(k)
+            cache[k] = v
+            if len(cache) > cap:
+                cache.popitem(last=False)
+                
+    print(" ".join(outputs))
+
+if __name__ == '__main__':
+    lru_cache_sim()
+`,
+    testCases: [
+      { id: '1', input_text: '2 4\nPUT 1 10\nPUT 2 20\nGET 1\nGET 3', expected_output: '10 -1', is_hidden: false, marks: 50 },
+      { id: '2', input_text: '1 3\nPUT 1 5\nPUT 2 8\nGET 1', expected_output: '-1', is_hidden: false, marks: 30 },
+      { id: '3', input_text: '2 5\nPUT 1 1\nPUT 2 2\nGET 1\nPUT 3 3\nGET 2', expected_output: '1 -1', is_hidden: true, marks: 20 },
+    ],
+  },
 ];
 
 export default function PracticeArenaPage() {
@@ -242,16 +655,21 @@ export default function PracticeArenaPage() {
   const [activeTab, setActiveTab] = useState<'coding' | 'blitz' | 'sectors'>('coding');
   const [xpBanner, setXpBanner] = useState<string | null>(null);
 
-  // Require student authentication to access the 5 Technical Sectors Arena
+  const [studentUser, setStudentUser] = useState<any>(null);
+
+  // Strict Student Authentication Gate: 5 Sectors is for logged-in students ONLY
   useEffect(() => {
     const token = localStorage.getItem('student_token');
-    if (!token) {
-      navigate('/login', {
-        state: {
-          from: '/practice',
-          message: 'The 5 Technical Sectors Arena is reserved for enrolled candidates. Please sign in to access.',
-        },
-      });
+    const userStr = localStorage.getItem('student_user');
+
+    if (!token || !userStr) {
+      navigate('/login?redirect=/practice&notice=student_login_required');
+      return;
+    }
+    try {
+      setStudentUser(JSON.parse(userStr));
+    } catch {
+      setStudentUser(null);
     }
   }, [navigate]);
 
@@ -262,24 +680,29 @@ export default function PracticeArenaPage() {
 
   // Quick Blitz Mode State
   const [blitzScore, setBlitzScore] = useState(0);
-  const [blitzTimer, setBlitzTimer] = useState(45);
+  const [blitzTimer, setBlitzTimer] = useState(60);
   const [blitzActive, setBlitzActive] = useState(false);
   const [blitzIndex, setBlitzIndex] = useState(0);
 
   const BLITZ_QUESTIONS = [
-    { q: 'Which data structure enforces LIFO behavior?', opts: ['Queue', 'Stack', 'Heap', 'Tree'], ans: 1 },
-    { q: 'Time complexity of Binary Search on sorted array?', opts: ['O(N)', 'O(1)', 'O(log N)', 'O(N²)'], ans: 2 },
-    { q: 'Which protocol is connectionless and header-light?', opts: ['TCP', 'UDP', 'HTTP', 'FTP'], ans: 1 },
-    { q: 'What does SQL stand for?', opts: ['Structured Query Language', 'Standard Question Logic', 'Sequential Query Loop', 'System Quick Link'], ans: 0 },
-    { q: 'In Node.js event loop, where does setImmediate() run?', opts: ['Timers Phase', 'Poll Phase', 'Check Phase', 'Close Phase'], ans: 2 },
+    { q: 'Which data structure enforces LIFO behavior?', opts: ['Queue', 'Stack', 'Heap', 'Tree'], ans: 1, sector: 'Sector 4: DSA' },
+    { q: 'Time complexity of Binary Search on sorted array?', opts: ['O(N)', 'O(1)', 'O(log N)', 'O(N²)'], ans: 2, sector: 'Sector 4: DSA' },
+    { q: 'Which protocol is connectionless and header-light?', opts: ['TCP', 'UDP', 'HTTP', 'FTP'], ans: 1, sector: 'Sector 3: Core CS' },
+    { q: 'What does ACID stand for in Database Systems?', opts: ['Atomicity, Consistency, Isolation, Durability', 'Active, Concurrent, Indexed, Distributed', 'Asynchronous, Clustered, Integrated, Durable', 'Autonomous, Centralized, Immutable, Deterministic'], ans: 0, sector: 'Sector 3: Core CS' },
+    { q: 'In Node.js event loop, where does setImmediate() run?', opts: ['Timers Phase', 'Poll Phase', 'Check Phase', 'Close Phase'], ans: 2, sector: 'Sector 5: Full-Stack' },
+    { q: 'If two trains move towards each other at 40 km/h and 60 km/h, relative speed is:', opts: ['20 km/h', '100 km/h', '50 km/h', '2400 km/h'], ans: 1, sector: 'Sector 1: Quant' },
+    { q: 'All Bloops are Razzies. All Razzies are Lizzies. Are all Bloops Lizzies?', opts: ['Definitely True', 'Definitely False', 'Cannot be determined', 'True only if Razzies are Bloops'], ans: 0, sector: 'Sector 2: Logic' },
+    { q: 'Which HTTP status code indicates "Rate Limited / Too Many Requests"?', opts: ['400', '403', '429', '503'], ans: 2, sector: 'Sector 5: Full-Stack' },
+    { q: 'What is the worst-case time complexity of QuickSort?', opts: ['O(N log N)', 'O(N²)', 'O(N)', 'O(log N)'], ans: 1, sector: 'Sector 4: DSA' },
+    { q: 'Two unbiased dice are rolled. What is the probability of rolling a sum of 7?', opts: ['1/6', '7/36', '1/12', '5/36'], ans: 0, sector: 'Sector 1: Quant' },
   ];
 
-  // Live 3D Radar dynamic score
+  // Dynamic 3D Radar scores reflecting sector engagement
   const liveRadarScores: SectorScore[] = [
-    { sector: 'Quantitative Aptitude', short: 'Quant', score: 86, benchmark: 72, color: '#F59E0B' },
+    { sector: 'Quantitative Aptitude', short: 'Quant', score: 86 + (solvedCount > 0 ? 4 : 0), benchmark: 72, color: '#F59E0B' },
     { sector: 'Logical Reasoning', short: 'Logic', score: 92, benchmark: 76, color: '#8B5CF6' },
-    { sector: 'Core Computer Science', short: 'Core CS', score: 79, benchmark: 68, color: '#10B981' },
-    { sector: 'Data Structures & Algorithms', short: 'DSA', score: 84, benchmark: 64, color: '#38BDF8' },
+    { sector: 'Core Computer Science', short: 'Core CS', score: 79 + (solvedCount > 1 ? 6 : 0), benchmark: 68, color: '#10B981' },
+    { sector: 'Data Structures & Algorithms', short: 'DSA', score: 84 + (solvedCount > 2 ? 5 : 0), benchmark: 64, color: '#38BDF8' },
     { sector: 'Full-Stack & System Design', short: 'Full-Stack', score: 88, benchmark: 71, color: '#F43F5E' },
   ];
 
@@ -380,6 +803,57 @@ export default function PracticeArenaPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* STUDENT AUTHENTICATED BADGE */}
+        {studentUser && (
+          <div
+            style={{
+              background: 'linear-gradient(90deg, rgba(16, 185, 129, 0.12), rgba(56, 189, 248, 0.12))',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              borderRadius: 14,
+              padding: '12px 20px',
+              marginBottom: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 12,
+              boxShadow: '0 0 20px rgba(16, 185, 129, 0.12)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: '1.4rem' }}>🎓</span>
+              <div>
+                <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.04em' }}>
+                  STUDENT PORTAL CLEARANCE VERIFIED: 5 SECTORS ACTIVE
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>
+                  Candidate: <strong style={{ color: '#F1F5F9' }}>{studentUser.name || 'Student'}</strong> &bull; Hall Ticket: <code style={{ color: '#38BDF8' }}>{studentUser.roll_number || studentUser.hall_ticket || 'HT-2026'}</code> &bull; Section {studentUser.section || 'A'}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => navigate('/student/dashboard')}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: 8,
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  color: '#CBD5E1',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>📊</span> My Dashboard
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* HERO / GAMIFICATION DASHBOARD BAR */}
         <div
@@ -732,10 +1206,17 @@ export default function PracticeArenaPage() {
               </div>
             ) : blitzActive ? (
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                  <span style={{ fontSize: '0.9rem', color: '#64748B', fontWeight: 700 }}>
-                    Question {blitzIndex + 1}/{BLITZ_QUESTIONS.length}
-                  </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '0.9rem', color: '#64748B', fontWeight: 700 }}>
+                      Question {blitzIndex + 1}/{BLITZ_QUESTIONS.length}
+                    </span>
+                    {BLITZ_QUESTIONS[blitzIndex]?.sector && (
+                      <span style={{ fontSize: '0.72rem', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#38BDF8', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>
+                        {BLITZ_QUESTIONS[blitzIndex].sector}
+                      </span>
+                    )}
+                  </div>
                   <span style={{ fontSize: '1.2rem', fontWeight: 900, color: blitzTimer <= 10 ? '#EF4444' : '#F59E0B', fontFamily: 'monospace' }}>
                     ⏱ {blitzTimer}s
                   </span>

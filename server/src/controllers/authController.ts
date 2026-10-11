@@ -4,9 +4,16 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { supabase } from '../db/supabase';
 import { sendPasswordResetEmail, sendStudentVerificationEmail } from '../services/emailService';
+import {
+  sendStudentOtp,
+  sendStudentRegistered,
+  sendPasswordReset,
+  sendAdminAlert,
+} from '../services/mailService';
 import { StudentJWTPayload } from '../middleware/auth';
 import { isStrongPassword } from '../middleware/validate';
 import { isStudentEligibleForExam } from '../utils/academicYear';
+import { systemAlertAgent } from '../services/systemAlertService';
 
 const BCRYPT_ROUNDS = 12;
 const STUDENT_JWT_EXPIRY = (process.env.STUDENT_JWT_EXPIRY || '24h') as any;
@@ -183,10 +190,10 @@ export async function studentRegister(req: Request, res: Response): Promise<void
     await supabase.from('students').delete().eq('id', existingEmail.id);
   }
 
-  // 5. Generate 6-digit OTP and 32-byte direct verification token (15-min expiry)
+  // 5. Generate 6-digit OTP and 32-byte direct verification token (10-min expiry, max 3 attempts)
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const rawToken = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
   const studentName = rawName || rosterMatch.name || rawRoll;
@@ -245,7 +252,14 @@ export async function studentRegister(req: Request, res: Response): Promise<void
   const verifyLink = `${clientOrigin}/verify-email?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
   try {
-    await sendStudentVerificationEmail(normalizedEmail, studentName, otp, verifyLink);
+    await sendStudentOtp({
+      name: studentName,
+      email: normalizedEmail,
+      otp,
+      expiresMinutes: 10,
+      maxAttempts: 3,
+      verifyUrl: verifyLink,
+    });
   } catch (emailErr) {
     console.warn('[Student Register] Verification email delivery warning:', emailErr);
   }
@@ -298,8 +312,25 @@ export async function verifyRegistrationOtp(req: Request, res: Response): Promis
   if (student.verification_expires_at && new Date(student.verification_expires_at) < new Date()) {
     res.status(400).json({
       success: false,
-      error: 'Verification code or link has expired (15-minute limit). Please request a new code.',
+      error: 'Verification code or link has expired (10-minute limit). Please request a new code.',
       code: 'VERIFICATION_EXPIRED',
+    });
+    return;
+  }
+
+  // Max 3 attempts enforcement
+  const currentAttempts = student.failed_attempts || 0;
+  if (currentAttempts >= 3) {
+    await supabase.from('students').update({
+      verification_otp: null,
+      verification_token: null,
+      verification_expires_at: null,
+    }).eq('id', student.id);
+
+    res.status(400).json({
+      success: false,
+      error: 'Maximum OTP verification attempts (3) exceeded. This code has been invalidated. Please request a new code.',
+      code: 'MAX_OTP_ATTEMPTS_EXCEEDED',
     });
     return;
   }
@@ -308,10 +339,32 @@ export async function verifyRegistrationOtp(req: Request, res: Response): Promis
   const tokenMatches = token && String(student.verification_token).trim() === String(token).trim();
 
   if (!otpMatches && !tokenMatches) {
+    const newAttempts = currentAttempts + 1;
+    const remaining = 3 - newAttempts;
+
+    if (newAttempts >= 3) {
+      await supabase.from('students').update({
+        failed_attempts: newAttempts,
+        verification_otp: null,
+        verification_token: null,
+        verification_expires_at: null,
+      }).eq('id', student.id);
+
+      res.status(400).json({
+        success: false,
+        error: 'Maximum OTP verification attempts (3) exceeded. Please request a new verification code.',
+        code: 'MAX_OTP_ATTEMPTS_EXCEEDED',
+      });
+      return;
+    }
+
+    await supabase.from('students').update({ failed_attempts: newAttempts }).eq('id', student.id);
+
     res.status(400).json({
       success: false,
-      error: 'Invalid verification code or link. Please verify the code and try again.',
+      error: `Invalid verification code. You have ${remaining} attempt(s) remaining.`,
       code: 'INVALID_VERIFICATION_CODE',
+      remaining_attempts: remaining,
     });
     return;
   }
@@ -332,6 +385,14 @@ export async function verifyRegistrationOtp(req: Request, res: Response): Promis
       locked_until: null,
     })
     .eq('id', student.id);
+
+  // Trigger student_registered confirmation email
+  sendStudentRegistered({
+    name: student.name,
+    email: student.email,
+    hallTicket: student.roll_number || student.hall_ticket || 'HALL_TICKET',
+    collegeName: student.college_name || undefined,
+  }).catch((e) => console.warn('[MailService] Failed to send student_registered email:', e));
 
   const payload: StudentJWTPayload = {
     studentId: student.id,
@@ -398,7 +459,7 @@ export async function resendRegistrationOtp(req: Request, res: Response): Promis
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const rawToken = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
 
   await supabase
     .from('students')
@@ -406,6 +467,7 @@ export async function resendRegistrationOtp(req: Request, res: Response): Promis
       verification_otp: otp,
       verification_token: rawToken,
       verification_expires_at: expiresAt,
+      failed_attempts: 0, // Reset attempts counter for fresh code
     })
     .eq('id', student.id);
 
@@ -413,7 +475,14 @@ export async function resendRegistrationOtp(req: Request, res: Response): Promis
   const verifyLink = `${clientOrigin}/verify-email?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
   try {
-    await sendStudentVerificationEmail(normalizedEmail, student.name, otp, verifyLink);
+    await sendStudentOtp({
+      name: student.name,
+      email: normalizedEmail,
+      otp,
+      expiresMinutes: 10,
+      maxAttempts: 3,
+      verifyUrl: verifyLink,
+    });
   } catch (emailErr) {
     console.warn('[Resend OTP] Failed to send email:', emailErr);
   }
@@ -469,6 +538,14 @@ export async function studentLogin(req: Request, res: Response): Promise<void> {
   }
 
   if (!student) {
+    systemAlertAgent.recordAuthFailure({
+      user: rawLogin,
+      role: 'student',
+      ip: req.ip || req.socket?.remoteAddress || '127.0.0.1',
+      userAgent: req.headers['user-agent']?.toString(),
+      reason: 'Student account not found',
+      path: req.originalUrl || req.path,
+    }).catch(() => {});
     res.status(401).json({ success: false, error: 'Invalid email/roll number or password' });
     return;
   }
@@ -511,6 +588,18 @@ export async function studentLogin(req: Request, res: Response): Promise<void> {
 
   if (!passwordValid) {
     const newFailedAttempts = (student.failed_attempts || 0) + 1;
+    const clientIp = req.ip || req.socket?.remoteAddress || '127.0.0.1';
+    const userAgent = req.headers['user-agent']?.toString();
+
+    systemAlertAgent.recordAuthFailure({
+      user: student.email || rawLogin,
+      role: 'student',
+      ip: clientIp,
+      userAgent,
+      reason: newFailedAttempts >= 5 ? 'Account locked after 5 failed attempts' : `Invalid password (attempt ${newFailedAttempts}/5)`,
+      path: req.originalUrl || req.path,
+    }).catch(() => {});
+
     if (newFailedAttempts >= 5) {
       const lockUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
       await supabase
@@ -821,13 +910,15 @@ export async function changeStudentPassword(req: Request, res: Response): Promis
  * Request a password reset email link (Students & Staff)
  */
 export async function forgotPassword(req: Request, res: Response): Promise<void> {
-  const { email } = req.body;
-  const normalizedEmail = email.toLowerCase().trim();
+  const { email, identifier, username } = req.body;
+  const lookup = String(identifier || username || email || '').trim();
+  const normalizedEmail = lookup.toLowerCase();
 
   // 1. Look up student or staff
   let user: any = null;
   let userType: 'student' | 'staff' = 'student';
 
+  // Check students by email
   const { data: student } = await supabase
     .from('students')
     .select('id, name, email')
@@ -838,24 +929,97 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
     user = student;
     userType = 'student';
   } else {
-    const { data: staff } = await supabase
-      .from('staff')
-      .select('id, name, email')
-      .eq('email', normalizedEmail)
-      .maybeSingle();
+    // 0. Check staff account cache
+    try {
+      const { staffAccountCache } = require('./adminController');
+      const cached = staffAccountCache.get(lookup.toLowerCase());
+      if (cached) {
+        const { data: cachedStaff } = await supabase
+          .from('staff')
+          .select('id, name, email, role')
+          .eq('id', cached.id)
+          .maybeSingle();
+        if (cachedStaff) {
+          user = cachedStaff;
+          userType = 'staff';
+        }
+      }
+    } catch {}
 
-    if (staff) {
-      user = staff;
-      userType = 'staff';
-    } else if (
-      normalizedEmail === (process.env.ADMIN_USERNAME || '') ||
-      (!!process.env.INITIAL_ADMIN_EMAIL && normalizedEmail === process.env.INITIAL_ADMIN_EMAIL)
+    // Check staff by username (case-insensitive)
+    if (!user) {
+      try {
+        const { data: staffByUsername } = await supabase
+          .from('staff')
+          .select('id, name, email, role')
+          .ilike('username', lookup)
+          .maybeSingle();
+        if (staffByUsername) {
+          user = staffByUsername;
+          userType = 'staff';
+        }
+      } catch {}
+    }
+
+    // Check staff permissions for encoded username
+    if (!user) {
+      try {
+        const { data: allStaff } = await supabase.from('staff').select('id, name, email, role, permissions');
+        if (allStaff) {
+          const match = allStaff.find((s: any) =>
+            Array.isArray(s.permissions) && (
+              s.permissions.includes(`user:${lookup.toLowerCase()}`) ||
+              s.permissions.includes(`phone:${lookup}`)
+            )
+          );
+          if (match) {
+            user = match;
+            userType = 'staff';
+          }
+        }
+      } catch {}
+    }
+
+    // Check staff by email (from lookup or from explicit email in body)
+    if (!user) {
+      const emailTarget = (email || '').trim().toLowerCase() || normalizedEmail;
+      const { data: staff } = await supabase
+        .from('staff')
+        .select('id, name, email, role')
+        .eq('email', emailTarget)
+        .maybeSingle();
+
+      if (staff) {
+        user = staff;
+        userType = 'staff';
+      }
+    }
+
+    // Check staff by phone
+    if (!user) {
+      try {
+        const { data: staffByPhone } = await supabase
+          .from('staff')
+          .select('id, name, email, role')
+          .eq('phone', lookup)
+          .maybeSingle();
+        if (staffByPhone) {
+          user = staffByPhone;
+          userType = 'staff';
+        }
+      } catch {}
+    }
+
+    // Check bootstrap super admin account
+    if (
+      !user &&
+      (normalizedEmail === (process.env.ADMIN_USERNAME || 'admin').toLowerCase() ||
+        (!!process.env.INITIAL_ADMIN_EMAIL && normalizedEmail === process.env.INITIAL_ADMIN_EMAIL.toLowerCase()))
     ) {
-      // Bootstrap super admin account
       user = {
         id: 'st000000-0000-0000-0000-000000000001',
         name: 'System Super Admin',
-        email: normalizedEmail,
+        email: process.env.INITIAL_ADMIN_EMAIL || 'admin@logicwhilelire.com',
       };
       userType = 'staff';
     }
@@ -893,9 +1057,14 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
   const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
   const resetLink = `${clientOrigin}/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
 
-  // 5. Send branded email
+  // 5. Send branded email via mailService
   try {
-    await sendPasswordResetEmail(user.email, user.name, resetLink);
+    await sendPasswordReset({
+      name: user.name,
+      email: user.email,
+      resetUrl: resetLink,
+      expiresMinutes: 15,
+    });
   } catch (emailErr) {
     console.error('[Forgot Password] Email send failure:', emailErr);
   }
@@ -920,8 +1089,9 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
  * Complete password reset using token from email link
  */
 export async function resetPassword(req: Request, res: Response): Promise<void> {
-  const { token, email, new_password } = req.body;
-  const normalizedEmail = email.toLowerCase().trim();
+  const { token, email, identifier, username, new_password } = req.body;
+  const lookup = String(identifier || username || email || '').trim();
+  const normalizedEmail = lookup.toLowerCase();
 
   let user: any = null;
   let userType: 'student' | 'staff' = 'student';
@@ -936,15 +1106,70 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
     user = student;
     userType = 'student';
   } else {
-    const { data: staff } = await supabase
-      .from('staff')
-      .select('*')
-      .eq('email', normalizedEmail)
-      .maybeSingle();
+    // 0. Check staff account cache
+    try {
+      const { staffAccountCache } = require('./adminController');
+      const cached = staffAccountCache.get(lookup.toLowerCase());
+      if (cached) {
+        const { data: cachedStaff } = await supabase
+          .from('staff')
+          .select('*')
+          .eq('id', cached.id)
+          .maybeSingle();
+        if (cachedStaff) {
+          user = cachedStaff;
+          userType = 'staff';
+        }
+      }
+    } catch {}
 
-    if (staff) {
-      user = staff;
-      userType = 'staff';
+    // Check staff by username (case-insensitive)
+    if (!user) {
+      try {
+        const { data: staffByUsername } = await supabase
+          .from('staff')
+          .select('*')
+          .ilike('username', lookup)
+          .maybeSingle();
+        if (staffByUsername) {
+          user = staffByUsername;
+          userType = 'staff';
+        }
+      } catch {}
+    }
+
+    // Check staff permissions for encoded username
+    if (!user) {
+      try {
+        const { data: allStaff } = await supabase.from('staff').select('*');
+        if (allStaff) {
+          const match = allStaff.find((s: any) =>
+            Array.isArray(s.permissions) && (
+              s.permissions.includes(`user:${lookup.toLowerCase()}`) ||
+              s.permissions.includes(`phone:${lookup}`)
+            )
+          );
+          if (match) {
+            user = match;
+            userType = 'staff';
+          }
+        }
+      } catch {}
+    }
+
+    // Check staff by email (from lookup or from explicit email in body)
+    if (!user) {
+      const emailTarget = (email || '').trim().toLowerCase() || normalizedEmail;
+      const { data: staffByEmail } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('email', emailTarget)
+        .maybeSingle();
+
+      if (staffByEmail) {
+        user = staffByEmail;
+        userType = 'staff';
+      }
     }
   }
 
@@ -989,21 +1214,58 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
   const newPasswordHash = await bcrypt.hash(new_password, BCRYPT_ROUNDS);
   const table = userType === 'student' ? 'students' : 'staff';
 
-  const { error: updateError } = await supabase
+  const resetPayload: any = {
+    password_hash: newPasswordHash,
+    reset_token_hash: null,
+    reset_token_expires: null,
+    failed_attempts: 0,
+    locked_until: null,
+    must_change_password: false,
+  };
+
+  let { error: updateError } = await supabase
     .from(table)
-    .update({
-      password_hash: newPasswordHash,
-      reset_token_hash: null,
-      reset_token_expires: null,
-      failed_attempts: 0,
-      locked_until: null,
-    })
+    .update(resetPayload)
     .eq('id', user.id);
+
+  if (updateError && updateError.message?.includes('must_change_password')) {
+    delete resetPayload.must_change_password;
+    const retry = await supabase.from(table).update(resetPayload).eq('id', user.id);
+    updateError = retry.error;
+  }
+
+  if (userType === 'staff') {
+    try {
+      const { staffAccountCache } = require('./adminController');
+      for (const [, cached] of staffAccountCache) {
+        if (cached.id === user.id || cached.email === user.email) {
+          cached.must_change_password = false;
+        }
+      }
+    } catch {}
+  }
 
   if (updateError) {
     console.error('[Reset Password] DB Update failed:', updateError);
     res.status(500).json({ success: false, error: 'Failed to reset password. Please try again.' });
     return;
+  }
+
+  // Dispatch security alert to linked email
+  if (user.email) {
+    sendAdminAlert({
+      alertType: 'system_alert',
+      title: `Security Alert: Password Changed for ${user.name || user.email}`,
+      message: `The password for your LogicWhile LiRE account (${userType}) was successfully reset using a secure verification link on ${new Date().toISOString()}. If this was not you, please immediately contact your administrator.`,
+      details: {
+        userType,
+        email: user.email,
+        timestamp: new Date().toISOString(),
+      },
+      targetAdminEmail: user.email,
+    }).catch((alertErr) => {
+      console.warn('[Reset Password] Security alert delivery notice:', alertErr?.message);
+    });
   }
 
   res.status(200).json({

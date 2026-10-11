@@ -467,7 +467,7 @@ export default function InstructionsPage() {
               paddingBottom: 24,
             }}
           >
-            LogicWhileLiRE • "Logic. While. LiRE." • Developed by R. Charan Sai • © 2026 All rights reserved.
+            LogicWhileLiRE • "Logic. While. LiRE." • © 2026 LogicWhile LiRE. All rights reserved.
           </div>
         </motion.div>
       </div>

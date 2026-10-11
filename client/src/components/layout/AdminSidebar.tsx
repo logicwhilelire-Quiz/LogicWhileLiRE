@@ -12,9 +12,21 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
 
   const currentUser = (() => {
     try {
-      return JSON.parse(localStorage.getItem('admin_user') || '{"role":"super_admin","name":"R. Charan Sai"}');
+      const isInspectorPath = location.pathname.startsWith('/admin/inspector') || location.pathname.startsWith('/inspector');
+      if (isInspectorPath) {
+        const inspectorStored = localStorage.getItem('inspector_user');
+        if (inspectorStored) return JSON.parse(inspectorStored);
+      }
+      const adminStored = localStorage.getItem('admin_user');
+      if (adminStored) {
+        const parsed = JSON.parse(adminStored);
+        if (parsed.role) return parsed;
+      }
+      const inspectorStored = localStorage.getItem('inspector_user');
+      if (inspectorStored) return JSON.parse(inspectorStored);
+      return { role: 'super_admin', name: 'Super Administrator' };
     } catch {
-      return { role: 'super_admin', name: 'R. Charan Sai' };
+      return { role: 'super_admin', name: 'Super Administrator' };
     }
   })();
 
@@ -26,7 +38,7 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
   const roleTitle = isSuperAdmin
     ? 'Master Authority (Super Admin)'
     : isInspector
-    ? `Inspector (${currentUser.college_name || 'College Scope'})`
+    ? `College Inspector (${currentUser.college_name || 'Active Institution'})`
     : isFaculty
     ? 'Faculty Member'
     : 'Authenticated Staff';
@@ -46,13 +58,14 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
     { id: 'import', label: 'Import Questions (Excel)', path: '/admin/import', icon: '📥', roles: ['super_admin', 'admin'] },
 
     // Telemetry & Invigilation
-    { id: 'monitor', label: 'Live Monitor Console', path: '/admin/monitor', icon: '👁️', roles: ['super_admin', 'admin', 'inspector'] },
     { id: 'inspector', label: 'Inspector Live Console', path: '/admin/inspector', icon: '📡', roles: ['super_admin', 'admin', 'inspector'] },
+    { id: 'monitor', label: 'Live Monitor Console', path: '/admin/monitor', icon: '👁️', roles: ['super_admin', 'admin', 'inspector'] },
 
     // Results, Analytics & Audits
     { id: 'results', label: 'Results & Reports', path: '/admin/results', icon: '📈', roles: ['super_admin', 'admin', 'inspector', 'faculty'] },
     { id: 'analytics', label: 'Exam Analytics', path: '/admin/analytics', icon: '🔬', roles: ['super_admin', 'admin'] },
     { id: 'activity', label: 'Activity & Audit Logs', path: '/admin/activity', icon: '📜', roles: ['super_admin', 'admin'] },
+    { id: 'mail-logs', label: 'Email Dispatch Logs', path: '/admin/mail-logs', icon: '📬', roles: ['super_admin', 'admin'] },
 
     // Master Governance
     { id: 'staff', label: 'Staff & Permissions', path: '/admin/staff', icon: '🛡️', roles: ['super_admin', 'admin'] },
@@ -62,10 +75,14 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
   const navItems = allNavItems.filter((item) => item.roles.includes(role));
 
   const handleLogout = () => {
+    const wasInspector = isInspector;
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
+    localStorage.removeItem('inspector_token');
+    localStorage.removeItem('inspector_user');
     sessionStorage.removeItem('admin_token');
-    navigate('/admin');
+    sessionStorage.removeItem('inspector_token');
+    navigate(wasInspector ? '/inspector' : '/admin');
   };
 
   return (
@@ -75,7 +92,7 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
         <BrandLogo size="sm" />
       </div>
 
-      {/* Admin Identity Badge */}
+      {/* Admin / Inspector Identity Badge */}
       <div
         style={{
           padding: '10px 14px',
@@ -94,10 +111,10 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
         }}
       >
         <div style={{ fontSize: '0.68rem', color: isSuperAdmin ? 'var(--color-primary)' : isInspector ? '#EAB308' : '#10B981', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          {isSuperAdmin ? 'SUPER ADMIN ACCESS' : isInspector ? 'INSPECTOR PORTAL' : 'FACULTY PORTAL'}
+          {isSuperAdmin ? 'SUPER ADMIN ACCESS' : isInspector ? 'INSPECTOR CONSOLE' : 'FACULTY PORTAL'}
         </div>
         <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
-          {currentUser.name || currentUser.email || 'Admin'}
+          {currentUser.name || currentUser.email || (isInspector ? 'College Inspector' : 'Super Administrator')}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
           <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: isSuperAdmin ? '#3B82F6' : isInspector ? '#EAB308' : '#10B981' }} />
@@ -107,7 +124,7 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
 
       {/* Navigation Links */}
       <div className="admin-sidebar-title" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-faint)', marginBottom: 8 }}>
-        Control Center
+        {isInspector ? 'INSPECTION CENTER' : 'CONTROL CENTER'}
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
@@ -166,7 +183,7 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
           <span>Logout Portal</span>
         </button>
         <div style={{ fontSize: '0.68rem', color: 'var(--color-text-faint, #64748b)', textAlign: 'center', marginTop: 12, lineHeight: 1.4 }}>
-          LogicWhileLiRE • <em>"Logic. While. LiRE."</em><br />Developed by R. Charan Sai
+          LogicWhileLiRE • <em>"Logic. While. LiRE."</em><br />Autonomous Assessment Engine
         </div>
       </div>
     </aside>

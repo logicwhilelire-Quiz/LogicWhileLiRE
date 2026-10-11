@@ -71,10 +71,9 @@ export default function AdminDashboardPage() {
         {/* Sidebar */}
         <AdminSidebar activeTab="dashboard" />
 
-        {/* Main content with Module 15: LiquidBlob & Module 16: ParticleField */}
+        {/* Main content with Module 16: ParticleField */}
         <main className="admin-content" style={{ position: 'relative', overflow: 'hidden' }}>
-          <ParticleField liveCount={Math.max(1, exams.length * 8)} particleCount={400} color="#6C5CE7" />
-          <LiquidBlob />
+          <ParticleField liveCount={Math.max(1, exams.length * 8)} particleCount={250} color="var(--color-primary, #00d2ff)" />
           <div style={{ position: 'relative', zIndex: 2 }}>
             <div style={{ marginBottom: 24 }}>
               <h1 style={{ fontSize: '1.7rem', fontWeight: 800, marginBottom: 4 }}>

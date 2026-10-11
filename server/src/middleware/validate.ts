@@ -227,23 +227,39 @@ export const studentLoginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
-export const forgotPasswordSchema = z.object({
-  email: z.string().email('Valid email address is required').toLowerCase().trim(),
-});
+export const forgotPasswordSchema = z
+  .object({
+    email: z.string().trim().optional(),
+    identifier: z.string().trim().optional(),
+    username: z.string().trim().optional(),
+  })
+  .refine((data) => Boolean(data.email || data.identifier || data.username), {
+    message: 'Valid identifier (email, username, or phone) is required',
+  });
 
-export const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Reset token is required').trim(),
-  email: z.string().email('Valid email address is required').toLowerCase().trim(),
-  new_password: strongPasswordSchema,
-});
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, 'Reset token is required').trim(),
+    email: z.string().trim().optional(),
+    identifier: z.string().trim().optional(),
+    username: z.string().trim().optional(),
+    new_password: strongPasswordSchema,
+  })
+  .refine((data) => Boolean(data.email || data.identifier || data.username), {
+    message: 'Valid identifier or email is required',
+  });
 
 export const createStaffSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100).trim(),
-  email: z.string().email('Invalid email address').toLowerCase().trim(),
+  username: z.string().min(3, 'Username must be at least 3 characters').max(60).trim().optional(),
+  email: z.string().email('Invalid email address').toLowerCase().trim().optional().or(z.literal('')),
+  phone: z.string().max(30).trim().optional().or(z.literal('')),
   password: strongPasswordSchema.optional(),
   role: z.enum(['super_admin', 'admin', 'faculty', 'college_admin', 'inspector']),
-  college_id: z.union([z.number(), z.string()]).optional(),
-});
+  college_id: z.union([z.number(), z.string()]).nullable().optional(),
+  sections: z.array(z.string()).optional(),
+  assigned_sections: z.array(z.string()).optional(),
+}).passthrough();
 
 export const updateStaffStatusSchema = z.object({
   is_active: z.boolean().optional(),
@@ -259,35 +275,35 @@ export const candidateRegisterSchema = z
       .string()
       .trim()
       .min(2, 'First name must be at least 2 characters')
-      .regex(/^[A-Za-z\s]+$/, 'First name must contain only alphabetic characters')
+      .regex(/^[A-Za-z\s.'-]+$/, 'First name must contain only letters, spaces, dots, apostrophes, and hyphens')
       .transform((val) => val.charAt(0).toUpperCase() + val.slice(1)),
     last_name: z
       .string()
       .trim()
       .min(1, 'Last name must be at least 1 character')
-      .regex(/^[A-Za-z\s]+$/, 'Last name must contain only alphabetic characters')
+      .regex(/^[A-Za-z\s.'-]+$/, 'Last name must contain only letters, spaces, dots, apostrophes, and hyphens')
       .transform((val) => val.charAt(0).toUpperCase() + val.slice(1)),
     college_id: z.string().trim().min(1, 'College affiliation is required'),
     college_name: z.string().trim().optional(),
     year_of_passing: z
       .union([z.number(), z.string()])
       .transform((val) => Number(val))
-      .refine((val) => [2027, 2028, 2029, 2030].includes(val), {
-        message: 'Year of passing must be one of: 2027, 2028, 2029, 2030',
+      .refine((val) => val >= 2020 && val <= 2040, {
+        message: 'Year of passing must be a valid academic graduation year (2020-2040)',
       }),
     roll_number: z
       .string()
       .trim()
       .min(2, 'Roll / Hall Ticket number is required')
       .max(30, 'Roll number cannot exceed 30 characters')
-      .regex(/^[A-Za-z0-9]+$/, 'Roll number must be alphanumeric (e.g. 22B91A0501)')
+      .regex(/^[A-Za-z0-9\-_]+$/, 'Roll number must be alphanumeric (e.g. 22B91A0501)')
       .transform((val) => val.toUpperCase()),
     branch_code: z
       .string()
       .trim()
       .min(1, 'Branch code is required')
       .transform((val) => val.toUpperCase()),
-    section: z.enum(['A', 'B', 'C', 'D', 'E']),
+    section: z.string().trim().min(1, 'Section is required').max(20),
     email: z
       .string()
       .trim()
@@ -303,21 +319,38 @@ export const candidateRegisterSchema = z
       .regex(/[A-Z]/, 'Password must contain at least 1 uppercase letter')
       .regex(/\d/, 'Password must contain at least 1 number')
       .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/, 'Password must contain at least 1 special character'),
-    confirm_password: z.string().min(1, 'Confirm password is required'),
+    confirm_password: z.string().optional(),
     timestamp: z.string().optional(),
   })
-  .refine((data) => data.password === data.confirm_password, {
-    message: 'Confirm password must match password exactly',
-    path: ['confirm_password'],
-  });
+  .refine(
+    (data) => {
+      if (data.confirm_password !== undefined && data.confirm_password !== null && data.confirm_password !== '') {
+        return data.password === data.confirm_password;
+      }
+      return true;
+    },
+    {
+      message: 'Confirm password must match password exactly',
+      path: ['confirm_password'],
+    }
+  );
 
-export const verifyExamEntrySchema = z.object({
-  examCode: z.string().min(1, 'Exam code is required').trim(),
-  hallTicket: z.string().min(1, 'Hall ticket is required').trim(),
-  candidateName: z.string().optional(),
-  name: z.string().optional(),
-  deviceFingerprint: z.string().optional(),
-});
+export const verifyExamEntrySchema = z
+  .object({
+    examCode: z.string().optional(),
+    exam_code: z.string().optional(),
+    hallTicket: z.string().optional(),
+    hall_ticket: z.string().optional(),
+    candidateName: z.string().optional(),
+    name: z.string().optional(),
+    studentName: z.string().optional(),
+    deviceFingerprint: z.string().optional(),
+  })
+  .refine(
+    (data) => Boolean((data.examCode && data.examCode.trim()) || (data.exam_code && data.exam_code.trim())) &&
+              Boolean((data.hallTicket && data.hallTicket.trim()) || (data.hall_ticket && data.hall_ticket.trim())),
+    { message: 'Both exam code and hall ticket are required' }
+  );
 
 export const saveExamCodeAnswerSchema = z.object({
   attemptId: z.string().optional(),

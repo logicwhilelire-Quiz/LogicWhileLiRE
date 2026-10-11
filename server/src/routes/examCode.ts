@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { adminAuth, requireRole, requireCollegeScope } from '../middleware/adminAuth';
+import { adminAuth, requireRole, requireCollegeScope, requireFacultyPermission } from '../middleware/adminAuth';
 import { auditLog } from '../middleware/auditLog';
 import { supabase } from '../db/supabase';
 import {
@@ -8,6 +8,7 @@ import {
   createCollege,
   updateCollege,
   deleteCollege,
+  bulkImportCollegesHandler,
   listExamCodes,
   createExamCode,
   toggleExamCode,
@@ -15,6 +16,7 @@ import {
   importQuestionsForExamCode,
   validateAndPreviewQuestions,
   confirmImportQuestions,
+  downloadSampleQuestionsTemplate,
   deterministicShuffle,
   getExamCodeReport,
   getAttemptViolations,
@@ -216,6 +218,7 @@ router.get('/admin/colleges', adminAuth, listColleges);
 router.post('/admin/colleges', adminAuth, requireRole('super_admin'), auditLog('CREATE_COLLEGE', 'colleges'), createCollege);
 router.patch('/admin/colleges/:id', adminAuth, requireRole('super_admin'), auditLog('UPDATE_COLLEGE', 'colleges'), updateCollege);
 router.delete('/admin/colleges/:id', adminAuth, requireRole('super_admin'), auditLog('DELETE_COLLEGE', 'colleges'), deleteCollege);
+router.post('/admin/colleges/import', adminAuth, requireRole('super_admin'), upload.single('file'), bulkImportCollegesHandler);
 
 // Exam codes management (super_admin only)
 router.get('/admin/exam-codes', adminAuth, listExamCodes);
@@ -227,33 +230,36 @@ router.post('/admin/exam-codes/:id/allocate', adminAuth, requireRole('super_admi
 router.post('/admin/exam-codes/:id/lock-paper', adminAuth, requireRole('super_admin'), auditLog('LOCK_PAPER', 'exam_codes'), lockQuestionPaper);
 router.post('/admin/exam-codes/:id/replace-paper', adminAuth, requireRole('super_admin'), auditLog('REPLACE_PAPER', 'exam_codes'), replaceQuestionPaper);
 
-// Question import for exam codes (super_admin only)
+// Question import for exam codes (super_admin or faculty with create_questions permission; inspector forbidden)
 router.post(
   '/admin/exam-codes/:id/import-questions',
   adminAuth,
-  requireRole('super_admin'),
+  requireFacultyPermission('create_questions'),
   auditLog('IMPORT_QUESTIONS', 'exam_codes'),
   upload.single('file'),
   importQuestionsForExamCode
 );
+router.get('/admin/questions/sample-template', downloadSampleQuestionsTemplate);
+router.get('/admin/exam-codes/sample-template', downloadSampleQuestionsTemplate);
+
 router.post(
   '/admin/questions/validate-preview',
   adminAuth,
-  requireRole('super_admin'),
+  requireFacultyPermission('create_questions'),
   upload.single('file'),
   validateAndPreviewQuestions
 );
 router.post(
   '/admin/questions/confirm-import',
   adminAuth,
-  requireRole('super_admin'),
+  requireFacultyPermission('create_questions'),
   auditLog('CONFIRM_IMPORT_QUESTIONS', 'questions'),
   confirmImportQuestions
 );
 router.post(
   '/admin/exam-codes/:id/validate-preview',
   adminAuth,
-  requireRole('super_admin'),
+  requireFacultyPermission('create_questions'),
   upload.single('file'),
   validateAndPreviewQuestions
 );

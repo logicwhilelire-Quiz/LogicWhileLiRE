@@ -1044,7 +1044,7 @@ router.post(
   requireRole('super_admin', 'inspector'),
   async (req: Request, res: Response) => {
   try {
-    const { allow_late_join = false } = req.body;
+    const { allow_late_join = false, duration_seconds } = req.body;
     const code = (req.params.examCode as string).toUpperCase();
 
     // ── Idempotency check (Sprint 2, item 1) ──────────────────────────────
@@ -1085,26 +1085,27 @@ router.post(
       }
     }
 
-    const durationSeconds = (examData.duration_minutes ?? 60) * 60;
+    const durationSeconds = Number(duration_seconds) > 0
+      ? Number(duration_seconds)
+      : ((examData.duration_minutes ?? 60) * 60);
     const serverStartTime = Date.now();
 
     // ── Server-authoritative end_time write (Sprint 2, item 2) ───────────
-    // Writing end_time = server_start_time + duration_seconds means the
-    // existing computeRemainingSeconds() in socketService.ts automatically
-    // gives correct remaining time to every client — including late joiners
-    // who join mid-exam and receive an already-counting-down timer.
     const endTimeIso = new Date(serverStartTime + durationSeconds * 1000).toISOString();
     try {
-      await supabase
+      const { error: updErr } = await supabase
         .from('exam_codes')
         .update({
           is_active: true,
-          started_at: new Date(serverStartTime).toISOString(),
+          start_time: new Date(serverStartTime).toISOString(),
           end_time: endTimeIso,
         })
         .eq('exam_code', code);
-    } catch {
-      // Non-fatal: demo mode / mock DB may not support all columns
+      if (updErr) {
+        console.warn('[ExamStart] DB update notice:', updErr.message);
+      }
+    } catch (e: any) {
+      console.warn('[ExamStart] DB update exception:', e?.message);
     }
 
     // ── Broadcast EXAM_STARTED ────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -37,6 +37,8 @@ export default function CollegesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editCollege, setEditCollege] = useState<College | null>(null);
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -147,6 +149,33 @@ export default function CollegesPage() {
     }
   }
 
+  async function handleBulkUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setError('');
+    setSuccess('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+      const res = await axios.post(`${BASE_URL}/api/admin/colleges/import`, formData, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      setSuccess(`✅ Successfully imported ${res.data.inserted || 0} college(s) from Excel!`);
+      load();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to import colleges from Excel spreadsheet.');
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', system-ui, sans-serif", background: 'var(--color-bg, #070a14)' }}>
       {/* Sidebar */}
@@ -159,9 +188,27 @@ export default function CollegesPage() {
             <h1 style={{ fontSize: '1.7rem', fontWeight: 800, marginBottom: 4 }}>🏛️ Manage Colleges</h1>
             <p className="text-muted text-sm">Add and manage colleges for the exam code system.</p>
           </div>
-          <button id="add-college-btn" className="btn btn-primary" onClick={openAdd}>
-            ➕ Add College
-          </button>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleBulkUpload}
+              accept=".xlsx,.csv"
+              style={{ display: 'none' }}
+            />
+            <button
+              id="bulk-import-college-btn"
+              className="btn btn-secondary"
+              disabled={importing}
+              onClick={() => fileInputRef.current?.click()}
+              style={{ background: '#002147', color: '#FFFFFF', border: '1px solid #CBD5E1' }}
+            >
+              {importing ? 'Importing...' : '📥 Bulk Import Excel'}
+            </button>
+            <button id="add-college-btn" className="btn btn-primary" onClick={openAdd}>
+              ➕ Add College
+            </button>
+          </div>
         </div>
 
         {/* Alerts */}
@@ -200,9 +247,9 @@ export default function CollegesPage() {
             <div className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Active</div>
             <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-success)' }}>{colleges.filter(c => c.is_active).length}</div>
           </div>
-          <div className="card card-sm" style={{ borderLeft: '3px solid #6C5CE7' }}>
+          <div className="card card-sm" style={{ borderLeft: '3px solid var(--hp-amber, #f59e0b)' }}>
             <div className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>States</div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#6C5CE7' }}>{new Set(colleges.map(c => c.state).filter(Boolean)).size}</div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--hp-amber, #f59e0b)' }}>{new Set(colleges.map(c => c.state).filter(Boolean)).size}</div>
           </div>
         </div>
 

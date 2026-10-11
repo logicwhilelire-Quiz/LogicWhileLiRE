@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 export default function ThemeToggle({ className = '' }: { className?: string }) {
-  const [theme, setTheme] = useState<'dark' | 'light'>('light');
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
-    const savedTheme = (localStorage.getItem('logicwhilelire_theme') || localStorage.getItem('LOGICWHILELIRE_theme') || localStorage.getItem('lw_theme') as 'dark' | 'light') || 'light';
+    const savedTheme = (localStorage.getItem('logicwhilelire_theme') || localStorage.getItem('LOGICWHILELIRE_theme') || localStorage.getItem('lw_theme') as 'dark' | 'light') || 'dark';
     setTheme(savedTheme as 'dark' | 'light');
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);

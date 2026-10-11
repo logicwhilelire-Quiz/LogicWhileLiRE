@@ -17,7 +17,7 @@ interface ShimmerTextProps {
 export default function ShimmerText({
   children,
   color = '#f0f4fc',
-  shimmerColor = '#6C5CE7',
+  shimmerColor = '#00d2ff',
   as: Tag = 'span',
   className = '',
   style,

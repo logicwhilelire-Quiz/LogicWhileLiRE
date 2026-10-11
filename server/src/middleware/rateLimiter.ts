@@ -44,9 +44,66 @@ export const otpRateLimit = rateLimit({
   skip: isLoadTestBypass,
   message: {
     success: false,
-    error: 'Too many OTP attempts. Please try again in a minute.',
+    error: 'Too many OTP attempts from this IP address. Please try again in a minute.',
   },
 });
+
+/**
+ * In-memory sliding window rate limiter for OTP requests per email address
+ * Max 3 OTP requests per 10 minutes per email
+ */
+interface OtpEmailRecord {
+  count: number;
+  resetAt: number;
+}
+const emailOtpWindowMap = new Map<string, OtpEmailRecord>();
+
+// Cleanup stale records periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [email, record] of emailOtpWindowMap.entries()) {
+    if (now > record.resetAt) {
+      emailOtpWindowMap.delete(email);
+    }
+  }
+}, 5 * 60 * 1000);
+
+export function otpEmailRateLimit(req: any, res: any, next: any): void {
+  if (isLoadTestBypass(req)) {
+    return next();
+  }
+  const rawEmail = req.body?.email;
+  if (!rawEmail || typeof rawEmail !== 'string') {
+    return next();
+  }
+
+  const normalized = rawEmail.toLowerCase().trim();
+  const now = Date.now();
+  const windowMs = 10 * 60 * 1000; // 10 minutes
+  const maxAttempts = 3;
+
+  let record = emailOtpWindowMap.get(normalized);
+  if (!record || now > record.resetAt) {
+    record = { count: 1, resetAt: now + windowMs };
+    emailOtpWindowMap.set(normalized, record);
+    return next();
+  }
+
+  if (record.count >= maxAttempts) {
+    const remainingSeconds = Math.ceil((record.resetAt - now) / 1000);
+    const remainingMinutes = Math.ceil(remainingSeconds / 60);
+    res.status(429).json({
+      success: false,
+      error: `Too many OTP requests for this email address. Please wait ${remainingMinutes} minute(s) before requesting another code.`,
+      code: 'EMAIL_OTP_RATE_LIMITED',
+      retry_after_seconds: remainingSeconds,
+    });
+    return;
+  }
+
+  record.count++;
+  next();
+}
 
 /**
  * Rate limiter for answer submission — 120 requests per minute per candidate token

@@ -5,7 +5,7 @@ import * as THREE from 'three'
 
 // Dynamic telemetry coordinates for active institutional nodes
 const telemetryNodes = [
-  { lat: 16.50, lng: 80.64, color: '#6C5CE7' },
+  { lat: 16.50, lng: 80.64, color: '#00D2FF' },
   { lat: 16.44, lng: 80.62, color: '#06B6D4' },
   { lat: 16.30, lng: 80.44, color: '#10B981' },
   { lat: 17.78, lng: 83.37, color: '#F59E0B' },

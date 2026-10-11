@@ -27,23 +27,22 @@ export function auditLog(action: string, targetTable?: string) {
         supabase
           .from('audit_log')
           .insert({
-            user_id: req.admin.staff_id || req.admin.sub,
-            admin_id: req.admin.sub,
-            role: req.admin.role,
+            admin_id: String(req.admin.staff_id || req.admin.sub || 'admin'),
             action,
-            target: targetTable ? `${targetTable}${targetId ? `:${targetId}` : ''}` : (targetId || 'system'),
             target_table: targetTable || null,
             target_id: targetId || null,
-            college_id: (req.admin as any).college_id || null,
             payload: {
+              user_id: req.admin.staff_id || req.admin.sub,
+              role: req.admin.role,
+              target: targetTable ? `${targetTable}${targetId ? `:${targetId}` : ''}` : (targetId || 'system'),
+              college_id: (req.admin as any).college_id || null,
               body: req.body,
               params: req.params,
               query: req.query,
+              user_agent: userAgent,
+              timestamp: now,
             },
-            ip: clientIp,
             ip_address: clientIp,
-            user_agent: userAgent,
-            timestamp: now,
             created_at: now,
           })
           .then(({ error }) => {
@@ -77,19 +76,20 @@ export async function recordAuditLog(
   const userId = admin.staff_id || admin.id || admin.sub || 'system';
 
   await supabase.from('audit_log').insert({
-    user_id: userId,
-    admin_id: admin.sub || userId,
-    role: admin.role || 'super_admin',
+    admin_id: String(admin.sub || userId),
     action,
-    target: targetTable ? `${targetTable}${targetId ? `:${targetId}` : ''}` : (targetId || 'system'),
     target_table: targetTable || null,
     target_id: targetId || null,
-    college_id: admin.college_id || null,
-    payload: payload || null,
-    ip: String(clientIp),
+    payload: {
+      user_id: userId,
+      role: admin.role || 'super_admin',
+      target: targetTable ? `${targetTable}${targetId ? `:${targetId}` : ''}` : (targetId || 'system'),
+      college_id: admin.college_id || null,
+      user_agent: String(userAgent),
+      timestamp: now,
+      ...(payload && typeof payload === 'object' ? payload : { data: payload }),
+    },
     ip_address: String(clientIp),
-    user_agent: String(userAgent),
-    timestamp: now,
     created_at: now,
   });
 }

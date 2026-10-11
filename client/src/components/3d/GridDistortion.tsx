@@ -7,7 +7,7 @@ interface GridDistortionProps {
   className?: string
 }
 
-export default function GridDistortion({ rows = 14, cols = 20, color = '#6C5CE7', className = '' }: GridDistortionProps) {
+export default function GridDistortion({ rows = 14, cols = 20, color = '#00d2ff', className = '' }: GridDistortionProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {

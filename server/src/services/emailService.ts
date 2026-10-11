@@ -282,7 +282,8 @@ export interface EmailPayload {
     | 'result_published'
     | 'contact_auto_reply'
     | 'contact_admin_notification'
-    | 'admin_login_otp';
+    | 'admin_login_otp'
+    | 'admin_system_alert';
   replyTo?: string;
   examId?: string;
   sessionId?: string;
@@ -524,11 +525,13 @@ export async function sendWelcomeCredentialsEmail(options: {
   tempPassword: string;
   collegeName?: string;
   portalUrl?: string;
+  hallTicket?: string;
 }): Promise<boolean> {
-  const { toEmail, recipientName, role, identifier, tempPassword, collegeName, portalUrl } = options;
+  const { toEmail, recipientName, role, identifier, tempPassword, collegeName, portalUrl, hallTicket } = options;
   const clientBase = portalUrl || getFrontendUrl();
   const isStudent = role === 'student';
-  const targetLoginUrl = isStudent ? `${clientBase}/student/login` : `${clientBase}/admin/login`;
+  const targetLoginUrl = isStudent ? `${clientBase}/login` : `${clientBase}/admin/login`;
+  const resolvedHallTicket = hallTicket || identifier || 'REGISTERED';
 
   const roleDisplay =
     role === 'super_admin'
@@ -540,48 +543,63 @@ export async function sendWelcomeCredentialsEmail(options: {
       : 'Student Candidate';
 
   const innerHtml = `
-    <div style="background:rgba(56,189,248,0.12); border:1px solid #38bdf8; border-radius:8px; padding:12px 16px; margin-bottom:20px;">
-      <span style="font-size:12px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:1px;">
-        🎓 ACCOUNT PROVISIONED
+    <div style="background:rgba(0,33,71,0.08); border:1px solid #002147; border-radius:8px; padding:12px 16px; margin-bottom:20px;">
+      <span style="font-size:12px; font-weight:800; color:#002147; text-transform:uppercase; letter-spacing:1px;">
+        🎓 INSTITUTIONAL ASSESSMENT CREDENTIALS
       </span>
     </div>
-    <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">
-      Welcome to LogicWhileLiRE
+    <h2 style="margin:0 0 12px; font-size:22px; font-weight:800; color:#002147;">
+      Official Examination Portal Account
     </h2>
-    <p style="margin:0 0 16px; font-size:14px; line-height:1.6; color:#cbd5e1;">
-      Dear <strong style="color:#f8fafc;">${recipientName}</strong>,
+    <p style="margin:0 0 16px; font-size:14px; line-height:1.6; color:#334155;">
+      Dear <strong style="color:#002147;">${recipientName}</strong>,
     </p>
-    <p style="margin:0 0 20px; font-size:14px; line-height:1.6; color:#cbd5e1;">
-      Your account has been officially created on the <strong>LogicWhileLiRE</strong> platform as <strong>${roleDisplay}</strong>${
+    <p style="margin:0 0 20px; font-size:14px; line-height:1.6; color:#334155;">
+      Your profile has been enrolled in the <strong>LogicWhile Assessment Suite</strong> as <strong>${roleDisplay}</strong>${
     collegeName ? ` at <strong>${collegeName}</strong>` : ''
-  }. Below are your initial credentials:
+  }. Below are your official examination portal credentials:
     </p>
-    <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); padding:20px; border-radius:8px; margin-bottom:24px;">
-      <div style="font-size:13px; color:#94a3b8; margin-bottom:4px;">Login Identifier (Email / Roll No):</div>
-      <div style="font-family:monospace; font-size:15px; font-weight:700; color:#f8fafc; margin-bottom:14px;">${identifier || toEmail}</div>
-      <div style="font-size:13px; color:#94a3b8; margin-bottom:4px;">Temporary Password:</div>
-      <div style="font-family:monospace; font-size:18px; font-weight:700; color:#38bdf8; letter-spacing:1px; margin-bottom:14px;">${tempPassword}</div>
-      <div style="background:rgba(239,68,68,0.12); border-left:3px solid #ef4444; padding:8px 12px; border-radius:4px; font-size:12px; color:#fca5a5;">
-        🔒 <strong>Mandatory Security Policy:</strong> You must change this temporary password upon your first login.
+
+    <!-- Prominent Official Credentials Card -->
+    <div style="background:#F8FAFC; border:2px solid #EAA812; padding:22px; border-radius:10px; margin-bottom:24px; box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+      <table style="width:100%; border-collapse:collapse; font-size:14px;">
+        <tr>
+          <td style="padding:8px 0; color:#64748B; font-weight:600; width:40%;">1. Login ID (Email):</td>
+          <td style="padding:8px 0; font-family:monospace; font-size:15px; font-weight:800; color:#002147;">${toEmail}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0; color:#64748B; font-weight:600;">2. Hall Ticket / Roll Number:</td>
+          <td style="padding:8px 0; font-family:monospace; font-size:16px; font-weight:800; color:#D97706;">${resolvedHallTicket}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0; color:#64748B; font-weight:600;">3. Access Password:</td>
+          <td style="padding:8px 0; font-family:monospace; font-size:17px; font-weight:800; color:#1D4ED8; letter-spacing:1px;">${tempPassword}</td>
+        </tr>
+      </table>
+
+      <div style="background:#FEF3C7; border-left:3px solid #D97706; padding:10px 14px; border-radius:4px; font-size:12px; color:#92400E; margin-top:14px;">
+        🔒 <strong>Examination Policy:</strong> You may sign in using either your <strong>Hall Ticket Number</strong> or <strong>Login ID</strong> along with your access password.
       </div>
     </div>
+
     <div style="text-align:center; margin-bottom:24px;">
-      <a href="${targetLoginUrl}" style="display:inline-block; background:linear-gradient(135deg, #0284c7 0%, #2563eb 100%); color:#ffffff; font-weight:700; font-size:15px; text-decoration:none; padding:12px 28px; border-radius:6px; box-shadow:0 4px 14px rgba(37,99,235,0.35);">
-        Log In to Portal & Set Permanent Password →
+      <a href="${targetLoginUrl}" style="display:inline-block; background:#002147; color:#FFFFFF; font-weight:800; font-size:15px; text-decoration:none; padding:13px 32px; border-radius:6px; box-shadow:0 4px 14px rgba(0,33,71,0.3);">
+        Log In to Examination Portal →
       </a>
     </div>
-    <p style="margin:0; font-size:12px; color:#94a3b8; line-height:1.5;">
-      If you did not expect this invitation, please notify support at <a href="mailto:${SUPPORT_EMAIL}" style="color:#38bdf8;">${SUPPORT_EMAIL}</a> immediately.
+
+    <p style="margin:0; font-size:12px; color:#64748B; line-height:1.5;">
+      If you need technical assistance, please contact the examination control center at <a href="mailto:${SUPPORT_EMAIL}" style="color:#002147; font-weight:700;">${SUPPORT_EMAIL}</a>.
     </p>
   `;
 
-  const text = `Welcome to LogicWhileLiRE\n\nHello ${recipientName},\nYour account has been created as ${roleDisplay}${collegeName ? ` at ${collegeName}` : ''}.\n\nLogin Identifier: ${identifier || toEmail}\nTemporary Password: ${tempPassword}\nPortal Link: ${targetLoginUrl}\n\nNote: You must change your password upon first login.\nSupport: ${SUPPORT_EMAIL}\nLogicWhileLiRE — Logic. While. LiRE.`;
+  const text = `LogicWhile Assessment Suite — Credentials Dispatched\n\nHello ${recipientName},\nYour account has been created as ${roleDisplay}${collegeName ? ` at ${collegeName}` : ''}.\n\n1. Login ID: ${toEmail}\n2. Hall Ticket Number: ${resolvedHallTicket}\n3. Password: ${tempPassword}\n\nPortal Link: ${targetLoginUrl}\nSupport: ${SUPPORT_EMAIL}\nLogicWhile Assessment Suite`;
 
   return sendWithRetry({
     to: toEmail,
-    subject: `Welcome to LogicWhileLiRE — Credentials for ${recipientName}`,
+    subject: `LogicWhile Assessment Suite — Credentials for ${recipientName} (${resolvedHallTicket})`,
     text,
-    html: wrapBrandTemplate('Welcome to LogicWhileLiRE', innerHtml),
+    html: wrapBrandTemplate('LogicWhile Assessment Suite Credentials', innerHtml),
     emailType: 'welcome_credentials',
   });
 }
@@ -592,13 +610,15 @@ export async function sendWelcomeEmail(
   recipientName: string,
   role: string,
   tempPassword: string,
-  collegeName?: string
+  collegeName?: string,
+  hallTicket?: string
 ): Promise<boolean> {
   return sendWelcomeCredentialsEmail({
     toEmail,
     recipientName,
     role,
-    identifier: toEmail,
+    identifier: hallTicket || toEmail,
+    hallTicket: hallTicket || toEmail,
     tempPassword,
     collegeName,
   });
@@ -1474,5 +1494,70 @@ export async function sendInspectorDirectNoticeEmail(
     text: `OFFICIAL PROCTOR NOTICE\nCandidate: ${recipientName} (${hallTicket})\nExam: ${examTitle}\nNotice: ${noticeText}`,
     html: wrapBrandTemplate('Official Invigilator Warning', innerHtml),
     emailType: 'inspector_notice',
+  });
+}
+
+// ============================================================================
+// TEMPLATE 12: SYSTEM ALERTING AGENT (ADMIN IMMEDIATE NOTIFICATION)
+// ============================================================================
+export async function sendSystemAlertAdminEmail(options: {
+  alertType: string;
+  severity: string;
+  message: string;
+  ip?: string;
+  userAgent?: string;
+  details?: Record<string, any>;
+  timestamp?: string;
+}): Promise<boolean> {
+  const { alertType, severity, message, ip, userAgent, details, timestamp } = options;
+  const adminRecipient = ADMIN_EMAIL;
+  const timeStr = timestamp || new Date().toLocaleString();
+
+  const isCritical = severity === 'CRITICAL' || severity === 'HIGH';
+  const headerBg = isCritical ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)';
+  const headerColor = isCritical ? '#ef4444' : '#f59e0b';
+
+  const innerHtml = `
+    <div style="background:${headerBg}; border:1px solid ${headerColor}; border-radius:8px; padding:12px 16px; margin-bottom:20px;">
+      <span style="font-size:12px; font-weight:800; color:${headerColor}; text-transform:uppercase; letter-spacing:1px;">
+        🚨 SYSTEM ALERTING AGENT — ${severity}
+      </span>
+    </div>
+    <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">
+      ${alertType}: ${message}
+    </h2>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; margin-bottom:24px;">
+      <tr>
+        <td style="padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13px; color:#94a3b8;">Timestamp:</td>
+        <td style="padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13px; color:#f8fafc;">${timeStr}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13px; color:#94a3b8;">Severity:</td>
+        <td style="padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13px; font-weight:800; color:${headerColor};">${severity}</td>
+      </tr>
+      ${ip ? `<tr>
+        <td style="padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13px; color:#94a3b8;">IP Address:</td>
+        <td style="padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13px; font-family:monospace; color:#38bdf8;">${ip}</td>
+      </tr>` : ''}
+      ${userAgent ? `<tr>
+        <td style="padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13px; color:#94a3b8;">User-Agent:</td>
+        <td style="padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:12px; color:#cbd5e1;">${userAgent}</td>
+      </tr>` : ''}
+      ${details ? `<tr>
+        <td style="padding:10px 16px; font-size:13px; color:#94a3b8;">Details:</td>
+        <td style="padding:10px 16px; font-size:12px; font-family:monospace; color:#f1f5f9;"><pre style="margin:0; white-space:pre-wrap;">${JSON.stringify(details, null, 2)}</pre></td>
+      </tr>` : ''}
+    </table>
+    <p style="font-size:12px; color:#64748b; margin:0;">
+      Automated dispatch from LogicWhileLiRE Real-Time System Alerting Agent.
+    </p>
+  `;
+
+  return sendWithRetry({
+    to: adminRecipient,
+    subject: `🚨 [${severity}] System Alert: ${alertType} - ${message.slice(0, 50)}`,
+    text: `SYSTEM ALERT [${severity}]\nType: ${alertType}\nMessage: ${message}\nTime: ${timeStr}\nIP: ${ip || 'N/A'}\nDetails: ${JSON.stringify(details || {})}`,
+    html: wrapBrandTemplate('System Security & Health Alert', innerHtml),
+    emailType: 'admin_system_alert',
   });
 }

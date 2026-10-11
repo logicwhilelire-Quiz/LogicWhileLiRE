@@ -7,10 +7,18 @@
 const rawApiUrl = (import.meta as any).env?.VITE_API_URL || (import.meta as any).env?.VITE_API_BASE_URL;
 const rawSocketUrl = (import.meta as any).env?.VITE_SOCKET_URL;
 
-// In production builds, base URL must come from environment and never default to localhost
-if (import.meta.env.PROD) {
+// Detect if running on localhost / loopback (e.g. local dev, vite preview, or local testing)
+const isLocalhostHost = typeof window !== 'undefined' && (
+  !window.location.hostname ||
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.hostname.endsWith('.local')
+);
+
+// In production builds deployed to a remote domain, base URL must come from environment and never point to localhost
+if (import.meta.env.PROD && !isLocalhostHost) {
   if (!rawApiUrl || rawApiUrl.includes('localhost') || rawApiUrl.includes('127.0.0.1')) {
-    const errorMsg = '🚨 [Configuration Fatal] VITE_API_URL / VITE_API_BASE_URL must be configured with a valid remote URL in production builds, and must never default to localhost.';
+    const errorMsg = '🚨 [Configuration Fatal] When deployed to a remote domain, VITE_API_URL / VITE_API_BASE_URL must be configured with a valid remote URL, and must never default to localhost.';
     console.error(errorMsg);
     throw new Error(errorMsg);
   }

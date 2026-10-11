@@ -20,7 +20,7 @@ export default function Confetti({
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const colors = ['#6C5CE7', '#00B894', '#FDCB6E', '#06B6D4'];
+    const colors = ['#00d2ff', '#FFC200', '#10B981', '#0284c7', '#ea580c'];
 
     const centerX = canvas.width / 2;
     const centerY = canvas.height * 0.45;

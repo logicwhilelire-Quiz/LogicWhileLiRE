@@ -84,7 +84,7 @@ export default function SectorRadar3D({
       <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div>
           <div style={{ fontSize: '0.72rem', color: '#FFC200', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Logic Whi1e LiRE · Elevating Coding Knowledge
+            LogicWhileLiRE · Elevating Coding Knowledge
           </div>
           <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', fontFamily: "var(--font-display, 'Space Grotesk', sans-serif)" }}>
             5-Sector Technical Competency Radar

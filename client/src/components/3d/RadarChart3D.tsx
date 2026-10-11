@@ -100,7 +100,7 @@ const DEFAULT_DATA: RadarDataPoint[] = [
   { label: 'Algo', value: 0.78 },
 ]
 
-export default function RadarChart3D({ data = DEFAULT_DATA, color = '#6C5CE7', height = 280 }: RadarChart3DProps) {
+export default function RadarChart3D({ data = DEFAULT_DATA, color = '#00d2ff', height = 280 }: RadarChart3DProps) {
   return (
     <div style={{ width: '100%', height }}>
       <Canvas camera={{ position: [0, 0, 4], fov: 50 }} dpr={[1, 1.5]}>

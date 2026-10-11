@@ -7,6 +7,7 @@ import AnimatedPage from '../../components/AnimatedPage';
 interface PreviewItem {
   row_number: number;
   valid: boolean;
+  type?: 'MCQ' | 'Coding' | 'Aptitude' | 'Diagram';
   question: string;
   option_a: string;
   option_b: string;
@@ -18,6 +19,8 @@ interface PreviewItem {
   section: string;
   topic: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
+  diagram_url?: string;
+  test_cases?: string;
   errors?: string[];
 }
 
@@ -32,6 +35,8 @@ export default function ImportQuestionsPage() {
   const [validating, setValidating] = useState(false);
   const [importing, setImporting] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [filterTab, setFilterTab] = useState<'all' | 'valid' | 'invalid'>('all');
+  const [skippedRows, setSkippedRows] = useState<Array<{ row_number: number; question: string; errors?: string[] }>>([]);
 
   // Preview state
   const [previewData, setPreviewData] = useState<{
@@ -69,16 +74,35 @@ export default function ImportQuestionsPage() {
     setFile(f);
     setPreviewData(null);
     setImportSuccess(null);
+    setSkippedRows([]);
     setGeneralError(null);
   }
 
-  function handleDownloadTemplate() {
+  async function handleDownloadXlsxTemplate() {
+    try {
+      const res = await fetch('/api/admin/questions/sample-template');
+      if (!res.ok) throw new Error('Server returned ' + res.status);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'LogicWhileLiRE_Sample_Questions_Template.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setGeneralError('Failed to download Excel template: ' + err.message);
+    }
+  }
+
+  function handleDownloadCsvTemplate() {
     const csvContent =
-      'Question,Option A,Option B,Option C,Option D,Correct Answer,Marks,Penalty,Section,Topic,Difficulty\n' +
-      '"What is the time complexity of searching in a balanced Binary Search Tree?","O(1)","O(log n)","O(n)","O(n log n)","B",1,0.25,"Computer Science","Data Structures","Easy"\n' +
-      '"Which CPU scheduling algorithm gives minimum average waiting time?","FCFS","Round Robin","SJF","Priority Scheduling","C",1,0.25,"Computer Science","Operating Systems","Medium"\n' +
-      '"What is the output of 3 + 2 + \\"7\\" in JavaScript?","57","12","NaN","Error","A",1,0,"Web Development","JavaScript","Easy"\n' +
-      '"In relational databases, which normal form eliminates transitive dependency?","1NF","2NF","3NF","BCNF","C",2,0.5,"Databases","Normalization","Hard"\n';
+      'Type,Question,Option A,Option B,Option C,Option D,Correct Answer,Marks,Penalty,Topic,Difficulty,Diagram URL,Test Cases\n' +
+      '"MCQ","What is the time complexity of searching in a balanced BST?","O(1)","O(log n)","O(n)","O(n log n)","B",1,0.25,"Data Structures","Easy","",""\n' +
+      '"Coding","Write a function isPalindrome(s) that returns true if palindrome.","","","","","def isPalindrome(s): return s == s[::-1]",10,0,"Algorithms","Medium","","[{\\"input\\": \\"racecar\\", \\"output\\": \\"true\\"}]"\n' +
+      '"Diagram","Identify the gateway node in the network topology diagram.","Auth Proxy","Worker","Envoy Ingress","Cache","C",3,0.5,"Networks","Hard","https://images.unsplash.com/photo-1558494949-ef010cbdcc31",""\n' +
+      '"Aptitude","A train traveling at 72 km/h crosses a 180m platform in 15 seconds. Train length?","100 m","120 m","150 m","180 m","B",2,0,"Quant Velocity","Medium","",""\n';
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -99,6 +123,7 @@ export default function ImportQuestionsPage() {
     setValidating(true);
     setGeneralError(null);
     setImportSuccess(null);
+    setSkippedRows([]);
 
     try {
       const res = await validateAndPreviewQuestions(file);
@@ -139,7 +164,13 @@ export default function ImportQuestionsPage() {
       });
 
       if (res.data?.success) {
-        setImportSuccess(`Successfully imported ${validQuestions.length} questions into exam "${targetCode}"!`);
+        const count = res.data.imported_count || validQuestions.length;
+        setImportSuccess(`Successfully imported ${count} questions into exam "${targetCode}"!`);
+        if (res.data.invalid_rows && res.data.invalid_rows.length > 0) {
+          setSkippedRows(res.data.invalid_rows);
+        } else {
+          setSkippedRows([]);
+        }
         setFile(null);
         setPreviewData(null);
       } else {
@@ -315,15 +346,26 @@ export default function ImportQuestionsPage() {
 
             {/* Action Bar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 18, flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                id="btn-download-template"
-                onClick={handleDownloadTemplate}
-                className="btn btn-outline text-xs"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-              >
-                📥 Download 5-Column Template (.csv)
-              </button>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  id="btn-download-xlsx-template"
+                  onClick={handleDownloadXlsxTemplate}
+                  className="btn btn-secondary text-xs"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
+                >
+                  📥 Download 2-Sheet Excel Template (.xlsx)
+                </button>
+                <button
+                  type="button"
+                  id="btn-download-csv-template"
+                  onClick={handleDownloadCsvTemplate}
+                  className="btn btn-outline text-xs"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  📄 Legacy CSV (.csv)
+                </button>
+              </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 {file && (
@@ -358,6 +400,37 @@ export default function ImportQuestionsPage() {
               </div>
             </div>
           </div>
+
+          {/* Skipped Rows Report (if import skipped invalid rows) */}
+          {skippedRows.length > 0 && (
+            <div className="card mb-4 animate-slide-up" style={{ padding: '18px 22px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.35)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#f87171', fontWeight: 800, fontSize: '0.96rem', marginBottom: 6 }}>
+                <span>⚠️</span>
+                <span>{skippedRows.length} Invalid Question{skippedRows.length > 1 ? 's' : ''} Skipped During Import:</span>
+              </div>
+              <p className="text-muted text-xs" style={{ margin: '0 0 10px 0' }}>
+                Only verified valid questions were committed to the assessment vault. Please correct the rows below in your Excel sheet and re-upload:
+              </p>
+              <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {skippedRows.map((sr, idx) => (
+                  <div key={idx} style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '8px 12px', borderRadius: 6, border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#fca5a5' }}>
+                      Row {sr.row_number}: {sr.question || 'Untitled Question'}
+                    </div>
+                    {sr.errors && sr.errors.length > 0 && (
+                      <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {sr.errors.map((e, eIdx) => (
+                          <span key={eIdx} style={{ color: '#fee2e2', fontSize: '0.74rem', fontFamily: 'monospace' }}>
+                            &bull; {e}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Validation & Preview Section */}
           {previewData && (
@@ -405,10 +478,15 @@ export default function ImportQuestionsPage() {
               >
                 <div>
                   <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc' }}>
-                    Ready to commit question paper to "{examCode.trim() || 'DEFAULT'}"?
+                    Ready to commit verified questions to "{examCode.trim() || 'DEFAULT'}"?
                   </div>
                   <div className="text-muted text-xs" style={{ marginTop: 2 }}>
-                    {previewData.valid_count} verified question{previewData.valid_count !== 1 ? 's' : ''} will be imported with automated shuffling and negative marking.
+                    {previewData.valid_count} verified question{previewData.valid_count !== 1 ? 's' : ''} will be imported into the active exam.
+                    {previewData.invalid_count > 0 && (
+                      <span style={{ color: '#fca5a5', marginLeft: 4 }}>
+                        ({previewData.invalid_count} invalid row{previewData.invalid_count > 1 ? 's' : ''} will be skipped and reported)
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -427,36 +505,48 @@ export default function ImportQuestionsPage() {
                     </>
                   ) : (
                     <>
-                      ✅ Confirm &amp; Import ({previewData.valid_count} Questions) &rarr;
+                      ✅ Confirm &amp; Import ({previewData.valid_count} Valid Questions) &rarr;
                     </>
                   )}
                 </button>
               </div>
 
-              {/* Error messages if any */}
-              {previewData.errors && previewData.errors.length > 0 && (
-                <div className="card mb-4" style={{ padding: '16px 20px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-                  <div style={{ fontWeight: 700, color: '#f87171', fontSize: '0.88rem', marginBottom: 8 }}>
-                    ⚠️ {previewData.errors.length} Row Validation Warning{previewData.errors.length !== 1 ? 's' : ''}:
-                  </div>
-                  <div style={{ maxHeight: 160, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {previewData.errors.map((err, i) => (
-                      <div key={i} className="text-xs text-muted" style={{ fontFamily: 'monospace' }}>
-                        &bull; {err}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Preview Filter Tabs */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                <button
+                  type="button"
+                  onClick={() => setFilterTab('all')}
+                  className={`btn text-xs ${filterTab === 'all' ? 'btn-primary' : 'btn-outline'}`}
+                  style={{ padding: '6px 14px', borderRadius: 20 }}
+                >
+                  All Rows ({previewData.total_rows})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterTab('valid')}
+                  className={`btn text-xs ${filterTab === 'valid' ? 'btn-primary' : 'btn-outline'}`}
+                  style={{ padding: '6px 14px', borderRadius: 20 }}
+                >
+                  ✅ Valid Only ({previewData.valid_count})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterTab('invalid')}
+                  className={`btn text-xs ${filterTab === 'invalid' ? 'btn-primary' : 'btn-outline'}`}
+                  style={{ padding: '6px 14px', borderRadius: 20 }}
+                >
+                  ❌ Errors Only ({previewData.invalid_count})
+                </button>
+              </div>
 
               {/* Preview Table */}
               <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                 <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h3 style={{ fontSize: '0.98rem', fontWeight: 700, margin: 0, color: '#f8fafc' }}>
-                    Parsed Question Preview ({previewData.preview.length} rows)
+                    Parsed Question Preview
                   </h3>
                   <span className="text-muted text-xs">
-                    Shuffled per candidate during exam session
+                    Green = Valid &amp; Ready &bull; Red = Validation Errors
                   </span>
                 </div>
 
@@ -464,98 +554,167 @@ export default function ImportQuestionsPage() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                     <thead>
                       <tr style={{ background: 'rgba(15, 23, 42, 0.9)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                        <th style={{ padding: '12px 14px', textAlign: 'center', width: 60, color: '#94a3b8' }}>#</th>
-                        <th style={{ padding: '12px 14px', textAlign: 'left', minWidth: 260, color: '#94a3b8' }}>Question Text</th>
-                        <th style={{ padding: '12px 14px', textAlign: 'left', minWidth: 280, color: '#94a3b8' }}>Options (A, B, C, D)</th>
-                        <th style={{ padding: '12px 14px', textAlign: 'center', width: 90, color: '#94a3b8' }}>Correct</th>
-                        <th style={{ padding: '12px 14px', textAlign: 'center', width: 110, color: '#94a3b8' }}>Scoring</th>
-                        <th style={{ padding: '12px 14px', textAlign: 'left', width: 120, color: '#94a3b8' }}>Section / Topic</th>
                         <th style={{ padding: '12px 14px', textAlign: 'center', width: 90, color: '#94a3b8' }}>Status</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'center', width: 90, color: '#94a3b8' }}>Type</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'left', minWidth: 260, color: '#94a3b8' }}>Question Text</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'left', minWidth: 280, color: '#94a3b8' }}>Options / Specifications</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'center', width: 90, color: '#94a3b8' }}>Correct</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'center', width: 100, color: '#94a3b8' }}>Scoring</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'left', width: 120, color: '#94a3b8' }}>Section / Topic</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {previewData.preview.map((q, idx) => (
-                        <tr
-                          key={idx}
-                          style={{
-                            borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-                            background: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.01)',
-                          }}
-                        >
-                          <td style={{ padding: '12px 14px', textAlign: 'center', color: '#64748b', fontWeight: 700 }}>
-                            {q.row_number}
-                          </td>
-
-                          <td style={{ padding: '12px 14px', color: '#f8fafc', fontWeight: 600 }}>
-                            <div>{q.question}</div>
-                            {q.errors && q.errors.length > 0 && (
-                              <div style={{ marginTop: 4, color: '#f87171', fontSize: '0.75rem' }}>
-                                ⚠️ {q.errors.join('; ')}
+                      {previewData.preview
+                        .filter((q) => {
+                          if (filterTab === 'valid') return q.valid;
+                          if (filterTab === 'invalid') return !q.valid;
+                          return true;
+                        })
+                        .map((q, idx) => (
+                          <tr
+                            key={idx}
+                            style={{
+                              borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                              background: q.valid ? 'rgba(34, 197, 94, 0.04)' : 'rgba(239, 68, 68, 0.08)',
+                              borderLeft: q.valid ? '4px solid #22c55e' : '4px solid #ef4444',
+                            }}
+                          >
+                            <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                              <div style={{ fontWeight: 800, fontSize: '0.75rem', color: '#64748b' }}>
+                                #{q.row_number}
                               </div>
-                            )}
-                          </td>
+                              {q.valid ? (
+                                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#4ade80', background: 'rgba(34, 197, 94, 0.2)', padding: '2px 8px', borderRadius: 8, display: 'inline-block', marginTop: 4, border: '1px solid rgba(34, 197, 94, 0.4)' }}>
+                                  VALID
+                                </span>
+                              ) : (
+                                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#f87171', background: 'rgba(239, 68, 68, 0.2)', padding: '2px 8px', borderRadius: 8, display: 'inline-block', marginTop: 4, border: '1px solid rgba(239, 68, 68, 0.4)' }}>
+                                  INVALID
+                                </span>
+                              )}
+                            </td>
 
-                          <td style={{ padding: '12px 14px' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: '0.76rem' }}>
-                              <div style={{ background: q.correct_answer === 'A' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: 4, border: q.correct_answer === 'A' ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid transparent' }}>
-                                <strong>A:</strong> {q.option_a || '-'}
-                              </div>
-                              <div style={{ background: q.correct_answer === 'B' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: 4, border: q.correct_answer === 'B' ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid transparent' }}>
-                                <strong>B:</strong> {q.option_b || '-'}
-                              </div>
-                              <div style={{ background: q.correct_answer === 'C' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: 4, border: q.correct_answer === 'C' ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid transparent' }}>
-                                <strong>C:</strong> {q.option_c || '-'}
-                              </div>
-                              <div style={{ background: q.correct_answer === 'D' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: 4, border: q.correct_answer === 'D' ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid transparent' }}>
-                                <strong>D:</strong> {q.option_d || '-'}
-                              </div>
-                            </div>
-                          </td>
-
-                          <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                            <span
-                              style={{
-                                display: 'inline-block',
-                                padding: '3px 8px',
-                                borderRadius: 12,
-                                fontWeight: 800,
-                                fontSize: '0.78rem',
-                                background: 'rgba(34, 197, 94, 0.2)',
-                                color: '#4ade80',
-                                border: '1px solid rgba(34, 197, 94, 0.4)',
-                              }}
-                            >
-                              {q.correct_answer}
-                            </span>
-                          </td>
-
-                          <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                            <div style={{ fontWeight: 700, color: '#f8fafc' }}>+{q.marks} m</div>
-                            {q.penalty > 0 ? (
-                              <div style={{ fontSize: '0.72rem', color: '#f87171' }}>-{q.penalty} pen</div>
-                            ) : (
-                              <div style={{ fontSize: '0.72rem', color: '#64748b' }}>no neg</div>
-                            )}
-                          </td>
-
-                          <td style={{ padding: '12px 14px' }}>
-                            <div style={{ fontWeight: 600, color: '#cbd5e1' }}>{q.section || 'General'}</div>
-                            <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{q.topic || 'General'} &bull; {q.difficulty}</div>
-                          </td>
-
-                          <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                            {q.valid ? (
-                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#4ade80', background: 'rgba(34, 197, 94, 0.1)', padding: '2px 8px', borderRadius: 10 }}>
-                                ✅ OK
+                            <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '3px 8px',
+                                  borderRadius: 6,
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  background:
+                                    q.type === 'Coding'
+                                      ? 'rgba(147, 51, 234, 0.2)'
+                                      : q.type === 'Diagram'
+                                      ? 'rgba(245, 158, 11, 0.2)'
+                                      : q.type === 'Aptitude'
+                                      ? 'rgba(16, 185, 129, 0.2)'
+                                      : 'rgba(59, 130, 246, 0.2)',
+                                  color:
+                                    q.type === 'Coding'
+                                      ? '#c084fc'
+                                      : q.type === 'Diagram'
+                                      ? '#fbbf24'
+                                      : q.type === 'Aptitude'
+                                      ? '#34d399'
+                                      : '#60a5fa',
+                                  border: '1px solid currentColor',
+                                }}
+                              >
+                                {q.type || 'MCQ'}
                               </span>
-                            ) : (
-                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#f87171', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 8px', borderRadius: 10 }}>
-                                ❌ Error
+                            </td>
+
+                            <td style={{ padding: '12px 14px', color: '#f8fafc', fontWeight: 600 }}>
+                              <div>{q.question}</div>
+                              {q.errors && q.errors.length > 0 && (
+                                <div style={{ marginTop: 8, padding: '6px 10px', background: 'rgba(239, 68, 68, 0.15)', borderRadius: 6, border: '1px solid rgba(239, 68, 68, 0.35)' }}>
+                                  <div style={{ color: '#fca5a5', fontWeight: 700, fontSize: '0.74rem', marginBottom: 2 }}>
+                                    ⚠️ VALIDATION ERROR{q.errors.length > 1 ? 'S' : ''}:
+                                  </div>
+                                  {q.errors.map((err, eIdx) => (
+                                    <div key={eIdx} style={{ color: '#fee2e2', fontSize: '0.73rem', fontFamily: 'monospace' }}>
+                                      &bull; {err}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+
+                            <td style={{ padding: '12px 14px' }}>
+                              {q.type === 'Coding' ? (
+                                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                                  <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#c084fc', marginBottom: 2 }}>
+                                    🧪 Test Cases Specification:
+                                  </div>
+                                  <div style={{ fontSize: '0.72rem', color: '#cbd5e1', fontFamily: 'monospace', maxHeight: 60, overflowY: 'auto' }}>
+                                    {q.test_cases || '(No test cases provided)'}
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  {q.diagram_url && (
+                                    <div style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.74rem', color: '#fbbf24' }}>
+                                      <span>🖼️</span>
+                                      <a href={q.diagram_url} target="_blank" rel="noreferrer" style={{ color: '#fbbf24', textDecoration: 'underline' }}>
+                                        View Diagram Image
+                                      </a>
+                                    </div>
+                                  )}
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: '0.76rem' }}>
+                                    <div style={{ background: q.correct_answer === 'A' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: 4, border: q.correct_answer === 'A' ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid transparent' }}>
+                                      <strong>A:</strong> {q.option_a || '-'}
+                                    </div>
+                                    <div style={{ background: q.correct_answer === 'B' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: 4, border: q.correct_answer === 'B' ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid transparent' }}>
+                                      <strong>B:</strong> {q.option_b || '-'}
+                                    </div>
+                                    <div style={{ background: q.correct_answer === 'C' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: 4, border: q.correct_answer === 'C' ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid transparent' }}>
+                                      <strong>C:</strong> {q.option_c || '-'}
+                                    </div>
+                                    <div style={{ background: q.correct_answer === 'D' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: 4, border: q.correct_answer === 'D' ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid transparent' }}>
+                                      <strong>D:</strong> {q.option_d || '-'}
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                            </td>
+
+                            <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '3px 8px',
+                                  borderRadius: 8,
+                                  fontWeight: 800,
+                                  fontSize: '0.78rem',
+                                  background: 'rgba(34, 197, 94, 0.2)',
+                                  color: '#4ade80',
+                                  border: '1px solid rgba(34, 197, 94, 0.4)',
+                                  maxWidth: 120,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {q.correct_answer || '-'}
                               </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+
+                            <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                              <div style={{ fontWeight: 700, color: '#f8fafc' }}>+{q.marks} m</div>
+                              {q.penalty > 0 ? (
+                                <div style={{ fontSize: '0.72rem', color: '#f87171' }}>-{q.penalty} pen</div>
+                              ) : (
+                                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>no neg</div>
+                              )}
+                            </td>
+
+                            <td style={{ padding: '12px 14px' }}>
+                              <div style={{ fontWeight: 600, color: '#cbd5e1' }}>{q.section || 'General'}</div>
+                              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{q.topic || 'General'} &bull; {q.difficulty}</div>
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>

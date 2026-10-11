@@ -25,7 +25,7 @@ function PlasmaBallMesh() {
       }
       const curve = new THREE.CatmullRomCurve3(points)
       const geo = new THREE.TubeGeometry(curve, 20, 0.012, 5, false)
-      const colors = ['#6C5CE7', '#8b5cf6', '#06b6d4', '#a78bfa', '#7c3aed', '#06b6d4', '#6C5CE7', '#a78bfa']
+      const colors = ['#00d2ff', '#0284c7', '#38bdf8', '#fbbf24', '#f59e0b', '#00d2ff', '#38bdf8', '#fbbf24']
       return { geo, color: colors[i] }
     })
   }, [])
@@ -62,7 +62,7 @@ function PlasmaBallMesh() {
       {/* Inner glowing core */}
       <mesh ref={innerRef}>
         <sphereGeometry args={[0.55, 32, 32]} />
-        <meshStandardMaterial color="#6C5CE7" emissive="#6C5CE7" emissiveIntensity={3} />
+        <meshStandardMaterial color="#00d2ff" emissive="#00d2ff" emissiveIntensity={3} />
       </mesh>
 
       {/* Lightning arcs */}
@@ -86,8 +86,8 @@ export default function PlasmaBall({ height = 320 }: PlasmaBallProps) {
     <div style={{ width: '100%', height }}>
       <Canvas camera={{ position: [0, 0, 4], fov: 45 }} dpr={[1, 1.5]}>
         <ambientLight intensity={0.2} />
-        <pointLight position={[0, 0, 0]} intensity={4} color="#6C5CE7" distance={6} />
-        <pointLight position={[3, 3, 3]} intensity={0.8} color="#06b6d4" />
+        <pointLight position={[0, 0, 0]} intensity={4} color="#00d2ff" distance={6} />
+        <pointLight position={[3, 3, 3]} intensity={0.8} color="#fbbf24" />
         <PlasmaBallMesh />
       </Canvas>
     </div>

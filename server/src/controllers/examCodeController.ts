@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { supabase } from '../db/supabase';
 import { isStudentEligibleForExam, deriveStudyYear } from '../utils/academicYear';
 import { recordAuditLog } from '../middleware/auditLog';
+import { broadcastViolationToMonitor } from '../services/socketService';
 
 // ─────────────────────────────────────────────
 // SESSION TOKEN UTILITIES  (1a: concurrent-session block)
@@ -220,6 +221,40 @@ export async function deleteCollege(req: Request, res: Response): Promise<void> 
   const { error } = await supabase.from('colleges').delete().eq('id', id);
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
   res.json({ success: true, message: 'College deleted' });
+}
+
+/**
+ * POST /api/admin/colleges/import
+ * Bulk import colleges via Excel / CSV spreadsheet
+ */
+export async function bulkImportCollegesHandler(req: Request, res: Response): Promise<void> {
+  if (!req.file) {
+    res.status(400).json({ success: false, error: 'No Excel or CSV file uploaded' });
+    return;
+  }
+  try {
+    const { parseAndValidateCollegeFile, bulkInsertColleges } = await import('../services/collegeImportService');
+    const parsed = parseAndValidateCollegeFile(req.file.buffer);
+    if (parsed.errors.length > 0) {
+      res.status(400).json({
+        success: false,
+        error: 'Spreadsheet validation failed',
+        errors: parsed.errors,
+      });
+      return;
+    }
+    const result = await bulkInsertColleges(parsed.validRows);
+    res.json({
+      success: result.valid,
+      total: result.total_rows,
+      inserted: result.inserted_count,
+      skipped: result.skipped_count,
+      colleges: result.colleges,
+      message: `${result.inserted_count} college(s) successfully imported.`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'College import failed' });
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -600,6 +635,24 @@ export async function getExamCodeQR(req: Request, res: Response): Promise<void> 
   res.send(qrBuffer);
 }
 
+export function extractCandidateRoll(identifier: string): string {
+  const clean = String(identifier || '').trim().toUpperCase();
+  if (clean.startsWith('GP-STU-') || clean.startsWith('GP-CAND-')) {
+    const parts = clean.split('-');
+    if (parts.length >= 4) {
+      return parts.slice(2, -1).join('-');
+    } else if (parts.length === 3) {
+      return parts[2];
+    }
+  } else if (clean.startsWith('GP-')) {
+    const parts = clean.split('-');
+    if (parts.length >= 3) {
+      return parts.slice(1, -1).join('-');
+    }
+  }
+  return clean;
+}
+
 /**
  * Helper to enforce student eligibility against exam targeting.
  * Returns true if student is eligible (or if exam is untargeted).
@@ -621,13 +674,14 @@ export async function validateStudentEligibility(
   );
 
   const cleanHt = hallTicketOrRoll && typeof hallTicketOrRoll === 'string' ? hallTicketOrRoll.trim().toUpperCase() : null;
+  const roll = cleanHt ? extractCandidateRoll(cleanHt) : null;
 
   if (hasSectionTargeting) {
     if (!cleanHt) return false;
     const { data: student } = await supabase
       .from('students')
       .select('*')
-      .or(`hall_ticket.eq.${cleanHt},roll_number.eq.${cleanHt}`)
+      .or(`hall_ticket.eq.${cleanHt},roll_number.eq.${cleanHt}${roll && roll !== cleanHt ? `,hall_ticket.eq.${roll},roll_number.eq.${roll}` : ''}`)
       .maybeSingle();
 
     if (!student) return false;
@@ -639,7 +693,7 @@ export async function validateStudentEligibility(
     const { data: student } = await supabase
       .from('students')
       .select('college_id')
-      .or(`hall_ticket.eq.${cleanHt},roll_number.eq.${cleanHt}`)
+      .or(`hall_ticket.eq.${cleanHt},roll_number.eq.${cleanHt}${roll && roll !== cleanHt ? `,hall_ticket.eq.${roll},roll_number.eq.${roll}` : ''}`)
       .maybeSingle();
 
     if (student && student.college_id && String(student.college_id) !== String(exam.college_id)) {
@@ -659,7 +713,9 @@ export async function validateStudentEligibility(
  * PUBLIC – verifies hall ticket + exam code and allows entry
  */
 export async function verifyExamEntry(req: Request, res: Response): Promise<void> {
-  const { hallTicket, examCode, studentName } = req.body;
+  const hallTicket = req.body.hallTicket || req.body.hall_ticket;
+  const examCode = req.body.examCode || req.body.exam_code;
+  const studentName = req.body.studentName || req.body.candidateName || req.body.name;
 
   if (!hallTicket || !examCode) {
     res.status(400).json({ success: false, error: 'Hall ticket and exam code are required' });
@@ -696,11 +752,12 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
     return;
   }
 
-  // 1.2 ENFORCE STUDENT EMAIL VERIFICATION (Item 9)
+  // 1.2 ENFORCE STUDENT EMAIL VERIFICATION (Item 9) & RESOLVE STUDENT RECORD
+  const candidateRoll = extractCandidateRoll(ht);
   const { data: studentRecord } = await supabase
     .from('students')
-    .select('id, email, is_verified')
-    .or(`hall_ticket.eq.${ht},roll_number.eq.${ht}`)
+    .select('id, name, email, is_verified, roll_number, hall_ticket, college_id')
+    .or(`hall_ticket.eq.${ht},roll_number.eq.${ht}${candidateRoll && candidateRoll !== ht ? `,hall_ticket.eq.${candidateRoll},roll_number.eq.${candidateRoll}` : ''}`)
     .maybeSingle();
 
   if (studentRecord && studentRecord.is_verified === false) {
@@ -712,6 +769,11 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
     });
     return;
   }
+
+  const canonicalRoll = studentRecord?.roll_number || studentRecord?.hall_ticket || candidateRoll;
+  const candidateDisplayName = studentRecord?.name || studentName?.trim() || canonicalRoll;
+  const studentGatePass = `GP-STU-${canonicalRoll}-${(studentRecord?.id || '0000').substring(0, 4)}`.toUpperCase();
+  const candidateGatePass = `GP-CAND-${canonicalRoll}-${(studentRecord?.id || '0000').substring(0, 4)}`.toUpperCase();
 
   // 1.3 ENFORCE INSPECTOR START (Item 3)
   const isDemoExam = ec.includes('DEMO') || ec === 'CS2026';
@@ -757,7 +819,7 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
   const { data: existing } = await supabase
     .from('exam_code_attempts')
     .select('id, status, score, max_score')
-    .eq('hall_ticket_no', ht)
+    .or(`hall_ticket_no.eq.${ht},hall_ticket_no.eq.${canonicalRoll}`)
     .eq('exam_code', ec)
     .maybeSingle();
 
@@ -778,6 +840,10 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
         resumed: true,
         attempt_id: existing.id,
         session_token: freshToken,
+        hallTicket: canonicalRoll,
+        studentName: candidateDisplayName,
+        student_gate_pass: studentGatePass,
+        candidate_gate_pass: candidateGatePass,
         examDetails: {
           exam_code: exam.exam_code,
           exam_name: exam.exam_name,
@@ -826,14 +892,18 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
 
   // 5. Create attempt record — include a fresh session_token from the start
   const newToken = generateSessionToken();
+  const attemptStartTime = new Date().toISOString();
+  const attemptEndTime = exam.end_time || new Date(Date.now() + (exam.duration_minutes || 60) * 60000).toISOString();
   const { data: attempt, error: insertError } = await supabase
     .from('exam_code_attempts')
     .insert({
-      hall_ticket_no: ht,
+      hall_ticket_no: canonicalRoll,
       exam_code: ec,
-      student_name: studentName?.trim() || ht,
+      student_name: candidateDisplayName,
       status: 'in_progress',
       session_token: newToken,
+      start_time: attemptStartTime,
+      end_time: attemptEndTime,
     })
     .select()
     .single();
@@ -849,6 +919,10 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
     resumed: false,
     attempt_id: attempt.id,
     session_token: newToken,
+    hallTicket: canonicalRoll,
+    studentName: candidateDisplayName,
+    student_gate_pass: studentGatePass,
+    candidate_gate_pass: candidateGatePass,
     examDetails: {
       exam_code: exam.exam_code,
       exam_name: exam.exam_name,
@@ -871,7 +945,7 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
  */
 export async function getExamCodeQuestions(req: Request, res: Response): Promise<void> {
   const { code } = req.params;
-  const { attemptId, session_token } = req.query as { attemptId: string; session_token?: string };
+  const session_token = (req.query.session_token || req.query.sessionToken) as string | undefined;
   const ec = String(code).toUpperCase();
 
   // 1. Look up exam
@@ -887,7 +961,8 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
   }
 
   // 1.1 Enforce targeting (Return 404 so untargeted students cannot tell exam exists)
-  let studentHt = (req.query.hallTicket || req.query.candidateId || (req as any).student?.hallTicket || (req as any).student?.rollNumber) as string | undefined;
+  const attemptId = (req.query.attemptId || req.query.attempt_id) as string | undefined;
+  let studentHt = (req.query.hallTicket || req.query.hall_ticket || req.query.candidateId || (req as any).student?.hallTicket || (req as any).student?.rollNumber) as string | undefined;
   if (!studentHt && attemptId) {
     const { data: att } = await supabase
       .from('exam_code_attempts')
@@ -973,9 +1048,11 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
  * Grades and saves the final attempt
  */
 export async function submitExamCodeAttempt(req: Request, res: Response): Promise<void> {
-  const code = String(req.params.code || req.body?.examCode || '').toUpperCase();
-  const { attemptId, answers, codeAnswers, timeTakenSeconds, violationCount, session_token } = req.body;
-  const candidateId = req.body.candidateId || req.body.hallTicket;
+  const code = String(req.params.code || req.body?.examCode || req.body?.exam_code || '').toUpperCase();
+  const attemptId = req.body.attemptId || req.body.attempt_id;
+  const { answers, codeAnswers, violationCount, session_token } = req.body;
+  const timeTakenSeconds = req.body.timeTakenSeconds ?? req.body.time_taken_seconds ?? 0;
+  const candidateId = req.body.candidateId || req.body.hallTicket || req.body.hall_ticket;
 
   // Look up exam to check targeting
   const { data: exam } = await supabase
@@ -1212,21 +1289,20 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
   if (isTerminatedViolation) {
     try {
       await supabase.from('audit_log').insert({
-        user_id: studentHt || 'student',
         admin_id: 'system',
-        role: 'student',
         action: 'STUDENT_EXAM_TERMINATED_VIOLATION',
-        target: `exam_code_attempts:${attempt.id}`,
         target_table: 'exam_code_attempts',
         target_id: attempt.id,
         payload: {
+          user_id: studentHt || 'student',
+          role: 'student',
+          target: `exam_code_attempts:${attempt.id}`,
           exam_code: code,
           hall_ticket: studentHt,
           reason: terminationReason,
           answers_saved: Object.keys(finalAnswers).length,
           timestamp: new Date().toISOString(),
         },
-        timestamp: new Date().toISOString(),
         created_at: new Date().toISOString(),
       });
 
@@ -1379,21 +1455,20 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
     const candId = attempt.hall_ticket_no || attempt.hall_ticket || String(attempt.id);
     try {
       await supabase.from('audit_log').insert({
-        user_id: candId,
         admin_id: 'system',
-        role: 'student',
         action: 'STUDENT_EXAM_TERMINATED_VIOLATION',
-        target: `exam_code_attempts:${attempt.id}`,
         target_table: 'exam_code_attempts',
         target_id: attempt.id,
         payload: {
+          user_id: candId,
+          role: 'student',
+          target: `exam_code_attempts:${attempt.id}`,
           exam_code: code,
           hall_ticket: candId,
           reason: terminationReason,
           violation_type: violationType,
           timestamp: new Date().toISOString(),
         },
-        timestamp: new Date().toISOString(),
         created_at: new Date().toISOString(),
       });
 
@@ -1413,6 +1488,19 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
       event_type: violationType,
       metadata: { message: notes || `${violationType} detected`, count: newCount, snapshot_thumb: vItem.snapshot_thumb, terminated: shouldTerminate },
       created_at: vItem.timestamp,
+    });
+  } catch {}
+
+  // Broadcast live to Admin and Inspector WebSocket monitors
+  try {
+    broadcastViolationToMonitor(code, {
+      ...vItem,
+      candidate_id: attempt.hall_ticket_no || attempt.hall_ticket || String(attempt.id),
+      hall_ticket: attempt.hall_ticket_no || attempt.hall_ticket || String(attempt.id),
+      student_name: attempt.student_name || 'Candidate',
+      exam_code: code,
+      terminated: shouldTerminate,
+      termination_reason: shouldTerminate ? terminationReason : null,
     });
   } catch {}
 
@@ -1561,9 +1649,10 @@ export async function reviewAttemptViolation(req: Request, res: Response): Promi
  * 1b & 1.4: Per-question autosave and batch offline buffer sync with session-token and candidateId guards.
  */
 export async function saveExamCodeAnswer(req: Request, res: Response): Promise<void> {
-  const code = String(req.params.code || req.body?.examCode || '').toUpperCase();
-  const { attemptId, question_id, answer, answers, items, current_question_index, session_token } = req.body;
-  const candidateId = req.body.candidateId || req.body.hallTicket;
+  const code = String(req.params.code || req.body?.examCode || req.body?.exam_code || '').toUpperCase();
+  const attemptId = req.body.attemptId || req.body.attempt_id;
+  const { question_id, answer, answers, items, current_question_index, session_token } = req.body;
+  const candidateId = req.body.candidateId || req.body.hallTicket || req.body.hall_ticket;
 
   // Look up exam to check targeting
   const { data: exam } = await supabase
@@ -1673,8 +1762,9 @@ export async function saveExamCodeAnswer(req: Request, res: Response): Promise<v
  */
 export async function getExamCodeResumeState(req: Request, res: Response): Promise<void> {
   const code = String(req.params.code || '').toUpperCase();
-  const { attemptId, session_token } = req.query as { attemptId?: string; session_token?: string };
-  const candidateId = req.query.candidateId || req.query.hallTicket;
+  const { session_token } = req.query as { session_token?: string };
+  const attemptId = (req.query.attemptId || req.query.attempt_id) as string | undefined;
+  const candidateId = (req.query.candidateId || req.query.hallTicket || req.query.hall_ticket) as string | undefined;
 
   // Look up exam to check targeting
   const { data: exam } = await supabase
@@ -1733,6 +1823,8 @@ export async function getExamCodeResumeState(req: Request, res: Response): Promi
 
   res.json({
     success: true,
+    attempt,
+    answers: attempt.partial_answers || {},
     partial_answers: attempt.partial_answers || {},
     last_question_index: attempt.last_question_index ?? 0,
   });
@@ -1960,16 +2052,151 @@ export async function importQuestionsForExamCode(req: Request, res: Response): P
 /**
  * POST /api/admin/questions/validate-preview
  * Faculty upload questions by Excel in the 5-column format with validation and preview.
- * Supports:
- * - 5-column format: [Question, Option A, Option B, Option C, Option D]
- * - Extended format with Correct Option, Marks, Negative Marks / Penalty, Section, Topic, Difficulty
+/**
+ * GET /api/admin/questions/sample-template
+ * Streams an authentic 2-sheet Excel template (.xlsx):
+ * - Sheet 1: "Questions" (Type, Question, Option A, Option B, Option C, Option D, Correct Answer, Marks, Penalty, Topic, Difficulty, Diagram URL, Test Cases)
+ * - Sheet 2: "Instructions" (Format specification, supported types, test case syntax guide)
+ */
+export async function downloadSampleQuestionsTemplate(req: Request, res: Response): Promise<void> {
+  try {
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Questions
+    const sampleQuestions = [
+      {
+        'Type': 'MCQ',
+        'Question': 'What is the average time complexity of searching in a Hash Map with uniform hashing?',
+        'Option A': 'O(1)',
+        'Option B': 'O(n)',
+        'Option C': 'O(log n)',
+        'Option D': 'O(n log n)',
+        'Correct Answer': 'A',
+        'Marks': 2,
+        'Penalty': 0.5,
+        'Topic': 'Data Structures & Algorithms',
+        'Difficulty': 'Easy',
+        'Diagram URL': '',
+        'Test Cases': '',
+      },
+      {
+        'Type': 'Coding',
+        'Question': 'Write a function isPalindrome(s) that returns true if the input string is a palindrome, ignoring non-alphanumeric characters and casing.',
+        'Option A': '',
+        'Option B': '',
+        'Option C': '',
+        'Option D': '',
+        'Correct Answer': 'def isPalindrome(s):\\n    cleaned = [c.lower() for c in s if c.isalnum()]\\n    return cleaned == cleaned[::-1]',
+        'Marks': 10,
+        'Penalty': 0,
+        'Topic': 'Algorithms & Two Pointers',
+        'Difficulty': 'Medium',
+        'Diagram URL': '',
+        'Test Cases': JSON.stringify([
+          { input: '"A man, a plan, a canal: Panama"', output: 'true' },
+          { input: '"race a car"', output: 'false' },
+          { input: '"0P"', output: 'false' },
+        ]),
+      },
+      {
+        'Type': 'Diagram',
+        'Question': 'In the microservices network diagram below, which service acts as the API Gateway enforcing token verification?',
+        'Option A': 'Service Alpha (Auth Proxy)',
+        'Option B': 'Service Beta (Worker Node)',
+        'Option C': 'Ingress Envoy Gateway',
+        'Option D': 'Redis Session Cache',
+        'Correct Answer': 'C',
+        'Marks': 3,
+        'Penalty': 0.75,
+        'Topic': 'Distributed Architecture',
+        'Difficulty': 'Hard',
+        'Diagram URL': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800',
+        'Test Cases': '',
+      },
+      {
+        'Type': 'Aptitude',
+        'Question': 'A train traveling at 72 km/h crosses a 180-meter long platform in 15 seconds. What is the length of the train in meters?',
+        'Option A': '100 m',
+        'Option B': '120 m',
+        'Option C': '150 m',
+        'Option D': '180 m',
+        'Correct Answer': 'B',
+        'Marks': 2,
+        'Penalty': 0,
+        'Topic': 'Quantitative Aptitude & Velocity',
+        'Difficulty': 'Medium',
+        'Diagram URL': '',
+        'Test Cases': '',
+      },
+    ];
+
+    const wsQuestions = XLSX.utils.json_to_sheet(sampleQuestions, {
+      header: [
+        'Type',
+        'Question',
+        'Option A',
+        'Option B',
+        'Option C',
+        'Option D',
+        'Correct Answer',
+        'Marks',
+        'Penalty',
+        'Topic',
+        'Difficulty',
+        'Diagram URL',
+        'Test Cases',
+      ],
+    });
+    XLSX.utils.book_append_sheet(wb, wsQuestions, 'Questions');
+
+    // Sheet 2: Instructions
+    const instructionsData = [
+      ['LOGICWHILE QUIZ (LiRE) - EXCEL QUESTION IMPORTER SPECIFICATION', ''],
+      ['', ''],
+      ['COLUMN NAME', 'REQUIRED?', 'SUPPORTED VALUES / SYNTAX', 'DETAILS & EXAMPLES'],
+      ['Type', 'YES', 'MCQ | Coding | Aptitude | Diagram', 'The classification category for the question.'],
+      ['Question', 'YES', 'Text string', 'The full question statement or code prompt.'],
+      ['Option A', 'Conditional', 'Text string', 'Required for MCQ and Diagram questions. Leave blank for Coding.'],
+      ['Option B', 'Conditional', 'Text string', 'Required for MCQ and Diagram questions. Leave blank for Coding.'],
+      ['Option C', 'Conditional', 'Text string', 'Required for MCQ and Diagram questions. Leave blank for Coding.'],
+      ['Option D', 'Conditional', 'Text string', 'Required for MCQ and Diagram questions. Leave blank for Coding.'],
+      ['Correct Answer', 'YES', 'A / B / C / D for MCQ & Diagram; canonical output/solution for Coding; value for Aptitude', 'Canonical answer. MCQ & Diagram must be A, B, C, or D.'],
+      ['Marks', 'NO', 'Positive Number (default: 1)', 'Score awarded on correct response.'],
+      ['Penalty', 'NO', 'Non-negative Number (default: 0)', 'Score deducted on incorrect response.'],
+      ['Topic', 'NO', 'Text string (e.g. Data Structures, Web, Quant)', 'Subject matter or syllabus topic.'],
+      ['Difficulty', 'NO', 'Easy | Medium | Hard (default: Medium)', 'Difficulty tier.'],
+      ['Diagram URL', 'Conditional', 'Valid HTTP or HTTPS image URL', 'Required for Diagram questions. Must start with http:// or https://.'],
+      ['Test Cases', 'Conditional', 'JSON array or Input/Output pairs', 'Required for Coding questions. Syntax: [{"input":"...","output":"..."}] or "Input: 2 3; Output: 5"'],
+      ['', ''],
+      ['TEST CASE SYNTAX GUIDE FOR CODING QUESTIONS:', ''],
+      ['Option 1: JSON Array (Recommended)', '[{"input": "2 3", "output": "5"}, {"input": "10 20", "output": "30"}]'],
+      ['Option 2: Input/Output Pairs', 'Input: 2 3; Output: 5 | Input: 10 20; Output: 30'],
+    ];
+
+    const wsInstructions = XLSX.utils.aoa_to_sheet(instructionsData);
+    XLSX.utils.book_append_sheet(wb, wsInstructions, 'Instructions');
+
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="LogicWhileLiRE_Questions_Template.xlsx"');
+    res.send(buffer);
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to generate template' });
+  }
+}
+
+/**
+ * POST /api/admin/questions/validate-preview
+ * Validates uploaded Excel / CSV rows across MCQ, Coding, Aptitude, Diagram types.
+ * Flags missing required fields (Question, Correct Answer, Type) and type-specific constraints.
  */
 export async function validateAndPreviewQuestions(req: Request, res: Response): Promise<void> {
   try {
     let rows: any[] = [];
     if (req.file) {
       const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetName = workbook.SheetNames.includes('Questions') ? 'Questions' : workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
       rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
     } else if (Array.isArray(req.body.questions)) {
       rows = req.body.questions;
@@ -1998,6 +2225,17 @@ export async function validateAndPreviewQuestions(req: Request, res: Response): 
         norm[k.trim().toLowerCase().replace(/[\s_]/g, '')] = String(row[k] ?? '').trim();
       }
 
+      // Positional 5-column legacy format detection
+      const isPositional5Col =
+        keys.length >= 5 &&
+        !norm['type'] &&
+        !norm['questiontype'] &&
+        !norm['question'] &&
+        !norm['questiontext'] &&
+        !norm['diagramurl'] &&
+        !norm['testcases'];
+
+      let rawType = '';
       let question = '';
       let optA = '';
       let optB = '';
@@ -2009,9 +2247,11 @@ export async function validateAndPreviewQuestions(req: Request, res: Response): 
       let section = 'General';
       let topic = 'General';
       let difficulty = 'Medium';
+      let diagramUrl = '';
+      let testCases = '';
 
-      if (keys.length >= 5 && (!norm['question'] && !norm['questiontext'])) {
-        // Positional 5-column format: Col 1: Question, Col 2: Opt A, Col 3: Opt B, Col 4: Opt C, Col 5: Opt D
+      if (isPositional5Col) {
+        rawType = 'MCQ';
         question = String(row[keys[0]] ?? '').trim();
         optA = String(row[keys[1]] ?? '').trim();
         optB = String(row[keys[2]] ?? '').trim();
@@ -2021,45 +2261,154 @@ export async function validateAndPreviewQuestions(req: Request, res: Response): 
         if (keys.length > 6) marks = parseFloat(String(row[keys[6]])) || 1;
         if (keys.length > 7) penalty = parseFloat(String(row[keys[7]])) || 0;
       } else {
+        rawType = String(norm['type'] || norm['questiontype'] || row['Type'] || '').trim();
         question = String(norm['question'] || norm['questiontext'] || row['Question'] || '').trim();
         optA = String(norm['optiona'] || row['Option A'] || row['OptionA'] || '').trim();
         optB = String(norm['optionb'] || row['Option B'] || row['OptionB'] || '').trim();
         optC = String(norm['optionc'] || row['Option C'] || row['OptionC'] || '').trim();
         optD = String(norm['optiond'] || row['Option D'] || row['OptionD'] || '').trim();
-        correct = String(norm['correct'] || norm['correctoption'] || norm['correctanswer'] || row['Correct Answer'] || '').trim().toUpperCase();
+        correct = String(norm['correctanswer'] || norm['correct'] || norm['correctoption'] || row['Correct Answer'] || '').trim();
         marks = parseFloat(String(norm['marks'] || row['Marks'] || '1')) || 1;
         penalty = parseFloat(String(norm['penalty'] || norm['negativemarks'] || norm['negativemarking'] || row['Penalty'] || '0')) || 0;
         section = String(norm['section'] || row['Section'] || 'General').trim();
         topic = String(norm['topic'] || row['Topic'] || 'General').trim();
         difficulty = String(norm['difficulty'] || row['Difficulty'] || 'Medium').trim();
+        diagramUrl = String(norm['diagramurl'] || norm['diagram'] || norm['imageurl'] || row['Diagram URL'] || '').trim();
+        testCases = String(norm['testcases'] || norm['testcase'] || row['Test Cases'] || '').trim();
       }
 
-      // Default correct to 'A' if 5-column minimal format was uploaded without answer column
-      if (!correct || correct === '') {
-        correct = 'A';
-      } else if (correct === '0' || correct === '1' || correct === '2' || correct === '3') {
-        correct = ['A', 'B', 'C', 'D'][parseInt(correct, 10)] || 'A';
+      // Canonical Question Type determination
+      let canonicalType: 'MCQ' | 'Coding' | 'Aptitude' | 'Diagram' = 'MCQ';
+      if (!rawType) {
+        if (optA || optB || optC || optD) {
+          rawType = 'MCQ';
+          canonicalType = 'MCQ';
+        } else {
+          rowErrors.push('Question type is required (MCQ, Coding, Aptitude, or Diagram)');
+        }
+      } else {
+        const typeLower = rawType.toLowerCase();
+        if (typeLower === 'mcq' || typeLower === 'multiple choice') {
+          canonicalType = 'MCQ';
+        } else if (typeLower === 'coding' || typeLower === 'code' || typeLower === 'programming') {
+          canonicalType = 'Coding';
+        } else if (typeLower === 'aptitude' || typeLower === 'quant' || typeLower === 'reasoning') {
+          canonicalType = 'Aptitude';
+        } else if (typeLower === 'diagram' || typeLower === 'image' || typeLower === 'visual') {
+          canonicalType = 'Diagram';
+        } else {
+          rowErrors.push(`Invalid question type "${rawType}". Supported: MCQ, Coding, Aptitude, Diagram`);
+        }
       }
 
-      if (!question) rowErrors.push('Question text is required');
-      if (!optA) rowErrors.push('Option A is required');
-      if (!optB) rowErrors.push('Option B is required');
-      if (!optC) rowErrors.push('Option C is required');
-      if (!optD) rowErrors.push('Option D is required');
-      if (!['A', 'B', 'C', 'D'].includes(correct)) rowErrors.push('Correct option must be A, B, C, or D');
-      if (isNaN(marks) || marks <= 0) rowErrors.push('Marks must be greater than 0');
-      if (isNaN(penalty) || penalty < 0) rowErrors.push('Negative marking penalty must be >= 0');
+      // Core Required Field Validations
+      if (!question) {
+        rowErrors.push('Question text is required');
+      }
+
+      if (!correct) {
+        rowErrors.push('Correct Answer is required');
+      }
+
+      // Type-specific field validations
+      if (canonicalType === 'MCQ') {
+        if (!optA) rowErrors.push('Option A is required for MCQ');
+        if (!optB) rowErrors.push('Option B is required for MCQ');
+        if (!optC) rowErrors.push('Option C is required for MCQ');
+        if (!optD) rowErrors.push('Option D is required for MCQ');
+        const upperCorrect = correct.toUpperCase();
+        if (!['A', 'B', 'C', 'D'].includes(upperCorrect)) {
+          rowErrors.push(`Correct Answer for MCQ must be A, B, C, or D (got "${correct}")`);
+        } else {
+          correct = upperCorrect;
+        }
+      } else if (canonicalType === 'Coding') {
+        // Coding questions require valid test cases format
+        if (!testCases) {
+          rowErrors.push('Test cases are required for Coding questions (JSON array or Input/Output pairs)');
+        } else {
+          let testCaseValid = false;
+          try {
+            const parsed = JSON.parse(testCases);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const hasValidItems = parsed.every((item: any) =>
+                item && typeof item === 'object' &&
+                (item.input !== undefined || item.input_text !== undefined) &&
+                (item.output !== undefined || item.expected_output !== undefined || item.expected !== undefined)
+              );
+              if (hasValidItems) testCaseValid = true;
+            }
+          } catch {
+            // Check input/output pair syntax (e.g. Input: ...; Output: ...)
+            if (
+              /(input|in)\s*:\s*.+?(output|out)\s*:\s*.+/i.test(testCases) ||
+              /(input|output)/i.test(testCases)
+            ) {
+              testCaseValid = true;
+            }
+          }
+          if (!testCaseValid) {
+            rowErrors.push('Test cases must be a valid JSON array (e.g. [{"input":"1 2","output":"3"}]) or Input/Output pairs (e.g. "Input: 1 2; Output: 3")');
+          }
+        }
+      } else if (canonicalType === 'Diagram') {
+        if (!diagramUrl) {
+          rowErrors.push('Diagram URL is required for Diagram questions');
+        } else {
+          const isValidUrl =
+            diagramUrl.startsWith('http://') ||
+            diagramUrl.startsWith('https://') ||
+            diagramUrl.startsWith('data:image/') ||
+            diagramUrl.startsWith('/images/');
+          if (!isValidUrl) {
+            rowErrors.push('Diagram URL must be a valid HTTP/HTTPS image URL');
+          }
+        }
+        if (!optA) rowErrors.push('Option A is required for Diagram question');
+        if (!optB) rowErrors.push('Option B is required for Diagram question');
+        if (!optC) rowErrors.push('Option C is required for Diagram question');
+        if (!optD) rowErrors.push('Option D is required for Diagram question');
+        const upperCorrect = correct.toUpperCase();
+        if (!['A', 'B', 'C', 'D'].includes(upperCorrect)) {
+          rowErrors.push(`Correct Answer for Diagram question must be A, B, C, or D (got "${correct}")`);
+        } else {
+          correct = upperCorrect;
+        }
+      } else if (canonicalType === 'Aptitude') {
+        // If options are provided, check that correct answer matches one or is A/B/C/D
+        if (optA || optB || optC || optD) {
+          const upperCorrect = correct.toUpperCase();
+          if (['A', 'B', 'C', 'D'].includes(upperCorrect)) {
+            correct = upperCorrect;
+          }
+        }
+      }
+
+      // Scoring validations
+      if (isNaN(marks) || marks <= 0) {
+        rowErrors.push('Marks must be a positive number greater than 0');
+      }
+      if (isNaN(penalty) || penalty < 0) {
+        rowErrors.push('Penalty must be a non-negative number (>= 0)');
+      }
+
+      // Difficulty normalization
+      const normDiff = ['Easy', 'Medium', 'Hard'].find(
+        (d) => d.toLowerCase() === difficulty.toLowerCase()
+      ) || 'Medium';
 
       const isValid = rowErrors.length === 0;
-      if (isValid) validCount++;
-      else {
+      if (isValid) {
+        validCount++;
+      } else {
         invalidCount++;
-        allErrors.push(`Row ${rowNum}: ${rowErrors.join(', ')}`);
+        allErrors.push(`Row ${rowNum}: ${rowErrors.join('; ')}`);
       }
 
       preview.push({
         row_number: rowNum,
         valid: isValid,
+        type: canonicalType,
         question,
         option_a: optA,
         option_b: optB,
@@ -2070,7 +2419,9 @@ export async function validateAndPreviewQuestions(req: Request, res: Response): 
         penalty,
         section: section || 'General',
         topic: topic || 'General',
-        difficulty: ['Easy', 'Medium', 'Hard'].includes(difficulty) ? difficulty : 'Medium',
+        difficulty: normDiff,
+        diagram_url: diagramUrl,
+        test_cases: testCases,
         errors: rowErrors,
       });
     }
@@ -2080,7 +2431,7 @@ export async function validateAndPreviewQuestions(req: Request, res: Response): 
       total_rows: rows.length,
       valid_count: validCount,
       invalid_count: invalidCount,
-      preview: preview.slice(0, 100),
+      preview: preview,
       errors: allErrors,
       can_import: validCount > 0,
     });
@@ -2091,7 +2442,8 @@ export async function validateAndPreviewQuestions(req: Request, res: Response): 
 
 /**
  * POST /api/admin/questions/confirm-import
- * Commits the validated preview questions into the database
+ * Commits ONLY valid preview questions into the database.
+ * Invalid rows are cleanly skipped and reported back to the admin.
  */
 export async function confirmImportQuestions(req: Request, res: Response): Promise<void> {
   try {
@@ -2102,23 +2454,113 @@ export async function confirmImportQuestions(req: Request, res: Response): Promi
     }
 
     const targetCode = String(examCode || 'DEFAULT').toUpperCase();
-    const rowsToInsert = questions.map((q: any, idx: number) => ({
-      exam_code: targetCode,
-      exam_id: examId || null,
-      question: q.question,
-      option_a: q.option_a,
-      option_b: q.option_b,
-      option_c: q.option_c,
-      option_d: q.option_d,
-      correct_answer: q.correct_answer || 'A',
-      marks: Number(q.marks || 1),
-      penalty: Number(q.penalty || 0),
-      negative_marks: Number(q.penalty || 0),
-      topic: q.topic || 'General',
-      section: q.section || 'General',
-      difficulty: q.difficulty || 'Medium',
-      display_order: idx + 1,
-    }));
+
+    // Faculty scope check: ensure faculty owns or is assigned to the target exam
+    if (req.admin?.role === 'faculty') {
+      const callerStaffId = req.admin.staff_id || (req.admin as any).id;
+      const { data: staffRec } = await supabase
+        .from('staff')
+        .select('college_id, section_ids')
+        .eq('id', callerStaffId)
+        .maybeSingle();
+
+      const facultyCollegeId = staffRec?.college_id ?? req.admin.college_id;
+      const facultySectionIds: string[] = Array.isArray(staffRec?.section_ids) ? staffRec!.section_ids : [];
+
+      const { data: targetExam } = await supabase
+        .from('exam_codes')
+        .select('college_id, created_by_staff_id, assigned_faculty_id, section_id, section_ids')
+        .eq('exam_code', targetCode)
+        .maybeSingle();
+
+      if (targetExam) {
+        if (facultyCollegeId && targetExam.college_id && String(targetExam.college_id) !== String(facultyCollegeId)) {
+          res.status(403).json({
+            success: false,
+            error: 'Forbidden: You cannot import questions into an exam for another college',
+            code: 'CROSS_COLLEGE_FORBIDDEN',
+          });
+          return;
+        }
+
+        const isCreator = targetExam.created_by_staff_id === callerStaffId;
+        const isAssigned = targetExam.assigned_faculty_id === callerStaffId;
+        const examSec = targetExam.section_id;
+        const examSecList: string[] = Array.isArray(targetExam.section_ids) ? targetExam.section_ids : [];
+        const isSectionMatch = facultySectionIds.length > 0 && (
+          (examSec && facultySectionIds.includes(String(examSec))) ||
+          examSecList.some((s) => facultySectionIds.includes(String(s)))
+        );
+
+        if (!isCreator && !isAssigned && !isSectionMatch) {
+          res.status(403).json({
+            success: false,
+            error: 'Forbidden: You do not have ownership of this exam code',
+            code: 'FORBIDDEN_NOT_EXAM_OWNER',
+          });
+          return;
+        }
+      }
+    }
+
+    // Filter ONLY valid questions
+    const validQuestions = questions.filter(
+      (q: any) => q.valid !== false && (!q.errors || q.errors.length === 0)
+    );
+    const invalidQuestions = questions.filter(
+      (q: any) => q.valid === false || (q.errors && q.errors.length > 0)
+    );
+
+    if (validQuestions.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: 'Cannot import: 0 valid questions found. Please review and fix row validation errors.',
+        invalid_count: invalidQuestions.length,
+        invalid_rows: invalidQuestions.map((q: any) => ({
+          row_number: q.row_number,
+          question: q.question,
+          type: q.type,
+          errors: q.errors,
+        })),
+      });
+      return;
+    }
+
+    const rowsToInsert = validQuestions.map((q: any, idx: number) => {
+      const qType = String(q.type || 'mcq').toLowerCase();
+      const dbType = qType === 'coding' || qType === 'code' ? 'coding' : 'mcq';
+      const tags: string[] = [];
+      if (q.topic) tags.push(q.topic);
+      if (qType === 'diagram') {
+        tags.push('type:diagram');
+        if (q.diagram_url) tags.push(`diagram:${q.diagram_url}`);
+      } else if (qType === 'aptitude') {
+        tags.push('type:aptitude');
+      } else if (dbType === 'coding') {
+        tags.push('type:coding');
+      }
+
+      return {
+        exam_code: targetCode,
+        question: q.question,
+        question_text: q.question,
+        question_type: dbType,
+        option_a: q.option_a || '',
+        option_b: q.option_b || '',
+        option_c: q.option_c || '',
+        option_d: q.option_d || '',
+        correct_answer: (q.correct_answer || 'A').trim().toUpperCase(),
+        marks: Number(q.marks || 1),
+        penalty: Number(q.penalty || 0),
+        negative_marks: Number(q.penalty || 0),
+        topic: q.topic || 'General',
+        section: q.section || 'General',
+        difficulty: q.difficulty || 'Medium',
+        tags: tags,
+        test_cases: q.test_cases || null,
+        display_order: idx + 1,
+      };
+    });
 
     const { error } = await supabase.from('questions_ec').insert(rowsToInsert);
     if (error) {
@@ -2149,8 +2591,19 @@ export async function confirmImportQuestions(req: Request, res: Response): Promi
     res.json({
       success: true,
       imported_count: rowsToInsert.length,
+      invalid_count: invalidQuestions.length,
+      invalid_rows: invalidQuestions.map((q: any) => ({
+        row_number: q.row_number,
+        question: q.question,
+        type: q.type,
+        errors: q.errors,
+      })),
       exam_code: targetCode,
-      message: `Successfully imported ${rowsToInsert.length} questions for ${targetCode}.`,
+      message: `Successfully imported ${rowsToInsert.length} valid questions for ${targetCode}.${
+        invalidQuestions.length > 0
+          ? ` ${invalidQuestions.length} invalid rows were skipped and reported for correction.`
+          : ''
+      }`,
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || 'Import failed' });

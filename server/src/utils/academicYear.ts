@@ -137,7 +137,8 @@ export function isStudentEligibleForExam(student: any, exam: any): boolean {
       // Direct match on section name (e.g. "A" or "SECTION A") or section ID
       if (studentSection === target || studentSectionId === target) return true;
       if (studentSection.replace(/^SECTION\s*/i, '') === target.replace(/^SECTION\s*/i, '')) return true;
-      if (studentSectionId.endsWith(`-${target.toLowerCase()}`)) return true;
+      if (studentSectionId && studentSectionId.endsWith(`-${target.toLowerCase()}`)) return true;
+      if (studentSection && (target.endsWith(`-${studentSection}`) || target.endsWith(`-${studentSection.toLowerCase()}`))) return true;
       return false;
     });
 

@@ -50,9 +50,9 @@ export default function Dashboard() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [widgets, setWidgets] = useState<DashboardWidgetsData | null>(null);
-  const [collegesCount, setCollegesCount] = useState<number>(6);
-  const [studentsCount, setStudentsCount] = useState<number>(4);
-  const [resultsCount, setResultsCount] = useState<number>(12);
+  const [collegesCount, setCollegesCount] = useState<number>(0);
+  const [studentsCount, setStudentsCount] = useState<number>(0);
+  const [resultsCount, setResultsCount] = useState<number>(0);
 
   useEffect(() => {
     try {
@@ -77,7 +77,7 @@ export default function Dashboard() {
     Promise.all([
       listExams()
         .then((r) => setExams(r.data.exams || []))
-        .catch(() => {}),
+        .catch(() => setExams([])),
       axios
         .get(`${API_BASE_URL}/api/admin/dashboard-widgets`, { headers })
         .then((r) => {
@@ -87,21 +87,21 @@ export default function Dashboard() {
       axios
         .get(`${API_BASE_URL}/api/colleges`, { headers })
         .then((r) => {
-          if (r.data?.colleges?.length) setCollegesCount(r.data.colleges.length);
+          if (Array.isArray(r.data?.colleges)) setCollegesCount(r.data.colleges.length);
         })
-        .catch(() => {}),
+        .catch(() => setCollegesCount(0)),
       axios
         .get(`${API_BASE_URL}/api/admin/students`, { headers })
         .then((r) => {
-          if (r.data?.students?.length) setStudentsCount(r.data.students.length);
+          if (Array.isArray(r.data?.students)) setStudentsCount(r.data.students.length);
         })
-        .catch(() => {}),
+        .catch(() => setStudentsCount(0)),
       axios
         .get(`${API_BASE_URL}/api/admin/results`, { headers })
         .then((r) => {
-          if (r.data?.results?.length) setResultsCount(r.data.results.length);
+          if (Array.isArray(r.data?.results)) setResultsCount(r.data.results.length);
         })
-        .catch(() => {}),
+        .catch(() => setResultsCount(0)),
     ]).finally(() => setLoading(false));
   }, [navigate]);
 
@@ -143,11 +143,12 @@ export default function Dashboard() {
                 <span>➕</span> Create / Launch Exam
               </button>
               <button
+                id="dashboard-live-monitor-btn"
                 onClick={() => navigate('/admin/monitor')}
                 className="btn btn-secondary"
                 style={{ padding: '10px 18px', fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
               >
-                <span>📡</span> Live 100-Tile Wall
+                <span>📡</span> Live Monitor (100-Tile Wall)
               </button>
             </div>
           </div>

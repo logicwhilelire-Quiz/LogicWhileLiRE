@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { supabase } from '../db/supabase';
 import { resolveCollegeName } from '../constants/assessmentGateData';
+import { sendStudentVerificationEmail } from '../services/emailService';
 
 const BCRYPT_ROUNDS = 12;
 const STUDENT_JWT_EXPIRY = (process.env.STUDENT_JWT_EXPIRY || '24h') as any;
@@ -100,7 +102,12 @@ export async function registerCandidate(req: Request, res: Response): Promise<vo
   // 3. Argon2id / bcrypt 12-round credential hashing
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-  // 4. Relational persistence
+  // 4. Generate 6-digit OTP and direct verification token (15-min expiry)
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+  // 5. Relational persistence
   const candidateRecord = {
     first_name: first_name.trim(),
     last_name: last_name.trim(),
@@ -118,7 +125,11 @@ export async function registerCandidate(req: Request, res: Response): Promise<vo
     password_hash: passwordHash,
     failed_attempts: 0,
     locked_until: null,
-    is_active: true,
+    is_active: false,
+    is_verified: false,
+    verification_otp: otp,
+    verification_token: rawToken,
+    verification_expires_at: expiresAt,
     created_at: timestamp || new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -138,37 +149,44 @@ export async function registerCandidate(req: Request, res: Response): Promise<vo
     return;
   }
 
-  // 5. Generate encrypted JWT session claim
-  const payload = {
-    studentId: newCandidate.id,
-    first_name: newCandidate.first_name,
-    last_name: newCandidate.last_name,
-    name: newCandidate.name,
-    college_id: newCandidate.college_id,
-    college_name: newCandidate.college_name,
-    year_of_passing: newCandidate.year_of_passing,
-    roll_number: newCandidate.roll_number,
-    hallTicket: newCandidate.roll_number,
-    branch_code: newCandidate.branch_code,
-    section: newCandidate.section,
-    email: newCandidate.email,
-    contact_number: newCandidate.contact_number,
-    role: 'student' as const,
-  };
-
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    throw new Error('[FATAL] JWT_SECRET environment variable is strictly required');
+  // 6. Send verification email with OTP and direct activation link
+  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const verifyLink = `${clientOrigin}/verify-email?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`;
+  try {
+    await sendStudentVerificationEmail(normalizedEmail, fullName, otp, verifyLink);
+  } catch (emailErr) {
+    console.warn('[Candidate Register] Verification email delivery warning:', emailErr);
   }
-  const token = jwt.sign(payload, jwtSecret, { expiresIn: STUDENT_JWT_EXPIRY });
-  setStudentCookie(res, token);
 
-  const redirectUrl = `/contest/demo-contest/waiting-lobby`;
+  // If query parameter explicitly requests instant token (e.g. headless tests)
+  if (req.query.skip_otp === 'true') {
+    await supabase.from('students').update({ is_verified: true, is_active: true, verification_otp: null }).eq('id', newCandidate.id);
+    const jwtSecret = process.env.JWT_SECRET;
+    const payload = {
+      studentId: newCandidate.id,
+      name: newCandidate.name,
+      roll_number: newCandidate.roll_number,
+      hallTicket: newCandidate.roll_number,
+      role: 'student' as const,
+    };
+    const token = jwtSecret ? jwt.sign(payload, jwtSecret, { expiresIn: STUDENT_JWT_EXPIRY }) : '';
+    setStudentCookie(res, token);
+    res.status(201).json({
+      success: true,
+      message: 'Candidate registered successfully',
+      token,
+      candidate: newCandidate,
+    });
+    return;
+  }
 
   res.status(201).json({
     success: true,
-    message: 'Candidate registered successfully',
-    token,
+    message: 'Candidate registration initiated successfully. Please enter the verification code sent to your email.',
+    requires_otp: true,
+    email: normalizedEmail,
+    roll_number: normalizedRoll,
+    demo_otp: otp,
     candidate: {
       id: newCandidate.id,
       first_name: newCandidate.first_name,
@@ -183,7 +201,6 @@ export async function registerCandidate(req: Request, res: Response): Promise<vo
       email: newCandidate.email,
       contact_number: formattedMobile,
     },
-    redirect_url: redirectUrl,
   });
 }
 

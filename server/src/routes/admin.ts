@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
+import { supabase } from '../db/supabase';
 import {
   adminAuth,
   requireRole,
@@ -68,6 +69,8 @@ import {
   updateCurriculum,
   deleteCurriculum,
   getAdminDashboardWidgets,
+  listMailLogsController,
+  resendMailLogController,
 } from '../controllers/adminController';
 import { getLeaderboard } from '../controllers/adminController';
 import {
@@ -117,6 +120,7 @@ import {
   updateCollege,
   deleteCollege,
 } from '../controllers/examCodeController';
+import { systemAlertAgent } from '../services/systemAlertService';
 
 const router = Router();
 
@@ -231,7 +235,7 @@ router.patch('/exams/:id/settings', requireRole('super_admin'), auditLog('UPDATE
 
 // ——— Questions & Question Papers CRUD (super_admin only) ———
 router.get('/questions', listQuestions);
-router.post('/questions', requireRole('super_admin'), auditLog('CREATE_QUESTION', 'questions'), createQuestion);
+router.post('/questions', requireFacultyPermission('create_questions'), auditLog('CREATE_QUESTION', 'questions'), createQuestion);
 router.patch('/questions/:id', requireRole('super_admin'), auditLog('UPDATE_QUESTION', 'questions'), updateQuestion);
 router.put('/questions/:id', requireRole('super_admin'), auditLog('UPDATE_QUESTION', 'questions'), updateQuestion);
 router.delete('/questions/:id', requireRole('super_admin'), auditLog('DELETE_QUESTION', 'questions'), deleteQuestion);
@@ -466,6 +470,32 @@ router.post('/settings', requireRole('super_admin'), auditLog('UPDATE_PLATFORM_S
 router.get('/audit-logs', requireRole('super_admin'), listAuditLogs);
 router.get('/activity', requireRole('super_admin'), listAuditLogs);
 router.get('/dashboard-widgets', requireRole('super_admin'), getAdminDashboardWidgets);
+router.get('/system-alerts', requireRole('super_admin'), (req, res) => {
+  const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit || '50'), 10) || 50));
+  const alerts = systemAlertAgent.getRecentAlerts(limit);
+  res.json({
+    success: true,
+    alerts,
+    count: alerts.length,
+  });
+});
+
+// ——— Outbound Email Logs & Resend (super_admin, admin) ———
+router.get('/mail-logs', requireRole('super_admin', 'admin'), listMailLogsController);
+router.post('/mail-logs/:id/resend', requireRole('super_admin', 'admin'), auditLog('RESEND_EMAIL', 'mail_logs'), resendMailLogController);
+
+router.get('/results', requireRole('super_admin', 'inspector'), async (_req, res) => {
+  try {
+    const { data: attempts } = await supabase
+      .from('exam_code_attempts')
+      .select('id, hall_ticket_no, student_name, score, max_score, status, exam_code, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    res.json({ success: true, results: attempts || [], count: attempts?.length || 0 });
+  } catch {
+    res.json({ success: true, results: [], count: 0 });
+  }
+});
 
 export default router;
 

@@ -4,7 +4,7 @@ import { RoundedBox, Text } from '@react-three/drei'
 import * as THREE from 'three'
 
 const FACES = ['{ }', '</>', '01', '&&', '=>', '[]']
-const COLORS = ['#6C5CE7', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+const COLORS = ['#00d2ff', '#0284c7', '#10b981', '#f59e0b', '#fbbf24', '#38bdf8']
 
 function RotatingCube() {
   const groupRef = useRef<THREE.Group>(null!)
@@ -64,8 +64,8 @@ export default function CodeCube({ height = 280 }: CodeCubeProps) {
     <div style={{ width: '100%', height }}>
       <Canvas camera={{ position: [0, 0, 4.5], fov: 45 }} dpr={[1, 1.5]}>
         <ambientLight intensity={0.4} />
-        <pointLight position={[5, 5, 5]} intensity={1.5} color="#6C5CE7" />
-        <pointLight position={[-5, -5, 5]} intensity={0.8} color="#06b6d4" />
+        <pointLight position={[5, 5, 5]} intensity={1.5} color="#00d2ff" />
+        <pointLight position={[-5, -5, 5]} intensity={0.8} color="#fbbf24" />
         <RotatingCube />
       </Canvas>
     </div>

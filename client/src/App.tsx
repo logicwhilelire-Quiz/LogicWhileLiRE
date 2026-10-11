@@ -3,8 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import ErrorBoundary from './components/ErrorBoundary';
 import PageLoader from './components/PageLoader';
-import LogicWhileLiREIntro from './components/LogicWhileLiREIntro';
-import PageTransition from './components/3d/PageTransition';
 
 // Code-split routes for optimal performance and smaller initial bundles
 const StudentLoginPage = lazy(() => import('./pages/StudentLoginPage'));
@@ -29,6 +27,7 @@ const AnalyticsPage = lazy(() => import('./pages/admin/AnalyticsPage'));
 const StaffManagementPage = lazy(() => import('./pages/admin/StaffManagementPage'));
 
 // ── NEW: Exam Code System (No OTP) ──────────────────────────────
+const InspectorLoginPage = lazy(() => import('./pages/InspectorLoginPage'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const EnterExamPage = lazy(() => import('./pages/EnterExamPage'));
 const InstructionsPage = lazy(() => import('./pages/InstructionsPage'));
@@ -37,8 +36,8 @@ const ResultECPage = lazy(() => import('./pages/ResultECPage'));
 const LeaderboardECPage = lazy(() => import('./pages/LeaderboardECPage'));
 const VerifyCertificatePage = lazy(() => import('./pages/VerifyCertificatePage'));
 const PracticeArenaPage = lazy(() => import('./pages/PracticeArenaPage'));
-const AboutPage = lazy(() => import('./pages/AboutPage'));
 const InstitutionalStudentReportPage = lazy(() => import('./pages/InstitutionalStudentReportPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // ── NEW: Admin pages ─────────────────────────────────────────────
@@ -57,6 +56,7 @@ const SettingsControl = lazy(() => import('./pages/admin/SettingsControl'));
 const InstructorConsolePage = lazy(() => import('./pages/admin/InstructorConsolePage'));
 const HierarchyManagementPage = lazy(() => import('./pages/admin/HierarchyManagementPage'));
 const ActivityLogPage = lazy(() => import('./pages/admin/ActivityLogPage'));
+const MailLogsPage = lazy(() => import('./pages/admin/MailLogsPage'));
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -74,9 +74,17 @@ function AnimatedRoutes() {
         <Routes location={location}>
         {/* ── PUBLIC LANDING (Marketing page — default route) ── */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/inspector" element={<InspectorLoginPage />} />
+        <Route path="/inspector/login" element={<InspectorLoginPage />} />
+        <Route path="/inspector/console" element={<InstructorConsolePage />} />
+        <Route path="/inspector/console/:examCode" element={<InstructorConsolePage />} />
+        <Route path="/inspector/monitor" element={<MonitorControl />} />
+        <Route path="/inspector/results" element={<ResultControl />} />
 
         {/* ── EXAM CODE SYSTEM (No OTP — Hall Ticket + Code) ── */}
         <Route path="/enter-exam" element={<EnterExamPage />} />
+        <Route path="/exam/enter" element={<EnterExamPage />} />
+        <Route path="/exam-enter" element={<EnterExamPage />} />
         <Route path="/instructions/:examCode" element={<InstructionsPage />} />
         <Route path="/quiz/:examCode" element={<ExamCodeQuizPage />} />
         <Route path="/result-ec/:examCode" element={<ResultECPage />} />
@@ -98,15 +106,14 @@ function AnimatedRoutes() {
         <Route path="/student/report" element={<InstitutionalStudentReportPage />} />
         <Route path="/report" element={<InstitutionalStudentReportPage />} />
 
-        {/* Student Self-Registration, Email Verification & Dashboard */}
-        <Route path="/register" element={<StudentRegisterPage />} />
-        <Route path="/student/register" element={<StudentRegisterPage />} />
+        {/* ── CANDIDATE / STUDENT REGISTRATION PORTAL ── */}
+        <Route path="/register" element={<CandidateRegisterGatePage />} />
+        <Route path="/student/register" element={<CandidateRegisterGatePage />} />
+        <Route path="/student-register" element={<CandidateRegisterGatePage />} />
+        <Route path="/register-candidate" element={<CandidateRegisterGatePage />} />
+        <Route path="/gate" element={<CandidateRegisterGatePage />} />
         <Route path="/student/dashboard" element={<StudentDashboardPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
-
-        {/* Gate Module: Multi-step Candidate Assessment Registration */}
-        <Route path="/gate" element={<CandidateRegisterGatePage />} />
-        <Route path="/register-candidate" element={<CandidateRegisterGatePage />} />
 
         {/* Contest Waiting Lobby (Section 4 Handoff) */}
         <Route path="/contest/:contestId/waiting-lobby" element={<WaitingLobbyPage />} />
@@ -136,13 +143,16 @@ function AnimatedRoutes() {
         <Route path="/admin/exam-control" element={<ExamControl />} />
         <Route path="/admin/activity" element={<ActivityLogPage />} />
         <Route path="/admin/audit-logs" element={<ActivityLogPage />} />
+        <Route path="/admin/mail-logs" element={<MailLogsPage />} />
+        <Route path="/admin/email-logs" element={<MailLogsPage />} />
         <Route path="/admin/questions" element={<QuestionControl />} />
         <Route path="/admin/question-control" element={<QuestionControl />} />
         <Route path="/admin/students" element={<StudentControl />} />
-        <Route path="/admin/student-control" element={<StudentControl />} />
         <Route path="/admin/monitor" element={<MonitorControl />} />
         <Route path="/admin/monitor/:examId" element={<MonitorControl />} />
         <Route path="/admin/monitor-control" element={<MonitorControl />} />
+        <Route path="/admin/live-monitor" element={<MonitorControl />} />
+        <Route path="/admin/live-monitor/:examId" element={<MonitorControl />} />
         <Route path="/admin/results" element={<ResultControl />} />
         <Route path="/admin/result-control" element={<ResultControl />} />
         <Route path="/admin/settings" element={<SettingsControl />} />
@@ -176,30 +186,12 @@ function AnimatedRoutes() {
   );
 }
 
-function RouteSweep() {
-  const location = useLocation();
-  const [active, setActive] = useState(false);
-
-  useEffect(() => {
-    setActive(true);
-    const timer = setTimeout(() => setActive(false), 450);
-    return () => clearTimeout(timer);
-  }, [location.pathname]);
-
-  return <PageTransition isActive={active} duration={0.45} />;
-}
-
-// PERFORMANCE RULE - TO KEEP 60FPS:
-// If mobile, reduce particles: isMobile ? 25 nodes : 50 nodes
-// Use <Canvas dpr={[1,1.5]}> - Cap pixel ratio
-// Use <Suspense> for all 3D - Lazy load
+// Clean, fast institutional assessment app root
 export default function App() {
   return (
     <ErrorBoundary>
       <MotionConfig reducedMotion="user">
         <BrowserRouter>
-          <LogicWhileLiREIntro />
-          <RouteSweep />
           <Suspense fallback={<PageLoader />}>
             <AnimatedRoutes />
           </Suspense>

@@ -20,6 +20,7 @@ import sectorRoutes from './routes/sectorRoutes';
 import inspectorRoutes from './routes/inspectorRoutes';
 import studentRoutes from './routes/student';
 import contactRoutes from './routes/contactRoutes';
+import webhookRoutes from './routes/webhooks';
 import { startSessionCron } from './jobs/sessionCron';
 import { startBackupScheduler } from './services/backupScheduler';
 import { validateParams, ExamIdParam } from './middleware/validate';
@@ -40,10 +41,15 @@ import path from 'path';
 app.set('trust proxy', 1);
 
 // ------- CORS & Origin Setup -------
-const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
+const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173,http://127.0.0.1:5173')
   .split(',')
   .map((o) => o.trim().replace(/\/+$/, ''))
   .filter(Boolean);
+
+if (process.env.NODE_ENV !== 'production') {
+  if (!allowedOrigins.includes('http://127.0.0.1:5173')) allowedOrigins.push('http://127.0.0.1:5173');
+  if (!allowedOrigins.includes('http://localhost:5173')) allowedOrigins.push('http://localhost:5173');
+}
 
 // ------- Performance & Security middleware -------
 app.use(
@@ -89,7 +95,11 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       const cleanOrigin = origin.replace(/\/+$/, '');
-      if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes(origin)) {
+      if (
+        allowedOrigins.includes(cleanOrigin) ||
+        allowedOrigins.includes(origin) ||
+        (process.env.NODE_ENV !== 'production' && (cleanOrigin.startsWith('http://localhost:') || cleanOrigin.startsWith('http://127.0.0.1:')))
+      ) {
         return callback(null, true);
       }
       callback(new Error('CORS: Origin not allowed'));
@@ -120,6 +130,10 @@ app.use((req, res, next) => {
   res.setHeader('X-Request-Id', reqId as string);
   next();
 });
+
+// ------- Resend webhook (MUST be before express.json so raw body is readable) -------
+// CORS is not applied here — Resend calls this server-to-server.
+app.use('/api/webhooks/resend', webhookRoutes);
 
 // ------- Body parsing -------
 app.use(express.json({ limit: '1mb' }));
@@ -158,6 +172,7 @@ app.get('/api/health', (_req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+app.get('/health', (_req, res) => res.redirect(307, '/api/health'));
 
 // Readiness check (live database probe)
 app.get('/api/ready', async (_req, res) => {
@@ -234,9 +249,19 @@ app.use((_req, res) => {
   res.status(404).json({ success: false, error: 'Route not found' });
 });
 
+import { systemAlertAgent } from './services/systemAlertService';
+
 // ------- Global error handler -------
-app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('[Server Error]', err);
+  systemAlertAgent.recordSystemCrash({
+    error: err,
+    path: req.path,
+    method: req.method,
+    ip: req.ip,
+    userAgent: req.headers['user-agent'],
+  }).catch(() => {});
+
   if (err.message && err.message.includes('CORS')) {
     res.status(403).json({ success: false, error: err.message });
     return;

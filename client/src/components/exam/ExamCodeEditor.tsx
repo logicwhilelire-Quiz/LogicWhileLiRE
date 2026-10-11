@@ -106,8 +106,16 @@ export default function ExamCodeEditor({
   const [runResult, setRunResult] = useState<RunResult | null>(null)
   const [running, setRunning] = useState(false)
   const [outputVisible, setOutputVisible] = useState(false)
+  const [pasteBlockedNotice, setPasteBlockedNotice] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const lineNumRef = useRef<HTMLDivElement>(null)
+
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setPasteBlockedNotice(true)
+    setTimeout(() => setPasteBlockedNotice(false), 3500)
+  }, [])
 
   const lang = LANGUAGES.find((l) => l.id === selectedLang) || LANGUAGES[0]
 
@@ -345,6 +353,15 @@ export default function ExamCodeEditor({
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
+            onPaste={handlePaste}
+            onCopy={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onCut={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             style={{
               width: '100%',
               minHeight: '100%',
@@ -361,6 +378,29 @@ export default function ExamCodeEditor({
               tabSize: 2,
             }}
           />
+          {pasteBlockedNotice && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 10,
+                right: 16,
+                background: 'rgba(239, 68, 68, 0.95)',
+                color: '#FFFFFF',
+                padding: '6px 14px',
+                borderRadius: 6,
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)',
+                zIndex: 10,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                pointerEvents: 'none',
+              }}
+            >
+              <span>🛡️</span> Pasting code is blocked by exam strictness rules. Code must be written manually.
+            </div>
+          )}
         </div>
       </div>
 

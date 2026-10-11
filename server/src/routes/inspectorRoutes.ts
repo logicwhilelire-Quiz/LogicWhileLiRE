@@ -278,6 +278,27 @@ router.post('/report-issue', async (req: Request, res: Response) => {
     };
     AUDIT_LEDGER.push(issueRecord);
 
+    // Real-time dispatch to Inspector Console and Admin Monitor
+    try {
+      const { io } = await import('../services/socketService');
+      if (io) {
+        const socketPayload = {
+          id: issueRecord.id,
+          hall_ticket: hallTicket,
+          student_name: resolvedName,
+          violation_type: `STUDENT_ISSUE_${String(issueType).toUpperCase()}`,
+          strike: 0,
+          timestamp: new Date().toLocaleTimeString(),
+          details: resolvedDetails,
+        };
+        io.to(`monitor:${String(examCode).toUpperCase()}`).emit('proctor:violation', socketPayload);
+        io.emit('student:issue', socketPayload);
+        io.emit('violation:new', socketPayload);
+      }
+    } catch {
+      /* non-blocking socket emit */
+    }
+
     res.json({
       success: true,
       message: `Issue logged and inspector alert triggered for ${hallTicket}`,

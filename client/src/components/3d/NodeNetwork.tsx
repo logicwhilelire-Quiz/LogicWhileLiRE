@@ -5,8 +5,8 @@ interface NodeNetworkProps {
   nodeCount?: number;
   maxDistance?: number;
   className?: string;
-  lineColor?: string; // default #06B6D4
-  nodeColor?: string; // default #6C5CE7
+  lineColor?: string; // default rgba(56, 189, 248, 0.35)
+  nodeColor?: string; // default #38BDF8
 }
 
 export default function NodeNetwork({

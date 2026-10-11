@@ -105,7 +105,7 @@ export default function SiteFooter() {
 
   return (
     <>
-      <footer className="site-footer" style={{ borderTop: '1px solid var(--color-border)', background: 'var(--color-surface, #ffffff)', position: 'relative', zIndex: 10 }}>
+      <footer className="site-footer" style={{ borderTop: '1px solid var(--color-border)', background: 'var(--color-surface, #090D1A)', position: 'relative', zIndex: 10 }}>
         <div className="footer-grid">
           {/* Brand Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -114,7 +114,7 @@ export default function SiteFooter() {
                 whileHover={{ scale: 1.02 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               >
-                <BrandLogo size="md" variant="full" />
+                <BrandLogo size="md" variant="standard" showTagline={true} />
               </motion.div>
             </Link>
 
@@ -123,7 +123,7 @@ export default function SiteFooter() {
             </p>
 
             <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-primary)' }}>
-              Developed by R. Charan Sai
+              Elevating Coding Knowledge
             </div>
           </div>
 
@@ -132,7 +132,7 @@ export default function SiteFooter() {
             <div
               className="footer-col-title"
               style={{
-                color: 'var(--color-primary-dark, #0A3F8F)',
+                color: 'var(--color-primary, #38BDF8)',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 700,
                 fontSize: '0.92rem',
@@ -147,8 +147,8 @@ export default function SiteFooter() {
               <Link to="/enter-exam" className="footer-link">
                 Enter Assessment
               </Link>
-              <Link to="/gate" className="footer-link">
-                Candidate Gate
+              <Link to="/enter-exam" className="footer-link">
+                Candidate Gate Pass
               </Link>
               <Link to="/login" className="footer-link">
                 Student Portal
@@ -164,7 +164,7 @@ export default function SiteFooter() {
             <div
               className="footer-col-title"
               style={{
-                color: 'var(--color-primary-dark, #0A3F8F)',
+                color: 'var(--color-primary, #38BDF8)',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 700,
                 fontSize: '0.92rem',
@@ -204,7 +204,7 @@ export default function SiteFooter() {
             <div
               className="footer-col-title"
               style={{
-                color: 'var(--color-primary-dark, #0A3F8F)',
+                color: 'var(--color-primary, #38BDF8)',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 700,
                 fontSize: '0.92rem',
@@ -246,7 +246,7 @@ export default function SiteFooter() {
 
         {/* Bottom Bar */}
         <div className="footer-bottom" style={{ borderColor: 'var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: '20px 24px' }}>
-          <span>© 2026 R. Charan Sai. All rights reserved.</span>
+          <span>© 2026 LogicWhile LiRE. All rights reserved.</span>
           <span style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
             <Link to="/about" className="footer-link">
               About &amp; Credits

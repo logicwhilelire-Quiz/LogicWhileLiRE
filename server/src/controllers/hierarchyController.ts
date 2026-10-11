@@ -9,6 +9,12 @@ import * as XLSX from 'xlsx';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../db/supabase';
 import { sendWelcomeEmail } from '../services/emailService';
+import {
+  sendInspectorCreated,
+  sendFacultyCreated,
+  sendAdminWelcome,
+  sendAdminAlert,
+} from '../services/mailService';
 import { executeSystemBackup, BACKUP_DIR } from '../services/backupService';
 import { executeGoogleDriveBackup, getBackupHistoryList } from '../services/driveBackupService';
 import { getGoogleDrivePublicStatus } from '../services/googleDriveService';
@@ -22,6 +28,7 @@ import {
 } from '../utils/totp';
 import { recordAuditLog } from '../middleware/auditLog';
 import { isStrongPassword } from '../middleware/validate';
+import { broadcastExamStarted, resetExamStartedState, stopLeaderboardStream } from '../services/socketService';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DATA MODEL HIERARCHY: College -> Academic Year -> Cohort -> Section -> Batch
@@ -172,6 +179,7 @@ export async function listCohorts(req: Request, res: Response): Promise<void> {
   const enriched = (data || []).map((c: any) => ({
     ...c,
     cohort_name: c.name || c.cohort_name,
+    yop: c.year_of_passing || c.yop,
   }));
   res.json({ success: true, cohorts: enriched });
 }
@@ -181,22 +189,28 @@ export async function createCohort(req: Request, res: Response): Promise<void> {
   const { isScoped, collegeId: scopedCollegeId } = resolveCollegeScope(req);
 
   const effectiveCollegeId = isScoped ? scopedCollegeId : college_id;
-  const effectiveName = name || cohort_name;
-  if (!effectiveCollegeId || !yop) {
+  const effectiveName = (name || cohort_name || '').trim();
+  const effectiveYop = parseInt(String(yop || req.body.year_of_passing || 2026), 10);
+
+  if (!effectiveCollegeId || !effectiveYop) {
     res.status(400).json({ success: false, error: 'college_id and yop (year of passing, e.g. 2026) are required' });
     return;
   }
 
-  const numYop = parseInt(String(yop), 10);
-  const id = `coh-${String(effectiveCollegeId).toLowerCase()}-${numYop}`;
-  const record = {
+  const cleanBranch = (branch || 'CSE').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const id = `coh-${String(effectiveCollegeId).toLowerCase()}-${effectiveYop}-${cleanBranch}-${Date.now().toString(36)}`;
+  const record: Record<string, unknown> = {
     id,
-    college_id: effectiveCollegeId,
-    academic_year_id: academic_year_id || null,
-    yop: numYop,
-    name: effectiveName ? String(effectiveName).trim() : `Class of ${numYop}`,
+    college_id: String(effectiveCollegeId),
+    academic_year_id: academic_year_id ? String(academic_year_id) : null,
+    name: effectiveName || `Class of ${effectiveYop}`,
+    year_of_passing: effectiveYop,
+    yop: effectiveYop,
+    degree: degree ? String(degree).trim() : 'B.Tech',
+    branch: branch ? String(branch).trim().toUpperCase() : 'CSE',
     is_active: Boolean(is_active),
     created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
   const { data, error } = await supabase.from('cohorts').insert(record).select().single();
@@ -208,20 +222,30 @@ export async function createCohort(req: Request, res: Response): Promise<void> {
     success: true,
     cohort: {
       ...data,
-      cohort_name: data.name || data.cohort_name,
+      cohort_name: data.name,
     },
   });
 }
 
 export async function updateCohort(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
-  const { name, cohort_name, yop, academic_year_id, is_active } = req.body;
+  const { name, cohort_name, yop, academic_year_id, degree, branch, is_active } = req.body;
 
-  const updatePayload: Record<string, unknown> = {};
+  const updatePayload: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
   const effectiveName = name !== undefined ? name : cohort_name;
-  if (effectiveName !== undefined) updatePayload.name = String(effectiveName).trim();
-  if (yop !== undefined) updatePayload.yop = parseInt(String(yop), 10);
-  if (academic_year_id !== undefined) updatePayload.academic_year_id = academic_year_id;
+  if (effectiveName !== undefined) {
+    updatePayload.name = String(effectiveName).trim();
+  }
+  if (yop !== undefined || req.body.year_of_passing !== undefined) {
+    const numYop = parseInt(String(yop || req.body.year_of_passing), 10);
+    updatePayload.yop = numYop;
+    updatePayload.year_of_passing = numYop;
+  }
+  if (academic_year_id !== undefined) updatePayload.academic_year_id = String(academic_year_id);
+  if (degree !== undefined) updatePayload.degree = String(degree).trim();
+  if (branch !== undefined) updatePayload.branch = String(branch).trim().toUpperCase();
   if (is_active !== undefined) updatePayload.is_active = Boolean(is_active);
 
   const { data, error } = await supabase.from('cohorts').update(updatePayload).eq('id', id).select().single();
@@ -233,7 +257,7 @@ export async function updateCohort(req: Request, res: Response): Promise<void> {
     success: true,
     cohort: {
       ...data,
-      cohort_name: data.name || data.cohort_name,
+      cohort_name: data.name,
     },
   });
 }
@@ -314,7 +338,7 @@ export async function createSection(req: Request, res: Response): Promise<void> 
     academic_year_id: academic_year_id || null,
     cohort_id: String(cohort_id),
     name: cleanName,
-    branch: String(branch).trim().toUpperCase(),
+    section_name: section_name || cleanName,
     is_active: Boolean(is_active),
     created_at: new Date().toISOString(),
   };
@@ -335,12 +359,15 @@ export async function createSection(req: Request, res: Response): Promise<void> 
 
 export async function updateSection(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
-  const { name, section_name, branch, is_active } = req.body;
+  const { name, section_name, is_active } = req.body;
 
   const updatePayload: Record<string, unknown> = {};
   const effectiveName = name !== undefined ? name : section_name;
-  if (effectiveName !== undefined) updatePayload.name = String(effectiveName).trim().toUpperCase();
-  if (branch !== undefined) updatePayload.branch = String(branch).trim().toUpperCase();
+  if (effectiveName !== undefined) {
+    const formatted = String(effectiveName).trim().toUpperCase();
+    updatePayload.name = formatted;
+    updatePayload.section_name = formatted;
+  }
   if (is_active !== undefined) updatePayload.is_active = Boolean(is_active);
 
   const { data, error } = await supabase.from('sections').update(updatePayload).eq('id', id).select().single();
@@ -529,13 +556,27 @@ export async function getHierarchyOverview(req: Request, res: Response): Promise
 
 // ── 6. STUDENT MANAGEMENT (Belongs to exactly one section and batch) ──
 
+/**
+ * Security: Purges sensitive credential attributes (password hashes, raw OTPs, tokens)
+ * before returning student objects across administrative APIs to prevent data leaks.
+ */
+export function sanitizeStudentResponse<T extends Record<string, any>>(student: T): Record<string, any> {
+  if (!student || typeof student !== 'object') return student;
+  const safe = { ...student };
+  delete safe.password_hash;
+  delete safe.verification_otp;
+  delete safe.reset_token_hash;
+  delete safe.totp_secret;
+  return safe;
+}
+
 export async function listStudents(req: Request, res: Response): Promise<void> {
   const { isScoped, collegeId } = resolveCollegeScope(req);
   const { academic_year_id, cohort_id, section_id, batch_id, search } = req.query;
 
   let query = supabase
     .from('students')
-    .select('id, name, first_name, last_name, email, roll_number, hall_ticket, college_id, college_name, academic_year_id, cohort_id, section_id, batch_id, section, batch, year_of_passing, is_active, is_verified, is_blocked, must_change_password, created_at')
+    .select('id, name, first_name, last_name, email, roll_number, hall_ticket, college_id, college_name, academic_year_id, cohort_id, section_id, batch_id, section, batch, branch_code, year_of_passing, is_active, is_verified, is_blocked, must_change_password, created_at')
     .order('created_at', { ascending: false });
 
   if (isScoped && collegeId) {
@@ -561,14 +602,17 @@ export async function listStudents(req: Request, res: Response): Promise<void> {
     const facultyCollegeId = staffRec?.college_id ?? req.admin.college_id;
     const facultySectionIds: string[] = Array.isArray(staffRec?.section_ids) ? staffRec!.section_ids : [];
 
-    // Always restrict to faculty college
+    // Faculty with no allocated sections see no students (strict zero-trust scoping)
+    if (facultySectionIds.length === 0) {
+      res.json({ success: true, count: 0, students: [] });
+      return;
+    }
+
+    // Restrict strictly to faculty college and allocated sections
     if (facultyCollegeId) {
       query = query.eq('college_id', facultyCollegeId);
     }
-    // If specific sections are allocated, restrict to those sections
-    if (facultySectionIds.length > 0) {
-      query = query.in('section_id', facultySectionIds);
-    }
+    query = query.in('section_id', facultySectionIds);
   }
 
   const { data: students, error } = await query;
@@ -577,7 +621,19 @@ export async function listStudents(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  let filtered = students || [];
+  let filtered = (students || []).map((s: any) => {
+    const roll = s.roll_number || s.hall_ticket || 'STUDENT';
+    const idSlug = String(s.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || '2026';
+    const candSlug = String(s.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(4, 8).toUpperCase() || 'CAND';
+    const safe = sanitizeStudentResponse(s);
+    return {
+      ...safe,
+      branch: s.branch_code || s.branch || 'CSE',
+      student_gate_pass: `GP-STU-${roll}-${idSlug}`,
+      candidate_gate_pass: `GP-CAND-${roll}-${candSlug}`,
+    };
+  });
+
   if (search) {
     const s = String(search).toLowerCase();
     filtered = filtered.filter(
@@ -592,9 +648,8 @@ export async function listStudents(req: Request, res: Response): Promise<void> {
   res.json({ success: true, count: filtered.length, students: filtered });
 }
 
-
 export async function createStudent(req: Request, res: Response): Promise<void> {
-  const {
+  let {
     name,
     first_name,
     last_name,
@@ -602,38 +657,80 @@ export async function createStudent(req: Request, res: Response): Promise<void> 
     roll_number,
     hall_ticket,
     college_id,
+    college_name,
     academic_year_id,
     cohort_id,
     section_id,
+    section,
     batch_id,
+    batch,
     year_of_passing,
     branch_code = 'CSE',
+    branch,
     contact_number,
     mobile,
     password,
+    student_gate_pass,
+    candidate_gate_pass,
   } = req.body;
 
   const { isScoped, collegeId: scopedCollegeId } = resolveCollegeScope(req);
-  const effectiveCollegeId = isScoped ? scopedCollegeId : college_id;
+  let effectiveCollegeId = isScoped ? scopedCollegeId : college_id;
 
-  if (!email || !roll_number || !effectiveCollegeId) {
-    res.status(400).json({ success: false, error: 'email, roll_number, and college_id are required' });
+  if (!email || (!roll_number && !hall_ticket)) {
+    res.status(400).json({ success: false, error: 'email and roll_number / hall_ticket are required' });
     return;
   }
 
-  // Exactly one section and batch required
-  if (!section_id || !batch_id) {
-    res.status(400).json({
-      success: false,
-      error: 'Data model policy violation: A student must belong to exactly one section and batch.',
-      code: 'SECTION_BATCH_REQUIRED',
-    });
-    return;
+  // Auto-resolve college if missing
+  if (!effectiveCollegeId && college_name) {
+    const { data: col } = await supabase
+      .from('colleges')
+      .select('id, college_name')
+      .ilike('college_name', `%${college_name}%`)
+      .maybeSingle();
+    if (col) {
+      effectiveCollegeId = col.id;
+      college_name = col.college_name;
+    } else {
+      effectiveCollegeId = 1;
+    }
+  } else if (!effectiveCollegeId) {
+    effectiveCollegeId = 1;
+  }
+
+  if (!college_name && effectiveCollegeId) {
+    const { data: col } = await supabase.from('colleges').select('college_name').eq('id', effectiveCollegeId).maybeSingle();
+    if (col) college_name = col.college_name;
   }
 
   const normalizedEmail = String(email).trim().toLowerCase();
-  const cleanRoll = String(roll_number).trim().toUpperCase();
+  const cleanRoll = String(roll_number || hall_ticket).trim().toUpperCase();
   const cleanHallTicket = hall_ticket ? String(hall_ticket).trim().toUpperCase() : cleanRoll;
+  const effectiveBranch = String(branch || branch_code || 'CSE').trim().toUpperCase();
+  const effectiveSection = String(section || 'A').trim();
+  const effectiveBatch = String(batch || 'Batch 1').trim();
+
+  // Exactly one section and batch required — auto-resolve or create if not passed as IDs
+  if (!section_id) {
+    const { data: secRec } = await supabase
+      .from('sections')
+      .select('id, name')
+      .eq('college_id', effectiveCollegeId)
+      .eq('name', effectiveSection)
+      .maybeSingle();
+    section_id = secRec?.id || `sec-${effectiveCollegeId}-${effectiveSection.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+  }
+
+  if (!batch_id) {
+    const { data: batRec } = await supabase
+      .from('batches')
+      .select('id, name')
+      .eq('college_id', effectiveCollegeId)
+      .eq('name', effectiveBatch)
+      .maybeSingle();
+    batch_id = batRec?.id || `bat-${effectiveCollegeId}-${effectiveBatch.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+  }
 
   // Check duplicate email
   const { data: existing } = await supabase
@@ -657,6 +754,11 @@ export async function createStudent(req: Request, res: Response): Promise<void> 
   const { data: secRec } = await supabase.from('sections').select('name').eq('id', section_id).maybeSingle();
   const { data: batRec } = await supabase.from('batches').select('name').eq('id', batch_id).maybeSingle();
 
+  // Auto-generate Student Gate Pass and Candidate Gate Pass
+  const randomSuffix = () => Math.random().toString(36).substring(2, 6).toUpperCase();
+  const autoStudentGatePass = student_gate_pass || `GP-STU-${cleanRoll}-${randomSuffix()}`;
+  const autoCandidateGatePass = candidate_gate_pass || `GP-CAND-${cleanRoll}-${randomSuffix()}`;
+
   const newStudent = {
     id: studentId,
     name: fullName,
@@ -666,14 +768,15 @@ export async function createStudent(req: Request, res: Response): Promise<void> 
     roll_number: cleanRoll,
     hall_ticket: cleanHallTicket,
     college_id: effectiveCollegeId,
+    college_name: college_name || 'VR Siddhartha Engineering College',
     academic_year_id: academic_year_id || null,
     cohort_id: cohort_id || null,
     section_id: String(section_id),
     batch_id: String(batch_id),
-    section: secRec?.name || 'A',
-    batch: batRec?.name || 'Batch 1',
+    section: secRec?.name || effectiveSection,
+    batch: batRec?.name || effectiveBatch,
     year_of_passing: year_of_passing ? parseInt(String(year_of_passing), 10) : 2026,
-    branch_code: String(branch_code).toUpperCase(),
+    branch_code: effectiveBranch,
     contact_number: contact_number || mobile || null,
     mobile: mobile || contact_number || null,
     password_hash: passwordHash,
@@ -681,7 +784,7 @@ export async function createStudent(req: Request, res: Response): Promise<void> 
     locked_until: null,
     reset_token_hash: null,
     reset_token_expires: null,
-    must_change_password: true, // Mandatory password change on first login
+    must_change_password: true,
     is_active: true,
     is_verified: false,
     verification_otp: Math.floor(100000 + Math.random() * 900000).toString(),
@@ -704,10 +807,12 @@ export async function createStudent(req: Request, res: Response): Promise<void> 
 
   res.status(201).json({
     success: true,
-    message: 'Student created successfully. Welcome email dispatched with temporary password.',
+    message: 'Student created successfully. Separated into college, group, and section with active Gate Passes.',
     student: {
-      ...created,
+      ...sanitizeStudentResponse(created || newStudent),
       temporary_password: tempPassword,
+      student_gate_pass: autoStudentGatePass,
+      candidate_gate_pass: autoCandidateGatePass,
     },
   });
 }
@@ -728,6 +833,8 @@ export async function bulkImportStudents(req: Request, res: Response): Promise<v
     }
   } else if (Array.isArray(req.body?.rows)) {
     rows = req.body.rows;
+  } else if (Array.isArray(req.body)) {
+    rows = req.body;
   } else {
     res.status(400).json({ success: false, error: 'Excel (.xlsx) or CSV file or rows array is required' });
     return;
@@ -820,7 +927,7 @@ export async function bulkImportStudents(req: Request, res: Response): Promise<v
           errors.push({ row: rowNum, error: updErr.message });
         } else {
           updatedCount++;
-          importedStudents.push(updated);
+          importedStudents.push(sanitizeStudentResponse(updated));
         }
       } else {
         // Create new student
@@ -862,8 +969,8 @@ export async function bulkImportStudents(req: Request, res: Response): Promise<v
           errors.push({ row: rowNum, error: insertErr.message });
         } else {
           insertedCount++;
-          importedStudents.push({ ...created, temporary_password: tempPassword });
-          sendWelcomeEmail(email, name, 'student', tempPassword).catch((e) =>
+          importedStudents.push({ ...sanitizeStudentResponse(created), temporary_password: tempPassword });
+          sendWelcomeEmail(email, name, 'student', tempPassword, rawCollegeId, rollNumber).catch((e) =>
             console.warn('[WelcomeEmail] Failed to send during bulk import:', e)
           );
         }
@@ -901,7 +1008,7 @@ export async function bulkImportStudents(req: Request, res: Response): Promise<v
       updated_count: updatedCount,
       errors_count: errors.length,
       errors,
-      students: importedStudents,
+      students: importedStudents.map(sanitizeStudentResponse),
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message || 'Failed to process bulk import file' });
@@ -1039,19 +1146,26 @@ export async function exportBatchStudents(req: Request, res: Response): Promise<
     const facultyCollegeId = staffRec?.college_id ?? req.admin.college_id;
     const facultySectionIds: string[] = Array.isArray(staffRec?.section_ids) ? staffRec!.section_ids : ((req.admin as any).section_ids || []);
 
+    if (facultySectionIds.length === 0) {
+      res.status(403).json({
+        success: false,
+        error: 'Forbidden: No academic sections allocated to your faculty account',
+        code: 'NO_SECTIONS_ALLOCATED',
+      });
+      return;
+    }
+
     if (facultyCollegeId) {
       query = query.eq('college_id', facultyCollegeId);
     }
-    if (facultySectionIds.length > 0) {
-      query = query.in('section_id', facultySectionIds);
-      if (section_id && !facultySectionIds.includes(String(section_id))) {
-        res.status(403).json({
-          success: false,
-          error: 'Forbidden: You do not have permission to export students from a section outside your allocation',
-          code: 'FACULTY_SECTION_FORBIDDEN',
-        });
-        return;
-      }
+    query = query.in('section_id', facultySectionIds);
+    if (section_id && !facultySectionIds.includes(String(section_id))) {
+      res.status(403).json({
+        success: false,
+        error: 'Forbidden: You do not have permission to export students from a section outside your allocation',
+        code: 'FACULTY_SECTION_FORBIDDEN',
+      });
+      return;
     }
   }
 
@@ -1440,9 +1554,9 @@ export async function resetStaffPassword(req: Request, res: Response): Promise<v
     .from('staff')
     .update({
       password_hash: passwordHash,
+      must_change_password: true,
       failed_attempts: 0,
       locked_until: null,
-      must_change_password: true,
       reset_token_hash: null,
       reset_token_expires: null,
     })
@@ -1455,14 +1569,40 @@ export async function resetStaffPassword(req: Request, res: Response): Promise<v
     return;
   }
 
-  sendWelcomeEmail(staff.email, staff.name, staff.role, tempPassword).catch((e) =>
-    console.warn('[WelcomeEmail] Failed to send staff reset notification:', e)
-  );
+  // Dispatch credential notification to linked email
+  if (staff.email) {
+    if (staff.role === 'inspector') {
+      sendInspectorCreated({
+        name: staff.name,
+        email: staff.email,
+        tempPassword,
+      }).catch((e) => console.warn('[MailService] Failed to send inspector reset email:', e));
+    } else if (staff.role === 'faculty') {
+      sendFacultyCreated({
+        name: staff.name,
+        email: staff.email,
+        tempPassword,
+      }).catch((e) => console.warn('[MailService] Failed to send faculty reset email:', e));
+    } else {
+      sendAdminWelcome({
+        name: staff.name,
+        email: staff.email,
+        role: staff.role,
+        tempPassword,
+      }).catch((e) => console.warn('[MailService] Failed to send admin reset email:', e));
+    }
+
+    sendAdminAlert({
+      to: staff.email,
+      alertType: 'PASSWORD_RESET',
+      message: `Your account password has been reset by the Super Administrator. A new temporary access key was sent.`,
+      severity: 'high',
+    }).catch(() => {});
+  }
 
   res.json({
     success: true,
-    message: `Password reset successfully for ${staff.name}. Temporary password sent via email.`,
-    temporary_password: tempPassword,
+    message: `Password reset successfully for ${staff.name}. Temporary credentials have been dispatched to the linked contact method.`,
   });
 }
 
@@ -1510,15 +1650,30 @@ export async function changePassword(req: Request, res: Response): Promise<void>
   }
 
   const newHash = await bcrypt.hash(new_password, 12);
-  await supabase
+  const updatePayload: any = {
+    password_hash: newHash,
+    must_change_password: false,
+    failed_attempts: 0,
+    locked_until: null,
+  };
+  const { error: updateErr } = await supabase
     .from('staff')
-    .update({
-      password_hash: newHash,
-      must_change_password: false,
-      failed_attempts: 0,
-      locked_until: null,
-    })
+    .update(updatePayload)
     .eq('id', admin.staff_id);
+
+  if (updateErr && updateErr.message?.includes('must_change_password')) {
+    delete updatePayload.must_change_password;
+    await supabase.from('staff').update(updatePayload).eq('id', admin.staff_id);
+  }
+
+  try {
+    const { staffAccountCache } = require('./adminController');
+    for (const [, cached] of staffAccountCache) {
+      if (cached.id === admin.staff_id || cached.email === staff.email) {
+        cached.must_change_password = false;
+      }
+    }
+  } catch {}
 
   // Issue refreshed token with must_change_password: false
   const token = jwt.sign(
@@ -1533,6 +1688,24 @@ export async function changePassword(req: Request, res: Response): Promise<void>
     getAdminJwtSecret(),
     { expiresIn: '8h' }
   );
+
+  // Dispatch security alert on password change to linked email
+  if (staff.email) {
+    sendAdminAlert({
+      alertType: 'system_alert',
+      title: `Security Alert: Password Changed for ${staff.name || staff.username || staff.email}`,
+      message: `The password for your LogicWhile LiRE account (${staff.role}) was changed on ${new Date().toISOString()}. If you did not make this change, please immediately contact your administrator.`,
+      details: {
+        role: staff.role,
+        username: staff.username,
+        email: staff.email,
+        timestamp: new Date().toISOString(),
+      },
+      targetAdminEmail: staff.email,
+    }).catch((err) => {
+      console.warn('[ChangePassword] Notice: alert delivery:', err?.message);
+    });
+  }
 
   res.json({
     success: true,
@@ -1826,8 +1999,29 @@ export async function inspectorStartExam(req: Request, res: Response): Promise<v
   const { id } = req.params;
   const admin = req.admin;
 
-  // Find exam
-  const { data: exam, error } = await supabase.from('exams').select('*').eq('id', id).maybeSingle();
+  // Find exam in exams table or exam_codes table
+  let { data: exam, error } = await supabase.from('exams').select('*').eq('id', id).maybeSingle();
+  let table = 'exams';
+
+  if (!exam) {
+    const { data: byCode } = await supabase.from('exams').select('*').eq('exam_code', id).maybeSingle();
+    if (byCode) exam = byCode;
+  }
+  if (!exam) {
+    const { data: ec } = await supabase.from('exam_codes').select('*').eq('id', id).maybeSingle();
+    if (ec) {
+      exam = { ...ec, title: ec.exam_name || ec.exam_code };
+      table = 'exam_codes';
+    }
+  }
+  if (!exam) {
+    const { data: ecByCode } = await supabase.from('exam_codes').select('*').eq('exam_code', id).maybeSingle();
+    if (ecByCode) {
+      exam = { ...ecByCode, title: ecByCode.exam_name || ecByCode.exam_code };
+      table = 'exam_codes';
+    }
+  }
+
   if (error || !exam) {
     res.status(404).json({ success: false, error: 'Exam not found' });
     return;
@@ -1847,16 +2041,24 @@ export async function inspectorStartExam(req: Request, res: Response): Promise<v
 
   const now = new Date().toISOString();
   const { data: updated } = await supabase
-    .from('exams')
+    .from(table)
     .update({ is_active: true, start_time: now })
-    .eq('id', id)
+    .eq('id', exam.id)
     .select()
     .single();
+
+  const examCode = exam.exam_code || exam.code || id;
+  const durationSeconds = (exam.duration_minutes || exam.duration || 60) * 60;
+  broadcastExamStarted({
+    examCode,
+    durationSeconds,
+    serverStartTime: Date.now(),
+  }).catch(() => {});
 
   res.json({
     success: true,
     message: `Exam "${exam.title}" has been started by inspector. Candidates may now enter.`,
-    exam: updated,
+    exam: updated || exam,
   });
 }
 
@@ -1864,7 +2066,28 @@ export async function inspectorEndExam(req: Request, res: Response): Promise<voi
   const { id } = req.params;
   const admin = req.admin;
 
-  const { data: exam, error } = await supabase.from('exams').select('*').eq('id', id).maybeSingle();
+  let { data: exam, error } = await supabase.from('exams').select('*').eq('id', id).maybeSingle();
+  let table = 'exams';
+
+  if (!exam) {
+    const { data: byCode } = await supabase.from('exams').select('*').eq('exam_code', id).maybeSingle();
+    if (byCode) exam = byCode;
+  }
+  if (!exam) {
+    const { data: ec } = await supabase.from('exam_codes').select('*').eq('id', id).maybeSingle();
+    if (ec) {
+      exam = { ...ec, title: ec.exam_name || ec.exam_code };
+      table = 'exam_codes';
+    }
+  }
+  if (!exam) {
+    const { data: ecByCode } = await supabase.from('exam_codes').select('*').eq('exam_code', id).maybeSingle();
+    if (ecByCode) {
+      exam = { ...ecByCode, title: ecByCode.exam_name || ecByCode.exam_code };
+      table = 'exam_codes';
+    }
+  }
+
   if (error || !exam) {
     res.status(404).json({ success: false, error: 'Exam not found' });
     return;
@@ -1884,16 +2107,20 @@ export async function inspectorEndExam(req: Request, res: Response): Promise<voi
 
   const now = new Date().toISOString();
   const { data: updated } = await supabase
-    .from('exams')
+    .from(table)
     .update({ is_active: false, end_time: now })
-    .eq('id', id)
+    .eq('id', exam.id)
     .select()
     .single();
+
+  const examCode = exam.exam_code || exam.code || id;
+  resetExamStartedState(examCode);
+  stopLeaderboardStream(examCode);
 
   res.json({
     success: true,
     message: `Exam "${exam.title}" has been concluded by inspector.`,
-    exam: updated,
+    exam: updated || exam,
   });
 }
 
@@ -1941,12 +2168,43 @@ export async function getInspectorDashboardData(req: Request, res: Response): Pr
     }
     const { data: sections } = await secQuery.order('section_name');
 
+    // 5. Fetch enrolled students for this college / assessment roster
+    let stuQuery = supabase.from('students').select('id, name, first_name, last_name, roll_number, hall_ticket, section, batch, branch_code, college_id, college_name, is_verified, is_blocked');
+    if (targetCollegeId && admin?.role !== 'super_admin') {
+      stuQuery = stuQuery.eq('college_id', targetCollegeId);
+    }
+    const { data: enrolledStudents } = await stuQuery.order('roll_number');
+
+    // 6. Fetch live waiting queue / lobby participants
+    let queueQuery = supabase
+      .from('exam_code_attempts')
+      .select('id, exam_code_id, roll_number, student_name, college_id, status, joined_at, ping_at')
+      .in('status', ['waiting', 'in_lobby', 'active', 'ready'])
+      .limit(50);
+    const { data: waitingQueue } = await queueQuery;
+
     res.json({
       success: true,
       college: college || { id: targetCollegeId, college_name: 'Institutional Campus', college_code: 'CAMPUS' },
       exams: exams || [],
       exam_codes: examCodes || [],
       sections: sections || [],
+      waiting_queue: waitingQueue || [],
+      enrolled_students: (enrolledStudents || []).map((s: any) => {
+        const roll = s.roll_number || s.hall_ticket || 'STUDENT';
+        const idSlug = String(s.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || '2026';
+        const candSlug = String(s.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(4, 8).toUpperCase() || 'CAND';
+        return {
+          ...s,
+          name: s.name || `${s.first_name || ''} ${s.last_name || ''}`.trim() || s.roll_number,
+          hall_ticket: s.hall_ticket || s.roll_number,
+          branch: s.branch_code || 'CSE',
+          section: s.section || 'A',
+          batch: s.batch || 'Batch 1',
+          student_gate_pass: `GP-STU-${roll}-${idSlug}`,
+          candidate_gate_pass: `GP-CAND-${roll}-${candSlug}`,
+        };
+      }),
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || 'Failed to fetch dashboard data' });

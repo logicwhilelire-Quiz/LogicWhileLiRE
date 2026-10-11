@@ -11,7 +11,7 @@ interface StarFieldProps {
   className?: string
 }
 
-export default function StarField({ count = 180, speed = 0.6, color = '#6C5CE7', className = '' }: StarFieldProps) {
+export default function StarField({ count = 180, speed = 0.6, color = '#00d2ff', className = '' }: StarFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {

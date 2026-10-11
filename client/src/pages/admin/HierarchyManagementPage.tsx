@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import {
   getHierarchyOverview,
   listAcademicYears,
@@ -278,14 +279,17 @@ export default function HierarchyManagementPage() {
   // Add Cohort
   async function handleCreateCohort() {
     if (!cohortName.trim() || !selectedYearId) return;
+    const finalYop = Number(cohortYop) || (new Date().getFullYear() + 4);
     try {
       await createCohort({
         college_id: selectedCollegeId,
         academic_year_id: selectedYearId,
         cohort_name: cohortName.trim(),
-        yop: Number(cohortYop),
-        degree: cohortDegree,
-        branch: cohortBranch,
+        name: cohortName.trim(),
+        yop: finalYop,
+        year_of_passing: finalYop,
+        degree: cohortDegree || 'B.Tech',
+        branch: cohortBranch || 'CSE',
       });
       setShowAddCohortModal(false);
       setCohortName('');
@@ -615,7 +619,7 @@ export default function HierarchyManagementPage() {
             </div>
 
             {isSuperAdmin && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <label style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Switch College:</label>
                 <select
                   value={selectedCollegeId}
@@ -636,6 +640,24 @@ export default function HierarchyManagementPage() {
                     </option>
                   ))}
                 </select>
+                <Link
+                  to="/admin/colleges"
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: 8,
+                    background: '#002147',
+                    border: '1.5px solid #EAA812',
+                    color: '#EAA812',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  🏫 Manage Colleges
+                </Link>
               </div>
             )}
           </div>
@@ -649,11 +671,11 @@ export default function HierarchyManagementPage() {
                 padding: '16px 20px',
                 borderRadius: 12,
                 background: 'rgba(15, 23, 42, 0.5)',
-                border: selectedYearId ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid var(--color-border)',
+                border: selectedYearId ? '1.5px solid #EAA812' : '1px solid var(--color-border)',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '0.74rem', textTransform: 'uppercase', fontWeight: 800, color: '#60A5FA', letterSpacing: '0.05em' }}>
+                <span style={{ fontSize: '0.74rem', textTransform: 'uppercase', fontWeight: 800, color: '#EAA812', letterSpacing: '0.05em' }}>
                   1. Academic Year
                 </span>
                 <button
@@ -662,9 +684,9 @@ export default function HierarchyManagementPage() {
                     padding: '2px 8px',
                     fontSize: '0.72rem',
                     borderRadius: 6,
-                    background: 'rgba(59, 130, 246, 0.2)',
-                    border: '1px solid rgba(59, 130, 246, 0.4)',
-                    color: '#93C5FD',
+                    background: 'rgba(234, 168, 18, 0.2)',
+                    border: '1px solid rgba(234, 168, 18, 0.4)',
+                    color: '#FDE68A',
                     cursor: 'pointer',
                     fontWeight: 700,
                   }}
@@ -683,9 +705,9 @@ export default function HierarchyManagementPage() {
                       textAlign: 'left',
                       fontSize: '0.84rem',
                       fontWeight: selectedYearId === y.id ? 700 : 500,
-                      background: selectedYearId === y.id ? 'rgba(59, 130, 246, 0.2)' : 'rgba(30, 41, 59, 0.3)',
+                      background: selectedYearId === y.id ? 'rgba(234, 168, 18, 0.2)' : 'rgba(30, 41, 59, 0.3)',
                       color: selectedYearId === y.id ? '#FFFFFF' : 'var(--color-text-muted)',
-                      border: selectedYearId === y.id ? '1px solid #3B82F6' : '1px solid transparent',
+                      border: selectedYearId === y.id ? '1px solid #EAA812' : '1px solid transparent',
                       cursor: 'pointer',
                       display: 'flex',
                       justifyContent: 'space-between',
@@ -1024,21 +1046,51 @@ export default function HierarchyManagementPage() {
           {/* Modal: Add Year */}
           {showAddYearModal && (
             <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-              <div className="card" style={{ width: 400, padding: 24, borderRadius: 12, background: '#0F172A', border: '1px solid var(--color-border)' }}>
+              <div className="card" style={{ width: 420, padding: 24, borderRadius: 12, background: '#0F172A', border: '1px solid var(--color-border)' }}>
                 <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', color: '#FFF' }}>Add Academic Year</h3>
+                
+                {/* Quick Presets for 2026, 2021, etc. */}
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', color: '#EAA812', fontWeight: 700, marginBottom: 6 }}>
+                    ⚡ Quick Year Presets (2026, 2021, etc.):
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {['2026', '2021', '2025-2026', '2026-2027', '2020-2021', '2021-2022'].map((yr) => (
+                      <button
+                        key={yr}
+                        type="button"
+                        onClick={() => setYearName(yr)}
+                        style={{
+                          padding: '5px 12px',
+                          fontSize: '0.8rem',
+                          borderRadius: 6,
+                          background: yearName === yr ? '#002147' : '#1E293B',
+                          color: yearName === yr ? '#FFFFFF' : '#CBD5E1',
+                          border: yearName === yr ? '1.5px solid #EAA812' : '1px solid rgba(255,255,255,0.1)',
+                          cursor: 'pointer',
+                          fontWeight: yearName === yr ? 800 : 500,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {yr}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 6 }}>Year Name (e.g. 2025-2026)</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 6 }}>Year Name (Custom or Selected)</label>
                   <input
                     type="text"
                     value={yearName}
                     onChange={(e) => setYearName(e.target.value)}
-                    placeholder="2025-2026"
+                    placeholder="2026 or 2025-2026"
                     style={{ width: '100%', padding: '10px', borderRadius: 8, background: '#1E293B', color: '#FFF', border: '1px solid var(--color-border)' }}
                   />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
                   <button onClick={() => setShowAddYearModal(false)} className="btn btn-secondary" style={{ padding: '8px 16px' }}>Cancel</button>
-                  <button onClick={handleCreateYear} className="btn btn-primary" style={{ padding: '8px 16px' }}>Save Year</button>
+                  <button onClick={handleCreateYear} className="btn btn-primary" style={{ padding: '8px 16px', background: '#002147', border: '1px solid #EAA812', color: '#FFF' }}>Save Year</button>
                 </div>
               </div>
             </div>
@@ -1090,7 +1142,7 @@ export default function HierarchyManagementPage() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
                   <button onClick={() => setShowAddCohortModal(false)} className="btn btn-secondary" style={{ padding: '8px 16px' }}>Cancel</button>
-                  <button onClick={handleCreateCohort} className="btn btn-primary" style={{ padding: '8px 16px' }}>Save Cohort</button>
+                  <button onClick={handleCreateCohort} className="btn btn-primary" style={{ padding: '8px 16px', background: '#002147', border: '1px solid #EAA812', color: '#FFF' }}>Save Cohort</button>
                 </div>
               </div>
             </div>
@@ -1099,21 +1151,51 @@ export default function HierarchyManagementPage() {
           {/* Modal: Add Section */}
           {showAddSectionModal && (
             <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-              <div className="card" style={{ width: 400, padding: 24, borderRadius: 12, background: '#0F172A', border: '1px solid var(--color-border)' }}>
+              <div className="card" style={{ width: 420, padding: 24, borderRadius: 12, background: '#0F172A', border: '1px solid var(--color-border)' }}>
                 <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', color: '#FFF' }}>Add Section</h3>
+                
+                {/* Quick Presets for Sections A, B, C, D, E */}
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', color: '#EAA812', fontWeight: 700, marginBottom: 6 }}>
+                    ⚡ Quick Section Presets (A, B, C, D, E):
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {['A', 'B', 'C', 'D', 'E'].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setSectionName(s)}
+                        style={{
+                          padding: '5px 14px',
+                          fontSize: '0.82rem',
+                          borderRadius: 6,
+                          background: sectionName === s ? '#002147' : '#1E293B',
+                          color: sectionName === s ? '#FFFFFF' : '#CBD5E1',
+                          border: sectionName === s ? '1.5px solid #EAA812' : '1px solid rgba(255,255,255,0.1)',
+                          cursor: 'pointer',
+                          fontWeight: sectionName === s ? 800 : 500,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        Section {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 6 }}>Section Name (e.g. A, B, Alpha)</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 6 }}>Section Name</label>
                   <input
                     type="text"
                     value={sectionName}
                     onChange={(e) => setSectionName(e.target.value)}
-                    placeholder="A"
+                    placeholder="A or CSE-A"
                     style={{ width: '100%', padding: '10px', borderRadius: 8, background: '#1E293B', color: '#FFF', border: '1px solid var(--color-border)' }}
                   />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
                   <button onClick={() => setShowAddSectionModal(false)} className="btn btn-secondary" style={{ padding: '8px 16px' }}>Cancel</button>
-                  <button onClick={handleCreateSection} className="btn btn-primary" style={{ padding: '8px 16px' }}>Save Section</button>
+                  <button onClick={handleCreateSection} className="btn btn-primary" style={{ padding: '8px 16px', background: '#002147', border: '1px solid #EAA812', color: '#FFF' }}>Save Section</button>
                 </div>
               </div>
             </div>

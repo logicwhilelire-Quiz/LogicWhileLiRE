@@ -9,8 +9,8 @@ interface NeonGridProps {
 }
 
 export default function NeonGrid({
-  color = '#6C5CE7',
-  accentColor = '#06b6d4',
+  color = '#0284c7',
+  accentColor = '#00d2ff',
   cellSize = 60,
   className = '',
   perspective = true,

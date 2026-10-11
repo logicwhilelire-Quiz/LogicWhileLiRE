@@ -100,6 +100,61 @@ export default function WaitingLobbyPage() {
     checkIfAlreadyStarted();
   }, [contestId]);
 
+  // Real-time Administrator Command Synchronizer (Cross-Window & Broadcast Channel)
+  useEffect(() => {
+    const checkAdminCommand = () => {
+      try {
+        const state =
+          localStorage.getItem(`admin_exam_state_${contestId}`) ||
+          localStorage.getItem(`admin_exam_state_${contestId.toUpperCase()}`) ||
+          localStorage.getItem(`admin_exam_state_DEMO123`);
+
+        if (state === 'started' && !examStarted) {
+          const startedAtStr =
+            localStorage.getItem(`admin_exam_started_at_${contestId}`) ||
+            localStorage.getItem(`admin_exam_started_at_${contestId.toUpperCase()}`) ||
+            String(Date.now());
+          const startedAt = Number(startedAtStr) || Date.now();
+          setExamStarted(true);
+          setStartPayload({
+            event: 'EXAM_STARTED',
+            exam_id: contestId.toUpperCase(),
+            server_start_time: startedAt,
+            duration_seconds: 3600,
+            allow_late_join: false,
+          });
+          addEvent('🚀 [ADMIN COMMAND] Administrator dispatched live start command! Launching assessment…', 'alert');
+        }
+      } catch {}
+    };
+
+    checkAdminCommand();
+    const interval = setInterval(checkAdminCommand, 1000);
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        bc = new BroadcastChannel('logicwhilelire_admin_exam_commands');
+        bc.onmessage = (e) => {
+          if (
+            (e.data?.examCode?.toUpperCase() === contestId.toUpperCase() || e.data?.examCode === 'DEMO123') &&
+            e.data?.state === 'started'
+          ) {
+            checkAdminCommand();
+          }
+        };
+      } catch {}
+    }
+
+    window.addEventListener('storage', checkAdminCommand);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', checkAdminCommand);
+      bc?.close();
+    };
+  }, [contestId, examStarted]);
+
   useEffect(() => {
     const stateCandidate = (location.state as any)?.candidate;
     if (stateCandidate) {
@@ -251,196 +306,353 @@ export default function WaitingLobbyPage() {
       <div
         style={{
           minHeight: "100vh",
-          background: examStarted
-            ? "radial-gradient(ellipse at 50% 10%, #0a2a1a 0%, #050f08 80%)"
-            : "radial-gradient(ellipse at 50% 10%, #15102a 0%, #08080f 80%)",
-          color: "var(--color-text, #f0f0f8)",
-          padding: "24px 16px 48px",
+          background: "#081326",
+          color: "#F8FAFC",
+          padding: "20px 16px 40px",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          fontFamily: "'Inter', system-ui, sans-serif",
+          fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
           position: "relative",
-          overflow: "hidden",
-          transition: "background 0.6s ease",
         }}
       >
-        {/* Distraction-free Lightweight Aura (Zero 3D / WebGL overhead) */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            background: "radial-gradient(ellipse at 50% 10%, rgba(43, 127, 255, 0.12) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%)",
-          }}
-        />
-
-        {/* EXAM STARTED OVERLAY */}
+        {/* EXAM STARTED MODAL OVERLAY */}
         {examStarted && (
           <div
             style={{
-              position: "fixed", inset: 0, zIndex: 200,
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              background: "radial-gradient(ellipse at 50% 30%, rgba(16, 185, 129, 0.25) 0%, rgba(5, 8, 20, 0.95) 70%)",
-              backdropFilter: "blur(8px)",
+              position: "fixed",
+              inset: 0,
+              zIndex: 300,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(0, 33, 71, 0.95)",
+              backdropFilter: "blur(6px)",
             }}
           >
-            <div style={{ fontSize: "5rem", marginBottom: 16, animation: "pulse 0.8s infinite" }}>&#x1F680;</div>
-            <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "#10b981", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
-              Exam Started!
-            </div>
-            <div style={{ fontSize: "1rem", color: "#94a3b8", marginBottom: 28 }}>Entering assessment in a moment...</div>
-            <button
-              onClick={handleManualStart}
+            <div
               style={{
-                background: "linear-gradient(135deg, #10b981, #059669)",
-                border: "none", borderRadius: 10, color: "#fff",
-                padding: "14px 36px", fontSize: "1rem", fontWeight: 800, cursor: "pointer",
-                boxShadow: "0 8px 32px rgba(16, 185, 129, 0.5)",
+                background: "#0B1A30",
+                border: "2px solid #EAA812",
+                borderRadius: 14,
+                padding: "36px 48px",
+                textAlign: "center",
+                maxWidth: 500,
+                width: "90%",
+                boxShadow: "0 24px 60px rgba(0,0,0,0.7)",
               }}
             >
-              Enter Now &rarr;
-            </button>
+              <div style={{ fontSize: "3.5rem", marginBottom: 12 }}>🚀</div>
+              <div
+                style={{
+                  fontSize: "1.8rem",
+                  fontWeight: 900,
+                  color: "#EAA812",
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  marginBottom: 6,
+                }}
+              >
+                Exam Initialized!
+              </div>
+              <div style={{ fontSize: "0.95rem", color: "#CBD5E1", marginBottom: 24, lineHeight: 1.5 }}>
+                The proctor has unlocked the assessment session. Synchronous timer is running.
+              </div>
+              <button
+                onClick={handleManualStart}
+                style={{
+                  background: "#EAA812",
+                  color: "#002147",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "14px 32px",
+                  fontSize: "1rem",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  width: "100%",
+                  boxShadow: "0 4px 16px rgba(234, 168, 18, 0.35)",
+                }}
+              >
+                Enter Assessment Now &rarr;
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Nav Bar */}
+        {/* Top Institutional Header */}
         <div
           style={{
-            width: "100%", maxWidth: 1000,
-            display: "flex", justifyContent: "space-between", alignItems: "center",
-            marginBottom: 24, padding: "12px 20px",
-            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 14, backdropFilter: "blur(16px)",
+            width: "100%",
+            maxWidth: 1040,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 20,
+            padding: "12px 20px",
+            background: "#002147",
+            border: "1px solid rgba(234, 168, 18, 0.3)",
+            borderRadius: 10,
+            boxShadow: "0 6px 18px rgba(0, 0, 0, 0.35)",
           }}
         >
-          <BrandLogo size="sm" variant="standard" />
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <BrandLogo size="sm" variant="standard" />
+            <div style={{ borderLeft: "1px solid rgba(255,255,255,0.2)", paddingLeft: 12 }}>
+              <div style={{ fontSize: "0.92rem", fontWeight: 800, color: "#FFFFFF", letterSpacing: "0.02em" }}>
+                SYNCHRONOUS ASSESSMENT LOBBY
+              </div>
+              <div style={{ fontSize: "0.72rem", color: "#EAA812", fontWeight: 600 }}>
+                Room: {contestId.toUpperCase()} • PRD v1.0 Engine
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div
               style={{
-                display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 12px", borderRadius: 8,
-                background: connected ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
-                border: `1px solid ${connected ? "rgba(16,185,129,0.35)" : "rgba(239,68,68,0.35)"}`,
-                fontSize: "0.78rem", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600,
-                color: connected ? "#34d399" : "#f87171",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "6px 14px",
+                borderRadius: 6,
+                background: connected ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)",
+                border: `1px solid ${connected ? "rgba(16,185,129,0.4)" : "rgba(239,68,68,0.4)"}`,
+                fontSize: "0.78rem",
+                fontFamily: "monospace",
+                fontWeight: 700,
+                color: connected ? "#34D399" : "#F87171",
               }}
             >
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: connected ? "#10b981" : "#ef4444", boxShadow: connected ? "0 0 10px #10b981" : "none", animation: connected ? "pulse 1.8s infinite" : "none" }} />
-              <span>WEBSOCKET: {connected ? "CONNECTED" : "RECONNECTING..."}</span>
-              {latency !== null && <span style={{ color: "#6ee7b7" }}>({latency}ms)</span>}
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: connected ? "#10B981" : "#EF4444",
+                }}
+              />
+              <span>SOCKET: {connected ? "CONNECTED" : "RECONNECTING..."}</span>
+              {latency !== null && <span style={{ color: "#EAA812" }}>({latency}ms)</span>}
             </div>
-            <button onClick={handleLogout} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#cbd5e1", padding: "6px 12px", borderRadius: 6, fontSize: "0.78rem", fontWeight: 600, cursor: "pointer" }}>Sign Out</button>
+            <button
+              onClick={handleLogout}
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                color: "#E2E8F0",
+                padding: "6px 14px",
+                borderRadius: 6,
+                fontSize: "0.78rem",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Sign Out
+            </button>
           </div>
         </div>
 
         {/* Main Grid */}
-        <div style={{ width: "100%", maxWidth: 1000, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
-          {/* Column 1 */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            <div className="card" style={{ padding: "24px", background: "linear-gradient(135deg, rgba(26,26,38,0.95) 0%, rgba(17,17,24,0.98) 100%)", border: "1px solid rgba(124,58,237,0.3)", boxShadow: "0 12px 32px rgba(0,0,0,0.5)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                <div style={{ fontSize: "0.8rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#a78bfa" }}>Candidate Gate Clearance</div>
-                <div style={{ background: "rgba(16,185,129,0.15)", color: "#34d399", border: "1px solid rgba(16,185,129,0.3)", padding: "3px 8px", borderRadius: 4, fontSize: "0.7rem", fontWeight: 700 }}>VERIFIED CLAIM &#10004;</div>
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 1040,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(330px, 1fr))",
+            gap: 18,
+          }}
+        >
+          {/* Column 1: Clearance & Timer */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            {/* Candidate Card */}
+            <div
+              style={{
+                padding: 22,
+                background: "#0E1A2E",
+                border: "1px solid rgba(234, 168, 18, 0.25)",
+                borderRadius: 10,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 14,
+                  paddingBottom: 10,
+                  borderBottom: "1px solid rgba(255,255,255,0.1)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.76rem",
+                    fontWeight: 800,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: "#EAA812",
+                  }}
+                >
+                  Candidate Gate Clearance
+                </div>
+                <div
+                  style={{
+                    background: "rgba(16,185,129,0.15)",
+                    color: "#34D399",
+                    border: "1px solid rgba(16,185,129,0.35)",
+                    padding: "3px 8px",
+                    borderRadius: 4,
+                    fontSize: "0.72rem",
+                    fontWeight: 800,
+                  }}
+                >
+                  VERIFIED CLAIM ✔
+                </div>
               </div>
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "#fff", marginBottom: 4 }}>{displayName}</div>
-                <div style={{ fontSize: "0.88rem", color: "#38bdf8", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>Roll: {candidate?.roll_number || "22B91A0501"}</div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, background: "rgba(255,255,255,0.02)", padding: "14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)", marginBottom: 16 }}>
-                <div>
-                  <div style={{ fontSize: "0.68rem", textTransform: "uppercase", color: "#94a3b8", letterSpacing: "0.04em" }}>Institution</div>
-                  <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#e2e8f0", marginTop: 2 }}>{candidate?.college_name || "University College of Eng."}</div>
-                  <div style={{ fontSize: "0.7rem", color: "#94a3b8", fontFamily: "'JetBrains Mono', monospace" }}>{candidate?.college_id || "COL-UNIV-042"}</div>
+
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "#FFFFFF", marginBottom: 3 }}>
+                  {displayName}
                 </div>
-                <div>
-                  <div style={{ fontSize: "0.68rem", textTransform: "uppercase", color: "#94a3b8", letterSpacing: "0.04em" }}>Branch &amp; Section</div>
-                  <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#f59e0b", marginTop: 2 }}>{candidate?.branch_code || "CSM"} &#x2022; Section {candidate?.section || "B"}</div>
-                  <div style={{ fontSize: "0.7rem", color: "#94a3b8" }}>Batch: {candidate?.year_of_passing || 2028}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "0.68rem", textTransform: "uppercase", color: "#94a3b8", letterSpacing: "0.04em" }}>Scorecard Dispatch</div>
-                  <div style={{ fontSize: "0.82rem", color: "#e2e8f0", marginTop: 2, wordBreak: "break-all" }}>{candidate?.email || "srinivas.k@college.edu"}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "0.68rem", textTransform: "uppercase", color: "#94a3b8", letterSpacing: "0.04em" }}>Critical SMS Channel</div>
-                  <div style={{ fontSize: "0.85rem", color: "#e2e8f0", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>{candidate?.contact_number || "+91 9876543210"}</div>
+                <div
+                  style={{
+                    fontSize: "0.85rem",
+                    color: "#38BDF8",
+                    fontFamily: "monospace",
+                    fontWeight: 700,
+                    marginBottom: 18,
+                  }}
+                >
+                  Roll / Hall Ticket: {candidate?.roll_number || "22B91A0501"}
                 </div>
               </div>
+
               <button
                 id="start-assessment-now-btn"
                 onClick={handleManualStart}
                 disabled={!examStarted}
                 style={{
                   width: "100%",
-                  background: examStarted ? "linear-gradient(135deg, #10b981 0%, #059669 100%)" : "rgba(255,255,255,0.06)",
-                  boxShadow: examStarted ? "0 8px 24px rgba(16,185,129,0.4)" : "none",
-                  fontSize: "0.95rem", fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase",
-                  padding: "14px 20px", borderRadius: 8,
+                  background: examStarted ? "#EAA812" : "rgba(255,255,255,0.08)",
+                  boxShadow: examStarted ? "0 4px 16px rgba(234,168,18,0.4)" : "none",
+                  fontSize: "0.9rem",
+                  fontWeight: 800,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  padding: "13px 18px",
+                  borderRadius: 6,
                   cursor: examStarted ? "pointer" : "not-allowed",
-                  color: examStarted ? "#fff" : "#475569",
-                  border: examStarted ? "none" : "1px solid rgba(255,255,255,0.1)",
-                  transition: "all 0.35s ease",
+                  color: examStarted ? "#002147" : "#64748B",
+                  border: examStarted ? "none" : "1px solid rgba(255,255,255,0.12)",
+                  transition: "all 0.25s ease",
                 }}
               >
-                {examStarted ? "ENTER LIVE ASSESSMENT NOW \u2192" : "\u23F3 Waiting for Instructor to Start..."}
+                {examStarted ? "ENTER LIVE ASSESSMENT NOW →" : "⏳ Waiting for Instructor to Dispatch EXAM_STARTED..."}
               </button>
             </div>
 
-            <div className="card" style={{ padding: "20px 24px", textAlign: "center", background: "rgba(255,255,255,0.02)" }}>
-              <div style={{ fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", marginBottom: 8 }}>
-                {examStarted ? "&#x1F7E2; Exam In Progress" : "Assessment Timer Sync"}
+            {/* Assessment Timer Box */}
+            <div
+              style={{
+                padding: "18px 22px",
+                textAlign: "center",
+                background: "#0E1A2E",
+                border: "1px solid rgba(234, 168, 18, 0.25)",
+                borderRadius: 10,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "0.72rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  color: "#94A3B8",
+                  fontWeight: 700,
+                  marginBottom: 6,
+                }}
+              >
+                {examStarted ? "🟢 Exam In Progress" : "Global Synchronous Timer Sync"}
               </div>
-              <div style={{ fontSize: "2.4rem", fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", color: examStarted ? "#10b981" : "#f59e0b", letterSpacing: "0.04em" }}>
+              <div
+                style={{
+                  fontSize: "2.5rem",
+                  fontWeight: 900,
+                  fontFamily: "monospace",
+                  color: examStarted ? "#34D399" : "#EAA812",
+                  letterSpacing: "0.04em",
+                }}
+              >
                 {examStarted ? "00:00" : timeFormatted}
               </div>
-              <div style={{ fontSize: "0.78rem", color: "#94a3b8", marginTop: 4 }}>
-                {examStarted ? "Transitioning to exam..." : "Global competitive assessment timer sync in progress"}
+              <div style={{ fontSize: "0.76rem", color: "#94A3B8", marginTop: 4 }}>
+                {examStarted
+                  ? "Assessment active — auto-saving answers in real-time"
+                  : "All enrolled candidates will start simultaneously upon dispatch"}
               </div>
             </div>
           </div>
 
-          {/* Column 2 */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+          {/* Column 2: Stats, System Check, Event Log */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            {/* Visual Connection Counters */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
               {[
-                { label: "In Lobby", value: lobbyMeta.connected, color: "#38bdf8" },
-                { label: "Enrolled", value: lobbyMeta.enrolled, color: "#a78bfa" },
-                { label: "Pending", value: lobbyMeta.pending, color: "#f59e0b" },
+                { label: "In Lobby", value: lobbyMeta.connected, color: "#38BDF8" },
+                { label: "Enrolled", value: lobbyMeta.enrolled, color: "#EAA812" },
+                { label: "Pending", value: lobbyMeta.pending, color: "#F59E0B" },
               ].map((s) => (
-                <div key={s.label} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "16px", textAlign: "center" }}>
-                  <div style={{ fontSize: "1.6rem", fontWeight: 800, color: s.color }}>{s.value}</div>
-                  <div style={{ fontSize: "0.68rem", textTransform: "uppercase", color: "#94a3b8", marginTop: 4 }}>{s.label}</div>
+                <div
+                  key={s.label}
+                  style={{
+                    background: "#0E1A2E",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 8,
+                    padding: "14px 10px",
+                    textAlign: "center",
+                  }}
+                >
+                  <div style={{ fontSize: "1.5rem", fontWeight: 800, color: s.color }}>{s.value}</div>
+                  <div style={{ fontSize: "0.68rem", textTransform: "uppercase", color: "#94A3B8", marginTop: 3, fontWeight: 700 }}>
+                    {s.label}
+                  </div>
                 </div>
               ))}
             </div>
 
-            <div className="card" style={{ padding: "20px 24px", background: "rgba(255,255,255,0.02)" }}>
-              <div style={{ fontSize: "0.8rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#e2e8f0", marginBottom: 12 }}>Pre-Assessment System Verification</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {/* Pre-Assessment Verification */}
+            <div
+              style={{
+                padding: "18px 20px",
+                background: "#0E1A2E",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 10,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "0.78rem",
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  color: "#EAA812",
+                  marginBottom: 10,
+                }}
+              >
+                Pre-Assessment Verification
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {[
                   { ok: true, label: "100% Identity Uniqueness confirmed" },
                   { ok: connected, label: `WebSocket Gateway ${connected ? `connected (${latency ?? "-"}ms)` : "reconnecting..."}` },
-                  { ok: true, label: "Browser full-screen and tab isolation armed" },
-                  { ok: true, label: "Single-session mutex active" },
+                  { ok: true, label: "Single-session browser mutex active" },
+                  { ok: true, label: "Dynamic question & option SWAP randomized" },
                 ].map((item, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.84rem" }}>
-                    <span style={{ color: item.ok ? "#10b981" : "#f59e0b" }}>{item.ok ? "✔" : "⏳"}</span>
-                    <span>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="card" style={{ padding: "20px 24px", background: "rgba(255,255,255,0.02)", flex: 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#a78bfa" }}>Redis Sorted Set Channel Stream</div>
-                <div style={{ fontSize: "0.68rem", fontFamily: "'JetBrains Mono', monospace", color: "#6ee7b7" }}>LIVE FEED</div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 220, overflowY: "auto", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.74rem" }}>
-                {events.map((ev) => (
-                  <div key={ev.id} style={{ padding: "6px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 6, borderLeft: `3px solid ${ev.type === "success" ? "#10b981" : ev.type === "ping" ? "#06b6d4" : ev.type === "alert" ? "#f59e0b" : "#7c3aed"}`, display: "flex", gap: 8, alignItems: "flex-start" }}>
-                    <span style={{ color: "#94a3b8", flexShrink: 0 }}>{ev.time}</span>
-                    <span style={{ color: ev.type === "alert" ? "#fbbf24" : "#e2e8f0" }}>{ev.text}</span>
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.82rem" }}>
+                    <span style={{ color: item.ok ? "#34D399" : "#F59E0B", fontWeight: 800 }}>
+                      {item.ok ? "✔" : "⏳"}
+                    </span>
+                    <span style={{ color: "#E2E8F0" }}>{item.label}</span>
                   </div>
                 ))}
               </div>
@@ -448,9 +660,11 @@ export default function WaitingLobbyPage() {
           </div>
         </div>
 
-        <div style={{ marginTop: 24, fontSize: "0.82rem", color: "#94a3b8" }}>
-          Need to update your registration information?{" "}
-          <Link to="/register" style={{ color: "#38bdf8", fontWeight: 600 }}>Return to Assessment Entrance Gate</Link>
+        <div style={{ marginTop: 20, fontSize: "0.8rem", color: "#64748B" }}>
+          Need to re-enter or check your credentials?{" "}
+          <Link to="/enter-exam" style={{ color: "#EAA812", fontWeight: 700, textDecoration: "underline" }}>
+            Return to Assessment Entrance Gate
+          </Link>
         </div>
       </div>
     </AnimatedPage>

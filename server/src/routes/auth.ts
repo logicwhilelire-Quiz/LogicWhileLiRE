@@ -11,7 +11,7 @@ import {
   logout,
   changeStudentPassword,
 } from '../controllers/authController';
-import { authRateLimit, otpRateLimit, passwordResetRateLimit } from '../middleware/rateLimiter';
+import { authRateLimit, otpRateLimit, otpEmailRateLimit, passwordResetRateLimit } from '../middleware/rateLimiter';
 import { studentAuth } from '../middleware/auth';
 import {
   validateBody,
@@ -32,6 +32,7 @@ const router = Router();
 router.post(
   '/register',
   authRateLimit,
+  otpEmailRateLimit,
   validateBody(studentRegisterSchema),
   studentRegister
 );
@@ -43,6 +44,7 @@ router.post(
 router.post(
   '/verify-registration-otp',
   otpRateLimit,
+  otpEmailRateLimit,
   validateBody(verifyStudentOtpSchema),
   verifyRegistrationOtp
 );
@@ -54,6 +56,7 @@ router.post(
 router.post(
   '/resend-registration-otp',
   otpRateLimit,
+  otpEmailRateLimit,
   validateBody(resendStudentOtpSchema),
   resendRegistrationOtp
 );

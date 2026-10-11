@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { executeGoogleDriveBackup } from './driveBackupService';
+import { sendAdminAlert } from './mailService';
 
 let scheduledTask: any = null;
 
@@ -25,6 +26,17 @@ export function startBackupScheduler(): void {
     try {
       const result = await executeGoogleDriveBackup({ trigger: 'scheduled' });
       console.log(`[BackupScheduler] ✅ Nightly backup completed: ID=${result.id}, Files=${result.file_count}, DriveStatus=${result.drive_status}`);
+      sendAdminAlert({
+        alertType: 'daily_backup_completed',
+        title: 'Nightly Database Backup Completed',
+        message: 'The automated daily disaster recovery backup was executed successfully.',
+        details: {
+          backupId: result.id,
+          trigger: 'scheduled',
+          fileCount: result.file_count,
+          googleDriveStatus: result.drive_status,
+        },
+      }).catch((e) => console.warn('[BackupScheduler] Failed to dispatch admin_alert email:', e));
     } catch (err: any) {
       console.error('[BackupScheduler] ❌ Nightly backup failed:', err?.message || err);
     }

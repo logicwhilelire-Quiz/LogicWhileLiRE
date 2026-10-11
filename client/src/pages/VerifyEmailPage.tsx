@@ -97,8 +97,8 @@ export default function VerifyEmailPage() {
               </h2>
               <p className="text-muted text-sm mb-4">{message}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <Link to="/register" className="btn btn-primary w-full">
-                  Back to Registration
+                <Link to="/enter-exam" className="btn btn-primary w-full">
+                  Enter Assessment Portal
                 </Link>
                 <Link to="/login" className="btn btn-outline w-full">
                   Sign In to Existing Account

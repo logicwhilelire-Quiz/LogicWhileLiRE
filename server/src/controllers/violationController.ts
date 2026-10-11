@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { supabase } from '../db/supabase';
 import { sendTerminationAlertEmail } from '../services/emailService';
+import { sendAdminAlert } from '../services/mailService';
 
 const VIOLATION_THRESHOLD = parseInt(process.env.VIOLATION_THRESHOLD || '2');
 
@@ -81,6 +82,23 @@ export async function logViolation(req: Request, res: Response): Promise<void> {
           const targetAdminEmail = process.env.ADMIN_ALERT_EMAIL || eData?.admin_email || process.env.SMTP_USER;
 
           if (targetAdminEmail) {
+            // Trigger role-based admin alert via Resend mailService
+            sendAdminAlert({
+              alertType: 'anti_cheat_termination',
+              title: `Anti-Cheat Termination: ${pData?.name || 'Participant'} (${pData?.hall_ticket || 'Hall Ticket'})`,
+              message: `A candidate exam session was automatically terminated due to proctoring policy violations: ${type}.`,
+              details: {
+                candidateName: pData?.name || 'Candidate',
+                hallTicket: pData?.hall_ticket || 'Unknown',
+                examTitle: eData?.title || 'Exam',
+                sessionId,
+                violationCount: newViolationCount,
+                reason: `Violation threshold reached: ${type}`,
+                ipAddress: req.ip,
+              },
+              targetAdminEmail,
+            }).catch((err) => console.warn('[ViolationTermination] sendAdminAlert warning:', err));
+
             const { emailQueue } = await import('../services/emailQueue');
             emailQueue.enqueueTerminationAlert({
               sessionId,

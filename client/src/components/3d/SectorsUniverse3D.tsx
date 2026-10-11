@@ -481,11 +481,17 @@ export default function SectorsUniverse3D({ onSelectSector, className = '' }: Se
   }, []);
 
   const handleLaunchPractice = (sectorId: string) => {
-    navigate('/practice', { state: { selectedSectorId: sectorId } });
+    const token = localStorage.getItem('student_token');
+    const user = localStorage.getItem('student_user');
+    if (token && user) {
+      navigate('/practice', { state: { selectedSectorId: sectorId } });
+    } else {
+      navigate('/login?redirect=/practice&notice=student_login_required');
+    }
   };
 
   const handleEnterExam = () => {
-    navigate('/enter-exam');
+    navigate('/enter-exam?code=DEMO123&hallTicket=2201A0501');
   };
 
   return (
@@ -540,7 +546,7 @@ export default function SectorsUniverse3D({ onSelectSector, className = '' }: Se
             }}
           >
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#FFC200', boxShadow: '0 0 10px #FFC200' }} />
-            Logic Whi1e LiRE · 5-Sector Knowledge Galaxy
+            LogicWhileLiRE · 5-Sector Knowledge Galaxy
           </div>
           <h3
             style={{

@@ -57,6 +57,7 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "@supabase/server": "^1.9.1",
     "@supabase/supabase-js": "^2.117.0",
     "archiver": "^8.0.0",
     "bcrypt": "^6.0.0",
@@ -72,6 +73,7 @@
     "node-cron": "^4.6.0",
     "nodemailer": "^10.0.10",
     "pdfkit": "^0.20.2",
+    "pg": "^8.23.1",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.4",
     "uuid": "^14.0.2",

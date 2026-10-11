@@ -103,11 +103,16 @@ const STANDARD_BRANCHES = [
   { code: 'CSE', name: 'Computer Science & Engineering', icon: '💻' },
   { code: 'CSM', name: 'Artificial Intelligence & Machine Learning', icon: '🤖' },
   { code: 'CSD', name: 'Data Science & Analytics', icon: '📊' },
+  { code: 'CSBS', name: 'Computer Science & Business Systems', icon: '💼' },
   { code: 'IT',  name: 'Information Technology', icon: '🌐' },
+  { code: 'AIDS', name: 'Artificial Intelligence & Data Science', icon: '🧠' },
   { code: 'ECE', name: 'Electronics & Communication', icon: '📡' },
   { code: 'EEE', name: 'Electrical & Electronics', icon: '⚡' },
-  { code: 'MECH',name: 'Mechanical Engineering', icon: '⚙️' },
-  { code: 'CIVIL',name: 'Civil Engineering', icon: '🏗️' },
+  { code: 'MECH', name: 'Mechanical Engineering', icon: '⚙️' },
+  { code: 'CIVIL', name: 'Civil Engineering', icon: '🏗️' },
+  { code: 'CSIT', name: 'Computer Science & Info Tech', icon: '🖥️' },
+  { code: 'MCA', name: 'Master of Computer Applications', icon: '🎓' },
+  { code: 'MBA', name: 'Master of Business Administration', icon: '📈' },
 ]
 
 const STANDARD_SECTIONS = ['A', 'B', 'C', 'D', 'E']
@@ -204,48 +209,73 @@ function Step1College({
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
-        {filtered.map(c => {
-          const isSelected = String(c.id) === String(selectedCollegeId)
-          return (
-            <motion.div
-              key={c.id}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              onClick={() => onSelect(c.id)}
-              style={{
-                padding: '16px 20px',
-                borderRadius: 12,
-                cursor: 'pointer',
-                border: isSelected ? '2px solid var(--color-primary, #2b7fff)' : '1px solid var(--color-border, #334155)',
-                background: isSelected ? 'rgba(43,127,255,0.12)' : 'rgba(30,41,59,0.4)',
-                boxShadow: isSelected ? '0 0 20px rgba(43,127,255,0.2)' : 'none',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                <span style={{
-                  fontSize: '0.74rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4,
-                  background: isSelected ? 'var(--color-primary, #2b7fff)' : 'rgba(255,255,255,0.08)',
-                  color: isSelected ? '#fff' : 'var(--color-text-muted, #94a3b8)',
-                  fontFamily: 'monospace'
-                }}>
-                  {c.college_code}
-                </span>
-                {isSelected && <span style={{ color: '#10B981', fontWeight: 800, fontSize: '0.85rem' }}>✓ Selected</span>}
-              </div>
-              <div style={{ fontSize: '0.98rem', fontWeight: 700, color: '#f8fafc', marginBottom: 4 }}>
-                {c.college_name}
-              </div>
-              {c.city && (
-                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint, #64748b)' }}>
-                  📍 {c.city}
+      {colleges.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '48px 24px', background: 'rgba(30,41,59,0.3)', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 12 }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🏛️</div>
+          <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f8fafc', marginBottom: 6 }}>No Colleges Found in Database</div>
+          <p style={{ color: '#94a3b8', fontSize: '0.86rem', maxWidth: 440, margin: '0 auto 20px', lineHeight: 1.5 }}>
+            The exam targeting wizard requires at least one registered institutional campus. No colleges have been created yet. Please create your college in the Colleges portal first.
+          </p>
+          <a
+            href="/admin/colleges"
+            style={{
+              display: 'inline-block',
+              padding: '10px 22px',
+              borderRadius: 8,
+              background: 'var(--color-primary, #2b7fff)',
+              color: '#fff',
+              textDecoration: 'none',
+              fontWeight: 700,
+              fontSize: '0.88rem',
+            }}
+          >
+            🏛️ Go to Colleges &amp; Institutions &rarr;
+          </a>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
+          {filtered.map(c => {
+            const isSelected = String(c.id) === String(selectedCollegeId)
+            return (
+              <motion.div
+                key={c.id}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                onClick={() => onSelect(c.id)}
+                style={{
+                  padding: '16px 20px',
+                  borderRadius: 12,
+                  cursor: 'pointer',
+                  border: isSelected ? '2px solid var(--color-primary, #2b7fff)' : '1px solid var(--color-border, #334155)',
+                  background: isSelected ? 'rgba(43,127,255,0.12)' : 'rgba(30,41,59,0.4)',
+                  boxShadow: isSelected ? '0 0 20px rgba(43,127,255,0.2)' : 'none',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <span style={{
+                    fontSize: '0.74rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4,
+                    background: isSelected ? 'var(--color-primary, #2b7fff)' : 'rgba(255,255,255,0.08)',
+                    color: isSelected ? '#fff' : 'var(--color-text-muted, #94a3b8)',
+                    fontFamily: 'monospace'
+                  }}>
+                    {c.college_code}
+                  </span>
+                  {isSelected && <span style={{ color: '#10B981', fontWeight: 800, fontSize: '0.85rem' }}>✓ Selected</span>}
                 </div>
-              )}
-            </motion.div>
-          )
-        })}
-      </div>
+                <div style={{ fontSize: '0.98rem', fontWeight: 700, color: '#f8fafc', marginBottom: 4 }}>
+                  {c.college_name}
+                </div>
+                {c.city && (
+                  <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint, #64748b)' }}>
+                    📍 {c.city}
+                  </div>
+                )}
+              </motion.div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -1009,24 +1039,18 @@ export default function CreateExamPage() {
   const [error, setError] = useState('')
 
   // Hierarchy reference data
-  const [colleges, setColleges] = useState<CollegeOption[]>([
-    { id: 3, college_name: 'Velagapudi Ramakrishna Siddhartha Engineering College', college_code: 'VRSEC', city: 'Vijayawada' },
-    { id: 4, college_name: 'Koneru Lakshmaiah Education Foundation (KL University)', college_code: 'KLU', city: 'Vaddeswaram' },
-  ])
-  const [staffList, setStaffList] = useState<StaffOption[]>([
-    { id: 'usr-fac-01', name: 'Prof. Vikram Rao', email: 'faculty@system.local', role: 'faculty', department: 'CSE' },
-    { id: 'usr-insp-01', name: 'Chief Inspector Hall A', email: 'inspector@system.local', role: 'inspector', department: 'Exam Control' },
-  ])
+  const [colleges, setColleges] = useState<CollegeOption[]>([])
+  const [staffList, setStaffList] = useState<StaffOption[]>([])
 
   const [form, setForm] = useState<ExamMeta>({
-    college_id: 3,
-    branch: 'CSM',
+    college_id: 0,
+    branch: 'CSE',
     passout_year: 2026,
     section_ids: ['A'],
     section_id: 'A',
     batch_id: '',
-    assigned_faculty_id: 'usr-fac-01',
-    assigned_inspector_id: 'usr-insp-01',
+    assigned_faculty_id: '',
+    assigned_inspector_id: '',
     exam_name: '',
     code: '',
     subject: 'Computer Science & Engineering',
@@ -1050,35 +1074,38 @@ export default function CreateExamPage() {
       const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token') || ''
       try {
         const colRes = await axios.get(`${BASE}/api/colleges`)
-        if (colRes.data?.colleges?.length > 0) {
+        if (colRes.data?.colleges && colRes.data.colleges.length > 0) {
           setColleges(colRes.data.colleges)
-          setForm(p => {
-            if (!colRes.data.colleges.some((c: any) => String(c.id) === String(p.college_id))) {
-              return { ...p, college_id: colRes.data.colleges[0].id }
-            }
-            return p
-          })
+          setForm(p => ({
+            ...p,
+            college_id: colRes.data.colleges[0].id
+          }))
+        } else {
+          setColleges([])
+          setForm(p => ({ ...p, college_id: 0 }))
         }
       } catch {
-        // Use seeded fallback
+        setColleges([])
       }
 
       try {
         const staffRes = await axios.get(`${BASE}/api/admin/staff`, {
           headers: { Authorization: `Bearer ${token}` }
         })
-        if (staffRes.data?.staff?.length > 0) {
+        if (staffRes.data?.staff && staffRes.data.staff.length > 0) {
           setStaffList(staffRes.data.staff)
+        } else {
+          setStaffList([])
         }
       } catch {
-        // Use seeded fallback
+        setStaffList([])
       }
     }
     loadData()
   }, [])
 
   const canNext = () => {
-    if (step === 1) return !!form.college_id
+    if (step === 1) return colleges.length > 0 && !!form.college_id
     if (step === 2) return !!form.branch
     if (step === 3) return form.passout_year > 2000
     if (step === 4) return form.section_ids.length > 0

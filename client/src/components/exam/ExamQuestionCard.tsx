@@ -67,11 +67,11 @@ export default function ExamQuestionCard({
           <div
             className="question-card"
             style={{
-              background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(7, 12, 28, 0.98))',
-              border: '1px solid rgba(43, 127, 255, 0.3)',
+              background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(0, 33, 71, 0.95))',
+              border: '1.5px solid rgba(234, 168, 18, 0.35)',
               borderRadius: 16,
               padding: '24px 28px',
-              boxShadow: '0 15px 35px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+              boxShadow: '0 15px 35px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(234, 168, 18, 0.15)',
               position: 'relative',
             }}
           >
@@ -93,7 +93,7 @@ export default function ExamQuestionCard({
                     fontSize: '0.85rem',
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
-                    color: '#60A5FA',
+                    color: '#EAA812',
                   }}
                 >
                   Question {questionIndex + 1}
@@ -172,7 +172,7 @@ export default function ExamQuestionCard({
                       key={idx}
                       className="exam-option-card"
                       onClick={() => onOptionSelect?.(idx)}
-                      whileHover={{ x: 4, borderColor: 'rgba(96,165,250,0.6)' }}
+                      whileHover={{ x: 4, borderColor: 'rgba(234, 168, 18, 0.6)' }}
                       whileTap={{ scale: 0.99 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                       style={{
@@ -183,10 +183,10 @@ export default function ExamQuestionCard({
                         padding: '14px 18px',
                         borderRadius: 12,
                         background: isSelected
-                          ? 'linear-gradient(135deg, rgba(43, 127, 255, 0.22), rgba(27, 95, 204, 0.25))'
+                          ? 'linear-gradient(135deg, rgba(234, 168, 18, 0.18), rgba(0, 33, 71, 0.6))'
                           : 'rgba(255, 255, 255, 0.03)',
-                        border: `1.5px solid ${isSelected ? '#3B82F6' : 'rgba(255, 255, 255, 0.09)'}`,
-                        boxShadow: isSelected ? '0 0 20px rgba(59, 130, 246, 0.25)' : 'none',
+                        border: `1.5px solid ${isSelected ? '#EAA812' : 'rgba(255, 255, 255, 0.09)'}`,
+                        boxShadow: isSelected ? '0 0 20px rgba(234, 168, 18, 0.25)' : 'none',
                         position: 'relative',
                         overflow: 'hidden',
                         transition: 'background 0.2s, border-color 0.2s',
@@ -204,10 +204,10 @@ export default function ExamQuestionCard({
                           fontSize: '0.85rem',
                           flexShrink: 0,
                           background: isSelected
-                            ? 'linear-gradient(135deg, #2B7FFF, #1B5FCC)'
+                            ? 'linear-gradient(135deg, #EAA812, #D97706)'
                             : 'rgba(255, 255, 255, 0.08)',
-                          color: isSelected ? '#FFFFFF' : '#94A3B8',
-                          boxShadow: isSelected ? '0 2px 10px rgba(43, 127, 255, 0.5)' : 'none',
+                          color: isSelected ? '#002147' : '#94A3B8',
+                          boxShadow: isSelected ? '0 2px 10px rgba(234, 168, 18, 0.5)' : 'none',
                         }}
                       >
                         {isSelected ? '✓' : LABELS[idx]}

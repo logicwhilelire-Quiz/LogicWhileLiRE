@@ -19,6 +19,7 @@ interface HoloProctorDeskModalProps {
   candidateName?: string
   commsLog: ProctorCommsMessage[]
   onPingSent?: (note: string) => void
+  initialTab?: 'comms' | 'raise_hand' | 'telemetry'
 }
 
 const BASE = API_BASE_URL
@@ -31,12 +32,20 @@ export default function HoloProctorDeskModal({
   candidateName,
   commsLog,
   onPingSent,
+  initialTab = 'comms',
 }: HoloProctorDeskModalProps) {
-  const [activeTab, setActiveTab] = useState<'comms' | 'raise_hand' | 'telemetry'>('comms')
+  const [activeTab, setActiveTab] = useState<'comms' | 'raise_hand' | 'telemetry'>(initialTab)
   const [issueType, setIssueType] = useState('question_clarification')
   const [issueDetails, setIssueDetails] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [sentSuccess, setSentSuccess] = useState(false)
+
+  // Keep activeTab in sync when initialTab is passed upon opening modal
+  React.useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab)
+    }
+  }, [isOpen, initialTab])
 
   if (!isOpen) return null
 
@@ -188,7 +197,7 @@ export default function HoloProctorDeskModal({
           >
             {[
               { id: 'comms', label: `💬 Proctor Feed (${commsLog.length})` },
-              { id: 'raise_hand', label: '✋ Raise Hand / Contact' },
+              { id: 'raise_hand', label: '📬 Report Issue / Drop Box' },
               { id: 'telemetry', label: '⚡ Sentinel Integrity' },
             ].map(tab => (
               <button

@@ -1,2 +1,2 @@
-import AdminMonitorPage from './AdminMonitorPage';
-export default AdminMonitorPage;
+import InstructorConsolePage from './InstructorConsolePage';
+export default InstructorConsolePage;

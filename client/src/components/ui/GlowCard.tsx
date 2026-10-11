@@ -13,7 +13,7 @@ interface GlowCardProps {
  * Glassmorphism card with a customisable glow border.
  * Uses CSS custom properties from the design token system.
  */
-export default function GlowCard({ children, color = '#6C5CE7', className = '', style, hover = true, onClick }: GlowCardProps) {
+export default function GlowCard({ children, color = '#00d2ff', className = '', style, hover = true, onClick }: GlowCardProps) {
   const base: CSSProperties = {
     position: 'relative',
     background: 'rgba(13,19,38,0.72)',

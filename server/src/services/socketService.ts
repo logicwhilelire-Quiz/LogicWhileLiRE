@@ -524,3 +524,11 @@ export function stopAttemptTimer(attemptId: string) {
     timerIntervals.delete(room);
   }
 }
+
+export function broadcastViolationToMonitor(examCode: string, payload: any): void {
+  if (!io) return;
+  const code = examCode.toUpperCase();
+  io.to(`monitor:${code}`).emit('proctor:violation', payload);
+  io.to(`monitor:${code}`).emit('violation:new', payload);
+  scheduleThrottledRoomUpdate(code);
+}

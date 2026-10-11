@@ -1,7 +1,7 @@
 {
-  "name": "LogicWhileLiRE — Logic. While. LiRE.",
-  "short_name": "LogicWhileLiRE",
-  "description": "LogicWhileLiRE — Autonomous AI-Proctored Assessment & Career Growth Platform with Real-Time Telemetry and Sandboxed Code Execution. Developed by R. Charan Sai.",
+  "name": "LogicWhile LiRE",
+  "short_name": "LogicWhile LiRE",
+  "description": "LogicWhile LiRE — Autonomous AI-Proctored Assessment & Career Growth Platform with Real-Time Telemetry and Sandboxed Code Execution.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#050814",

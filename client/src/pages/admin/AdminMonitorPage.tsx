@@ -730,6 +730,31 @@ export default function AdminMonitorPage() {
             </p>
           </div>
 
+          <div
+            style={{
+              width: '100%',
+              background: 'rgba(16, 185, 129, 0.08)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              borderRadius: 8,
+              padding: '10px 14px',
+              marginBottom: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: '1.2rem' }}>📷</span>
+              <span style={{ fontSize: '0.8rem', color: '#34D399', fontWeight: 600 }}>
+                <strong>3rd-Party Camera Telemetry Active:</strong> Live optical presence indicator. Telemetry is monitored on client devices only; video/audio streams are never stored on institutional servers.
+              </span>
+            </div>
+            <span style={{ fontSize: '0.7rem', color: '#10B981', background: 'rgba(16,185,129,0.2)', padding: '2px 8px', borderRadius: 999, fontWeight: 800 }}>
+              ● TELEMETRY ONLY (COMPLIANT)
+            </span>
+          </div>
+
           {/* Quick exam picker + Action Buttons */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', gap: 4 }}>

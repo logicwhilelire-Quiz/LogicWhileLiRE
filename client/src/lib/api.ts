@@ -2,10 +2,17 @@ import axios from 'axios';
 import { API_BASE_URL } from './config';
 
 // The base URL must come from an environment variable (for example VITE_API_URL or VITE_API_BASE_URL)
-// and must never default to localhost in production builds.
+// and must never default to localhost when deployed to remote production domains.
 const envApiUrl = (import.meta as any).env?.VITE_API_URL || (import.meta as any).env?.VITE_API_BASE_URL;
-if (import.meta.env.PROD && (!envApiUrl || envApiUrl.includes('localhost') || envApiUrl.includes('127.0.0.1'))) {
-  throw new Error('Production builds require VITE_API_URL to be set to a valid non-localhost URL.');
+const isLocalhostHost = typeof window !== 'undefined' && (
+  !window.location.hostname ||
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.hostname.endsWith('.local')
+);
+
+if (import.meta.env.PROD && !isLocalhostHost && (!envApiUrl || envApiUrl.includes('localhost') || envApiUrl.includes('127.0.0.1'))) {
+  throw new Error('Production builds deployed on remote domains require VITE_API_URL to be set to a valid non-localhost URL.');
 }
 
 const BASE_URL = API_BASE_URL;
@@ -185,6 +192,28 @@ export const validateAndPreviewQuestions = (file: File) => {
 export const confirmImportQuestions = (data: { examCode: string; examId?: string; questions: any[] }) =>
   api.post('/api/admin/questions/confirm-import', data);
 
+export const downloadQuestionTemplateUrl = `${BASE_URL}/api/admin/questions/sample-template`;
+
+export const listColleges = () => api.get('/api/colleges');
+
+export const listQuestionBank = (params?: {
+  college_id?: string;
+  exam_id?: string;
+  topic?: string;
+  difficulty?: string;
+  question_type?: string;
+  search?: string;
+}) => api.get('/api/admin/questions', { params });
+
+export const createQuestionBankItem = (data: any) =>
+  api.post('/api/admin/questions', data);
+
+export const updateQuestionBankItem = (id: string, data: any) =>
+  api.patch(`/api/admin/questions/${id}`, data);
+
+export const deleteQuestionBankItem = (id: string) =>
+  api.delete(`/api/admin/questions/${id}`);
+
 export const listSessions = (examId: string, page: number = 1, limit: number = 20) =>
   api.get(`/api/admin/exams/${examId}/sessions?page=${page}&limit=${limit}`);
 export const terminateSession = (sessionId: string, reason: string) =>
@@ -260,7 +289,9 @@ export interface Cohort {
   college_id: number;
   academic_year_id: number;
   cohort_name: string;
+  name?: string;
   yop: number;
+  year_of_passing?: number;
   degree?: string;
   branch?: string;
 }
@@ -495,6 +526,39 @@ export function extractErrorMessage(err: unknown, defaultMessage = 'An unexpecte
   if (err instanceof Error) return err.message;
   return defaultMessage;
 }
+
+export interface MailLog {
+  id: string;
+  to_email: string;
+  template: string;
+  subject: string;
+  status: 'sent' | 'delivered' | 'failed' | 'resending';
+  resend_id: string | null;
+  error_message: string | null;
+  metadata?: Record<string, any>;
+  html_content?: string;
+  sent_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const listMailLogs = (params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  template?: string;
+  search?: string;
+}) => api.get<{
+  success: boolean;
+  logs: MailLog[];
+  total: number;
+  page: number;
+  limit: number;
+  stats: { total: number; sent: number; failed: number };
+}>('/api/admin/mail-logs', { params });
+
+export const resendMailLog = (id: string) =>
+  api.post<{ success: boolean; message: string; result: any }>(`/api/admin/mail-logs/${id}/resend`);
 
 export { api };
 export default api;

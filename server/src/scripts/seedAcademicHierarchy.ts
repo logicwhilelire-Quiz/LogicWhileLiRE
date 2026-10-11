@@ -85,12 +85,12 @@ async function seedEverything() {
     const cid = String(college.id);
     const code = college.college_code.toUpperCase();
 
-    // A. Academic Year 2025-2026
-    const ayId = `ay-${code.toLowerCase()}-2025-26`;
+    // A. Academic Years (2026 and 2021 as required by administration)
+    const ayId2026 = `ay-${code.toLowerCase()}-2026`;
     await supabase.from('academic_years').upsert({
-      id: ayId,
+      id: ayId2026,
       college_id: cid,
-      year: '2025-2026',
+      year: '2026',
       yop: 2026,
       start_date: '2025-06-01',
       end_date: '2026-05-31',
@@ -98,18 +98,33 @@ async function seedEverything() {
       updated_at: new Date().toISOString(),
     });
 
-    // B. Cohorts (Class of 2026 CSM, Class of 2026 CSE, Class of 2027 CSE)
+    const ayId2021 = `ay-${code.toLowerCase()}-2021`;
+    await supabase.from('academic_years').upsert({
+      id: ayId2021,
+      college_id: cid,
+      year: '2021',
+      yop: 2021,
+      start_date: '2020-06-01',
+      end_date: '2021-05-31',
+      is_active: false,
+      updated_at: new Date().toISOString(),
+    });
+
+    const ayId = ayId2026;
+
+    // B. Cohorts (Class of 2026 CSM, Class of 2026 CSE, Class of 2021 Alumni, Class of 2027 CSE)
     const cohortsToSeed = [
-      { id: `coh-${code.toLowerCase()}-2026-csm`, name: 'Class of 2026 (CSM)', yop: 2026, degree: 'B.Tech', branch: 'CSM' },
-      { id: `coh-${code.toLowerCase()}-2026-cse`, name: 'Class of 2026 (CSE)', yop: 2026, degree: 'B.Tech', branch: 'CSE' },
-      { id: `coh-${code.toLowerCase()}-2027-cse`, name: 'Class of 2027 (CSE)', yop: 2027, degree: 'B.Tech', branch: 'CSE' },
+      { id: `coh-${code.toLowerCase()}-2026-csm`, name: 'Class of 2026 (CSM)', yop: 2026, degree: 'B.Tech', branch: 'CSM', ay: ayId2026 },
+      { id: `coh-${code.toLowerCase()}-2026-cse`, name: 'Class of 2026 (CSE)', yop: 2026, degree: 'B.Tech', branch: 'CSE', ay: ayId2026 },
+      { id: `coh-${code.toLowerCase()}-2021-cse`, name: 'Class of 2021 (CSE)', yop: 2021, degree: 'B.Tech', branch: 'CSE', ay: ayId2021 },
+      { id: `coh-${code.toLowerCase()}-2027-cse`, name: 'Class of 2027 (CSE)', yop: 2027, degree: 'B.Tech', branch: 'CSE', ay: ayId2026 },
     ];
 
     for (const coh of cohortsToSeed) {
       await supabase.from('cohorts').upsert({
         id: coh.id,
         college_id: cid,
-        academic_year_id: ayId,
+        academic_year_id: (coh as any).ay || ayId,
         name: coh.name,
         year_of_passing: coh.yop,
         yop: coh.yop,

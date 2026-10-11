@@ -21,11 +21,12 @@ export default function AboutPage() {
             <div
               style={{
                 display: 'inline-block',
-                padding: '6px 16px',
+                padding: '6px 18px',
                 borderRadius: 999,
-                background: 'var(--color-primary-light, #E0EDFF)',
-                color: 'var(--color-primary, #1B5FB5)',
-                fontWeight: 700,
+                background: '#002147',
+                color: '#EAA812',
+                border: '1px solid #EAA812',
+                fontWeight: 800,
                 fontSize: '0.85rem',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
@@ -68,7 +69,7 @@ export default function AboutPage() {
             transition={{ duration: 0.5 }}
             style={{
               background: 'var(--color-surface, #FFFFFF)',
-              border: '1.5px solid var(--color-border)',
+              border: '2px solid rgba(234, 168, 18, 0.4)',
               borderRadius: 'var(--radius-lg, 16px)',
               padding: '36px 40px',
               boxShadow: 'var(--shadow-md)',
@@ -81,15 +82,16 @@ export default function AboutPage() {
                   width: 72,
                   height: 72,
                   borderRadius: 20,
-                  background: 'linear-gradient(135deg, #0A3F8F 0%, #1B5FB5 100%)',
+                  background: 'linear-gradient(135deg, #002147 0%, #0A2540 100%)',
+                  border: '2px solid #EAA812',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#FFFFFF',
+                  color: '#EAA812',
                   fontSize: '2rem',
                   fontWeight: 800,
                   fontFamily: 'var(--font-display)',
-                  boxShadow: 'var(--shadow-sm)',
+                  boxShadow: '0 4px 14px rgba(0, 33, 71, 0.3)',
                 }}
               >
                 RC
@@ -98,10 +100,10 @@ export default function AboutPage() {
                 <span
                   style={{
                     fontSize: '0.8rem',
-                    fontWeight: 700,
+                    fontWeight: 800,
                     letterSpacing: '0.1em',
                     textTransform: 'uppercase',
-                    color: 'var(--color-primary)',
+                    color: '#EAA812',
                   }}
                 >
                   Architect & Engineer
@@ -206,15 +208,51 @@ export default function AboutPage() {
           </div>
 
           {/* Action CTAs */}
-          <div style={{ textAlign: 'center' }}>
-            <Link to="/" style={{ textDecoration: 'none', marginRight: 12 }}>
-              <button className="btn btn-primary" style={{ padding: '12px 28px' }}>
-                🚀 Explore Platform
+          <div style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <Link to="/" style={{ textDecoration: 'none' }}>
+              <button
+                className="btn btn-secondary"
+                style={{
+                  padding: '12px 24px',
+                  background: '#002147',
+                  border: '1.5px solid #EAA812',
+                  color: '#EAA812',
+                  fontWeight: 800,
+                  borderRadius: 8,
+                }}
+              >
+                🏛️ Institutional Home
+              </button>
+            </Link>
+            <Link to="/login" style={{ textDecoration: 'none' }}>
+              <button
+                className="btn btn-primary"
+                style={{
+                  padding: '12px 24px',
+                  background: '#EAA812',
+                  border: 'none',
+                  color: '#002147',
+                  fontWeight: 800,
+                  borderRadius: 8,
+                  boxShadow: '0 4px 14px rgba(234, 168, 18, 0.4)',
+                }}
+              >
+                🎓 Student Login
               </button>
             </Link>
             <Link to="/enter-exam" style={{ textDecoration: 'none' }}>
-              <button className="btn btn-secondary" style={{ padding: '12px 28px' }}>
-                Take an Assessment
+              <button
+                className="btn btn-secondary"
+                style={{
+                  padding: '12px 24px',
+                  background: '#002147',
+                  border: '1.5px solid #CBD5E1',
+                  color: '#FFFFFF',
+                  fontWeight: 800,
+                  borderRadius: 8,
+                }}
+              >
+                ⚡ Enter Examination
               </button>
             </Link>
           </div>

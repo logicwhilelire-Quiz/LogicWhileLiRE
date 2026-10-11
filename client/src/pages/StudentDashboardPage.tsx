@@ -153,72 +153,16 @@ export default function StudentDashboardPage() {
             Array.isArray(res.data.upcoming_exams) ? res.data.upcoming_exams : []
           );
           setPastResults(
-            res.data.past_results && res.data.past_results.length > 0
-              ? res.data.past_results
-              : [
-                  {
-                    id: 'res-demo-01',
-                    exam_id: 'e-demo-1',
-                    exam_title: 'Logic Whi1e LiRE — Sector 5 Full-Stack Diagnostic',
-                    total_score: 90,
-                    max_score: 100,
-                    percentage: 90,
-                    correct_count: 18,
-                    wrong_count: 2,
-                    time_taken_seconds: 1980,
-                    graded_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-                  },
-                  {
-                    id: 'res-demo-02',
-                    exam_id: 'e-demo-2',
-                    exam_title: 'Sector 1 & 2: Quantitative Velocity & Deductive Logic Evaluation',
-                    total_score: 88,
-                    max_score: 100,
-                    percentage: 88,
-                    correct_count: 22,
-                    wrong_count: 3,
-                    time_taken_seconds: 2450,
-                    graded_at: new Date(Date.now() - 86400000 * 6).toISOString(),
-                  },
-                ]
+            Array.isArray(res.data.past_results) ? res.data.past_results : []
           );
-          setRank(
-            res.data.rank || {
-              college_rank: 1,
-              overall_rank: 4,
-              total_students: 420,
-              average_score: 89,
-              percentile: 99.2,
-              exams_completed: 2,
-            }
-          );
+          setRank(res.data.rank || null);
         }
       } catch (err: any) {
         // Fallback to local student if available rather than kicking to /login
         if (localCandidate) {
           setUpcomingExams([]);
-          setPastResults([
-            {
-              id: 'res-demo-01',
-              exam_id: 'e-demo-1',
-              exam_title: 'Logic Whi1e LiRE — Sector 5 Full-Stack Diagnostic',
-              total_score: 90,
-              max_score: 100,
-              percentage: 90,
-              correct_count: 18,
-              wrong_count: 2,
-              time_taken_seconds: 1980,
-              graded_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-            },
-          ]);
-          setRank({
-            college_rank: 1,
-            overall_rank: 4,
-            total_students: 420,
-            average_score: 90,
-            percentile: 99.4,
-            exams_completed: 1,
-          });
+          setPastResults([]);
+          setRank(null);
         }
       } finally {
         setLoading(false);
@@ -297,7 +241,7 @@ export default function StudentDashboardPage() {
       <div className="page-center" style={{ minHeight: '80vh', flexDirection: 'column', gap: 16 }}>
         <div className="btn-spinner" style={{ width: 44, height: 44, borderWidth: 3 }} />
         <p className="text-muted" style={{ fontSize: '0.95rem' }}>
-          Loading Logic Whi1e LiRE candidate portal & telemetry records...
+          Loading LogicWhileLiRE candidate portal & telemetry records...
         </p>
       </div>
     );
@@ -393,10 +337,23 @@ export default function StudentDashboardPage() {
 
               <Link
                 to="/practice"
-                className="btn btn-outline text-xs"
-                style={{ padding: '6px 12px', borderRadius: 6, display: 'none' }}
+                className="btn text-xs"
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: 8,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(234, 88, 12, 0.2))',
+                  border: '1.5px solid rgba(245, 158, 11, 0.5)',
+                  color: '#F59E0B',
+                  fontWeight: 800,
+                  textDecoration: 'none',
+                  boxShadow: '0 0 14px rgba(245, 158, 11, 0.2)',
+                }}
               >
-                🪐 Practice Arena
+                <span>🪐</span>
+                <span>5 Sectors 3D Arena</span>
               </Link>
 
               <button
@@ -539,6 +496,7 @@ export default function StudentDashboardPage() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
               <div style={{ flex: '1 1 260px', position: 'relative' }}>
                 <input
+                  id="dashboard-exam-code-input"
                   type="text"
                   placeholder="Enter Exam Code (e.g. DEMO2026, DSA-SECTOR-04)"
                   value={examCodeInput}
@@ -565,6 +523,7 @@ export default function StudentDashboardPage() {
               </div>
 
               <button
+                id="dashboard-launch-exam-btn"
                 type="button"
                 onClick={() => handleLaunchExam()}
                 style={{
@@ -730,7 +689,7 @@ export default function StudentDashboardPage() {
                   🌌 5-Sector Competency Matrix &amp; 3D Interactive Universe
                 </h2>
                 <p style={{ margin: '4px 0 0 0', fontSize: '0.84rem', color: '#94a3b8' }}>
-                  Live candidate mastery across the 5 technical sectors of Logic Whi1e LiRE.
+                  Live candidate mastery across the 5 technical sectors of LogicWhileLiRE.
                 </p>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
