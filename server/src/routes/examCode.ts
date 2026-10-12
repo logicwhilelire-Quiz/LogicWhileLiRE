@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import { adminAuth, requireRole, requireCollegeScope, requireFacultyPermission } from '../middleware/adminAuth';
 import { auditLog } from '../middleware/auditLog';
@@ -57,21 +57,21 @@ router.post('/verify-exam-entry', enterExamRateLimit, validateBody(verifyExamEnt
 
 
 // Adapters for EnterExamPage & QuizPage routes
-router.get('/exam-code/:code/verify', enterExamRateLimit, (req, res) => {
+router.get('/exam-code/:code/verify', enterExamRateLimit, (req: any, res: any) => {
   req.body = {
     examCode: req.params.code,
     hallTicket: req.query.hallTicket || req.body?.hallTicket,
   };
   return verifyExamEntry(req, res);
 });
-router.post('/exam-code/:code/verify', enterExamRateLimit, (req, res) => {
+router.post('/exam-code/:code/verify', enterExamRateLimit, (req: any, res: any) => {
   req.body = {
     examCode: req.params.code,
     hallTicket: req.body?.hallTicket || req.query.hallTicket,
   };
   return verifyExamEntry(req, res);
 });
-router.post('/exam-code/:code/validate', enterExamRateLimit, (req, res) => {
+router.post('/exam-code/:code/validate', enterExamRateLimit, (req: any, res: any) => {
   req.body = {
     examCode: req.params.code,
     hallTicket: req.body?.hallTicket || req.query.hallTicket,
