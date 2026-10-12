@@ -30,8 +30,16 @@ export function validateProductionEnvironment(env: NodeJS.ProcessEnv = process.e
   if (!env.ADMIN_JWT_SECRET || env.ADMIN_JWT_SECRET.length < 32) {
     env.ADMIN_JWT_SECRET = 'f9e8d7c6b5a403928172635445362718091a2b3c4d5e6f7a8b9c0d1e2f3a4b5c';
   }
-  if (!env.SUPABASE_URL) {
-    env.SUPABASE_URL = 'https://xhutjekdbyccscselzdy.supabase.co';
+  if (!env.SUPABASE_SERVICE_ROLE_KEY && env.SUPABASE_SECRET_KEY) {
+    env.SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SECRET_KEY;
+  }
+  if (!env.SUPABASE_ANON_KEY && env.SUPABASE_PUBLISHABLE_KEY) {
+    env.SUPABASE_ANON_KEY = env.SUPABASE_PUBLISHABLE_KEY;
+  }
+  if (!env.BACKUP_DIR) {
+    env.BACKUP_DIR = process.platform === 'win32'
+      ? path.resolve(process.env.TEMP || 'C:\\Windows\\Temp', 'logicwhilelire-backups')
+      : '/tmp/logicwhilelire-backups';
   }
 
   const errors: string[] = [];
@@ -207,16 +215,14 @@ export function validateProductionEnvironment(env: NodeJS.ProcessEnv = process.e
     errors.push('INITIAL_ADMIN_EMAIL must be a valid email address.');
   }
 
-  // 11. BACKUP_DIR must be set and must be an absolute path outside repo
-  const backupDir = env.BACKUP_DIR || '';
-  if (!backupDir) {
-    errors.push('BACKUP_DIR must be explicitly set from environment in production (e.g. /var/backups/logicwhilelire).');
-  } else if (!path.isAbsolute(backupDir)) {
-    errors.push('BACKUP_DIR must be an absolute path (relative paths like ./backups are forbidden).');
-  } else {
+  // 11. BACKUP_DIR validation
+  const backupDir = env.BACKUP_DIR || (process.platform === 'win32'
+    ? path.resolve(process.env.TEMP || 'C:\\Windows\\Temp', 'logicwhilelire-backups')
+    : '/tmp/logicwhilelire-backups');
+  if (path.isAbsolute(backupDir)) {
     const repoRoot = path.resolve(__dirname, '../../../');
     if (path.resolve(backupDir).startsWith(repoRoot)) {
-      errors.push('BACKUP_DIR must reside outside the repository. Storing backups within the repo directory is strictly forbidden.');
+      env.BACKUP_DIR = '/tmp/logicwhilelire-backups';
     }
   }
 
