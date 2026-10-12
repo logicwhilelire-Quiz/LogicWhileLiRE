@@ -1,4 +1,20 @@
 User-agent: *
 Allow: /
-Disallow: /admin/
+Allow: /about
+Allow: /practice
+Allow: /admin/login
+Allow: /inspector/login
+Allow: /student/login
+Allow: /enroll
+
+# Disallow authenticated private views from search indexes
+Disallow: /admin/dashboard
+Disallow: /admin/exams
+Disallow: /admin/students
+Disallow: /admin/hierarchy
+Disallow: /admin/settings
+Disallow: /inspector/console
 Disallow: /quiz/
+Disallow: /exam/
+
+Sitemap: https://logicwhilelire.com/sitemap.xml

@@ -24,8 +24,14 @@
     <link rel="shortcut icon" type="image/png" href="/logo.png" />
     <link rel="apple-touch-icon" href="/logo.png" />
 
+    <!-- Canonical & Robots Directives for Search Engines -->
+    <link rel="canonical" href="https://logicwhilelire.com/" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+
     <!-- OpenGraph / Facebook Social Preview -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="LogicWhile LiRE" />
+    <meta property="og:url" content="https://logicwhilelire.com/" />
     <meta property="og:title" content="LogicWhile — R. Charan Sai Krishna" />
     <meta property="og:description" content="LogicWhile — Live Rank Engine created by R. Charan Sai Krishna. Autonomous assessment engine with server-authoritative timing, AI proctoring, and real-time evaluation." />
     <meta property="og:image" content="/logo.png" />
@@ -39,6 +45,39 @@
     <meta name="twitter:description" content="LogicWhile — Live Rank Engine created by R. Charan Sai Krishna. Autonomous assessment engine with server-authoritative timing, AI proctoring, and real-time evaluation." />
     <meta name="twitter:image" content="/logo.png" />
     <meta name="twitter:image:alt" content="LogicWhile — R. Charan Sai Krishna" />
+
+    <!-- Google Structured Data (JSON-LD) for Search Indexing -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://logicwhilelire.com/#website",
+          "url": "https://logicwhilelire.com/",
+          "name": "LogicWhile",
+          "alternateName": [
+            "LogicWhile LiRE",
+            "LogicWhile Lire",
+            "logicwhilelire.com",
+            "logicwhilelire"
+          ],
+          "description": "LogicWhile — Live Rank Engine created by R. Charan Sai Krishna. Autonomous assessment platform with server-authoritative timing, AI proctoring, and real-time evaluation.",
+          "author": {
+            "@type": "Person",
+            "name": "R. Charan Sai Krishna"
+          }
+        },
+        {
+          "@type": "EducationalOrganization",
+          "@id": "https://logicwhilelire.com/#organization",
+          "name": "LogicWhile",
+          "url": "https://logicwhilelire.com/",
+          "logo": "https://logicwhilelire.com/logo.png"
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
