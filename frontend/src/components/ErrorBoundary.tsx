@@ -32,13 +32,22 @@ export default class ErrorBoundary extends Component<Props, State> {
       const now = Date.now();
       if (!lastReload || now - Number(lastReload) > 8000) {
         sessionStorage.setItem('chunk_error_reload', String(now));
-        window.location.reload();
+        if ('caches' in window) {
+          caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))).catch(() => {});
+        }
+        window.location.href = window.location.pathname + '?_t=' + now;
       }
     }
   }
 
-  public handleReload = () => {
-    window.location.reload();
+  public handleReload = async () => {
+    if ('caches' in window) {
+      try {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      } catch (_) {}
+    }
+    window.location.href = window.location.pathname + '?_t=' + Date.now();
   };
 
   public handleGoHome = () => {

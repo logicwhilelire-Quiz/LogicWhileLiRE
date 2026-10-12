@@ -5,13 +5,28 @@ import App from './App.tsx'
 import { runStartupMigration } from './lib/storageMigration'
 
 // Auto-recover from stale Vite dynamic imports after new deployments
-window.addEventListener('vite:preloadError', (event) => {
-  console.warn('[Vite Preload Error] Module chunk missing after deployment, reloading...', event);
+window.addEventListener('vite:preloadError', async (event) => {
+  console.warn('[Vite Preload Error] Module chunk missing after deployment, purging cache and reloading...', event);
+  event.preventDefault();
   const lastReload = sessionStorage.getItem('vite_preload_reload');
   const now = Date.now();
   if (!lastReload || now - Number(lastReload) > 8000) {
     sessionStorage.setItem('vite_preload_reload', String(now));
-    window.location.reload();
+    if ('caches' in window) {
+      try {
+        const names = await caches.keys();
+        await Promise.all(names.map((name) => caches.delete(name)));
+      } catch (_) {}
+    }
+    if ('serviceWorker' in navigator) {
+      try {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const reg of regs) {
+          await reg.update();
+        }
+      } catch (_) {}
+    }
+    window.location.href = window.location.pathname + '?_t=' + now;
   }
 });
 

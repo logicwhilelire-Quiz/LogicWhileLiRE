@@ -7,6 +7,20 @@
   publish = "dist"
   command = "npm run build"
 
+# Proxy backend API requests seamlessly to Render (eliminates CORS hurdles & Cloudflare edge blocks)
+[[redirects]]
+  from = "/api/*"
+  to = "https://logicwhilelire-api.onrender.com/api/:splat"
+  status = 200
+  force = false
+
+# Ensure missing assets return 404 status code instead of falling back to HTML
+[[redirects]]
+  from = "/assets/*"
+  to = "/404.html"
+  status = 404
+  force = false
+
 # Default SPA Fallback: Route all incoming paths to index.html with 200 status
 [[redirects]]
   from = "/*"
@@ -24,6 +38,11 @@
 
 [[headers]]
   for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/sw.js"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 

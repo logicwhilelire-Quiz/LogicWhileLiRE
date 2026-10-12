@@ -4,59 +4,95 @@ import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import ErrorBoundary from './components/ErrorBoundary';
 import PageLoader from './components/PageLoader';
 
+// Resilient lazy loader: automatically purges stale cache and reloads on deployment chunk hash changes
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T }>
+) {
+  return lazy(async () => {
+    try {
+      return await factory();
+    } catch (error: any) {
+      console.warn('[ChunkLoader] Module import failed, auto-recovering:', error);
+      const msg = error?.message || '';
+      const isChunkError =
+        msg.includes('dynamically imported module') ||
+        msg.includes('Importing a module script failed') ||
+        error?.name === 'ChunkLoadError';
+
+      if (isChunkError && typeof window !== 'undefined') {
+        const key = 'chunk_retry_' + window.location.pathname;
+        const last = sessionStorage.getItem(key);
+        const now = Date.now();
+        if (!last || now - Number(last) > 10000) {
+          sessionStorage.setItem(key, String(now));
+          if ('caches' in window) {
+            try {
+              const keys = await caches.keys();
+              await Promise.all(keys.map((k) => caches.delete(k)));
+            } catch (_) {}
+          }
+          window.location.href = window.location.pathname + '?_t=' + now;
+          return new Promise(() => {}) as any;
+        }
+      }
+      throw error;
+    }
+  });
+}
+
 // Code-split routes for optimal performance and smaller initial bundles
-const StudentLoginPage = lazy(() => import('./pages/StudentLoginPage'));
-const StudentRegisterPage = lazy(() => import('./pages/StudentRegisterPage'));
-const StudentDashboardPage = lazy(() => import('./pages/StudentDashboardPage'));
-const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
-const CandidateRegisterGatePage = lazy(() => import('./pages/CandidateRegisterGatePage'));
-const WaitingLobbyPage = lazy(() => import('./pages/WaitingLobbyPage'));
-const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
-const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
-const EnrollPage = lazy(() => import('./pages/EnrollPage'));
-const OTPVerifyPage = lazy(() => import('./pages/OTPVerifyPage'));
-const ExamPage = lazy(() => import('./pages/ExamPage'));
-const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
-const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'));
-const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
-const CreateExamPage = lazy(() => import('./pages/admin/CreateExamPage'));
-const ImportQuestionsPage = lazy(() => import('./pages/admin/ImportQuestionsPage'));
-const SessionsPage = lazy(() => import('./pages/admin/SessionsPage'));
-const ReportsPage = lazy(() => import('./pages/admin/ReportsPage'));
-const AnalyticsPage = lazy(() => import('./pages/admin/AnalyticsPage'));
-const StaffManagementPage = lazy(() => import('./pages/admin/StaffManagementPage'));
+const StudentLoginPage = lazyWithRetry(() => import('./pages/StudentLoginPage'));
+const StudentRegisterPage = lazyWithRetry(() => import('./pages/StudentRegisterPage'));
+const StudentDashboardPage = lazyWithRetry(() => import('./pages/StudentDashboardPage'));
+const VerifyEmailPage = lazyWithRetry(() => import('./pages/VerifyEmailPage'));
+const CandidateRegisterGatePage = lazyWithRetry(() => import('./pages/CandidateRegisterGatePage'));
+const WaitingLobbyPage = lazyWithRetry(() => import('./pages/WaitingLobbyPage'));
+const ForgotPasswordPage = lazyWithRetry(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazyWithRetry(() => import('./pages/ResetPasswordPage'));
+const EnrollPage = lazyWithRetry(() => import('./pages/EnrollPage'));
+const OTPVerifyPage = lazyWithRetry(() => import('./pages/OTPVerifyPage'));
+const ExamPage = lazyWithRetry(() => import('./pages/ExamPage'));
+const LeaderboardPage = lazyWithRetry(() => import('./pages/LeaderboardPage'));
+const AdminLoginPage = lazyWithRetry(() => import('./pages/admin/AdminLoginPage'));
+const AdminDashboardPage = lazyWithRetry(() => import('./pages/admin/AdminDashboardPage'));
+const CreateExamPage = lazyWithRetry(() => import('./pages/admin/CreateExamPage'));
+const ImportQuestionsPage = lazyWithRetry(() => import('./pages/admin/ImportQuestionsPage'));
+const SessionsPage = lazyWithRetry(() => import('./pages/admin/SessionsPage'));
+const ReportsPage = lazyWithRetry(() => import('./pages/admin/ReportsPage'));
+const AnalyticsPage = lazyWithRetry(() => import('./pages/admin/AnalyticsPage'));
+const StaffManagementPage = lazyWithRetry(() => import('./pages/admin/StaffManagementPage'));
 
 // ── NEW: Exam Code System (No OTP) ──────────────────────────────
-const InspectorLoginPage = lazy(() => import('./pages/InspectorLoginPage'));
-const LandingPage = lazy(() => import('./pages/LandingPage'));
-const EnterExamPage = lazy(() => import('./pages/EnterExamPage'));
-const InstructionsPage = lazy(() => import('./pages/InstructionsPage'));
-const ExamCodeQuizPage = lazy(() => import('./pages/ExamCodeQuizPage'));
-const ResultECPage = lazy(() => import('./pages/ResultECPage'));
-const LeaderboardECPage = lazy(() => import('./pages/LeaderboardECPage'));
-const VerifyCertificatePage = lazy(() => import('./pages/VerifyCertificatePage'));
-const PracticeArenaPage = lazy(() => import('./pages/PracticeArenaPage'));
-const InstitutionalStudentReportPage = lazy(() => import('./pages/InstitutionalStudentReportPage'));
-const AboutPage = lazy(() => import('./pages/AboutPage'));
-const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const InspectorLoginPage = lazyWithRetry(() => import('./pages/InspectorLoginPage'));
+const LandingPage = lazyWithRetry(() => import('./pages/LandingPage'));
+const EnterExamPage = lazyWithRetry(() => import('./pages/EnterExamPage'));
+const InstructionsPage = lazyWithRetry(() => import('./pages/InstructionsPage'));
+const ExamCodeQuizPage = lazyWithRetry(() => import('./pages/ExamCodeQuizPage'));
+const ResultECPage = lazyWithRetry(() => import('./pages/ResultECPage'));
+const LeaderboardECPage = lazyWithRetry(() => import('./pages/LeaderboardECPage'));
+const VerifyCertificatePage = lazyWithRetry(() => import('./pages/VerifyCertificatePage'));
+const PracticeArenaPage = lazyWithRetry(() => import('./pages/PracticeArenaPage'));
+const InstitutionalStudentReportPage = lazyWithRetry(() => import('./pages/InstitutionalStudentReportPage'));
+const AboutPage = lazyWithRetry(() => import('./pages/AboutPage'));
+const NotFoundPage = lazyWithRetry(() => import('./pages/NotFoundPage'));
 
 // ── NEW: Admin pages ─────────────────────────────────────────────
-const CollegesPage = lazy(() => import('./pages/admin/CollegesPage'));
-const ExamCodesPage = lazy(() => import('./pages/admin/ExamCodesPage'));
-const AdminMonitorPage = lazy(() => import('./pages/admin/AdminMonitorPage'));
+const CollegesPage = lazyWithRetry(() => import('./pages/admin/CollegesPage'));
+const ExamCodesPage = lazyWithRetry(() => import('./pages/admin/ExamCodesPage'));
+const AdminMonitorPage = lazyWithRetry(() => import('./pages/admin/AdminMonitorPage'));
 
 // ── LogicWhileLiRE Clean Admin Control Center ───────────────────────
-const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
-const ExamControl = lazy(() => import('./pages/admin/ExamControl'));
-const QuestionControl = lazy(() => import('./pages/admin/QuestionControl'));
-const StudentControl = lazy(() => import('./pages/admin/StudentControl'));
-const MonitorControl = lazy(() => import('./pages/admin/MonitorControl'));
-const ResultControl = lazy(() => import('./pages/admin/ResultControl'));
-const SettingsControl = lazy(() => import('./pages/admin/SettingsControl'));
-const InstructorConsolePage = lazy(() => import('./pages/admin/InstructorConsolePage'));
-const HierarchyManagementPage = lazy(() => import('./pages/admin/HierarchyManagementPage'));
-const ActivityLogPage = lazy(() => import('./pages/admin/ActivityLogPage'));
-const MailLogsPage = lazy(() => import('./pages/admin/MailLogsPage'));
+const Dashboard = lazyWithRetry(() => import('./pages/admin/Dashboard'));
+const ExamControl = lazyWithRetry(() => import('./pages/admin/ExamControl'));
+const QuestionControl = lazyWithRetry(() => import('./pages/admin/QuestionControl'));
+const StudentControl = lazyWithRetry(() => import('./pages/admin/StudentControl'));
+const MonitorControl = lazyWithRetry(() => import('./pages/admin/MonitorControl'));
+const ResultControl = lazyWithRetry(() => import('./pages/admin/ResultControl'));
+const SettingsControl = lazyWithRetry(() => import('./pages/admin/SettingsControl'));
+const InstructorConsolePage = lazyWithRetry(() => import('./pages/admin/InstructorConsolePage'));
+const HierarchyManagementPage = lazyWithRetry(() => import('./pages/admin/HierarchyManagementPage'));
+const ActivityLogPage = lazyWithRetry(() => import('./pages/admin/ActivityLogPage'));
+const MailLogsPage = lazyWithRetry(() => import('./pages/admin/MailLogsPage'));
 
 function AnimatedRoutes() {
   const location = useLocation();

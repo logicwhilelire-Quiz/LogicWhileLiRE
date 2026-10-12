@@ -10,7 +10,7 @@
  *   and flushed when the 'sync' event fires (Background Sync API)
  */
 
-const CACHE_VERSION = 'logicwhilelire-v2';
+const CACHE_VERSION = 'logicwhilelire-v6';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -40,12 +40,15 @@ if (isDev) {
     self.skipWaiting();
   });
 
-  // ── Activate: delete old caches ───────────────────────────────────────────
+  // ── Activate: purge all outdated caches immediately ────────────────────────
   self.addEventListener('activate', (event) => {
     event.waitUntil(
       caches.keys().then((keys) =>
         Promise.all(
-          keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k))
+          keys.filter((k) => k !== CACHE_VERSION).map((k) => {
+            console.log('[SW] Purging outdated cache:', k);
+            return caches.delete(k);
+          })
         )
       )
     );
@@ -71,12 +74,12 @@ if (isDev) {
             }
             return res;
           })
-          .catch(() => caches.match('/index.html') as Promise<Response>)
+          .catch(() => (caches.match('/index.html') as Promise<Response>))
       );
       return;
     }
 
-    // API calls: network-first
+    // API calls: network-first (never cache failed or stale API responses)
     if (url.pathname.startsWith('/api/')) {
       event.respondWith(
         fetch(request)
@@ -87,26 +90,36 @@ if (isDev) {
             }
             return res;
           })
-          .catch(() => caches.match(request) as Promise<Response>)
+          .catch(() => (caches.match(request) as Promise<Response>))
       );
       return;
     }
 
-    // Static assets (hashed JS, CSS, images): stale-while-revalidate / network-fallback
-    event.respondWith(
-      caches.match(request).then((cached) => {
-        const fetchPromise = fetch(request)
-          .then((res) => {
-            if (res.ok) {
-              const clone = res.clone();
-              caches.open(CACHE_VERSION).then((c) => c.put(request, clone));
-            }
-            return res;
-          })
-          .catch(() => cached || (caches.match('/index.html') as Promise<Response>));
+    // Static assets (hashed JS, CSS, images): Network-first with cache fallback
+    // CRITICAL: NEVER return index.html for .js or .css assets! Serving HTML for JS causes syntax crash
+    const isCodeAsset = url.pathname.includes('/assets/') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css');
 
-        return cached || fetchPromise;
-      })
+    event.respondWith(
+      fetch(request)
+        .then((res) => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_VERSION).then((c) => c.put(request, clone));
+          }
+          return res;
+        })
+        .catch(async () => {
+          const cached = await caches.match(request);
+          if (cached) return cached;
+          if (isCodeAsset) {
+            return new Response('Asset not found or updated in recent deployment', {
+              status: 404,
+              statusText: 'Not Found',
+              headers: { 'Content-Type': 'text/plain' },
+            });
+          }
+          return (caches.match('/index.html') as Promise<Response>);
+        })
     );
   });
 

@@ -1,16 +1,37 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import { adminLogin } from '../../lib/api';
+import { API_BASE_URL } from '../../lib/config';
 import BrandLogo from '../../components/BrandLogo';
 import AnimatedPage from '../../components/AnimatedPage';
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: '', password: '', totp_code: '' });
+  const [form, setForm] = useState({
+    username: localStorage.getItem('last_admin_user') || 'admin',
+    password: '',
+    totp_code: '',
+  });
   const [requireTotp, setRequireTotp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [warmUpSeconds, setWarmUpSeconds] = useState(0);
   const [error, setError] = useState('');
+  const [isWarmingUp, setIsWarmingUp] = useState(false);
+
+  // Track warm-up elapsed time to give real-time reassuring feedback if cloud server is sleeping
+  useEffect(() => {
+    let interval: any;
+    if (loading) {
+      interval = setInterval(() => {
+        setWarmUpSeconds((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setWarmUpSeconds(0);
+    }
+    return () => clearInterval(interval);
+  }, [loading]);
 
   function completeAuth(token?: string, user?: any) {
     if (user && (user.role === 'inspector' || user.role === 'college_admin')) {
@@ -25,11 +46,15 @@ export default function AdminLoginPage() {
         return;
       }
     }
+    // Remember username for seamless subsequent logins
+    if (form.username.trim()) {
+      localStorage.setItem('last_admin_user', form.username.trim());
+    }
     navigate('/admin/dashboard');
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     if (!form.username.trim() || !form.password) {
       setError('Please enter your admin username and password.');
       return;
@@ -37,6 +62,7 @@ export default function AdminLoginPage() {
 
     setLoading(true);
     setError('');
+    setIsWarmingUp(false);
 
     try {
       const res = await adminLogin({
@@ -55,7 +81,8 @@ export default function AdminLoginPage() {
       completeAuth(res.data?.token, res.data?.user);
     } catch (err: any) {
       if (err?.code === 'ECONNABORTED' || err?.message?.includes('timeout') || err?.message?.includes('Network Error')) {
-        setError('Server is warming up or temporarily unreachable. Please retry in a few moments.');
+        setError('Cloud server was sleeping and is spinning up. Click "Wake Server & Retry" below to connect.');
+        setIsWarmingUp(true);
       } else {
         setError(err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Login failed. Invalid admin credentials.');
       }
@@ -64,16 +91,30 @@ export default function AdminLoginPage() {
     }
   }
 
+  async function handleWakeAndRetry() {
+    setError('');
+    setLoading(true);
+    try {
+      // Ping backend health endpoint first to awaken instance
+      await axios.get(`${API_BASE_URL}/api/health`, { timeout: 30000 });
+      // Retry authentication
+      await handleSubmit();
+    } catch (_) {
+      // If ping failed or timed out, attempt login anyway
+      await handleSubmit();
+    }
+  }
+
   return (
     <AnimatedPage>
       <div style={{ minHeight: '85vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }}>
-        <div style={{ width: '100%', maxWidth: 350 }}>
+        <div style={{ width: '100%', maxWidth: 380 }}>
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: 20 }}>
             <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: 12 }}>
               <BrandLogo size="sm" variant="standard" showTagline={true} />
             </Link>
-            <h1 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: '#F8FAFC', letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontSize: '1.45rem', fontWeight: 800, margin: 0, color: '#F8FAFC', letterSpacing: '-0.02em' }}>
               Admin Control Center
             </h1>
             <p style={{ color: '#94A3B8', fontSize: '0.82rem', margin: '4px 0 0' }}>
@@ -81,10 +122,64 @@ export default function AdminLoginPage() {
             </p>
           </div>
 
+          {/* Portal Switcher Tabs */}
+          <div
+            style={{
+              display: 'flex',
+              background: 'rgba(9, 14, 31, 0.75)',
+              padding: 4,
+              borderRadius: 10,
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              marginBottom: 16,
+              gap: 4,
+            }}
+          >
+            <div
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                padding: '8px 12px',
+                borderRadius: 7,
+                fontSize: '0.82rem',
+                fontWeight: 800,
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0.12) 100%)',
+                color: '#FBBF24',
+                border: '1px solid rgba(245, 158, 11, 0.4)',
+                cursor: 'default',
+              }}
+            >
+              👑 Admin Portal
+            </div>
+            <Link
+              to="/inspector"
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                padding: '8px 12px',
+                borderRadius: 7,
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                color: '#94A3B8',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#38BDF8';
+                e.currentTarget.style.background = 'rgba(56, 189, 248, 0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#94A3B8';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              🛡️ Inspector Portal
+            </Link>
+          </div>
+
           {/* Cyber-Glass Card */}
           <div
             style={{
-              background: 'rgba(14, 22, 44, 0.88)',
+              background: 'rgba(14, 22, 44, 0.92)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
               border: '1.5px solid rgba(245, 158, 11, 0.35)',
@@ -96,27 +191,60 @@ export default function AdminLoginPage() {
             {error && (
               <div
                 style={{
-                  background: 'rgba(239, 68, 68, 0.15)',
+                  background: 'rgba(239, 68, 68, 0.12)',
                   border: '1px solid rgba(239, 68, 68, 0.35)',
                   color: '#FCA5A5',
-                  borderRadius: 8,
-                  padding: '10px 14px',
+                  borderRadius: 10,
+                  padding: '12px 14px',
                   fontSize: '0.82rem',
                   marginBottom: 16,
                   fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
                 }}
               >
-                <span>⚠️</span>
-                <span>{error}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isWarmingUp ? 8 : 0 }}>
+                  <span>⚠️</span>
+                  <span>{error}</span>
+                </div>
+                {isWarmingUp && (
+                  <button
+                    type="button"
+                    onClick={handleWakeAndRetry}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: 6,
+                      border: '1px solid #F59E0B',
+                      background: 'rgba(245, 158, 11, 0.2)',
+                      color: '#FBBF24',
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <span>⚡</span>
+                    <span>Wake Server &amp; Retry Now</span>
+                  </button>
+                )}
               </div>
             )}
 
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#FBBF24', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '0.74rem',
+                    fontWeight: 800,
+                    color: '#FBBF24',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    marginBottom: 6,
+                  }}
+                >
                   Username / Email
                 </label>
                 <input
@@ -152,7 +280,17 @@ export default function AdminLoginPage() {
               </div>
 
               <div style={{ marginBottom: requireTotp ? 14 : 20 }}>
-                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#FBBF24', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '0.74rem',
+                    fontWeight: 800,
+                    color: '#FBBF24',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    marginBottom: 6,
+                  }}
+                >
                   Password
                 </label>
                 <div style={{ position: 'relative' }}>
@@ -209,7 +347,17 @@ export default function AdminLoginPage() {
 
               {requireTotp && (
                 <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#FBBF24', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '0.74rem',
+                      fontWeight: 800,
+                      color: '#FBBF24',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      marginBottom: 6,
+                    }}
+                  >
                     Authenticator 2FA Code
                   </label>
                   <input
@@ -238,6 +386,38 @@ export default function AdminLoginPage() {
                 </div>
               )}
 
+              {/* Server Warm-Up Progress Bar if request takes > 2.5s */}
+              {loading && warmUpSeconds >= 3 && (
+                <div
+                  style={{
+                    background: 'rgba(245, 158, 11, 0.1)',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    borderRadius: 8,
+                    padding: '8px 12px',
+                    marginBottom: 16,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: '#FBBF24', fontWeight: 600 }}>
+                    <span>⚡</span>
+                    <span>
+                      {warmUpSeconds < 8
+                        ? 'Connecting to secure server...'
+                        : `Waking up cloud server instance (${warmUpSeconds}s)... almost ready!`}
+                    </span>
+                  </div>
+                  <div style={{ height: 4, background: 'rgba(245, 158, 11, 0.2)', borderRadius: 2, marginTop: 6, overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${Math.min(95, warmUpSeconds * 5)}%`,
+                        background: '#F59E0B',
+                        transition: 'width 0.4s ease',
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
               <button
                 id="admin-login-btn"
                 type="submit"
@@ -256,14 +436,34 @@ export default function AdminLoginPage() {
                   boxShadow: '0 4px 20px rgba(245, 158, 11, 0.35)',
                   transition: 'all 0.2s ease',
                   opacity: loading ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
                 }}
               >
-                {loading ? 'Authenticating...' : 'Sign In as Admin'}
+                {loading ? (
+                  <>
+                    <span>Authenticating...</span>
+                    {warmUpSeconds > 0 && <span style={{ opacity: 0.85 }}>({warmUpSeconds}s)</span>}
+                  </>
+                ) : (
+                  'Sign In as Admin'
+                )}
               </button>
             </form>
 
-            <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center', fontSize: '0.78rem', color: '#94A3B8' }}>
-              Invigilator?{' '}
+            <div
+              style={{
+                marginTop: 16,
+                paddingTop: 14,
+                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                textAlign: 'center',
+                fontSize: '0.78rem',
+                color: '#94A3B8',
+              }}
+            >
+              Invigilator / Room Proctor?{' '}
               <Link to="/inspector" style={{ color: '#00D2FF', fontWeight: 800, textDecoration: 'none' }}>
                 Go to Inspector Login →
               </Link>

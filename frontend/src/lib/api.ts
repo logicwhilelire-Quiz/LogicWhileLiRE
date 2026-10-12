@@ -20,7 +20,7 @@ const BASE_URL = API_BASE_URL;
 const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: true, // send HttpOnly cookies
-  timeout: 15000,
+  timeout: 60000, // 60s timeout accommodates Render cold starts smoothly
   headers: { 'Content-Type': 'application/json' },
 });
 

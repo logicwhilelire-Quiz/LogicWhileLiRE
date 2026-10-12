@@ -34,7 +34,8 @@ import axios from 'axios';
 
 // Ensure all client axios requests support cross-origin credentials (HttpOnly cookies)
 axios.defaults.withCredentials = true;
-axios.defaults.timeout = 15000;
+// 60-second timeout ensures Render free-tier cold starts (~25-35s) complete cleanly without premature timeout aborts
+axios.defaults.timeout = 60000;
 
 // Request interceptor to automatically attach admin and session tokens from storage if present
 axios.interceptors.request.use((reqConfig) => {
