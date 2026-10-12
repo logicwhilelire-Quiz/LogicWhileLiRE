@@ -13,8 +13,11 @@ export function getBackupDirectory(): string {
     const resolved = path.resolve(custom);
     try {
       if (!fs.existsSync(resolved)) fs.mkdirSync(resolved, { recursive: true });
-    } catch {}
-    return resolved;
+      fs.accessSync(resolved, fs.constants.W_OK);
+      return resolved;
+    } catch (err) {
+      console.warn(`[Backup] Custom directory '${custom}' not writable, falling back to temporary path.`);
+    }
   }
   const fallback = process.platform === 'win32'
     ? path.resolve(process.env.TEMP || 'C:\\Windows\\Temp', 'logicwhilelire-backups')

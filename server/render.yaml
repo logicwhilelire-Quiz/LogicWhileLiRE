@@ -80,7 +80,7 @@ services:
       - key: STUDENT_JWT_EXPIRY
         value: "4h"
       - key: BACKUP_DIR
-        value: /var/backups/logicwhilelire
+        value: /tmp/logicwhilelire-backups
       - key: BREVO_SMTP_USER
         sync: false
       - key: BREVO_SMTP_PASS
