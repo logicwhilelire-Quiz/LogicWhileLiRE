@@ -21,6 +21,7 @@ process.env.PORT = '0';
 
 const assert = require('assert');
 const http = require('http');
+const jwt = require('jsonwebtoken');
 const { io: connectSocket } = require('../client/node_modules/socket.io-client');
 
 let server;
@@ -104,8 +105,8 @@ async function runTests() {
     console.log('--- 1. Inspector Login & College-Scoped Live Dashboard ---');
 
     const inspectorLoginRes = await request('POST', '/api/admin/login', {
-      username: 'inspector@example.com',
-      password: 'admin123',
+      username: process.env.INSPECTOR_USERNAME || 'inspector',
+      password: process.env.INSPECTOR_PASSWORD || 'LiREInspector@2026!',
     });
 
     assert.strictEqual(inspectorLoginRes.status, 200, 'Inspector login should succeed with 200');
@@ -148,10 +149,90 @@ async function runTests() {
     assert.ok(Array.isArray(dashboardRes.body?.sections), 'Should include sections for filter');
     pass(2, `Inspector lands on live dashboard for college: ${dashboardRes.body?.college?.college_name}`);
 
-    // ── 2. FACULTY 5-COLUMN EXCEL UPLOAD WITH VALIDATION & PREVIEW ─
-    console.log('\n--- 2. Faculty 5-Column Excel Upload with Validation & Preview ---');
+    // ── 2. RBAC GATING & FACULTY 5-COLUMN EXCEL UPLOAD VALIDATION ─
+    console.log('\n--- 2. RBAC Gating & Faculty Question Import Validation ---');
 
-    // Create active exam code for testing
+    const adminSecret = process.env.ADMIN_JWT_SECRET || 'test-admin-jwt-secret-key-32chars-2026';
+    const superAdminToken = jwt.sign(
+      { id: 'usr-admin-01', staff_id: 'st000000-0000-0000-0000-000000000001', username: 'admin', role: 'super_admin' },
+      adminSecret,
+      { expiresIn: '1h' }
+    );
+
+    const facultyWithPermToken = jwt.sign(
+      {
+        id: 'usr-fac-01',
+        staff_id: 'st000000-0000-0000-0000-000000000002',
+        username: 'suresh@example.com',
+        role: 'faculty',
+        college_id: 1,
+        permissions: ['create_questions', 'view_curriculum', 'upload_excel'],
+      },
+      adminSecret,
+      { expiresIn: '1h' }
+    );
+
+    const facultyNoPermToken = jwt.sign(
+      {
+        id: 'usr-fac-noperm',
+        staff_id: 'fac-no-create-questions',
+        username: 'noperm@example.com',
+        role: 'faculty',
+        college_id: 1,
+        permissions: ['view_curriculum'],
+      },
+      adminSecret,
+      { expiresIn: '1h' }
+    );
+
+    // Security Gate 1: Inspector cannot create exam codes (403 strictly enforced)
+    const inspCreateRes = await request(
+      'POST',
+      '/api/admin/exam-codes',
+      {
+        exam_code: 'INSP-FORBIDDEN-01',
+        exam_name: 'Inspector Exam Creation Attempt',
+        college_id: 1,
+      },
+      { Authorization: `Bearer ${inspectorToken}` }
+    );
+    assert.strictEqual(inspCreateRes.status, 403, 'Inspector must receive 403 on exam-code creation');
+    pass('2a', 'Inspector is strictly blocked (403) from creating exam codes');
+
+    // Security Gate 2: Inspector cannot access question validate-preview (403 INSPECTOR_FORBIDDEN)
+    const inspPreviewRes = await request(
+      'POST',
+      '/api/admin/questions/validate-preview',
+      { questions: [{ question: 'Sample question?', option_a: 'A', option_b: 'B', option_c: 'C', option_d: 'D', correct_answer: 'A' }] },
+      { Authorization: `Bearer ${inspectorToken}` }
+    );
+    assert.strictEqual(inspPreviewRes.status, 403, 'Inspector must receive 403 on question validate-preview');
+    assert.strictEqual(inspPreviewRes.body?.code, 'INSPECTOR_FORBIDDEN', 'Expected INSPECTOR_FORBIDDEN error code');
+    pass('2b', 'Inspector is strictly blocked (403 INSPECTOR_FORBIDDEN) from question preview');
+
+    // Security Gate 3: Inspector cannot access question confirm-import (403 INSPECTOR_FORBIDDEN)
+    const inspImportRes = await request(
+      'POST',
+      '/api/admin/questions/confirm-import',
+      { examCode: 'TARGET-VRSEC-A', questions: [] },
+      { Authorization: `Bearer ${inspectorToken}` }
+    );
+    assert.strictEqual(inspImportRes.status, 403, 'Inspector must receive 403 on question confirm-import');
+    assert.strictEqual(inspImportRes.body?.code, 'INSPECTOR_FORBIDDEN', 'Expected INSPECTOR_FORBIDDEN error code');
+    pass('2c', 'Inspector is strictly blocked (403 INSPECTOR_FORBIDDEN) from question confirm-import');
+
+    // Security Gate 4: Faculty WITHOUT create_questions permission is blocked (403 FACULTY_PERMISSION_DENIED)
+    const facNoPermRes = await request(
+      'POST',
+      '/api/admin/questions/validate-preview',
+      { questions: [{ question: 'Sample question?', option_a: 'A', option_b: 'B', option_c: 'C', option_d: 'D', correct_answer: 'A' }] },
+      { Authorization: `Bearer ${facultyNoPermToken}` }
+    );
+    assert.strictEqual(facNoPermRes.status, 403, 'Faculty without create_questions must receive 403');
+    assert.strictEqual(facNoPermRes.body?.code, 'FACULTY_PERMISSION_DENIED', 'Expected FACULTY_PERMISSION_DENIED error code');
+    pass('2d', 'Faculty without create_questions is strictly blocked (403 FACULTY_PERMISSION_DENIED)');
+
+    // Super Admin creates active exam code fixture for testing
     let testExamCode = `GR-VRSEC-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
     const createEcRes = await request(
       'POST',
@@ -160,20 +241,23 @@ async function runTests() {
         exam_code: testExamCode,
         exam_name: 'Inspector Flow Assessment 2026',
         subject: 'Algorithms & Computer Networks',
-        college_id: inspectorLoginRes.body?.user?.college_id || 1,
+        college_id: 1,
+        assigned_inspector_id: 'st000000-0000-0000-0000-000000000004',
+        assigned_faculty_id: 'st000000-0000-0000-0000-000000000002',
         duration_minutes: 45,
         total_questions: 3,
         start_time: new Date(Date.now() - 3600000).toISOString(),
         end_time: new Date(Date.now() + 86400000).toISOString(),
       },
-      { Authorization: `Bearer ${inspectorToken}` }
+      { Authorization: `Bearer ${superAdminToken}` }
     );
-    assert.ok([200, 201].includes(createEcRes.status), 'Exam code creation should succeed');
+    assert.ok([200, 201].includes(createEcRes.status), 'Exam code creation should succeed with super-admin');
     testExamCode = createEcRes.body?.exam_code?.exam_code || testExamCode;
-    pass(3, `Created college exam code ${testExamCode} for inspector flow`);
+    pass(3, `Created college exam code ${testExamCode} using super_admin credentials`);
 
-    // Validate 5-column questions with validation errors
-    const sampleInvalidBatch = [
+    // Strict validation & preview test with legacy 5-column default and strict type validation
+    const sampleBatchWithStrictTypeChecks = [
+      // Row 1: Valid legacy 5-column row (no Type column, options A-D provided) -> defaults to MCQ, valid
       {
         question: 'What is the time complexity of QuickSort average case?',
         option_a: 'O(N log N)',
@@ -187,39 +271,84 @@ async function runTests() {
         topic: 'Algorithms',
         difficulty: 'Medium',
       },
+      // Row 2: Explicit Type: Coding but missing test cases -> strictly rejected
       {
-        question: '', // Invalid: missing question
+        type: 'Coding',
+        question: 'Write a function to invert a binary tree',
+        correct_answer: 'def invert_tree(root): pass',
+        marks: 5,
+        penalty: 0,
+      },
+      // Row 3: Explicit invalid Type -> strictly rejected
+      {
+        type: 'InvalidType',
+        question: 'What is polymorphism?',
+        option_a: 'A',
+        option_b: 'B',
+        option_c: 'C',
+        option_d: 'D',
+        correct_answer: 'A',
+        marks: 1,
+        penalty: 0,
+      },
+      // Row 4: Missing BOTH Type and options -> strictly rejected with "Question type is required"
+      {
+        question: 'What is recursion?',
+        correct_answer: 'A function calling itself',
+        marks: 1,
+        penalty: 0,
+      },
+      // Row 5: Missing question text -> rejected
+      {
+        question: '',
         option_a: 'A',
         option_b: 'B',
         option_c: 'C',
         option_d: 'D',
         correct_answer: 'B',
         marks: 1,
-      },
-      {
-        question: 'Which protocol operates at the transport layer?',
-        option_a: 'TCP',
-        option_b: 'IP',
-        option_c: '', // Invalid: missing option C
-        option_d: 'HTTP',
-        correct_answer: 'A',
-        marks: 1,
+        penalty: 0,
       },
     ];
 
     const previewRes = await request(
       'POST',
       '/api/admin/questions/validate-preview',
-      { questions: sampleInvalidBatch },
-      { Authorization: `Bearer ${inspectorToken}` }
+      { questions: sampleBatchWithStrictTypeChecks },
+      { Authorization: `Bearer ${facultyWithPermToken}` }
     );
 
     assert.strictEqual(previewRes.status, 200, 'Preview endpoint should return 200');
-    assert.strictEqual(previewRes.body?.total_rows, 3, 'Should process 3 rows');
-    assert.strictEqual(previewRes.body?.valid_count, 1, 'Only 1 valid question row');
-    assert.strictEqual(previewRes.body?.invalid_count, 2, '2 invalid question rows caught');
-    assert.ok(previewRes.body?.errors?.length >= 2, 'Should return descriptive row-level error breakdown');
-    pass(4, 'Faculty 5-column upload validation accurately catches invalid rows and returns preview breakdown');
+    assert.strictEqual(previewRes.body?.total_rows, 5, 'Should process 5 rows');
+    assert.strictEqual(previewRes.body?.valid_count, 1, 'Only 1 valid question row (the legacy 5-column MCQ)');
+    assert.strictEqual(previewRes.body?.invalid_count, 4, '4 invalid question rows caught');
+
+    const rowErrors = previewRes.body?.errors || [];
+    assert(rowErrors.some((e) => e.includes('Test cases are required for Coding questions')), 'Explicit Coding row must validate strictly');
+    assert(rowErrors.some((e) => e.includes('Invalid question type "InvalidType"')), 'Invalid Type must be strictly rejected');
+    assert(rowErrors.some((e) => e.includes('Question type is required')), 'Row missing both Type and options must be rejected with Question type is required');
+    assert(rowErrors.some((e) => e.includes('Question text is required')), 'Row missing question text must be rejected');
+    pass(4, 'Faculty preview validation enforces strict type validation and MCQ default for 5-column rows');
+
+    // Security Gate 5: Scoping check on confirm-import (faculty cannot import into other college exam)
+    const crossCollegeImportRes = await request(
+      'POST',
+      '/api/admin/questions/confirm-import',
+      {
+        examCode: 'LW-KLU-2026', // College 2 exam
+        questions: [
+          {
+            question: 'Cross college test question?',
+            option_a: 'A', option_b: 'B', option_c: 'C', option_d: 'D',
+            correct_answer: 'A', marks: 1, penalty: 0,
+          },
+        ],
+      },
+      { Authorization: `Bearer ${facultyWithPermToken}` }
+    );
+    assert.strictEqual(crossCollegeImportRes.status, 403, 'Cross-college import must return 403');
+    assert.strictEqual(crossCollegeImportRes.body?.code, 'CROSS_COLLEGE_FORBIDDEN');
+    pass('4a', 'Faculty import is strictly scoped to caller college (403 CROSS_COLLEGE_FORBIDDEN on other college)');
 
     // Confirm valid import with sections, marks, and negative marking penalty
     const sampleValidQuestions = [
@@ -271,7 +400,7 @@ async function runTests() {
         examCode: testExamCode,
         questions: sampleValidQuestions,
       },
-      { Authorization: `Bearer ${inspectorToken}` }
+      { Authorization: `Bearer ${facultyWithPermToken}` }
     );
 
     assert.strictEqual(importRes.status, 200, 'Confirm import should succeed with 200');

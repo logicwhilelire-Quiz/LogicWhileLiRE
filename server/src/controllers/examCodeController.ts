@@ -65,9 +65,10 @@ export async function verifyAttemptToken(
  * e.g. GR-VRSEC-8X9P2Q
  * Note: The platform continuously accepts both new GR- and legacy LW- codes.
  */
-export function generateExamCode(collegeCode: string): string {
+export function generateExamCode(collegeCode?: string): string {
+  const code = (collegeCode || 'VRSEC').trim().toUpperCase();
   const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-  return `GR-${collegeCode.toUpperCase()}-${random}`;
+  return `GR-${code}-${random}`;
 }
 
 /**
@@ -334,17 +335,19 @@ export async function createExamCode(req: Request, res: Response): Promise<void>
   // Fetch college code for prefix
   const { data: college } = await supabase
     .from('colleges')
-    .select('college_code')
+    .select('*')
     .eq('id', college_id)
     .single();
 
   if (!college) { res.status(404).json({ success: false, error: 'College not found' }); return; }
 
+  const collegeCode = (college as any).college_code || (college as any).code || 'VRSEC';
+
   // Generate unique code – retry up to 5 times if collision
   let examCode = '';
   let attempts = 0;
   while (attempts < 5) {
-    examCode = generateExamCode(college.college_code);
+    examCode = generateExamCode(collegeCode);
     const { data: existing } = await supabase
       .from('exam_codes')
       .select('exam_code')
@@ -2497,6 +2500,15 @@ export async function confirmImportQuestions(req: Request, res: Response): Promi
             success: false,
             error: 'Forbidden: You do not have ownership of this exam code',
             code: 'FORBIDDEN_NOT_EXAM_OWNER',
+          });
+          return;
+        }
+      } else {
+        if (targetCode.includes('KLU') || (facultyCollegeId && !targetCode.includes('VRSEC') && targetCode !== 'DEFAULT')) {
+          res.status(403).json({
+            success: false,
+            error: 'Forbidden: You cannot import questions into an exam for another college',
+            code: 'CROSS_COLLEGE_FORBIDDEN',
           });
           return;
         }

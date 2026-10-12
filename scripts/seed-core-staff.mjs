@@ -177,7 +177,8 @@ async function runSeed() {
 
   const inspectorPassword =
     process.env.INSPECTOR_INITIAL_PASSWORD ||
-    process.env.INITIAL_INSPECTOR_PASSWORD;
+    process.env.INITIAL_INSPECTOR_PASSWORD ||
+    process.env.INSPECTOR_PASSWORD;
 
   if (!adminPassword) {
     console.error('❌ Error: ADMIN_INITIAL_PASSWORD (or INITIAL_ADMIN_PASSWORD) is required in env.');

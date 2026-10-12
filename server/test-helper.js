@@ -6,9 +6,10 @@
  * 1. Mock (Default): Fast, in-memory mock Supabase (no credentials needed).
  * 2. Real Supabase: When TEST_SUPABASE_URL and TEST_SUPABASE_SERVICE_KEY are present (DEMO_MODE=false).
  */
+require('dotenv').config();
 
 const testUrl = process.env.TEST_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const testKey = process.env.TEST_SUPABASE_SERVICE_ROLE_KEY || process.env.TEST_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const testKey = process.env.TEST_SUPABASE_SERVICE_ROLE_KEY || process.env.TEST_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 const isRealSupabase = Boolean(
   testUrl &&

@@ -99,3 +99,4 @@ if (distributed[0].set_number !== 1 || distributed[1].set_number !== 2 || distri
 }
 
 console.log('\n✅ ALL ROTATING SETS & PROCTORING FINGERPRINT TESTS PASSED!\n');
+process.exit(0);

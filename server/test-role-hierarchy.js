@@ -172,15 +172,16 @@ async function runRoleHierarchyTests() {
     assert.strictEqual(req.admin.role, 'faculty');
   });
 
-  // Test 4: adminAuth rejects student token on admin routes
-  test('adminAuth blocks student token with 401 Unauthorized', () => {
+  // Test 4: adminAuth rejects student token on admin routes with 403 Forbidden
+  test('adminAuth blocks student token with 403 Forbidden', () => {
     const studentToken = createStudentToken({ sub: 'student@example.com', id: 'stu-1', role: 'student' });
-    const { req, res, next, getStatus, isNextCalled } = createMockReqRes({
+    const { req, res, next, getStatus, isNextCalled, getBody } = createMockReqRes({
       headers: { authorization: `Bearer ${studentToken}` },
     });
     adminAuth(req, res, next);
     assert(!isNextCalled(), 'student token must NOT pass adminAuth');
-    assert.strictEqual(getStatus(), 401, 'Expected 401 Unauthorized for student token on adminAuth');
+    assert.strictEqual(getStatus(), 403, 'Expected 403 Forbidden for student token on adminAuth');
+    assert.strictEqual(getBody()?.code, 'STUDENT_TOKEN_REJECTED', 'Expected STUDENT_TOKEN_REJECTED code');
   });
 
   // Test 5: requireRole('super_admin') blocks Inspector (Cannot edit system settings)

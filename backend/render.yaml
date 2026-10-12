@@ -1,0 +1,91 @@
+# ==============================================================================
+# LOGICWHILELIRE — Render Server Infrastructure Blueprint
+# Backend Service: Node.js / Express / Socket.io / Supabase
+# ==============================================================================
+services:
+  - type: web
+    name: logicwhile-quiz-server
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: main
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: VIOLATION_THRESHOLD
+        value: 2
+      - key: JWT_EXPIRY
+        value: 3h
+      - key: OTP_EXPIRY_MINUTES
+        value: 5
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_JWT_SECRET
+        generateValue: true
+      - key: TOTP_ENCRYPTION_KEY
+        generateValue: true
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      - key: INITIAL_ADMIN_EMAIL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_DAILY_CAP
+        value: "100"
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: DEMO_MODE
+        value: "false"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: MAIL_DOMAIN
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_FROM_NAME
+        sync: false
+      - key: OTP_FROM_EMAIL
+        sync: false
+      - key: ADMIN_ALERT_EMAIL
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: SUPPORT_EMAIL
+        sync: false
+      - key: INSPECTOR_ALERT_EMAIL
+        sync: false
+      - key: STUDENT_JWT_EXPIRY
+        value: "4h"
+      - key: BACKUP_DIR
+        value: /var/backups/logicwhilelire
+      - key: BREVO_SMTP_USER
+        sync: false
+      - key: BREVO_SMTP_PASS
+        sync: false
+      - key: BREVO_SMTP_HOST
+        value: smtp-relay.brevo.com
+      - key: BREVO_SMTP_PORT
+        value: "587"

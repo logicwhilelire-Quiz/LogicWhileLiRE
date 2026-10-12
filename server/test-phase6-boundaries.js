@@ -263,8 +263,9 @@ async function runPhase6BoundaryTests() {
   const studentAdminRes = await request(port, 'GET', '/api/admin/dashboard-widgets', null, {
     Authorization: `Bearer ${studentToken}`,
   });
-  assert.strictEqual(studentAdminRes.status, 401, 'Student token must be rejected from admin routes');
-  pass(12, 'Student credentials strictly rejected from administrative endpoints (HTTP 401)');
+  assert.strictEqual(studentAdminRes.status, 403, 'Student token must be rejected from admin routes with HTTP 403');
+  assert.strictEqual(studentAdminRes.body?.code, 'STUDENT_TOKEN_REJECTED');
+  pass(12, 'Student credentials strictly rejected from administrative endpoints (HTTP 403)');
 
   // --- 4. Super Admin Complete Control ---
   console.log('\n--- 4. Super Admin Unrestricted Section Access ---');
@@ -300,7 +301,7 @@ async function runPhase6BoundaryTests() {
 }
 
 if (require.main === module) {
-  runPhase6BoundaryTests().catch((err) => {
+  runPhase6BoundaryTests().then(() => process.exit(0)).catch((err) => {
     console.error('\n❌ Role Boundary Test failed:', err);
     process.exit(1);
   });

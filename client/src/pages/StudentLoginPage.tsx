@@ -99,7 +99,7 @@ export default function StudentLoginPage() {
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: 18 }}>
             <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: 10 }}>
-              <BrandLogo size="sm" variant="standard" showTagline={false} />
+              <BrandLogo size="sm" variant="standard" showTagline={true} />
             </Link>
             <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#002147' }}>
               Student Login
@@ -255,12 +255,23 @@ export default function StudentLoginPage() {
               </button>
             </form>
 
-            <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #E2E8F0', textAlign: 'center', fontSize: '0.78rem', color: '#64748B' }}>
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #E2E8F0', textAlign: 'center', fontSize: '0.82rem', color: '#64748B' }}>
+              Don't have an account?{' '}
+              <Link to="/register" id="student-login-register-link" style={{ color: '#002147', fontWeight: 800, textDecoration: 'none' }}>
+                Register New Student →
+              </Link>
+            </div>
+
+            <div style={{ marginTop: 8, textAlign: 'center', fontSize: '0.78rem', color: '#64748B' }}>
               Have an exam code?{' '}
               <Link to="/enter-exam" style={{ color: '#B45309', fontWeight: 700, textDecoration: 'none' }}>
                 Enter Exam Directly →
               </Link>
             </div>
+          </div>
+
+          <div style={{ marginTop: 18, textAlign: 'center', fontSize: '0.78rem', color: '#64748B' }}>
+            It is developed by <strong style={{ color: '#002147', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
           </div>
         </div>
       </div>

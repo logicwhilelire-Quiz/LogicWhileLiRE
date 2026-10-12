@@ -1996,33 +1996,42 @@ export async function runSystemBackup(req: Request, res: Response): Promise<void
 // ── 13. INSPECTOR EXAM START & END (COLLEGE SCOPED) ──
 
 export async function inspectorStartExam(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = String(req.params.id || '');
   const admin = req.admin;
 
-  // Find exam in exams table or exam_codes table
-  let { data: exam, error } = await supabase.from('exams').select('*').eq('id', id).maybeSingle();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const isNumeric = /^\d+$/.test(id);
+
+  let exam: any = null;
   let table = 'exams';
 
+  // 1. Try by exact exam_code first in exam_codes
+  const { data: ecByCode } = await supabase.from('exam_codes').select('*').eq('exam_code', id).maybeSingle();
+  if (ecByCode) {
+    exam = { ...ecByCode, title: ecByCode.exam_name || ecByCode.exam_code };
+    table = 'exam_codes';
+  }
+
+  // 2. Try by exam_code in exams
   if (!exam) {
     const { data: byCode } = await supabase.from('exams').select('*').eq('exam_code', id).maybeSingle();
     if (byCode) exam = byCode;
   }
-  if (!exam) {
-    const { data: ec } = await supabase.from('exam_codes').select('*').eq('id', id).maybeSingle();
-    if (ec) {
-      exam = { ...ec, title: ec.exam_name || ec.exam_code };
-      table = 'exam_codes';
-    }
+
+  // 3. Try by id if valid uuid/numeric
+  if (!exam && isUuid) {
+    const { data: byId } = await supabase.from('exams').select('*').eq('id', id).maybeSingle();
+    if (byId) exam = byId;
   }
-  if (!exam) {
-    const { data: ecByCode } = await supabase.from('exam_codes').select('*').eq('exam_code', id).maybeSingle();
-    if (ecByCode) {
-      exam = { ...ecByCode, title: ecByCode.exam_name || ecByCode.exam_code };
+  if (!exam && (isNumeric || isUuid)) {
+    const { data: ecById } = await supabase.from('exam_codes').select('*').eq('id', id).maybeSingle();
+    if (ecById) {
+      exam = { ...ecById, title: ecById.exam_name || ecById.exam_code };
       table = 'exam_codes';
     }
   }
 
-  if (error || !exam) {
+  if (!exam) {
     res.status(404).json({ success: false, error: 'Exam not found' });
     return;
   }
@@ -2042,7 +2051,7 @@ export async function inspectorStartExam(req: Request, res: Response): Promise<v
   const now = new Date().toISOString();
   const { data: updated } = await supabase
     .from(table)
-    .update({ is_active: true, start_time: now })
+    .update({ is_active: true, start_time: now, started_at: now })
     .eq('id', exam.id)
     .select()
     .single();

@@ -145,9 +145,6 @@ export default function SiteFooter() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <Link to="/enter-exam" className="footer-link">
-                Enter Assessment
-              </Link>
-              <Link to="/enter-exam" className="footer-link">
                 Candidate Gate Pass
               </Link>
               <Link to="/login" className="footer-link">
@@ -177,7 +174,7 @@ export default function SiteFooter() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <Link to="/about" className="footer-link">
-                About &amp; Philosophy
+                About Platform
               </Link>
               <button
                 type="button"
@@ -246,11 +243,10 @@ export default function SiteFooter() {
 
         {/* Bottom Bar */}
         <div className="footer-bottom" style={{ borderColor: 'var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: '20px 24px' }}>
-          <span>© 2026 LogicWhile LiRE. All rights reserved.</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: '0.86rem' }}>
+            <span>© 2026 LogicWhile LiRE. All rights reserved. • Developed by <strong style={{ color: '#EAA812', fontWeight: 700 }}>R. Charan Sai Krishna</strong></span>
+          </div>
           <span style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-            <Link to="/about" className="footer-link">
-              About &amp; Credits
-            </Link>
             <button
               type="button"
               onClick={() => openModal('privacy')}

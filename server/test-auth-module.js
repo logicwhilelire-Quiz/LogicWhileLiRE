@@ -215,6 +215,7 @@ async function runAuthModuleTests() {
   console.log('   - Tokenized Email Password Reset (1h Expiry): ACTIVE');
   console.log('   - HttpOnly JWT Session Cookies: READY');
   console.log('================================================================\n');
+  process.exit(0);
 }
 
 runAuthModuleTests().catch((err) => {

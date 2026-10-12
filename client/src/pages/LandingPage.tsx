@@ -43,7 +43,7 @@ export default function LandingPage() {
                 border: '1px solid rgba(234, 168, 18, 0.4)',
               }}
             >
-              <BrandLogo size="md" variant="standard" showTagline={false} />
+              <BrandLogo size="md" variant="standard" showTagline={true} />
             </div>
           </div>
 
@@ -186,6 +186,16 @@ export default function LandingPage() {
               >
                 Sign In as Student →
               </Link>
+              <div
+                style={{
+                  textAlign: 'center',
+                  fontSize: '0.78rem',
+                  color: '#64748B',
+                  padding: '4px 0',
+                }}
+              >
+                🔒 Roster &amp; credentials managed by Institutional Administration
+              </div>
             </div>
           </div>
 
@@ -304,6 +314,97 @@ export default function LandingPage() {
                 Sign In as Inspector →
               </Link>
             </div>
+          </div>
+        </div>
+
+        {/* ── 5 TECHNICAL ASSESSMENT SECTORS SHOWCASE ── */}
+        <div style={{ marginTop: 54, paddingTop: 40, borderTop: '1px solid #E2E8F0' }}>
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <span
+              style={{
+                background: '#ECFDF5',
+                color: '#065F46',
+                padding: '4px 14px',
+                borderRadius: 16,
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                border: '1px solid #A7F3D0',
+              }}
+            >
+              5 Institutional Technical Sectors
+            </span>
+            <h3 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#002147', margin: '12px 0 6px' }}>
+              Standardized Assessment Sectors
+            </h3>
+            <p style={{ color: '#64748B', fontSize: '0.9rem', margin: 0, maxWidth: 640, marginInline: 'auto' }}>
+              Every evaluation on LogicWhile LiRE benchmarks candidates across 5 core engineering domains with synchronized radar telemetry.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 16,
+            }}
+          >
+            {[
+              { id: 'sec-1', name: 'Sector 1: Quant', badge: '📐 Quantitative Velocity', color: '#F59E0B', desc: 'Arithmetic acceleration, algebraic transformations, geometric logic, probabilistic models.' },
+              { id: 'sec-2', name: 'Sector 2: Logic', badge: '🧩 Deductive Logic', color: '#8B5CF6', desc: 'Constraint satisfaction, inductive sequences, syllogistic deduction, Boolean matrices.' },
+              { id: 'sec-3', name: 'Sector 3: Core CS', badge: '💻 Core CS & Systems', color: '#10B981', desc: 'OS scheduling, paging, thread synchronization, TCP/IP networking, SQL indexing.' },
+              { id: 'sec-4', name: 'Sector 4: DSA', badge: '⚡ Algorithms & DSA', color: '#38BDF8', desc: 'Dynamic programming, graph traversals, amortized complexity, algorithmic velocity.' },
+              { id: 'sec-5', name: 'Sector 5: Cloud', badge: '🌐 Full-Stack & Cloud', color: '#F43F5E', desc: 'Distributed architectures, microservices, cloud scaling, concurrency, fault tolerance.' },
+            ].map(sec => (
+              <div
+                key={sec.id}
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: 10,
+                  border: '1.5px solid #E2E8F0',
+                  padding: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                  borderTop: `4px solid ${sec.color}`,
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: sec.color, marginBottom: 6 }}>
+                    {sec.badge}
+                  </div>
+                  <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#002147', marginBottom: 6 }}>
+                    {sec.name}
+                  </div>
+                  <p style={{ fontSize: '0.78rem', color: '#64748B', lineHeight: 1.5, margin: 0 }}>
+                    {sec.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: 24 }}>
+            <Link
+              to="/practice"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: '#002147',
+                color: '#EAA812',
+                border: '1.5px solid #EAA812',
+                padding: '10px 22px',
+                borderRadius: 8,
+                fontWeight: 800,
+                fontSize: '0.86rem',
+                textDecoration: 'none',
+              }}
+            >
+              <span>🪐</span> Explore 5-Sector Practice Arena →
+            </Link>
           </div>
         </div>
       </main>

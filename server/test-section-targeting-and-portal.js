@@ -100,6 +100,148 @@ async function runTests() {
     };
   }
 
+  // Seed test records into database for the test suite
+  await supabase.from('staff').upsert([
+    {
+      id: 'st000000-0000-0000-0000-000000000001',
+      username: 'admin',
+      email: 'admin@system.local',
+      role: 'super_admin',
+      is_active: true,
+    },
+    {
+      id: 'st000000-0000-0000-0000-000000000002',
+      username: 'faculty@system.local',
+      email: 'faculty@system.local',
+      role: 'faculty',
+      college_id: 1,
+      section_ids: ['A'],
+      permissions: ['view_curriculum', 'upload_excel'],
+      is_active: true,
+    },
+    {
+      id: 'st000000-0000-0000-0000-000000000004',
+      username: 'inspector@system.local',
+      email: 'inspector@system.local',
+      role: 'inspector',
+      college_id: 1,
+      is_active: true,
+    },
+  ]);
+
+  await supabase.from('students').upsert([
+    {
+      id: 's1000000-0000-0000-0000-000000000001',
+      name: 'Aarav Sharma',
+      email: 'aarav.sharma@example.com',
+      roll_number: 'HT2026001',
+      hall_ticket: 'HT2026001',
+      college_id: 1,
+      branch: 'CSM',
+      passout_year: 2026,
+      section: 'A',
+      section_id: 'A',
+      is_active: true,
+      is_verified: true,
+      active_session_id: 'session-demo-aarav-001',
+    },
+    {
+      id: 's3000000-0000-0000-0000-000000000003',
+      name: 'Rohan Varma',
+      email: 'rohan.varma@example.com',
+      roll_number: 'HT2026003',
+      hall_ticket: 'HT2026003',
+      college_id: 1,
+      branch: 'CSM',
+      passout_year: 2026,
+      section: 'B',
+      section_id: 'B',
+      is_active: true,
+      is_verified: true,
+    },
+    {
+      id: 's2000000-0000-0000-0000-000000000002',
+      name: 'Other College Student',
+      email: 'other@example.com',
+      roll_number: 'HT2026002',
+      hall_ticket: 'HT2026002',
+      college_id: 2,
+      branch: 'CSM',
+      passout_year: 2026,
+      section: 'A',
+      section_id: 'A',
+      is_active: true,
+      is_verified: true,
+    },
+    {
+      id: 's4000000-0000-0000-0000-000000000004',
+      name: 'Other Branch Student',
+      email: 'branch@example.com',
+      roll_number: 'HT2026004',
+      hall_ticket: 'HT2026004',
+      college_id: 1,
+      branch: 'ECE',
+      passout_year: 2026,
+      section: 'A',
+      section_id: 'A',
+      is_active: true,
+      is_verified: true,
+    },
+    {
+      id: 's5000000-0000-0000-0000-000000000005',
+      name: 'Other Passout Student',
+      email: 'passout@example.com',
+      roll_number: 'HT2027005',
+      hall_ticket: 'HT2027005',
+      college_id: 1,
+      branch: 'CSM',
+      passout_year: 2027,
+      section: 'A',
+      section_id: 'A',
+      is_active: true,
+      is_verified: true,
+    },
+  ]);
+
+  await supabase.from('exam_codes').upsert([
+    {
+      id: 9999,
+      exam_code: 'TARGET-VRSEC-A',
+      exam_name: 'Targeted Exam Section A',
+      title: 'Targeted Exam Section A',
+      college_id: 1,
+      branch: 'CSM',
+      passout_year: 2026,
+      section_id: 'A',
+      section_ids: ['A'],
+      assigned_faculty_id: 'st000000-0000-0000-0000-000000000002',
+      assigned_inspector_id: 'st000000-0000-0000-0000-000000000004',
+      created_by_staff_id: 'st000000-0000-0000-0000-000000000002',
+      is_active: true,
+      status: 'published',
+      duration_minutes: 60,
+      duration_seconds: 3600,
+      start_time: new Date(Date.now() - 3600000).toISOString(),
+      end_time: new Date(Date.now() + 7200000).toISOString(),
+      created_at: new Date().toISOString(),
+    },
+  ]);
+
+  await supabase.from('questions_ec').upsert([
+    {
+      id: 'q-target-1',
+      exam_code: 'TARGET-VRSEC-A',
+      question: 'What is 2 + 2?',
+      option_a: '4',
+      option_b: '3',
+      option_c: '5',
+      option_d: '6',
+      correct_answer: 'A',
+      marks: 1,
+      section: 'General',
+    },
+  ]);
+
   // ── TEST GROUP 1: Dynamic Academic Year Derivation ──────────────────
   console.log('--- TEST GROUP 1: Dynamic Academic Year Derivation ---');
 
@@ -169,10 +311,50 @@ async function runTests() {
   // ── TEST GROUP 3: Server-side Enforced 404 Secrecy on Student Routes ─
   console.log('\n--- TEST GROUP 3: Server-Side 404 Secrecy on Student Routes ---');
 
+  const adminSecret = process.env.ADMIN_JWT_SECRET || 'test-admin-jwt-secret-key-32chars-2026';
+  const adminToken = jwt.sign({ id: 'adm-01', staff_id: 'st000000-0000-0000-0000-000000000001', username: 'admin', role: 'super_admin' }, adminSecret, { expiresIn: '1h' });
+
+  // Faculty token matching TARGET-VRSEC-A's assigned_faculty_id: 'st000000-0000-0000-0000-000000000002'
+  const facultyToken = jwt.sign(
+    { id: 'usr-fac-01', staff_id: 'st000000-0000-0000-0000-000000000002', username: 'faculty@system.local', role: 'faculty', college_id: 1, permissions: ['view_curriculum', 'upload_excel'] },
+    adminSecret,
+    { expiresIn: '1h' }
+  );
+
+  // Inspector token matching TARGET-VRSEC-A's assigned_inspector_id: 'st000000-0000-0000-0000-000000000004'
+  const inspectorToken = jwt.sign(
+    { id: 'usr-insp-01', staff_id: 'st000000-0000-0000-0000-000000000004', username: 'inspector@system.local', role: 'inspector', college_id: 1 },
+    adminSecret,
+    { expiresIn: '1h' }
+  );
+
   let studentAttemptId = '';
   let studentSessionToken = '';
 
-  await test('Section A student (HT2026001) successfully verifies exam (200 OK)', async () => {
+  await test('Section A student (HT2026001) gets 403 EXAM_NOT_STARTED_BY_INSPECTOR on verify before inspector start', async () => {
+    const res = await request('GET', '/api/exam-code/TARGET-VRSEC-A/verify?hallTicket=HT2026001');
+    assert.strictEqual(res.status, 403, `Expected 403, got ${res.status}`);
+    assert.strictEqual(res.data.code, 'EXAM_NOT_STARTED_BY_INSPECTOR');
+  })();
+
+  await test('Section A student (HT2026001) gets 403 EXAM_NOT_STARTED_BY_INSPECTOR on start before inspector start', async () => {
+    const res = await request('POST', '/api/exam-code/TARGET-VRSEC-A/start', {
+      hallTicket: 'HT2026001',
+      studentName: 'Aarav Sharma',
+    });
+    assert.strictEqual(res.status, 403, `Expected 403, got ${res.status}`);
+    assert.strictEqual(res.data.code, 'EXAM_NOT_STARTED_BY_INSPECTOR');
+  })();
+
+  await test('Inspector explicitly starts TARGET-VRSEC-A exam (200 OK)', async () => {
+    const res = await request('POST', '/api/v1/exams/TARGET-VRSEC-A/start', { allow_late_join: true }, {
+      Authorization: `Bearer ${inspectorToken}`,
+    });
+    assert.strictEqual(res.status, 200, `Expected 200, got ${res.status}`);
+    assert.strictEqual(res.data.success, true);
+  })();
+
+  await test('Section A student (HT2026001) successfully verifies exam after inspector start (200 OK)', async () => {
     const res = await request('GET', '/api/exam-code/TARGET-VRSEC-A/verify?hallTicket=HT2026001');
     assert.strictEqual(res.status, 200, `Expected 200, got ${res.status}`);
     assert(res.data.success || res.data.valid, 'Expected success or valid true');
@@ -180,7 +362,7 @@ async function runTests() {
     studentSessionToken = res.data.session_token;
   })();
 
-  await test('Section A student (HT2026001) starts exam session (200 OK)', async () => {
+  await test('Section A student (HT2026001) starts exam session after inspector start (200 OK)', async () => {
     const res = await request('POST', '/api/exam-code/TARGET-VRSEC-A/start', {
       hallTicket: 'HT2026001',
       studentName: 'Aarav Sharma',
@@ -389,23 +571,6 @@ async function runTests() {
 
   // ── TEST GROUP 5: Faculty & Inspector Scoping ──────────────────────
   console.log('\n--- TEST GROUP 5: Faculty & Inspector RBAC Scoping ---');
-
-  const adminSecret = process.env.ADMIN_JWT_SECRET || 'test-admin-jwt-secret-key-32chars-2026';
-  const adminToken = jwt.sign({ id: 'adm-01', staff_id: 'st000000-0000-0000-0000-000000000001', username: 'admin', role: 'super_admin' }, adminSecret, { expiresIn: '1h' });
-
-  // Faculty token matching TARGET-VRSEC-A's assigned_faculty_id: 'st000000-0000-0000-0000-000000000002'
-  const facultyToken = jwt.sign(
-    { id: 'usr-fac-01', staff_id: 'st000000-0000-0000-0000-000000000002', username: 'faculty@system.local', role: 'faculty', college_id: 1, permissions: ['view_curriculum', 'upload_excel'] },
-    adminSecret,
-    { expiresIn: '1h' }
-  );
-
-  // Inspector token matching TARGET-VRSEC-A's assigned_inspector_id: 'st000000-0000-0000-0000-000000000004'
-  const inspectorToken = jwt.sign(
-    { id: 'usr-insp-01', staff_id: 'st000000-0000-0000-0000-000000000004', username: 'inspector@system.local', role: 'inspector', college_id: 1 },
-    adminSecret,
-    { expiresIn: '1h' }
-  );
 
   await test('Faculty only sees exams allocated to their section', async () => {
     const res = await request('GET', '/api/admin/exam-codes', null, {

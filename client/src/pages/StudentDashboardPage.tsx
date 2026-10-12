@@ -289,7 +289,7 @@ export default function StudentDashboardPage() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <BrandLogo size="sm" variant="notag" />
+              <BrandLogo size="sm" variant="standard" showTagline={true} />
               <span
                 style={{
                   fontSize: '0.78rem',

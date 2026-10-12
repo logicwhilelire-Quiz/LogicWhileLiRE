@@ -49,6 +49,7 @@ async function testAuthAndTiming() {
   if (remainingExpired !== 0) throw new Error('Expired timing calculation error!');
 
   console.log('\n SUCCESS: All Auth, Security, & Timing logic tests passed cleanly!');
+  process.exit(0);
 }
 
 testAuthAndTiming().catch((err) => {

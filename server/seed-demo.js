@@ -1,4 +1,4 @@
-﻿/**
+/**
  * seed-demo.js — LogicWhileLiRE Demo Mode Dataset Seeder & Reset Tool
  *
  * PHASE J Specification (Section 11, J5):
@@ -37,6 +37,11 @@ function checkHealth() {
 }
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ [FATAL] seed-demo.js cannot be executed when NODE_ENV is "production".');
+    process.exit(1);
+  }
+
   console.log('================================================================');
   console.log('🚀 LogicWhileLiRE — DEMO DATASET SEED & RESET UTILITY');
   console.log('================================================================\n');

@@ -288,8 +288,8 @@ export const candidateRegisterSchema = z
     year_of_passing: z
       .union([z.number(), z.string()])
       .transform((val) => Number(val))
-      .refine((val) => val >= 2020 && val <= 2040, {
-        message: 'Year of passing must be a valid academic graduation year (2020-2040)',
+      .refine((val) => [2027, 2028, 2029, 2030].includes(val), {
+        message: 'Year of passing must be one of 2027, 2028, 2029, 2030',
       }),
     roll_number: z
       .string()
@@ -303,7 +303,13 @@ export const candidateRegisterSchema = z
       .trim()
       .min(1, 'Branch code is required')
       .transform((val) => val.toUpperCase()),
-    section: z.string().trim().min(1, 'Section is required').max(20),
+    section: z
+      .string()
+      .trim()
+      .transform((val) => val.toUpperCase())
+      .refine((val) => ['A', 'B', 'C', 'D', 'E'].includes(val), {
+        message: 'Section must be strictly one of A, B, C, D, E',
+      }),
     email: z
       .string()
       .trim()

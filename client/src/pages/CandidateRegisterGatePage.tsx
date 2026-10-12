@@ -57,7 +57,7 @@ export default function CandidateRegisterGatePage() {
     last_name: '',
     college_id: '',
     college_name: '',
-    year_of_passing: 2026,
+    year_of_passing: 2028,
     roll_number: '',
     branch_code: 'CSE',
     section: 'A',
@@ -658,6 +658,7 @@ export default function CandidateRegisterGatePage() {
             <form onSubmit={handleSubmit} style={{ padding: '36px 40px' }}>
               {serverError && (
                 <div
+                  id="gate-server-error"
                   style={{
                     background: '#FEF2F2',
                     border: '1.5px solid #F87171',
@@ -875,11 +876,14 @@ export default function CandidateRegisterGatePage() {
                         }}
                       >
                         {allSections.length > 0 ? (
-                          allSections.map((sec) => (
-                            <option key={sec.id || sec.name} value={sec.name}>
-                              Section {sec.name}
-                            </option>
-                          ))
+                          allSections.map((sec) => {
+                            const val = String(sec.name || '').replace(/Section\s*/i, '').trim() || 'A';
+                            return (
+                              <option key={sec.id || sec.name} value={val}>
+                                Section {val}
+                              </option>
+                            );
+                          })
                         ) : (
                           ['A', 'B', 'C', 'D', 'E'].map((s) => (
                             <option key={s} value={s}>

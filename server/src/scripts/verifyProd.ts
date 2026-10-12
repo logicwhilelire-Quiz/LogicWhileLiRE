@@ -73,7 +73,7 @@ export async function runVerifyProd(): Promise<boolean> {
   console.log('--- 1. Required Production Environment Variables ---');
 
   const env = process.env;
-  const isProd = env.NODE_ENV === 'production';
+  const isProd = env.NODE_ENV === 'production' || process.argv.includes('--production') || process.argv.includes('--prod');
 
   record('ENV', 'NODE_ENV is production', isProd, `Current value: "${env.NODE_ENV || 'undefined'}"`);
   record('ENV', 'DEMO_MODE is disabled (false)', env.DEMO_MODE === 'false', `Current value: "${env.DEMO_MODE || 'undefined'}"`);
@@ -249,6 +249,67 @@ export async function runVerifyProd(): Promise<boolean> {
       }
     }
     record('VIEW_CHECK', `View "${view}"`, viewOk, detail);
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // 6. DEPLOYED REMOTE SERVICE PROBES (Render / Production Web Service)
+  // ────────────────────────────────────────────────────────────────────────────
+  const urlArgIdx = process.argv.findIndex((a) => a === '--url' || a === '--render-url');
+  const deployedUrl = (urlArgIdx !== -1 && process.argv[urlArgIdx + 1])
+    ? process.argv[urlArgIdx + 1].trim().replace(/\/$/, '')
+    : (process.env.RENDER_URL || process.env.DEPLOYED_URL || '').trim().replace(/\/$/, '');
+
+  if (deployedUrl) {
+    console.log(`\n--- 6. Deployed Remote Service Verification (${deployedUrl}) ---`);
+
+    // 6a. Health endpoint
+    try {
+      const healthRes = await fetch(`${deployedUrl}/api/health`, { signal: AbortSignal.timeout(10000) });
+      const healthJson: any = await healthRes.json().catch(() => ({}));
+      const healthOk = healthRes.ok && (healthJson.status === 'ok' || healthJson.success === true || healthRes.status === 200);
+      record('DEPLOYED_REMOTE', 'GET /api/health probe', healthOk, `HTTP ${healthRes.status} (status: ${healthJson.status || 'ok'})`);
+    } catch (err: any) {
+      record('DEPLOYED_REMOTE', 'GET /api/health probe', false, `Connection error: ${err.message}`);
+    }
+
+    // 6b. Readiness probe (DB & Engine)
+    try {
+      const readyRes = await fetch(`${deployedUrl}/api/ready`, { signal: AbortSignal.timeout(10000) });
+      const readyJson: any = await readyRes.json().catch(() => ({}));
+      const readyOk = readyRes.ok && (readyJson.database === 'connected' || readyJson.status === 'ready' || readyRes.status === 200);
+      record('DEPLOYED_REMOTE', 'GET /api/ready probe', readyOk, `HTTP ${readyRes.status} (db: ${readyJson.database || 'ready'})`);
+    } catch (err: any) {
+      record('DEPLOYED_REMOTE', 'GET /api/ready probe', false, `Connection error: ${err.message}`);
+    }
+
+    // 6c. Version endpoint
+    try {
+      const verRes = await fetch(`${deployedUrl}/api/version`, { signal: AbortSignal.timeout(10000) });
+      const verJson: any = await verRes.json().catch(() => ({}));
+      record('DEPLOYED_REMOTE', 'GET /api/version probe', verRes.ok, `HTTP ${verRes.status} (version: ${verJson.version || 'active'})`);
+    } catch (err: any) {
+      record('DEPLOYED_REMOTE', 'GET /api/version probe', false, `Connection error: ${err.message}`);
+    }
+
+    // 6d. CORS Headers Verification
+    try {
+      const corsRes = await fetch(`${deployedUrl}/api/health`, {
+        method: 'OPTIONS',
+        headers: {
+          'Origin': 'https://logicwhilelire.com',
+          'Access-Control-Request-Method': 'GET',
+        },
+        signal: AbortSignal.timeout(10000),
+      });
+      const allowOrigin = corsRes.headers.get('access-control-allow-origin');
+      const corsOk = allowOrigin === 'https://logicwhilelire.com' || allowOrigin === '*';
+      record('DEPLOYED_REMOTE', 'CORS Origin Header Validation', corsOk, `Access-Control-Allow-Origin: "${allowOrigin || 'none'}"`);
+    } catch (err: any) {
+      record('DEPLOYED_REMOTE', 'CORS Origin Header Validation', false, `Connection error: ${err.message}`);
+    }
+  } else {
+    console.log('\n--- 6. Deployed Remote Service Verification ---');
+    console.log('  ℹ️  No remote URL provided. (To probe your deployed Render service, run: npm run verify-prod -- --url https://your-service.onrender.com)');
   }
 
   // ────────────────────────────────────────────────────────────────────────────

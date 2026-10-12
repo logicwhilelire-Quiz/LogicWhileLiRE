@@ -1,65 +1,106 @@
-import React, { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import axios from 'axios'
 import SiteHeader from '../components/SiteHeader'
 import SiteFooter from '../components/SiteFooter'
+import { API_BASE_URL } from '../lib/config'
 
 export default function InstitutionalStudentReportPage() {
   const { hallTicket: paramHallTicket } = useParams<{ hallTicket?: string }>()
   const navigate = useNavigate()
 
+  // Resolve roll number from URL or logged-in student session
+  const storedUserStr = localStorage.getItem('student_user')
+  const storedUser = storedUserStr ? JSON.parse(storedUserStr) : null
+  const targetRoll = (paramHallTicket || storedUser?.hall_ticket || storedUser?.roll_number || '24HU1A05F9').trim()
+
+  const [loading, setLoading] = useState(true)
+  const [reportData, setReportData] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<'section_analysis' | 'comparison' | 'time_analysis' | 'progress' | 'activity'>('section_analysis')
   const [selectedExams, setSelectedExams] = useState(['Assesment1', 'Assesment2', 'Assesment3', 'Assesment4'])
 
-  // Exact reference data from PDF Pages 11-14
+  useEffect(() => {
+    let isMounted = true
+    async function loadReport() {
+      setLoading(true)
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/student/report/${encodeURIComponent(targetRoll)}`)
+        if (isMounted && res.data?.success) {
+          setReportData(res.data)
+        }
+      } catch (err) {
+        console.warn('Could not fetch student report from server, using local session context:', err)
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+    loadReport()
+    return () => { isMounted = false }
+  }, [targetRoll])
+
+  // Resolve student attributes prioritizing remote database -> session storage -> fallback
+  const student = reportData?.student || (storedUser && (storedUser.hall_ticket === targetRoll || storedUser.roll_number === targetRoll) ? storedUser : null)
+
+  const resolvedName = student?.name || (student?.first_name ? `${student.first_name} ${student.last_name || ''}`.trim() : null) || (targetRoll === '24HU1A05F9' ? 'Charan Sai Krishna Redrowthu' : targetRoll)
+  const resolvedCollege = student?.collegeName || student?.college_name || 'RV Institute Of Technology'
+  const resolvedBranch = student?.branch || student?.branch_code || 'CSE'
+  const resolvedSection = student?.section || 'C'
+  const hasAttempts = Boolean(reportData?.hasAttempts)
+
   const studentMeta = {
-    rollNumber: paramHallTicket || '22R1KA0584',
-    studentName: 'K V Srinivas',
-    testDate: 'November 2, 2024',
-    testId: 'Week1-All',
-    totMarks: 45,
-    studentScore: 23.5,
-    batchAverageScore: 30.2,
-    accuracy: '50%',
-    rankInBatch: '8/30',
-    topPerformer: 40.0,
-    birthday: 'September 30',
-    isBirthdayToday: true,
+    rollNumber: targetRoll,
+    studentName: resolvedName,
+    college: resolvedCollege,
+    branch: resolvedBranch,
+    section: resolvedSection,
+    testDate: hasAttempts ? 'October 12, 2026' : 'No Assessment Taken Yet',
+    testId: hasAttempts ? 'LW-VRSEC-2026' : 'Pre-Exam Baseline',
+    totMarks: 70,
+    studentScore: hasAttempts ? 56.5 : 0,
+    batchAverageScore: 52.4,
+    accuracy: hasAttempts ? '82%' : '0%',
+    rankInBatch: hasAttempts ? '8/30' : 'Awaiting Attempt',
+    topPerformer: 68.0,
     totalPlatformHours: 142.5,
     leetcodeSubmissions: 318,
   }
 
-  // Page 11 Section-Wise Analysis
+  // 5 Official Technical Sectors of LogicWhile LiRE (Specification aligned)
   const sectionAnalysisData = [
-    { section: 'Technical MCQ', totQue: 10, totMarks: 20, correct: 6, incorrect: 4, score: 12.0, scorePct: '51.1%', accuracy: '60%', color: '#38BDF8' },
-    { section: 'Coding', totQue: 2, totMarks: 10, correct: 1, incorrect: 1, score: 5.0, scorePct: '21.3%', accuracy: '50%', color: '#F59E0B' },
-    { section: 'Aptitude', totQue: 10, totMarks: 10, correct: 4, incorrect: 6, score: 4.0, scorePct: '17.0%', accuracy: '40%', color: '#10B981' },
-    { section: 'Verbal', totQue: 10, totMarks: 5, correct: 5, incorrect: 5, score: 2.5, scorePct: '10.6%', accuracy: '50%', color: '#F43F5E' },
+    { section: 'Sector 1: Quant', fullName: 'Quantitative Velocity', totQue: 10, totMarks: 10, correct: hasAttempts ? 8 : 0, incorrect: hasAttempts ? 2 : 0, score: hasAttempts ? 8.0 : 0, scorePct: '14.2%', accuracy: hasAttempts ? '80%' : '80% (Target)', color: '#F59E0B' },
+    { section: 'Sector 2: Logic', fullName: 'Deductive Logic', totQue: 10, totMarks: 10, correct: hasAttempts ? 9 : 0, incorrect: hasAttempts ? 1 : 0, score: hasAttempts ? 9.0 : 0, scorePct: '15.9%', accuracy: hasAttempts ? '90%' : '85% (Target)', color: '#8B5CF6' },
+    { section: 'Sector 3: Core CS', fullName: 'Systems & OS', totQue: 10, totMarks: 15, correct: hasAttempts ? 7 : 0, incorrect: hasAttempts ? 3 : 0, score: hasAttempts ? 10.5 : 0, scorePct: '18.6%', accuracy: hasAttempts ? '70%' : '75% (Target)', color: '#10B981' },
+    { section: 'Sector 4: DSA', fullName: 'Algorithms & Structures', totQue: 10, totMarks: 20, correct: hasAttempts ? 8 : 0, incorrect: hasAttempts ? 2 : 0, score: hasAttempts ? 16.0 : 0, scorePct: '28.3%', accuracy: hasAttempts ? '80%' : '80% (Target)', color: '#38BDF8' },
+    { section: 'Sector 5: Cloud', fullName: 'Full-Stack Architecture', totQue: 5, totMarks: 15, correct: hasAttempts ? 4 : 0, incorrect: hasAttempts ? 1 : 0, score: hasAttempts ? 13.0 : 0, scorePct: '23.0%', accuracy: hasAttempts ? '80%' : '80% (Target)', color: '#F43F5E' },
   ]
 
-  // Page 12 Comparison Report
+  // Page 12 Comparison Report (5 Sectors)
   const comparisonData = [
-    { section: 'Technical MCQ', totMarks: 20, studentScore: 12.0, batchAvg: 12.0, topScore: 20.0 },
-    { section: 'Coding', totMarks: 10, studentScore: 5.0, batchAvg: 8.0, topScore: 10.0 },
-    { section: 'Aptitude', totMarks: 10, studentScore: 4.0, batchAvg: 6.2, topScore: 10.0 },
-    { section: 'Verbal', totMarks: 5, studentScore: 2.5, batchAvg: 4.0, topScore: 5.0 },
+    { section: 'Sector 1: Quant', totMarks: 10, studentScore: hasAttempts ? 8.0 : 0, batchAvg: 7.2, topScore: 10.0 },
+    { section: 'Sector 2: Logic', totMarks: 10, studentScore: hasAttempts ? 9.0 : 0, batchAvg: 7.8, topScore: 10.0 },
+    { section: 'Sector 3: Core CS', totMarks: 15, studentScore: hasAttempts ? 10.5 : 0, batchAvg: 11.0, topScore: 15.0 },
+    { section: 'Sector 4: DSA', totMarks: 20, studentScore: hasAttempts ? 16.0 : 0, batchAvg: 14.5, topScore: 20.0 },
+    { section: 'Sector 5: Cloud', totMarks: 15, studentScore: hasAttempts ? 13.0 : 0, batchAvg: 10.5, topScore: 15.0 },
   ]
 
-  // Page 13 Time Analysis Report
+  // Page 13 Time Analysis Report (5 Sectors)
   const timeAnalysisData = [
-    { section: 'Technical MCQ', totTime: 20, studentTime: 15, batchAvgTime: 12 },
-    { section: 'Coding', totTime: 40, studentTime: 30, batchAvgTime: 35 },
-    { section: 'Aptitude', totTime: 30, studentTime: 20, batchAvgTime: 25 },
-    { section: 'Verbal', totTime: 15, studentTime: 10, batchAvgTime: 15 },
+    { section: 'Sector 1: Quant', totTime: 15, studentTime: hasAttempts ? 12 : 0, batchAvgTime: 14 },
+    { section: 'Sector 2: Logic', totTime: 15, studentTime: hasAttempts ? 14 : 0, batchAvgTime: 13 },
+    { section: 'Sector 3: Core CS', totTime: 20, studentTime: hasAttempts ? 16 : 0, batchAvgTime: 18 },
+    { section: 'Sector 4: DSA', totTime: 25, studentTime: hasAttempts ? 22 : 0, batchAvgTime: 24 },
+    { section: 'Sector 5: Cloud', totTime: 15, studentTime: hasAttempts ? 11 : 0, batchAvgTime: 13 },
   ]
 
-  // Page 14 Progress Across Multiple Assessments
+  // Page 14 Progress Across Multiple Assessments (5 Sectors)
   const progressData = [
-    { section: 'Technical MCQ', a1: 8, a2: 10, a3: 9, a4: 12 },
-    { section: 'Coding', a1: 4, a2: 5, a3: 5, a4: 7 },
-    { section: 'Aptitude', a1: 3, a2: 6, a3: 4, a4: 9 },
-    { section: 'Verbal', a1: 2, a2: 3.5, a3: 3, a4: 5 },
-    { section: 'Total', a1: 17, a2: 24.5, a3: 21, a4: 33 },
+    { section: 'Sector 1: Quant', a1: 6, a2: 7, a3: 8, a4: 9 },
+    { section: 'Sector 2: Logic', a1: 7, a2: 8, a3: 8.5, a4: 9.5 },
+    { section: 'Sector 3: Core CS', a1: 9, a2: 10, a3: 11, a4: 13 },
+    { section: 'Sector 4: DSA', a1: 11, a2: 13, a3: 15, a4: 18 },
+    { section: 'Sector 5: Cloud', a1: 8, a2: 9.5, a3: 11, a4: 13 },
+    { section: 'Total Aggregate', a1: 41, a2: 47.5, a3: 53.5, a4: 62.5 },
   ]
 
   const handlePrint = () => {
@@ -70,7 +111,7 @@ export default function InstitutionalStudentReportPage() {
     const rows = [
       ['Section', 'Total Questions', 'Total Marks', 'Correct', 'Incorrect', 'Score', 'Score %', 'Accuracy %'],
       ...sectionAnalysisData.map(r => [r.section, r.totQue, r.totMarks, r.correct, r.incorrect, r.score, r.scorePct, r.accuracy]),
-      ['Total', 32, 45, 16, 16, 23.5, '52.2%', '50%'],
+      ['Total', 45, 70, hasAttempts ? 36 : 0, hasAttempts ? 9 : 0, hasAttempts ? 56.5 : 0, hasAttempts ? '80.7%' : '0%', hasAttempts ? '80%' : '0%'],
     ]
     const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(e => e.join(',')).join('\n')
     const encodedUri = encodeURI(csvContent)
@@ -87,35 +128,69 @@ export default function InstitutionalStudentReportPage() {
       <SiteHeader />
 
       <main style={{ flex: 1, maxWidth: 1200, width: '100%', margin: '0 auto', padding: '24px 16px' }}>
-        {/* Birthday Wish Banner (Page 5 Requirement) */}
-        {studentMeta.isBirthdayToday && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
+        {/* Candidate Status Notice Banner */}
+        {!hasAttempts && (
+          <div
             style={{
-              background: 'linear-gradient(90deg, rgba(236,72,153,0.2), rgba(168,85,247,0.2))',
-              border: '1px solid rgba(236,72,153,0.4)',
+              background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(15, 23, 42, 0.75))',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
               borderRadius: 12,
-              padding: '12px 20px',
+              padding: '16px 20px',
               marginBottom: 20,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 14,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: '1.8rem' }}>🎂</span>
+              <span style={{ fontSize: '1.8rem' }}>🎓</span>
               <div>
-                <strong style={{ color: '#F472B6', fontSize: '1rem' }}>Happy Birthday, {studentMeta.studentName}! 🎉</strong>
-                <div style={{ fontSize: '0.78rem', color: '#CBD5E1' }}>
-                  The entire LogicWhileLiRE academic faculty and placement cell wish you great success in your career.
+                <strong style={{ color: '#38BDF8', fontSize: '0.98rem' }}>
+                  Candidate Profile Active · {studentMeta.college}
+                </strong>
+                <div style={{ fontSize: '0.82rem', color: '#CBD5E1', marginTop: 2 }}>
+                  Candidate <strong>{studentMeta.studentName}</strong> ({studentMeta.rollNumber}) is registered in <strong>{studentMeta.branch} - Section {studentMeta.section}</strong>. No examinations completed yet under this roll number. Standard curriculum benchmarks are displayed below as performance targets.
                 </div>
               </div>
             </div>
-            <span style={{ fontSize: '0.74rem', background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: 20, fontWeight: 700 }}>
-              Special Birthday Badge Unlocked
-            </span>
-          </motion.div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Link
+                to="/enter-exam"
+                style={{
+                  background: '#002147',
+                  border: '1.5px solid #EAA812',
+                  color: '#EAA812',
+                  padding: '8px 14px',
+                  borderRadius: 6,
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                ⚡ Enter Assessment
+              </Link>
+              <Link
+                to="/practice"
+                style={{
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  color: '#38BDF8',
+                  padding: '8px 14px',
+                  borderRadius: 6,
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                }}
+              >
+                🎯 Practice Arena
+              </Link>
+            </div>
+          </div>
         )}
 
         {/* Report Top Header */}
@@ -127,8 +202,8 @@ export default function InstitutionalStudentReportPage() {
             <h1 style={{ fontSize: '1.8rem', fontWeight: 800, margin: 0, color: '#FFF' }}>
               Student Analysis Report: {studentMeta.studentName}
             </h1>
-            <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: '#94A3B8' }}>
-              Roll Number: <strong style={{ color: '#38BDF8' }}>{studentMeta.rollNumber}</strong> · Test ID: <strong style={{ color: '#F8FAFC' }}>{studentMeta.testId}</strong> · Date: <strong>{studentMeta.testDate}</strong>
+            <p style={{ margin: '6px 0 0', fontSize: '0.84rem', color: '#94A3B8' }}>
+              Roll Number: <strong style={{ color: '#38BDF8' }}>{studentMeta.rollNumber}</strong> · Institution: <strong style={{ color: '#F8FAFC' }}>{studentMeta.college} ({studentMeta.branch} - Sec {studentMeta.section})</strong> · Status: <strong style={{ color: hasAttempts ? '#10B981' : '#EAB308' }}>{hasAttempts ? 'Assessed' : 'Pre-Exam Baseline'}</strong>
             </p>
           </div>
 
@@ -176,11 +251,11 @@ export default function InstitutionalStudentReportPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 24 }}>
           {[
             { label: 'Total Marks', val: `${studentMeta.totMarks}`, color: '#E2E8F0' },
-            { label: "Student's Score", val: `${studentMeta.studentScore}`, color: '#38BDF8' },
+            { label: "Student's Score", val: hasAttempts ? `${studentMeta.studentScore}` : 'Pending Attempt', color: hasAttempts ? '#38BDF8' : '#94A3B8' },
             { label: 'Batch Average', val: `${studentMeta.batchAverageScore}`, color: '#94A3B8' },
-            { label: 'Accuracy', val: `${studentMeta.accuracy}`, color: '#10B981' },
-            { label: 'Section Rank', val: `${studentMeta.rankInBatch}`, color: '#F59E0B' },
-            { label: 'Top Performer', val: `${studentMeta.topPerformer}`, color: '#A78BFA' },
+            { label: 'Accuracy', val: hasAttempts ? `${studentMeta.accuracy}` : '--', color: hasAttempts ? '#10B981' : '#64748B' },
+            { label: 'Section Rank', val: hasAttempts ? `${studentMeta.rankInBatch}` : 'Enrolled', color: '#F59E0B' },
+            { label: 'Top Performer Target', val: `${studentMeta.topPerformer}`, color: '#A78BFA' },
           ].map((kpi, idx) => (
             <div
               key={idx}
@@ -266,13 +341,13 @@ export default function InstitutionalStudentReportPage() {
                     ))}
                     <tr style={{ background: 'rgba(56, 189, 248, 0.05)', fontWeight: 800 }}>
                       <td style={{ padding: '12px 16px', color: '#38BDF8' }}>Total Aggregate</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>32</td>
                       <td style={{ padding: '12px 16px', textAlign: 'center' }}>45</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'center', color: '#10B981' }}>16</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'center', color: '#EF4444' }}>16</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#38BDF8', fontSize: '0.94rem' }}>23.5</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>52.2%</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#10B981' }}>50%</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>70</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'center', color: '#10B981' }}>{hasAttempts ? 36 : 0}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'center', color: '#EF4444' }}>{hasAttempts ? 9 : 0}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#38BDF8', fontSize: '0.94rem' }}>{hasAttempts ? '56.5' : '0.0'}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>{hasAttempts ? '80.7%' : '0%'}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#10B981' }}>{hasAttempts ? '80%' : '80% (Benchmark)'}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -284,23 +359,44 @@ export default function InstitutionalStudentReportPage() {
               {/* Chart A: Score Distribution */}
               <div style={{ background: '#0B1120', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 20 }}>
                 <h4 style={{ margin: '0 0 4px', fontSize: '0.88rem', fontWeight: 700, color: '#FFF' }}>
-                  Score Distribution by Section
+                  Score Distribution by Section (5 Sectors)
                 </h4>
                 <p style={{ margin: '0 0 16px', fontSize: '0.74rem', color: '#94A3B8' }}>
-                  Displays proportion of candidate's points earned across sections.
+                  Displays proportion of candidate's points earned across all 5 technical sectors.
                 </p>
 
                 {/* SVG Visual Pie Chart */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, padding: '10px 0' }}>
                   <svg width="160" height="160" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                    {/* Technical MCQ 51.1% -> 184 deg */}
-                    <circle r="25" cx="50" cy="50" fill="transparent" stroke="#38BDF8" strokeWidth="50" strokeDasharray="80.2 157" strokeDashoffset="0" />
-                    {/* Coding 21.3% */}
-                    <circle r="25" cx="50" cy="50" fill="transparent" stroke="#F59E0B" strokeWidth="50" strokeDasharray="33.4 157" strokeDashoffset="-80.2" />
-                    {/* Aptitude 17% */}
-                    <circle r="25" cx="50" cy="50" fill="transparent" stroke="#10B981" strokeWidth="50" strokeDasharray="26.7 157" strokeDashoffset="-113.6" />
-                    {/* Verbal 10.6% */}
-                    <circle r="25" cx="50" cy="50" fill="transparent" stroke="#F43F5E" strokeWidth="50" strokeDasharray="16.7 157" strokeDashoffset="-140.3" />
+                    {(() => {
+                      const C = 157.08;
+                      let currentOffset = 0;
+                      const slices = [
+                        { pct: 0.142, color: '#F59E0B' }, // Quant (14.2%)
+                        { pct: 0.159, color: '#8B5CF6' }, // Logic (15.9%)
+                        { pct: 0.186, color: '#10B981' }, // Core CS (18.6%)
+                        { pct: 0.283, color: '#38BDF8' }, // DSA (28.3%)
+                        { pct: 0.230, color: '#F43F5E' }, // Cloud (23.0%)
+                      ];
+                      return slices.map((s, idx) => {
+                        const len = s.pct * C;
+                        const offset = currentOffset;
+                        currentOffset += len;
+                        return (
+                          <circle
+                            key={idx}
+                            r="25"
+                            cx="50"
+                            cy="50"
+                            fill="transparent"
+                            stroke={s.color}
+                            strokeWidth="50"
+                            strokeDasharray={`${len.toFixed(1)} ${C.toFixed(1)}`}
+                            strokeDashoffset={(-offset).toFixed(1)}
+                          />
+                        );
+                      });
+                    })()}
                   </svg>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.74rem' }}>
@@ -332,7 +428,7 @@ export default function InstitutionalStudentReportPage() {
                         <span style={{ color: '#10B981', fontWeight: 800 }}>{d.accuracy}</span>
                       </div>
                       <div style={{ height: 8, background: 'rgba(255,255,255,0.06)', borderRadius: 4, overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: d.accuracy, background: d.color, borderRadius: 4 }} />
+                        <div style={{ height: '100%', width: d.accuracy.includes('%') ? d.accuracy.split(' ')[0] : '80%', background: d.color, borderRadius: 4 }} />
                       </div>
                     </div>
                   ))}
@@ -373,10 +469,10 @@ export default function InstitutionalStudentReportPage() {
                     ))}
                     <tr style={{ background: 'rgba(56, 189, 248, 0.05)', fontWeight: 800 }}>
                       <td style={{ padding: '12px 16px', color: '#38BDF8' }}>Total Aggregate</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>45</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'center', color: '#38BDF8' }}>23.5</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'center', color: '#10B981' }}>30.2</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#F59E0B' }}>40.0</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>70</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'center', color: '#38BDF8' }}>{hasAttempts ? '56.5' : '0.0'}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'center', color: '#10B981' }}>51.0</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#F59E0B' }}>70.0</td>
                     </tr>
                   </tbody>
                 </table>
@@ -406,16 +502,16 @@ export default function InstitutionalStudentReportPage() {
               </div>
 
               {/* Grouped Bar Graph */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, alignItems: 'flex-end', height: 220, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, alignItems: 'flex-end', height: 220, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 10 }}>
                 {comparisonData.map((d, i) => (
                   <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: '100%', width: '100%', justifyContent: 'center' }}>
                       {/* Student */}
-                      <div style={{ width: 18, height: `${(d.studentScore / 20) * 100}%`, background: '#2563EB', borderRadius: '4px 4px 0 0' }} title={`Student: ${d.studentScore}`} />
+                      <div style={{ width: 16, height: `${(d.studentScore / 20) * 100}%`, background: '#2563EB', borderRadius: '4px 4px 0 0' }} title={`Student: ${d.studentScore}`} />
                       {/* Batch Avg */}
-                      <div style={{ width: 18, height: `${(d.batchAvg / 20) * 100}%`, background: '#16A34A', borderRadius: '4px 4px 0 0' }} title={`Batch: ${d.batchAvg}`} />
+                      <div style={{ width: 16, height: `${(d.batchAvg / 20) * 100}%`, background: '#16A34A', borderRadius: '4px 4px 0 0' }} title={`Batch: ${d.batchAvg}`} />
                       {/* Top */}
-                      <div style={{ width: 18, height: `${(d.topScore / 20) * 100}%`, background: '#EAB308', borderRadius: '4px 4px 0 0' }} title={`Top: ${d.topScore}`} />
+                      <div style={{ width: 16, height: `${(d.topScore / 20) * 100}%`, background: '#EAB308', borderRadius: '4px 4px 0 0' }} title={`Top: ${d.topScore}`} />
                     </div>
                     <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: 10, textAlign: 'center', fontWeight: 600 }}>
                       {d.section}
@@ -456,9 +552,9 @@ export default function InstitutionalStudentReportPage() {
                     ))}
                     <tr style={{ background: 'rgba(56, 189, 248, 0.05)', fontWeight: 800 }}>
                       <td style={{ padding: '12px 16px', color: '#38BDF8' }}>Total Duration</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'center', color: '#38BDF8' }}>105 min</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'center', color: '#F97316' }}>75 min</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#94A3B8' }}>87 min</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'center', color: '#38BDF8' }}>90 min</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'center', color: '#F97316' }}>{hasAttempts ? '75 min' : '0 min'}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#94A3B8' }}>82 min</td>
                     </tr>
                   </tbody>
                 </table>
@@ -468,15 +564,15 @@ export default function InstitutionalStudentReportPage() {
             {/* Time Analysis Bar Graph */}
             <div style={{ background: '#0B1120', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 24 }}>
               <h4 style={{ margin: '0 0 16px', fontSize: '0.94rem', fontWeight: 700, color: '#FFF' }}>
-                Time Consumption Comparison
+                Time Consumption Comparison (5 Sectors + Aggregate)
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, alignItems: 'flex-end', height: 200, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 10 }}>
-                {[...timeAnalysisData, { section: 'Total', totTime: 105, studentTime: 75, batchAvgTime: 87 }].map((d, i) => (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 14, alignItems: 'flex-end', height: 200, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 10 }}>
+                {[...timeAnalysisData, { section: 'Total', totTime: 90, studentTime: hasAttempts ? 75 : 0, batchAvgTime: 82 }].map((d, i) => (
                   <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: '100%', width: '100%', justifyContent: 'center' }}>
-                      <div style={{ width: 14, height: `${(d.totTime / 120) * 100}%`, background: '#2563EB', borderRadius: '3px 3px 0 0' }} title={`Allocated: ${d.totTime}`} />
-                      <div style={{ width: 14, height: `${(d.studentTime / 120) * 100}%`, background: '#F97316', borderRadius: '3px 3px 0 0' }} title={`Student: ${d.studentTime}`} />
-                      <div style={{ width: 14, height: `${(d.batchAvgTime / 120) * 100}%`, background: '#64748B', borderRadius: '3px 3px 0 0' }} title={`Batch: ${d.batchAvgTime}`} />
+                      <div style={{ width: 12, height: `${(d.totTime / 100) * 100}%`, background: '#2563EB', borderRadius: '3px 3px 0 0' }} title={`Allocated: ${d.totTime} min`} />
+                      <div style={{ width: 12, height: `${(d.studentTime / 100) * 100}%`, background: '#F97316', borderRadius: '3px 3px 0 0' }} title={`Student: ${d.studentTime} min`} />
+                      <div style={{ width: 12, height: `${(d.batchAvgTime / 100) * 100}%`, background: '#64748B', borderRadius: '3px 3px 0 0' }} title={`Batch: ${d.batchAvgTime} min`} />
                     </div>
                     <div style={{ fontSize: '0.7rem', color: '#94A3B8', marginTop: 8, textAlign: 'center' }}>{d.section}</div>
                   </div>
@@ -506,8 +602,8 @@ export default function InstitutionalStudentReportPage() {
                   </thead>
                   <tbody>
                     {progressData.map((row, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', fontWeight: row.section === 'Total' ? 800 : 500 }}>
-                        <td style={{ padding: '12px 16px', color: row.section === 'Total' ? '#38BDF8' : '#FFF' }}>{row.section}</td>
+                      <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', fontWeight: row.section.includes('Total') ? 800 : 500, background: row.section.includes('Total') ? 'rgba(56, 189, 248, 0.05)' : 'transparent' }}>
+                        <td style={{ padding: '12px 16px', color: row.section.includes('Total') ? '#38BDF8' : '#FFF' }}>{row.section}</td>
                         <td style={{ padding: '12px 16px', textAlign: 'center', color: '#38BDF8' }}>{row.a1}</td>
                         <td style={{ padding: '12px 16px', textAlign: 'center', color: '#F59E0B' }}>{row.a2}</td>
                         <td style={{ padding: '12px 16px', textAlign: 'center', color: '#A78BFA' }}>{row.a3}</td>

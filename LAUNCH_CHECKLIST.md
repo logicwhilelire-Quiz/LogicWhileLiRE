@@ -66,9 +66,9 @@ Configure all of these in **Render Dashboard → Environment → Environment Var
 
 | Variable | Required | Default | Description |
 |----------|:--------:|---------|-------------|
-| `CLIENT_ORIGIN` | **YES** | — | Frontend URL (e.g. `https://app.yourdomain.com`). Sets CORS origin. No trailing slash. |
-| `FRONTEND_URL` | **YES** | — | Frontend URL used in email links & password-reset URLs. Must be `https://` in production. |
-| `CLIENT_URL` | No | — | Alias for `FRONTEND_URL` (legacy compatibility). |
+| `CLIENT_ORIGIN` | **YES** | — | Frontend URLs: `https://logicwhilelire.com,https://www.logicwhilelire.com`. Sets CORS origin. No trailing slash. |
+| `FRONTEND_URL` | **YES** | — | Production frontend URL: `https://logicwhilelire.com`. Used in email links & password-reset URLs. |
+| `CLIENT_URL` | No | — | Alias for `FRONTEND_URL`: `https://logicwhilelire.com`. |
 
 ### F. Email — Resend (Primary Transport)
 
@@ -83,7 +83,7 @@ Configure all of these in **Render Dashboard → Environment → Environment Var
 |----------|:--------:|---------|-------------|
 | `SMTP_HOST` | **YES**¹ | — | SMTP relay host (e.g. `smtp.resend.com`). |
 | `SMTP_PORT` | No | `587` | SMTP port (587 for STARTTLS, 465 for SSL). |
-| `SMTP_USER` | **YES**¹ | — | SMTP username. |
+| `SMTP_USER` | **YES**¹ | — | SMTP username (e.g. `resend`). |
 | `SMTP_PASS` | **YES**¹ | — | SMTP password / API token. |
 | `SMTP_SECURE` | No | `false` | `true` for port 465 (SSL). |
 
@@ -106,19 +106,19 @@ Activates automatically when Resend daily cap is hit or Resend returns HTTP 429/
 
 | Variable | Required | Default | Description |
 |----------|:--------:|---------|-------------|
-| `MAIL_DOMAIN` | **YES** | — | Verified sending domain (e.g. `yourdomain.com`). Boot guard rejects defaults. |
-| `EMAIL_FROM` | **YES** | — | Sender address (e.g. `noreply@yourdomain.com`). |
-| `OTP_FROM_EMAIL` | No | — | Dedicated OTP sender (falls back to `EMAIL_FROM`). |
-| `EMAIL_FROM_NAME` | No | `LogicWhileLiRE` | Display name on outgoing emails. |
+| `MAIL_DOMAIN` | **YES** | — | Verified sending domain: `logicwhilelire.com`. |
+| `EMAIL_FROM` | **YES** | — | Sender address: `noreply@logicwhilelire.com`. |
+| `OTP_FROM_EMAIL` | No | — | Dedicated OTP sender: `otp@logicwhilelire.com` (or `noreply@logicwhilelire.com`). |
+| `EMAIL_FROM_NAME` | No | `LogicWhileLiRE` | Display name on outgoing emails: `LogicWhile LiRE`. |
 
 ### J. Email — Alert Recipients
 
 | Variable | Required | Default | Description |
 |----------|:--------:|---------|-------------|
-| `ADMIN_EMAIL` | **YES** | — | Admin alert email for proctoring violations & contact submissions. |
-| `ADMIN_ALERT_EMAIL` | No | — | Alias for `ADMIN_EMAIL` (used interchangeably). |
-| `SUPPORT_EMAIL` | **YES** | — | Support contact email in email footers. |
-| `INSPECTOR_ALERT_EMAIL` | No | — | Dedicated invigilator alert recipient. |
+| `ADMIN_EMAIL` | **YES** | — | Admin alert email: `admin@logicwhilelire.com`. |
+| `ADMIN_ALERT_EMAIL` | No | — | Alias for `ADMIN_EMAIL`: `admin@logicwhilelire.com`. |
+| `SUPPORT_EMAIL` | **YES** | — | Support contact email: `support@logicwhilelire.com`. |
+| `INSPECTOR_ALERT_EMAIL` | No | — | Dedicated invigilator alert recipient: `admin@logicwhilelire.com`. |
 
 ### K. Backup & Disaster Recovery
 
@@ -149,11 +149,11 @@ Configure in **Netlify Dashboard → Site Settings → Environment Variables**. 
 
 | Variable | Required | Default | Description |
 |----------|:--------:|---------|-------------|
-| `VITE_API_BASE_URL` | **YES** | — | Production backend API endpoint (e.g. `https://api.yourdomain.com`). No trailing slash. |
-| `VITE_API_URL` | No | — | Alias for `VITE_API_BASE_URL`. |
-| `VITE_SOCKET_URL` | **YES** | — | WebSocket endpoint for live telemetry & synchronous exam start. Same as API URL. |
+| `VITE_API_BASE_URL` | **YES** | — | Production backend API endpoint: `https://api.logicwhilelire.com`. No trailing slash. |
+| `VITE_API_URL` | No | — | Alias for `VITE_API_BASE_URL`: `https://api.logicwhilelire.com`. |
+| `VITE_SOCKET_URL` | **YES** | — | WebSocket endpoint for live telemetry & synchronous exam start: `https://api.logicwhilelire.com`. |
 | `VITE_SUPABASE_URL` | No | — | Public Supabase project URL for direct client queries (protected by RLS). |
-| `VITE_SUPABASE_ANON_KEY` | No | — | Public anon key. **Never put service role key here.** |
+| `VITE_SUPABASE_ANON_KEY` | No | — | Public anon key (`sb_publishable_...`). **Never put service role key here.** |
 | `VITE_ENABLE_PROCTORING` | No | `true` | Enable webcam, audio, fullscreen enforcement. |
 | `VITE_ENABLE_LEADERBOARD` | No | `true` | Enable live public leaderboard views. |
 | `VITE_SENTRY_DSN` | No | — | Sentry DSN for frontend browser error monitoring. |
@@ -211,10 +211,10 @@ cd server
 npm run create-admin
 
 # Option B: CLI arguments
-npm run create-admin -- --email admin@yourdomain.com --password YourStrongPassword123!
+npm run create-admin -- --email admin@logicwhilelire.com --password YourStrongPassword123!
 
 # Option C: Environment variables
-ADMIN_EMAIL=admin@yourdomain.com ADMIN_PASSWORD=YourStrongPassword123! npm run create-admin
+ADMIN_EMAIL=admin@logicwhilelire.com ADMIN_PASSWORD=YourStrongPassword123! npm run create-admin
 ```
 
 The script will:
@@ -226,21 +226,31 @@ The script will:
 
 ---
 
-## 6. Email Domain & DNS Configuration
+## 6. Domain, Hosting & DNS Configuration (`logicwhilelire.com`)
 
-Add these records to your domain's DNS manager:
+### A. Web & API Routing Architecture
+
+| Subdomain / Host | Points To | Service | Configuration |
+|------------------|-----------|---------|---------------|
+| `logicwhilelire.com` (Apex) | Netlify DNS / A Record (`75.2.60.5`) | Frontend Client | Set custom domain in Netlify Site Settings |
+| `www.logicwhilelire.com` | `logicwhilelire.com` | Frontend Client | Netlify automatic CNAME redirect |
+| `api.logicwhilelire.com` | `<your-render-service>.onrender.com` | Backend API + Socket.io | Render Custom Domain (Render provisions free SSL) |
+
+### B. Resend Email & DNS Authentication Records
+
+Add these records to your domain's DNS manager (GoDaddy, Namecheap, Cloudflare, etc.):
 
 | Type | Name / Host | Value | Purpose |
 |------|-------------|-------|---------|
-| **TXT** | `resend._domainkey.yourdomain.com` | *Resend DKIM public key* | DKIM Signature |
-| **TXT** | `yourdomain.com` | `v=spf1 include:amazonses.com ~all` | SPF Authorization |
-| **TXT** | `_dmarc.yourdomain.com` | `v=DMARC1; p=reject; rua=mailto:dmarc@yourdomain.com` | DMARC Protection |
-| **MX** | `feedback.yourdomain.com` | `feedback-smtp.us-east-1.amazonses.com` | Bounce Feedback |
+| **TXT** | `resend._domainkey.logicwhilelire.com` | *Resend DKIM public key (from Resend dashboard)* | DKIM Signature |
+| **TXT** | `logicwhilelire.com` | `v=spf1 include:amazonses.com ~all` | SPF Authorization |
+| **TXT** | `_dmarc.logicwhilelire.com` | `v=DMARC1; p=reject; rua=mailto:dmarc@logicwhilelire.com` | DMARC Protection |
+| **MX** | `feedback.logicwhilelire.com` | `feedback-smtp.us-east-1.amazonses.com` | Bounce Feedback |
 
 ### Verification Test
 ```bash
 cd server
-npm run test-email -- --to admin@yourdomain.com
+npm run test-email -- --to admin@logicwhilelire.com
 ```
 
 ---

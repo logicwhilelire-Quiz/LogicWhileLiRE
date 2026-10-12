@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LogicWhile QUIZ — Role System & Ownership Scoping Automated Test Suite
  *
  * Verifies:
@@ -59,7 +59,7 @@ async function runRoleSecurityTests() {
   console.log('================================================================\n');
 
   // Test 1: Super Admin Login
-  console.log('[1/8] Testing Super Admin Login...');
+  console.log('[1/9] Testing Super Admin Login...');
   const superRes = await request('POST', '/api/admin/login', {}, {
     username: 'admin',
     password: process.env.ADMIN_PASSWORD || 'admin123',
@@ -71,7 +71,7 @@ async function runRoleSecurityTests() {
   console.log('  ✅ Super Admin authenticated (role: super_admin)');
 
   // Test 2: Faculty 1 Login (Dr. Suresh Kumar)
-  console.log('\n[2/8] Testing Faculty 1 Login (suresh@example.com)...');
+  console.log('\n[2/9] Testing Faculty 1 Login (suresh@example.com)...');
   const f1Res = await request('POST', '/api/admin/login', {}, {
     username: 'suresh@example.com',
     password: 'admin123',
@@ -84,7 +84,7 @@ async function runRoleSecurityTests() {
   console.log(`  ✅ Faculty 1 authenticated (role: faculty, staff_id: ${f1StaffId})`);
 
   // Test 3: Faculty 2 Login (Priya Sharma)
-  console.log('\n[3/8] Testing Faculty 2 Login (priya@example.com)...');
+  console.log('\n[3/9] Testing Faculty 2 Login (priya@example.com)...');
   const f2Res = await request('POST', '/api/admin/login', {}, {
     username: 'priya@example.com',
     password: 'admin123',
@@ -97,7 +97,7 @@ async function runRoleSecurityTests() {
   console.log(`  ✅ Faculty 2 authenticated (role: faculty, staff_id: ${f2StaffId})`);
 
   // Test 4: Exam List Scoping
-  console.log('\n[4/8] Testing Exam List Ownership Scoping...');
+  console.log('\n[4/9] Testing Exam List Ownership Scoping...');
   // Super admin should see both exams
   const superExams = await request('GET', '/api/admin/exams', { Authorization: `Bearer ${superToken}` });
   if (superExams.json?.exams?.length < 2) {
@@ -117,7 +117,7 @@ async function runRoleSecurityTests() {
   console.log(`  ✅ Faculty 1 query scoped exclusively to their own exams (Found: ${f1Exams.json.exams.length})`);
 
   // Test 5: Cross-Exam Access Enforcement (Direct API 403 test)
-  console.log('\n[5/8] Testing Cross-Exam API Protection (Faculty 1 accessing Faculty 2 Exam)...');
+  console.log('\n[5/9] Testing Cross-Exam API Protection (Faculty 1 accessing Faculty 2 Exam)...');
   const crossAccessRes = await request(
     'GET',
     `/api/admin/exams/${exam2Id}/sessions`,
@@ -132,7 +132,7 @@ async function runRoleSecurityTests() {
   console.log('  ✅ 403 Forbidden correctly returned for unauthorized cross-faculty exam access');
 
   // Test 6: Faculty cannot access Super Admin staff management
-  console.log('\n[6/8] Testing Staff Management Privilege Guard...');
+  console.log('\n[6/9] Testing Staff Management Privilege Guard...');
   const unauthorizedStaffRes = await request(
     'GET',
     '/api/admin/staff',
@@ -146,7 +146,7 @@ async function runRoleSecurityTests() {
   console.log('  ✅ 403 Forbidden correctly returned when faculty attempts to access staff management');
 
   // Test 7: Super Admin Staff Account Lifecycle (Create)
-  console.log('\n[7/8] Testing Super Admin Faculty Account Creation...');
+  console.log('\n[7/9] Testing Super Admin Faculty Account Creation...');
   const newEmail = `faculty.test.${Date.now()}@example.com`;
   const createStaffRes = await request(
     'POST',
@@ -167,7 +167,7 @@ async function runRoleSecurityTests() {
   console.log(`  ✅ Faculty account created: ${newEmail} (ID: ${createdStaffId})`);
 
   // Test 8: Deactivation & Inactive Login Lock
-  console.log('\n[8/8] Testing Staff Account Deactivation...');
+  console.log('\n[8/9] Testing Staff Account Deactivation...');
   const deactRes = await request(
     'PATCH',
     `/api/admin/staff/${createdStaffId}/deactivate`,

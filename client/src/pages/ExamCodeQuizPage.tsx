@@ -47,6 +47,7 @@ interface ExamSession {
   questions: ExamQuestion[]
   proctoringMode?: 'webcam' | 'screen' | 'dual'
   endTimeMs?: number
+  violationThreshold?: number
 }
 
 type FaceStatus = 'ok' | 'no_face' | 'multiple' | 'looking_away' | 'loading'
@@ -220,6 +221,7 @@ export default function QuizPage() {
           questions: randomizedQuestions,
           proctoringMode,
           endTimeMs: exam?.end_time ? new Date(exam.end_time).getTime() : undefined,
+          violationThreshold: Number(exam?.max_violations) || Number(exam?.violation_threshold) || 2,
         })
 
         // Sprint 2 item 3: compute correct remaining time from server_start_time.
@@ -710,11 +712,12 @@ export default function QuizPage() {
     } catch { /* non-blocking */ }
 
     const isSevere = metadata?.isSevere === true
+    const maxStrikes = session?.violationThreshold || 2
 
-    if (count === 1 && !isSevere) {
-      // FIRST VIOLATION: Show reminder to the student
-      setSecurityBlockNotice(`⚠️ INTEGRITY REMINDER (Warning 1 of 2): ${msg}`)
-      setViolationMsg(`Warning 1 of 2: ${msg}. Attention: A repeat violation will immediately auto-terminate your exam and log you out.`)
+    if (count < maxStrikes && !isSevere) {
+      // VIOLATION WARNING: Show reminder to the student
+      setSecurityBlockNotice(`⚠️ INTEGRITY REMINDER (Warning ${count} of ${maxStrikes}): ${msg}`)
+      setViolationMsg(`Warning ${count} of ${maxStrikes}: ${msg}. Attention: Exceeding ${maxStrikes} violations will immediately auto-terminate your exam and log you out.`)
       setShowViolationModal(true)
       soundFx.playSecurityAlertTone()
       setTimeout(() => setShowViolationModal(false), 5000)
@@ -724,7 +727,7 @@ export default function QuizPage() {
       handleForceTermination(
         isSevere
           ? `Severe security lockdown breach: ${msg}`
-          : `Repeat integrity violation (${count} strikes): ${msg}. Exam auto-terminated.`
+          : `Integrity threshold reached (${count}/${maxStrikes} strikes): ${msg}. Exam auto-terminated.`
       )
     }
   }, [session, examCode, hallTicket, isTerminated, submitting, handleForceTermination])

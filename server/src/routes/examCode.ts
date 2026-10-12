@@ -171,6 +171,17 @@ const handleExamCodeStart = async (req: any, res: any) => {
       };
     });
 
+    // Record active attempt in exam_code_attempts
+    try {
+      await supabase.from('exam_code_attempts').upsert({
+        hall_ticket_no: hallTicket,
+        exam_code: code,
+        student_name: hallTicket,
+        status: 'in_progress',
+        start_time: new Date().toISOString(),
+      }, { onConflict: 'hall_ticket_no,exam_code' });
+    } catch {}
+
     return res.json({
       success: true,
       sessionId: `sess_${code}_${hallTicket}_${Date.now()}`,

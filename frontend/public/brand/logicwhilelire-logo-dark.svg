@@ -1,0 +1,190 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Circuit Glow Filters for Dark Theme -->
+    <filter id="neonGoldGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#FFB800" flood-opacity="0.8" />
+    </filter>
+    <filter id="neonBlueGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#38BDF8" flood-opacity="0.7" />
+    </filter>
+    <filter id="neonOrangeGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#FF7A00" flood-opacity="0.7" />
+    </filter>
+
+    <linearGradient id="neonGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE066" />
+      <stop offset="60%" stop-color="#FFC200" />
+      <stop offset="100%" stop-color="#FFA000" />
+    </linearGradient>
+
+    <linearGradient id="neonOrangeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF9E42" />
+      <stop offset="100%" stop-color="#FF6B00" />
+    </linearGradient>
+
+    <linearGradient id="electricBlueGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#BAE6FD" />
+      <stop offset="50%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+  </defs>
+
+  <!-- ── 1. CIRCUIT BOARD FRAME (NEON GOLD) ── -->
+  <!-- Top & Left Outer Line -->
+  <path d="M 52 440 L 52 88 L 748 88 L 748 216 L 712 216" 
+        stroke="url(#neonGoldGrad)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"
+        filter="url(#neonGoldGlow)" />
+  
+  <!-- Left Terminal Circle Node -->
+  <circle cx="52" cy="440" r="22" fill="#FFC200" stroke="#FFFFFF" stroke-width="3" filter="url(#neonGoldGlow)" />
+  
+  <!-- Inner Parallel Circuit Track -->
+  <path d="M 86 122 L 86 360" 
+        stroke="url(#neonGoldGrad)" stroke-width="12" stroke-linecap="round" filter="url(#neonGoldGlow)" />
+
+  <!-- Right Circuit Bulb Node & Beaming Light Rays -->
+  <circle cx="712" cy="216" r="24" fill="#FFC200" stroke="#FFFFFF" stroke-width="3" filter="url(#neonGoldGlow)" />
+  <circle cx="712" cy="216" r="13" fill="#FFF9C4" />
+  
+  <!-- 3 Light Rays radiating into letter 'c' -->
+  <g stroke="#FFD54F" stroke-width="8" stroke-linecap="round" filter="url(#neonGoldGlow)">
+    <line x1="684" y1="202" x2="626" y2="176" />
+    <line x1="680" y1="216" x2="618" y2="216" />
+    <line x1="684" y1="230" x2="626" y2="256" />
+  </g>
+
+  <!-- Bottom Circuit Trace & Right-Up Turn -->
+  <path d="M 52 676 L 748 676 L 748 372" 
+        stroke="url(#neonGoldGrad)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"
+        filter="url(#neonGoldGlow)" />
+  <circle cx="748" cy="372" r="22" fill="#FFC200" stroke="#FFFFFF" stroke-width="3" filter="url(#neonGoldGlow)" />
+
+
+  <!-- ── 2. WORD: 'Logic' ── -->
+  <!-- 'L' (Orange) -->
+  <path d="M 108 126 L 152 126 L 152 232 L 216 232 L 216 274 L 108 274 Z" 
+        fill="url(#neonOrangeGrad)" filter="url(#neonOrangeGlow)" />
+
+  <!-- '0' (Slashed Zero in Electric Blue) -->
+  <g filter="url(#neonBlueGlow)">
+    <path fill-rule="evenodd" 
+          d="M 324 200 C 324 246 304 278 266 278 C 228 278 208 246 208 200 C 208 154 228 122 266 122 C 304 122 324 154 324 200 Z 
+             M 284 200 C 284 168 276 154 266 154 C 256 154 248 168 248 200 C 248 232 256 246 266 246 C 276 246 284 232 284 200 Z" 
+          fill="url(#electricBlueGrad)" />
+    <!-- Diagonal Slash -->
+    <line x1="222" y1="256" x2="310" y2="144" 
+          stroke="url(#electricBlueGrad)" stroke-width="16" stroke-linecap="round" />
+  </g>
+
+  <!-- 'g' (Orange with scanlines) -->
+  <g filter="url(#neonOrangeGlow)">
+    <path d="M 358 158 C 358 138 374 124 402 124 C 428 124 442 138 442 162 L 442 254 C 442 270 432 278 408 278 C 378 278 360 262 360 262 L 372 236 C 372 236 384 248 402 248 C 414 248 418 242 418 234 L 418 226 C 410 236 394 242 380 242 C 358 242 342 224 342 198 C 342 172 358 158 358 158 Z" 
+          fill="url(#neonOrangeGrad)" />
+    <ellipse cx="392" cy="184" rx="24" ry="22" fill="#0A1024" />
+    <g fill="url(#neonOrangeGrad)">
+      <rect x="368" y="168" width="48" height="3.5" rx="1.5" />
+      <rect x="368" y="176" width="48" height="3.5" rx="1.5" />
+      <rect x="368" y="184" width="48" height="3.5" rx="1.5" />
+      <rect x="368" y="192" width="48" height="3.5" rx="1.5" />
+      <rect x="368" y="200" width="48" height="3.5" rx="1.5" />
+    </g>
+  </g>
+
+  <!-- 'i' (Orange) -->
+  <g fill="url(#neonOrangeGrad)" filter="url(#neonOrangeGlow)">
+    <circle cx="512" cy="132" r="16" />
+    <rect x="496" y="162" width="32" height="112" rx="6" />
+  </g>
+
+  <!-- 'c' (Orange) -->
+  <path d="M 648 166 C 636 142 616 124 582 124 C 542 124 516 156 516 200 C 516 244 544 278 584 278 C 618 278 638 258 648 234 L 614 220 C 608 234 598 246 584 246 C 564 246 550 228 550 200 C 550 172 564 156 582 156 C 598 156 608 166 614 180 Z" 
+        fill="url(#neonOrangeGrad)" filter="url(#neonOrangeGlow)" />
+
+
+  <!-- ── 3. WORD: 'Whi1e' ── -->
+  <!-- 'W' (Electric Blue) -->
+  <path d="M 108 304 L 140 304 L 164 404 L 190 304 L 218 304 L 244 404 L 268 304 L 300 304 L 262 444 L 228 444 L 204 346 L 180 444 L 146 444 Z" 
+        fill="url(#electricBlueGrad)" filter="url(#neonBlueGlow)" />
+
+  <!-- 'h' (Electric Blue) -->
+  <path d="M 324 290 L 356 290 L 356 350 C 368 336 386 328 404 328 C 428 328 442 342 442 368 L 442 444 L 410 444 L 410 376 C 410 362 404 354 392 354 C 378 354 368 366 368 382 L 368 444 L 336 444 Z" 
+        fill="url(#electricBlueGrad)" filter="url(#neonBlueGlow)" />
+
+  <!-- 'i' (Electric Blue) -->
+  <g fill="url(#electricBlueGrad)" filter="url(#neonBlueGlow)">
+    <circle cx="468" cy="316" r="15" />
+    <path d="M 456 348 C 456 348 468 346 476 354 C 482 360 482 370 482 384 L 482 426 C 482 438 490 444 502 444 L 504 444 L 504 446 C 496 448 484 448 472 442 C 458 434 454 420 454 406 L 454 348 Z" />
+  </g>
+
+  <!-- '1' (Binary 1 in Neon Orange) -->
+  <path d="M 522 334 L 552 308 L 568 308 L 568 414 L 594 414 L 594 444 L 518 444 L 518 414 L 540 414 L 540 336 L 522 348 Z" 
+        fill="url(#neonOrangeGrad)" filter="url(#neonOrangeGlow)" />
+
+  <!-- 'e' (Electric Blue) -->
+  <path d="M 648 376 C 648 348 630 328 602 328 C 572 328 552 350 552 386 C 552 422 572 446 604 446 C 624 446 640 436 648 420 L 622 408 C 618 416 612 422 602 422 C 590 422 582 414 580 398 L 648 398 C 648 398 648 388 648 376 Z
+           M 580 376 C 582 360 590 350 602 350 C 614 350 622 360 622 376 Z" 
+        fill="url(#electricBlueGrad)" filter="url(#neonBlueGlow)" />
+
+
+  <!-- ── 4. BOXED 'LiRE' ── -->
+  <rect x="136" y="476" width="548" height="144" rx="4" 
+        stroke="url(#neonGoldGrad)" stroke-width="14" fill="rgba(56, 189, 248, 0.05)" 
+        filter="url(#neonGoldGlow)" />
+
+  <!-- 'L' in LiRE -->
+  <path d="M 176 502 L 208 502 L 208 558 L 244 558 L 244 584 L 176 584 Z" 
+        fill="url(#electricBlueGrad)" filter="url(#neonBlueGlow)" />
+
+  <!-- 'i' in LiRE -->
+  <g fill="url(#electricBlueGrad)" filter="url(#neonBlueGlow)">
+    <circle cx="288" cy="510" r="12" />
+    <path d="M 276 534 C 278 534 292 532 296 540 C 300 546 300 554 300 566 C 300 576 306 584 316 584 L 298 584 C 286 584 280 574 280 562 L 280 534 Z" />
+  </g>
+
+  <!-- 'R' in LiRE (Orange with scanlines) -->
+  <g filter="url(#neonOrangeGlow)">
+    <path d="M 346 502 L 406 502 C 426 502 440 514 440 532 C 440 546 430 556 416 560 L 444 584 L 416 584 L 392 562 L 372 562 L 372 584 L 346 584 Z
+             M 372 522 L 400 522 C 410 522 416 526 416 534 C 416 542 410 546 400 546 L 372 546 Z" 
+          fill="url(#neonOrangeGrad)" />
+    <!-- Horizontal scanlines on dark theme -->
+    <g fill="#0A1024">
+      <rect x="342" y="508" width="104" height="3" />
+      <rect x="342" y="516" width="104" height="3" />
+      <rect x="342" y="524" width="104" height="3" />
+      <rect x="342" y="532" width="104" height="3" />
+      <rect x="342" y="540" width="104" height="3" />
+      <rect x="342" y="548" width="104" height="3" />
+      <rect x="342" y="556" width="104" height="3" />
+      <rect x="342" y="564" width="104" height="3" />
+      <rect x="342" y="572" width="104" height="3" />
+    </g>
+  </g>
+
+  <!-- 'E' in LiRE -->
+  <path d="M 470 502 L 536 502 L 536 526 L 498 526 L 498 544 L 528 544 L 528 566 L 498 566 L 498 560 L 498 584 L 536 584 L 536 584 L 470 584 Z" 
+        fill="url(#electricBlueGrad)" filter="url(#neonBlueGlow)" />
+
+  <!-- Subtitle within LiRE Box -->
+  <text x="410" y="608" 
+        text-anchor="middle" 
+        font-family="'Space Grotesk', 'Inter', monospace, sans-serif" 
+        font-size="16.5" 
+        font-weight="700" 
+        letter-spacing="0.12em" 
+        fill="#93C5FD">
+    Li: Live  •  R: Real  •  E: Engine
+  </text>
+
+
+  <!-- ── 5. BOTTOM TAGLINE ── -->
+  <text x="400" y="744" 
+        text-anchor="middle" 
+        font-family="'Space Grotesk', 'Inter', -apple-system, sans-serif" 
+        font-size="38" 
+        font-weight="800" 
+        letter-spacing="-0.01em" 
+        fill="#F8FAFC"
+        filter="url(#neonBlueGlow)">
+    Elevating Coding Knowledge
+  </text>
+</svg>

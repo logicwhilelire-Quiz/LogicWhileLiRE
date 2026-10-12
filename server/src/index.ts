@@ -330,6 +330,9 @@ const handleGracefulShutdown = (signal: string) => {
 
 process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => handleGracefulShutdown('SIGINT'));
+process.on('exit', (code) => {
+  console.log(`[Server] Process exit event triggered with code: ${code}`);
+});
 
 export { app, httpServer };
 export default app;

@@ -3,13 +3,20 @@ import {
   getStudentDashboard,
   getStudentMe,
   changeStudentPassword,
+  getStudentInstitutionalReport,
 } from '../controllers/authController';
 import { studentAuth } from '../middleware/auth';
 
 const router = Router();
 
 /**
- * All student routes require valid student JWT authentication
+ * GET /api/student/report/:hallTicket
+ * Return public / authenticated student institutional analysis report
+ */
+router.get('/report/:hallTicket', getStudentInstitutionalReport);
+
+/**
+ * All student routes below require valid student JWT authentication
  * and enforce a single active session per student
  */
 router.use(studentAuth);

@@ -5,6 +5,7 @@ import BrandLogo from "../components/BrandLogo";
 import AnimatedPage from "../components/AnimatedPage";
 import { getAssessmentSystemCheck, authLogout, getExamLobbyStats } from "../lib/api";
 import { SOCKET_URL } from "../lib/config";
+import HoloProctorDeskModal from "../components/HoloProctorDeskModal";
 
 
 interface CandidateProfile {
@@ -57,6 +58,7 @@ export default function WaitingLobbyPage() {
   const [startPayload, setStartPayload] = useState<ExamStartedPayload | null>(null);
   const [events, setEvents] = useState<Array<{ id: string; time: string; text: string; type: "info" | "success" | "ping" | "alert" }>>([]);
   const [countdown, setCountdown] = useState(300);
+  const [showProctorDesk, setShowProctorDesk] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -550,6 +552,31 @@ export default function WaitingLobbyPage() {
               >
                 {examStarted ? "ENTER LIVE ASSESSMENT NOW →" : "⏳ Waiting for Instructor to Dispatch EXAM_STARTED..."}
               </button>
+
+              <button
+                id="lobby-report-issue-btn"
+                type="button"
+                onClick={() => setShowProctorDesk(true)}
+                style={{
+                  width: "100%",
+                  marginTop: 10,
+                  background: "transparent",
+                  color: "#EAA812",
+                  border: "1px solid rgba(234,168,18,0.4)",
+                  padding: "10px 16px",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  fontSize: "0.82rem",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  transition: "all 0.2s ease",
+                }}
+              >
+                <span>✋ Report Issue / Contact Proctor</span>
+              </button>
             </div>
 
             {/* Assessment Timer Box */}
@@ -666,6 +693,16 @@ export default function WaitingLobbyPage() {
             Return to Assessment Entrance Gate
           </Link>
         </div>
+
+        <HoloProctorDeskModal
+          isOpen={showProctorDesk}
+          onClose={() => setShowProctorDesk(false)}
+          examCode={contestId.toUpperCase()}
+          hallTicket={candidate?.roll_number || "GUEST"}
+          candidateName={displayName}
+          commsLog={[]}
+          initialTab="raise_hand"
+        />
       </div>
     </AnimatedPage>
   );

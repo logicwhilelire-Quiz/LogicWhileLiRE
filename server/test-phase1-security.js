@@ -354,6 +354,7 @@ async function runTests() {
   console.log('\n================================================================');
   console.log(`🎉 ALL ${passed} PHASE 1 SECURITY HARDENING TESTS PASSED CLEANLY!`);
   console.log('================================================================\n');
+  process.exit(0);
 }
 
 runTests().catch((err) => {

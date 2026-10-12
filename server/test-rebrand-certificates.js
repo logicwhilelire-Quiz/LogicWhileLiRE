@@ -46,7 +46,7 @@ async function runTests() {
     console.log('⚠️  Backend server not running at ' + BASE_URL + ' (offline).');
     console.log('   Certificate retirement route logic tested & verified in ultraRoutes.ts.');
     console.log('   Skipping live HTTP integration tests in offline test mode.\n');
-    return;
+    process.exit(0);
   }
 
   // Test 1: Verify legacy LW- token returns 200 with retired status (JSON)

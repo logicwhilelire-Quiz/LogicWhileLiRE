@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="markGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD54F" />
+      <stop offset="50%" stop-color="#FFB400" />
+      <stop offset="100%" stop-color="#F59E0B" />
+    </linearGradient>
+    <linearGradient id="markOrangeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF7A00" />
+      <stop offset="100%" stop-color="#EA580C" />
+    </linearGradient>
+    <linearGradient id="markBlueGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0A1C68" />
+      <stop offset="100%" stop-color="#031738" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Base for High-Contrast Visibility -->
+  <rect width="256" height="256" rx="44" fill="#0A1224" />
+
+  <!-- Outer Yellow Circuit Traces -->
+  <path d="M 28 140 L 28 36 L 228 36 L 228 84 L 216 84" 
+        stroke="url(#markGoldGrad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="28" cy="140" r="8" fill="#FFB400" />
+
+  <!-- Right Bulb & Rays -->
+  <circle cx="216" cy="84" r="9" fill="#FFB400" />
+  <line x1="204" y1="80" x2="182" y2="72" stroke="#FFD54F" stroke-width="3.5" stroke-linecap="round" />
+  <line x1="202" y1="84" x2="180" y2="84" stroke="#FFD54F" stroke-width="3.5" stroke-linecap="round" />
+  <line x1="204" y1="88" x2="182" y2="96" stroke="#FFD54F" stroke-width="3.5" stroke-linecap="round" />
+
+  <!-- Bottom Circuit Line -->
+  <path d="M 28 220 L 228 220 L 228 126" 
+        stroke="url(#markGoldGrad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="228" cy="126" r="8" fill="#FFB400" />
+
+  <!-- Central '0' (Blue slashed) & '1' (Orange) representing Logic While(1) -->
+  <g transform="translate(10, -8)">
+    <!-- Slashed Zero '0' -->
+    <path fill-rule="evenodd" 
+          d="M 98 120 C 98 142 88 158 70 158 C 52 158 42 142 42 120 C 42 98 52 82 70 82 C 88 82 98 98 98 120 Z 
+             M 78 120 C 78 104 74 96 70 96 C 66 96 62 104 62 120 C 62 136 66 144 70 144 C 74 144 78 136 78 120 Z" 
+          fill="#38BDF8" />
+    <line x1="48" y1="148" x2="92" y2="92" stroke="#38BDF8" stroke-width="8" stroke-linecap="round" />
+
+    <!-- Digit '1' in Orange -->
+    <path d="M 120 102 L 136 86 L 146 86 L 146 142 L 160 142 L 160 158 L 118 158 L 118 142 L 130 142 L 130 104 L 120 110 Z" 
+          fill="url(#markOrangeGrad)" />
+  </g>
+
+  <!-- LiRE Mini Container Box -->
+  <rect x="52" y="162" width="152" height="42" rx="6" 
+        stroke="url(#markGoldGrad)" stroke-width="4.5" fill="rgba(56, 189, 248, 0.08)" />
+
+  <text x="128" y="189" 
+        text-anchor="middle" 
+        font-family="'Space Grotesk', -apple-system, sans-serif" 
+        font-size="20" 
+        font-weight="900" 
+        letter-spacing="0.12em" 
+        fill="#FFFFFF">
+    <tspan fill="#38BDF8">Li</tspan><tspan fill="#FF7A00">R</tspan><tspan fill="#38BDF8">E</tspan>
+  </text>
+</svg>

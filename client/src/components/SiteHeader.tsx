@@ -115,9 +115,11 @@ export default function SiteHeader() {
               LOGICWHILE LiRE
             </span>
             <span style={{ color: '#475569' }}>•</span>
-            <span style={{ color: '#CBD5E1' }}>AUTONOMOUS ASSESSMENT ENGINE</span>
+            <span style={{ color: '#F1F5F9', fontWeight: 700, letterSpacing: '0.02em' }}>
+              R. CHARAN SAI KRISHNA
+            </span>
             <span style={{ color: '#475569' }}>•</span>
-            <span style={{ color: '#38BDF8', fontWeight: 700 }}>INSTITUTIONAL GRADE</span>
+            <span style={{ color: '#38BDF8', fontWeight: 700 }}>AUTONOMOUS ASSESSMENT ENGINE</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: '11px' }}>
@@ -138,7 +140,7 @@ export default function SiteHeader() {
         style={{
           background: scrolled ? '#001A38' : '#002147',
           borderBottom: '3px solid #EAA812',
-          height: '66px',
+          height: '74px',
           padding: '0 24px',
           display: 'flex',
           alignItems: 'center',
@@ -163,7 +165,7 @@ export default function SiteHeader() {
             style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}
             aria-label="LogicWhile LiRE Home"
           >
-            <BrandLogo size="sm" variant="standard" showTagline={false} />
+            <BrandLogo size="sm" variant="standard" showTagline={true} />
           </Link>
 
           {/* Desktop Navigation Links */}

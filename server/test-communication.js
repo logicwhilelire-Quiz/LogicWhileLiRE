@@ -106,6 +106,7 @@ setTimeout(() => {
   if (processedCount === 2) {
     console.log(`✅ Asynchronous email queue processed ${processedCount} tasks without blocking execution loop.`);
     console.log('\n🌟 ALL COMMUNICATION LAYER TESTS PASSED SUCCESSFULLY! 🌟\n');
+    process.exit(0);
   } else {
     console.error('Email queue failed to process all tasks');
     process.exit(1);

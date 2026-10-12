@@ -193,7 +193,7 @@ export default function EnterExamPage() {
               }}
             >
               <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
-                <BrandLogo size="sm" variant="standard" showTagline={false} />
+                <BrandLogo size="sm" variant="standard" showTagline={true} />
               </div>
               <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 4px', letterSpacing: '0.02em' }}>
                 EXAMINATION ENTRANCE GATE

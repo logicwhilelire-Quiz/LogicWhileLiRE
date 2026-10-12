@@ -42,6 +42,7 @@ rawRows.forEach((r, idx) => {
 
 if (validCount === 5) {
   console.log('\n SUCCESS: All 5 sample questions parsed and validated according to strict schema specifications!');
+  process.exit(0);
 } else {
   console.error('\n FAILED: Some questions failed validation.');
   process.exit(1);

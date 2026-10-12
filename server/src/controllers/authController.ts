@@ -906,6 +906,73 @@ export async function changeStudentPassword(req: Request, res: Response): Promis
 }
 
 /**
+ * GET /api/student/report/:hallTicket
+ * Returns official student performance report by hall ticket number
+ */
+export async function getStudentInstitutionalReport(req: Request, res: Response): Promise<void> {
+  const hallTicket = String(req.params.hallTicket || '').trim();
+  if (!hallTicket) {
+    res.status(400).json({ success: false, error: 'Hall ticket parameter is required' });
+    return;
+  }
+
+  try {
+    const { data: student, error: sErr } = await supabase
+      .from('students')
+      .select('id, name, first_name, last_name, roll_number, hall_ticket, college_id, college_name, branch_code, section, batch, email, created_at, year_of_passing')
+      .or(`hall_ticket.ilike.${hallTicket},roll_number.ilike.${hallTicket}`)
+      .maybeSingle();
+
+    if (sErr) {
+      res.status(500).json({ success: false, error: sErr.message });
+      return;
+    }
+
+    if (!student) {
+      res.status(404).json({ success: false, error: `No student found for hall ticket ${hallTicket}` });
+      return;
+    }
+
+    // 1. Fetch exam_code_attempts
+    const { data: ecAttempts } = await supabase
+      .from('exam_code_attempts')
+      .select('id, exam_code, score, max_score, status, started_at, submitted_at, time_taken_seconds, exam_codes:exam_code(exam_code, exam_name, subject, duration_minutes)')
+      .or(`hall_ticket_no.ilike.${hallTicket},student_id.eq.${student.id}`);
+
+    // 2. Fetch participants & results
+    const { data: participants } = await supabase
+      .from('participants')
+      .select('id, exam_id, enrolled_at, exams(id, title, duration_minutes), results(id, total_score, max_score, correct_count, wrong_count, time_taken_seconds, graded_at)')
+      .or(`hall_ticket.ilike.${hallTicket},email.ilike.${student.email}`);
+
+    const completedEcAttempts = (ecAttempts || []).filter((a: any) => a.status === 'submitted' || a.status === 'completed' || Number(a.score) > 0);
+    const participantResults = (participants || []).flatMap((p: any) => p.results || []);
+
+    const hasAttempts = completedEcAttempts.length > 0 || participantResults.length > 0;
+
+    res.json({
+      success: true,
+      hasAttempts,
+      student: {
+        id: student.id,
+        name: student.name || `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Candidate',
+        rollNumber: student.hall_ticket || student.roll_number || hallTicket,
+        email: student.email,
+        collegeName: student.college_name || 'RV Institute Of Technology',
+        branch: student.branch_code || 'CSE',
+        section: student.section || 'C',
+        batch: student.batch || student.year_of_passing || '2028',
+        registeredAt: student.created_at,
+      },
+      attempts: ecAttempts || [],
+      participants: participants || [],
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to fetch student report' });
+  }
+}
+
+/**
  * POST /api/auth/forgot-password
  * Request a password reset email link (Students & Staff)
  */

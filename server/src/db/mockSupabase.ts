@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import bcrypt from 'bcrypt';
 
 if (process.env.NODE_ENV === 'production') {
   throw new Error('FATAL: mockSupabase and pre-seeded demo accounts must never be loaded in production mode.');
@@ -57,27 +58,224 @@ const store: MockTableData = {
       created_by: null,
       created_at: new Date().toISOString(),
     },
+    {
+      id: 'insp-0000-0000-0000-000000000001',
+      name: 'Chief Exam Inspector',
+      username: 'inspector',
+      email: 'inspector@logicwhilelire.com',
+      phone: '+919999999998',
+      password_hash: bcrypt.hashSync(process.env.INSPECTOR_PASSWORD || 'LiREInspector@2026!', 10),
+      role: 'inspector',
+      college_id: 1,
+      failed_attempts: 0,
+      locked_until: null,
+      reset_token_hash: null,
+      reset_token_expires: null,
+      totp_secret: null,
+      is_2fa_enabled: false,
+      totp_enabled: false,
+      must_change_password: false,
+      is_active: true,
+      permissions: ['start_exam', 'end_exam', 'view_live_telemetry', 'view_dashboard'],
+      created_by: null,
+      created_at: new Date().toISOString(),
+    },
   ],
-  students: [],
-  academic_years: [],
-  cohorts: [],
-  sections: [],
-  batches: [],
+  students: [
+    {
+      id: 's1000000-0000-0000-0000-000000000001',
+      name: 'Aarav Sharma',
+      email: 'aarav.sharma@vrsec.edu',
+      roll_number: '2201A0509',
+      hall_ticket: '2201A0509',
+      college_id: 1,
+      academic_year_id: 1,
+      cohort_id: 'coh-vrsec-2026',
+      section_id: 'sec-vrsec-csm-a',
+      batch_id: 'batch-vrsec-a1',
+      is_active: true,
+      is_verified: true,
+      must_change_password: false,
+      created_at: new Date().toISOString(),
+    },
+  ],
+  academic_years: [
+    {
+      id: 1,
+      college_id: 1,
+      year_name: '2025-2026',
+      start_date: '2025-06-01',
+      end_date: '2026-05-31',
+      is_current: true,
+      created_at: new Date().toISOString(),
+    },
+  ],
+  cohorts: [
+    {
+      id: 'coh-vrsec-2026',
+      cohort_id: 'coh-vrsec-2026',
+      name: 'Class of 2026',
+      college_id: 1,
+      academic_year_id: 1,
+      yop: 2026,
+      branch: 'CSE',
+      created_at: new Date().toISOString(),
+    },
+  ],
+  sections: [
+    {
+      id: 'sec-vrsec-csm-a',
+      section_id: 'sec-vrsec-csm-a',
+      name: 'A',
+      cohort_id: 'coh-vrsec-2026',
+      college_id: 1,
+      created_at: new Date().toISOString(),
+    },
+  ],
+  batches: [
+    {
+      id: 'batch-vrsec-a1',
+      batch_id: 'batch-vrsec-a1',
+      name: 'Batch 1',
+      section_id: 'sec-vrsec-csm-a',
+      college_id: 1,
+      created_at: new Date().toISOString(),
+    },
+  ],
   curriculum: [],
-  exams: [],
-  participants: [],
+  exams: [
+    {
+      id: 'e1000000-0000-0000-0000-000000000001',
+      title: 'Full Stack Engineering Qualifier 2026',
+      exam_code: 'DEMO123',
+      college_id: 1,
+      created_by_staff_id: 'st000000-0000-0000-0000-000000000002',
+      status: 'active',
+      duration_minutes: 60,
+      created_at: new Date().toISOString(),
+    },
+  ],
+  participants: [
+    {
+      id: 'p1000000-0000-0000-0000-000000000001',
+      exam_id: 'e1000000-0000-0000-0000-000000000001',
+      hall_ticket: '2201A0509',
+      email: 'aarav.sharma@vrsec.edu',
+      student_name: 'Aarav Sharma',
+      status: 'completed',
+      score: 45,
+      college_id: 1,
+      created_at: new Date().toISOString(),
+    },
+  ],
   exam_sessions: [],
   session_answers: [],
   questions: [],
+  exam_codes: [
+    {
+      id: 'ec-0000-0000-0000-000000000001',
+      exam_code: 'LW-VRSEC-2026',
+      title: 'LogicWhileLiRE Assessment 2026',
+      exam_name: 'LogicWhileLiRE Assessment 2026',
+      college_id: 1,
+      duration_minutes: 60,
+      is_active: true,
+      max_participants: 500,
+      status: 'active',
+      created_at: new Date().toISOString(),
+    },
+  ],
+  questions_ec: [
+    {
+      id: 'qec-1',
+      exam_code: 'LW-VRSEC-2026',
+      question_text: 'What is the time complexity of searching an element in a balanced binary search tree?',
+      option_a: 'O(log n)',
+      option_b: 'O(n)',
+      option_c: 'O(1)',
+      option_d: 'O(n log n)',
+      correct_answer: 'A',
+      marks: 2,
+      difficulty: 'Easy',
+      topic: 'DSA',
+    },
+    {
+      id: 'qec-2',
+      exam_code: 'LW-VRSEC-2026',
+      question_text: 'Which data structure uses LIFO (Last In First Out) ordering?',
+      option_a: 'Stack',
+      option_b: 'Queue',
+      option_c: 'Array',
+      option_d: 'Linked List',
+      correct_answer: 'A',
+      marks: 2,
+      difficulty: 'Easy',
+      topic: 'DSA',
+    },
+  ],
   violations: [],
   suspicious_activity: [],
   results: [],
   deliverable_failures: [],
   audit_log: [],
-  student_roster: [],
-  colleges: [],
-  exam_codes: [],
-  questions_ec: [],
+  student_roster: [
+    {
+      id: 'roster-01',
+      college_id: 1,
+      roll_number: '2201A0501',
+      name: 'Aravind Swamy',
+      section: 'A',
+      cohort_id: 'coh-vrsec-2026',
+      email: 'aravind@campus.edu',
+    },
+    {
+      id: 'roster-02',
+      college_id: 1,
+      roll_number: '2201A0502',
+      name: 'Bhavana Reddy',
+      section: 'B',
+      cohort_id: 'coh-vrsec-2026',
+      email: 'bhavana.lockout@campus.edu',
+    },
+    {
+      id: 'roster-03',
+      college_id: 1,
+      roll_number: '2201A0503',
+      name: 'Charan Sai',
+      section: 'A',
+      cohort_id: 'coh-vrsec-2026',
+      email: 'charan@campus.edu',
+    },
+    {
+      id: 'roster-04',
+      college_id: 1,
+      roll_number: '2201A0504',
+      name: 'Divya Teja',
+      section: 'B',
+      cohort_id: 'coh-vrsec-2026',
+      email: 'divya@campus.edu',
+    },
+  ],
+  colleges: [
+    {
+      id: 1,
+      college_name: 'VR Siddhartha Engineering College',
+      code: 'VRSEC',
+      college_code: 'VRSEC',
+      is_active: true,
+      registration_enabled: true,
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 2,
+      college_name: 'RVR & JC College of Engineering',
+      code: 'RVRJC',
+      college_code: 'RVRJC',
+      is_active: true,
+      registration_enabled: true,
+      created_at: new Date().toISOString(),
+    },
+  ],
   exam_code_attempts: [],
   email_queue: [],
   mail_logs: [],
@@ -349,11 +547,20 @@ class MockQueryBuilder {
             });
           }
         }
-        const record = {
+        const record: any = {
           id: item.id || uuidv4(),
           created_at: new Date().toISOString(),
           ...item,
         };
+        if (this.tableName === "audit_log" || this.tableName === "audit_logs") {
+          record.user_id = record.user_id || item.admin_id || item.payload?.user_id;
+          record.role = record.role || item.role || item.payload?.role;
+          record.college_id = record.college_id ?? item.college_id ?? item.payload?.college_id ?? null;
+          record.target = record.target || item.payload?.target || (item.target_table ? `${item.target_table}:${item.target_id}` : "system");
+          record.ip = record.ip || item.ip_address || item.payload?.ip;
+          record.user_agent = record.user_agent || item.payload?.user_agent;
+          record.timestamp = record.timestamp || item.payload?.timestamp || record.created_at;
+        }
         table.push(record);
         inserted.push(this.resolveJoins(record));
       }

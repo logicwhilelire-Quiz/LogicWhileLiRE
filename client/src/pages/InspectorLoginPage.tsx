@@ -58,7 +58,7 @@ export default function InspectorLoginPage() {
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: 18 }}>
             <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: 10 }}>
-              <BrandLogo size="sm" variant="standard" showTagline={false} />
+              <BrandLogo size="sm" variant="standard" showTagline={true} />
             </Link>
             <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#002147' }}>
               Inspector Login
@@ -199,6 +199,10 @@ export default function InspectorLoginPage() {
                 Go to Admin Login →
               </Link>
             </div>
+          </div>
+
+          <div style={{ marginTop: 18, textAlign: 'center', fontSize: '0.78rem', color: '#64748B' }}>
+            It is developed by <strong style={{ color: '#002147', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
           </div>
         </div>
       </div>

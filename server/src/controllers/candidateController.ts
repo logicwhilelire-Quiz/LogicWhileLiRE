@@ -52,6 +52,41 @@ export async function registerCandidate(req: Request, res: Response): Promise<vo
   const normalizedContact = contact_number.trim();
   const formattedMobile = `+91 ${normalizedContact}`;
 
+  // 0. Institutional Roster Validation:
+  // If student roster entries exist for this college, verify roll number is on approved roster.
+  const { data: rosterEntries } = await supabase
+    .from('student_roster')
+    .select('*')
+    .eq('college_id', normalizedCollegeId);
+
+  if (rosterEntries && rosterEntries.length > 0) {
+    let rosterMatch = rosterEntries.find(
+      (r: any) => (r.roll_number || '').trim().toUpperCase() === normalizedRoll
+    );
+
+    if (!rosterMatch) {
+      const { data: matchedPre } = await supabase
+        .from('students')
+        .select('*')
+        .eq('college_id', normalizedCollegeId)
+        .eq('roll_number', normalizedRoll)
+        .eq('is_verified', false)
+        .maybeSingle();
+      if (matchedPre) {
+        rosterMatch = matchedPre;
+      }
+    }
+
+    if (!rosterMatch) {
+      res.status(400).json({
+        success: false,
+        error: `Registration rejected: Roll number "${normalizedRoll}" is not on the approved student roster for this college. Please contact your college administrator to be added to the roster before registering.`,
+        code: 'ROSTER_ROLL_NOT_FOUND',
+      });
+      return;
+    }
+  }
+
   // 1. Check duplicate email across candidate base
   const { data: existingEmail } = await supabase
     .from('students')

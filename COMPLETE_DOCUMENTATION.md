@@ -371,18 +371,22 @@ The LogicWhileLiRE platform was benchmarked under a realistic 500-candidate conc
 
 ## 15. Strict Exam Auto-Termination & Multi-Campus Collegiate Governance
 
-### Strict Integrity Auto-Termination Protocol (`ExamCodeQuizPage.tsx`)
-In compliance with high-stakes institutional standards, the examination client enforces an immediate disqualification protocol without second-chance warnings:
-- **Trigger Conditions**:
+### Two-Strike Integrity Auto-Termination Protocol (`ExamCodeQuizPage.tsx`)
+In compliance with high-stakes institutional standards and real-world network resilience, the examination client enforces a structured two-strike escalation policy:
+- **Violation Triggers**:
   1. Window minimization or tab switching (`visibilitychange` / `document.hidden`).
   2. Terminal focus loss (`window.onblur`) triggered by clicking outside or third-party notification overlays.
   3. Fullscreen exit (`fullscreenchange` when `!document.fullscreenElement`).
-  4. Restricted keyboard actions: `Escape`, `Alt`, `Meta` (Windows key), `F11`, `F12`, `Ctrl+W`, `Ctrl+T`, `Ctrl+N`, `Ctrl+Shift+I/J/C`, `Ctrl+U`. Non-alphanumeric keystrokes outside textareas/code editors are intercepted.
-- **Immediate Disqualification Actions**:
+  4. Restricted keyboard actions: `Escape`, `Alt`, `Meta` (Windows key), `F11`, `F12`, `Ctrl+W`, `Ctrl+T`, `Ctrl+N`, `Ctrl+Shift+I/J/C`, `Ctrl+U`.
+  5. Audio decibel volume spikes or camera anomaly telemetry flags.
+- **Enforcement Escalation**:
+  - **Strike 1 (Grace Warning)**: If non-severe, the candidate receives an on-screen warning banner and audio alert tone (`Warning 1 of 2: Attention: A repeat violation will immediately auto-terminate your exam and log you out.`). Telemetry and evidence snapshot are logged to the invigilator console.
+  - **Strike 2 (Repeat) or Severe Breach**: A second infraction or an immediate severe security breach triggers irrevocable auto-termination (`handleForceTermination()`).
+- **Disqualification & Lockout Actions**:
   1. Terminal plays audio security alert tone (`soundFx.playSecurityAlertTone()`).
   2. Dispatches high-priority Realtime broadcast alert to the Proctor Live Console (`student_violation` with event `EXAM_FORCE_TERMINATED_BREACH`).
-  3. Fires navigator beacon and post request to `/api/v1/inspector/report-issue` logging the exact timestamp, candidate ID, and incident description.
-  4. Auto-submits current answers with status `'terminated_cheating'`.
+  3. Fires navigator beacon and HTTP POST to `/api/v1/inspector/report-issue` logging the exact timestamp, candidate ID, and incident description.
+  4. Auto-submits current answers with status `'terminated'`.
   5. Clears local offline IndexedDB answer queues and flushes session tokens (`student_token`, `student_user`, `sessionStorage.clear()`).
   6. Immediately mounts the persistent red **INTEGRITY VIOLATION LOCKDOWN** screen displaying candidate details, violation reason, and a single exit path back to `/enter-exam`.
 

@@ -170,6 +170,7 @@ async function runTests() {
   console.log('\n================================================================');
   console.log(`🎉 ALL ${passed} PHASE 2 DATABASE SETUP TESTS PASSED CLEANLY!`);
   console.log('================================================================\n');
+  process.exit(0);
 }
 
 runTests().catch((err) => {

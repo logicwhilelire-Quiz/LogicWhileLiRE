@@ -13,7 +13,7 @@
  *  10. Admin Hierarchy Creation (College & Section Provisioning)
  */
 
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -30,6 +30,24 @@ let clientProc = null;
 
 function wait(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function killPort(port) {
+  if (process.platform === 'win32') {
+    try {
+      const out = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
+      const lines = out.split('\n');
+      for (const line of lines) {
+        if (line.includes('LISTENING')) {
+          const parts = line.trim().split(/\s+/);
+          const pid = parts[parts.length - 1];
+          if (pid && Number(pid) > 0) {
+            execSync(`taskkill /f /pid ${pid}`, { stdio: 'ignore' });
+          }
+        }
+      }
+    } catch {}
+  }
 }
 
 function checkUrl(url) {
@@ -59,6 +77,10 @@ async function waitForHealthy(url, timeoutMs = 30000, name = 'Service') {
 }
 
 async function startServers() {
+  killPort(3001);
+  killPort(5173);
+  await wait(500);
+
   const isReal = Boolean(process.env.TEST_SUPABASE_URL && process.env.TEST_SUPABASE_SERVICE_KEY);
   console.log(`\n🚀 Starting Test Servers in ${isReal ? 'REAL SUPABASE' : 'Mock/Demo'} Mode...`);
 
@@ -108,6 +130,8 @@ async function startServers() {
 
 async function stopServers() {
   console.log('\n🧹 Cleaning up server processes...');
+  killPort(3001);
+  killPort(5173);
   if (serverProc) {
     try {
       if (process.platform === 'win32') {
@@ -163,55 +187,91 @@ async function runPlaywrightFlows() {
 
     // ─── FLOW 1: Student Registration (Roster Enforcement & Rejection) ─────
     console.log('\n--- 1. Flow: Student Registration (Roster Rejection Check) ---');
-    await page.goto('http://localhost:5173/register', { waitUntil: 'networkidle' });
-    await page.waitForSelector('#reg-name', { timeout: 10000 });
+    await page.goto('http://localhost:5173/gate', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#gate-first-name, #reg-name', { timeout: 15000 });
 
-    await page.fill('#reg-name', 'Unauthorized Candidate');
-    await page.fill('#reg-roll', 'UNAPPROVED999');
-    await page.selectOption('#reg-college', '1');
-    await page.selectOption('#reg-section', 'B');
-    await page.fill('#reg-email', 'unauthorized@example.com');
-    await page.fill('#reg-password', 'StudentPassword123!');
-    await page.fill('#reg-confirm-pw', 'StudentPassword123!');
+    const isGate = await page.$('#gate-first-name');
+    if (isGate) {
+      await page.fill('#gate-first-name', 'Unauthorized');
+      await page.fill('#gate-last-name', 'Candidate');
+      await page.fill('#gate-roll-number', 'UNAPPROVED999');
+      await page.locator('#gate-college').selectOption({ index: 0 });
+      const batchCount = await page.locator('#gate-batch option').count();
+      if (batchCount > 0) {
+        await page.locator('#gate-batch').selectOption('2028').catch(() => {});
+      }
+      const secCount = await page.locator('#gate-section option').count();
+      await page.locator('#gate-section').selectOption({ index: secCount > 1 ? 1 : 0 });
+      await page.fill('#gate-email', 'unauthorized@example.com');
+      await page.fill('#gate-contact', '9876543210');
+      await page.fill('#gate-password', 'StudentPassword123!');
+      await page.fill('#gate-confirm-password', 'StudentPassword123!');
+      await page.click('#gate-submit-btn');
+    } else {
+      await page.fill('#reg-name', 'Unauthorized Candidate');
+      await page.fill('#reg-roll', 'UNAPPROVED999');
+      await page.selectOption('#reg-college', '1');
+      await page.selectOption('#reg-section', 'B');
+      await page.fill('#reg-email', 'unauthorized@example.com');
+      await page.fill('#reg-password', 'StudentPassword123!');
+      await page.fill('#reg-confirm-pw', 'StudentPassword123!');
+      await page.click('#btn-register-submit');
+    }
+    await page.waitForTimeout(500);
 
-    await page.click('#btn-register-submit');
-    await page.waitForTimeout(1000);
-
-    const errorAlert = await page.locator('.alert-warning, .alert-error').first().textContent();
-    const rejectedOk = errorAlert && (errorAlert.includes('roster') || errorAlert.includes('approved') || errorAlert.includes('Roster'));
+    const errLocator = page.locator('#gate-server-error, .alert-warning, .alert-error').first();
+    await errLocator.waitFor({ timeout: 15000 });
+    const errorAlert = await errLocator.textContent();
+    const rejectedOk = errorAlert && (errorAlert.includes('roster') || errorAlert.includes('approved') || errorAlert.includes('Roster') || errorAlert.includes('rejected'));
     record('Student registration rejects unapproved roster roll', Boolean(rejectedOk), errorAlert?.slice(0, 60));
 
     // ─── FLOW 2: Student Registration (Valid Roster Roll & OTP) ────────────
     console.log('\n--- 2. Flow: Student Registration & OTP Verification ---');
     // Roll 2201A0501 is on the approved roster for college 1, section A
     const uniqueEmail = `student_${Date.now()}@example.com`;
-    await page.fill('#reg-name', 'Aravind Swamy');
-    await page.fill('#reg-roll', '2201A0501');
-    await page.selectOption('#reg-college', '1');
-    await page.selectOption('#reg-section', 'A');
-    await page.fill('#reg-email', uniqueEmail);
-    await page.fill('#reg-password', 'PassSecure2026!');
-    await page.fill('#reg-confirm-pw', 'PassSecure2026!');
-
-    await page.click('#btn-register-submit');
+    if (isGate) {
+      await page.fill('#gate-first-name', 'Aravind');
+      await page.fill('#gate-last-name', 'Swamy');
+      await page.fill('#gate-roll-number', '2201A0501');
+      await page.locator('#gate-college').selectOption({ index: 0 });
+      const batchCount2 = await page.locator('#gate-batch option').count();
+      if (batchCount2 > 0) {
+        await page.locator('#gate-batch').selectOption('2028').catch(() => {});
+      }
+      await page.locator('#gate-section').selectOption({ index: 0 });
+      await page.fill('#gate-email', uniqueEmail);
+      await page.fill('#gate-contact', '9876543210');
+      await page.fill('#gate-password', 'PassSecure2026!');
+      await page.fill('#gate-confirm-password', 'PassSecure2026!');
+      await page.click('#gate-submit-btn');
+    } else {
+      await page.fill('#reg-name', 'Aravind Swamy');
+      await page.fill('#reg-roll', '2201A0501');
+      await page.selectOption('#reg-college', '1');
+      await page.selectOption('#reg-section', 'A');
+      await page.fill('#reg-email', uniqueEmail);
+      await page.fill('#reg-password', 'PassSecure2026!');
+      await page.fill('#reg-confirm-pw', 'PassSecure2026!');
+      await page.click('#btn-register-submit');
+    }
     await page.waitForTimeout(1500);
 
     // Should advance to step === 'verify'
-    const otpInput = page.locator('#otp-input');
-    await otpInput.first().waitFor({ timeout: 10000 });
+    const otpInput = page.locator('#gate-otp-input, #otp-input').first();
+    await otpInput.waitFor({ timeout: 10000 });
     record('Approved roster roll advances to OTP verification step', true);
 
-    // In demo/test mode, the server returns the generated OTP displayed in <code> tag
-    const codeTag = page.locator('code').first();
-    const demoOtpVal = (await codeTag.isVisible({ timeout: 4000 }).catch(() => false))
-      ? (await codeTag.textContent()).trim()
+    const devOtpBadge = page.locator('span:has-text("Demo / Dev OTP") + span, code').first();
+    const demoOtpVal = (await devOtpBadge.isVisible({ timeout: 3000 }).catch(() => false))
+      ? (await devOtpBadge.textContent()).trim()
       : '123456';
-    await otpInput.first().fill(demoOtpVal);
-    await page.click('#btn-verify-otp');
+    await otpInput.fill(demoOtpVal);
+    const verifyBtn = page.locator('#gate-otp-submit-btn, #btn-verify-otp').first();
+    await verifyBtn.click();
     await page.waitForTimeout(2500);
 
     const curUrl = page.url();
-    const reachedDashboard = curUrl.includes('/student/dashboard') || curUrl.includes('/login');
+    const reachedDashboard = curUrl.includes('/student/dashboard') || curUrl.includes('/login') || curUrl.includes('/waiting-lobby');
     record('OTP verification activates student account', reachedDashboard, `Landed on: ${curUrl}`);
 
     // ─── FLOW 3: Student Login ─────────────────────────────────────────────
@@ -310,10 +370,12 @@ async function runPlaywrightFlows() {
     // ─── FLOW 9: Admin Authentication ─────────────────────────────────────
     console.log('\n--- 9. Flow: Admin Login ---');
     await page.goto('http://localhost:5173/admin/login', { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#admin-username', { timeout: 10000 });
+    await page.waitForSelector('#admin-username, #admin-username-input', { timeout: 10000 });
 
-    await page.fill('#admin-username', 'admin@example.com');
-    await page.fill('#admin-password', 'admin123');
+    const adminUserSel = (await page.$('#admin-username')) ? '#admin-username' : '#admin-username-input';
+    const adminPassSel = (await page.$('#admin-password')) ? '#admin-password' : '#admin-password-input';
+    await page.fill(adminUserSel, 'admin@example.com');
+    await page.fill(adminPassSel, 'admin123');
     await page.click('#admin-login-btn');
     await page.waitForTimeout(1500);
 
@@ -358,6 +420,29 @@ async function runPlaywrightFlows() {
     });
     const sectionData = await createSectionRes.json();
     record('Admin creates new Section ("Section F")', Boolean(sectionData.success), 'Room L-401');
+
+    // ─── E2E TEARDOWN & CLEANUP: Clean up temporary test entities ───
+    console.log('\n--- E2E Teardown: Cleaning up generated test entities ---');
+    try {
+      const sectionId = sectionData?.section?.id || sectionData?.id;
+      if (sectionId) {
+        await fetch(`http://localhost:3001/api/admin/sections/${sectionId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${adminToken}` },
+        });
+        console.log(`🧹 Cleaned up temporary test section: ${sectionId}`);
+      }
+      const collegeId = collegeData?.college?.id || collegeData?.id;
+      if (collegeId) {
+        await fetch(`http://localhost:3001/api/admin/colleges/${collegeId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${adminToken}` },
+        });
+        console.log(`🧹 Cleaned up temporary test college: ${collegeId}`);
+      }
+    } catch (cleanupErr) {
+      console.warn('E2E teardown warning:', cleanupErr);
+    }
 
     console.log('\n================================================================');
     const passedCount = testResults.filter((r) => r.pass).length;

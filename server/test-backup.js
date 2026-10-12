@@ -104,6 +104,20 @@ async function run() {
         is_active: true,
       });
 
+      await supabase.from('students').insert({
+        college_id: testCol.id,
+        roll_number: 'TEST-ROLL-999',
+        hall_ticket: 'TEST-HT-999',
+        name: 'Backup Test Student',
+        email: 'bck.student@tbc.edu',
+        password_hash: '$2b$12$KIXeW9Vz6vX0yGz0qY1UaeF3O7j8XnJ4m9kF2w1p8o7i6u5y4t3r2',
+        section: 'A',
+        batch: '2026',
+        branch_code: 'CSE',
+        year_of_passing: 2026,
+        contact_number: '9876543210',
+      });
+
       await supabase.from('exam_code_attempts').insert({
         exam_code: 'TEST-BCK-01',
         hall_ticket_no: 'TEST-HT-999',

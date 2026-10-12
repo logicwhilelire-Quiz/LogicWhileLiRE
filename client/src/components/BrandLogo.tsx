@@ -278,93 +278,92 @@ export default function BrandLogo({
             whiteSpace: 'nowrap',
           }}
         >
-          {/* LogicWhile Wordmark */}
-          <span style={{ color: orangeColor, textShadow: isDark ? '0 0 12px rgba(255,122,0,0.4)' : 'none' }}>L</span>
-          <span style={{ color: blueColor, fontWeight: 900 }}>ogic</span>
-          <span style={{ color: orangeColor, fontWeight: 900 }}>While</span>
+          {/* LogicWhile Wordmark in rich institutional amber */}
+          <span
+            style={{
+              color: '#EAA812',
+              fontWeight: 900,
+              textShadow: isDark ? '0 0 14px rgba(234, 168, 18, 0.5)' : 'none',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            LogicWhile
+          </span>
 
-          <span style={{ width: Math.round(dims.fontSize * 0.32) }} />
+          <span style={{ width: Math.round(dims.fontSize * 0.35) }} />
 
           {/* Elevated Boxed LiRE badge */}
           <span
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              padding: '1px 7px',
-              borderRadius: 5,
-              border: `1.5px solid ${isDark ? '#FFBE00' : '#EAB308'}`,
+              padding: '1px 8px',
+              borderRadius: 6,
+              border: `1.8px solid ${isDark ? '#EAA812' : '#D97706'}`,
               background: isDark
-                ? 'linear-gradient(135deg, rgba(255, 190, 0, 0.22) 0%, rgba(255, 122, 0, 0.15) 100%)'
-                : 'rgba(234, 179, 8, 0.14)',
-              boxShadow: isDark ? '0 0 12px rgba(255, 190, 0, 0.3)' : 'none',
+                ? 'linear-gradient(135deg, rgba(234, 168, 18, 0.22) 0%, rgba(245, 158, 11, 0.12) 100%)'
+                : 'rgba(234, 168, 18, 0.15)',
+              boxShadow: isDark ? '0 0 12px rgba(234, 168, 18, 0.35)' : 'none',
               fontSize: Math.round(dims.fontSize * 0.88),
               fontWeight: 900,
-              letterSpacing: '0.04em',
+              letterSpacing: '0.06em',
+              color: isDark ? '#FFFFFF' : '#002147',
             }}
           >
-            <span style={{ color: blueColor }}>Li</span>
-            <span style={{ color: orangeColor }}>R</span>
-            <span style={{ color: blueColor }}>E</span>
+            LiRE
           </span>
         </div>
 
-        {/* Sub-Brand or Tagline (clean single sub-row when size is small) */}
-        {size === 'sm' || size === 'xs' ? (
-          <div
-            style={{
-              fontFamily: "var(--font-display, system-ui, sans-serif)",
-              fontSize: dims.tagSize + 1,
-              fontWeight: 700,
-              color: taglineColor,
-              letterSpacing: '0.02em',
-              marginTop: 1,
-              whiteSpace: 'nowrap',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-            }}
-          >
-            <span style={{ color: '#FF7A00', fontSize: '0.65rem' }}>●</span>
-            <span>{effectiveShowTagline ? 'Elevating Coding Knowledge' : 'Li: Live • R: Real • E: Engine'}</span>
-          </div>
-        ) : (
-          <>
-            {/* Sub-Brand Definition: Li: Live • R: Real • E: Engine */}
+        {/* Sub-Brand & Tagline: Render both highlighted lines matching official brand specification */}
+        {effectiveShowTagline && (
+          <div style={{ display: 'flex', flexDirection: 'column', marginTop: 2, gap: 1 }}>
+            {/* Sub-Brand Definition: • Li: Live • R: Real • E: Engine */}
             <div
               style={{
-                fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
-                fontSize: dims.subSize,
+                fontFamily: "var(--font-mono, 'JetBrains Mono', 'Fira Code', monospace)",
+                fontSize: size === 'xs' ? 8 : size === 'sm' ? 10 : dims.subSize,
                 fontWeight: 700,
-                color: subtextColor,
-                letterSpacing: '0.05em',
-                marginTop: 2,
+                color: '#38BDF8',
+                letterSpacing: '0.04em',
                 whiteSpace: 'nowrap',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 5,
+                textShadow: isDark ? '0 0 8px rgba(56, 189, 248, 0.5)' : 'none',
               }}
             >
-              <span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: '50%', background: '#38BDF8', boxShadow: '0 0 6px #38BDF8' }} />
-              <span>Li: Live • R: Real • E: Engine</span>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: size === 'sm' ? 5 : 6,
+                  height: size === 'sm' ? 5 : 6,
+                  borderRadius: '50%',
+                  background: '#38BDF8',
+                  boxShadow: '0 0 8px #38BDF8',
+                }}
+              />
+              <span style={{ color: '#38BDF8', fontWeight: 800 }}>Li: Live</span>
+              <span style={{ color: '#94A3B8' }}>•</span>
+              <span style={{ color: '#38BDF8', fontWeight: 800 }}>R: Real</span>
+              <span style={{ color: '#94A3B8' }}>•</span>
+              <span style={{ color: '#38BDF8', fontWeight: 800 }}>E: Engine</span>
             </div>
 
             {/* Tagline: Elevating Coding Knowledge */}
-            {effectiveShowTagline && (
-              <div
-                style={{
-                  fontFamily: "var(--font-display, system-ui, sans-serif)",
-                  fontSize: dims.tagSize,
-                  fontWeight: 700,
-                  color: taglineColor,
-                  letterSpacing: '0.01em',
-                  marginTop: 1,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Elevating Coding Knowledge
-              </div>
-            )}
-          </>
+            <div
+              style={{
+                fontFamily: "var(--font-display, 'Plus Jakarta Sans', system-ui, sans-serif)",
+                fontSize: size === 'xs' ? 7.5 : size === 'sm' ? 9.5 : dims.tagSize,
+                fontWeight: 800,
+                color: isDark ? '#FFFFFF' : '#002147',
+                letterSpacing: '0.02em',
+                whiteSpace: 'nowrap',
+                textShadow: isDark ? '0 1px 4px rgba(0,0,0,0.7)' : 'none',
+              }}
+            >
+              Elevating Coding Knowledge
+            </div>
+          </div>
         )}
       </div>
     </div>

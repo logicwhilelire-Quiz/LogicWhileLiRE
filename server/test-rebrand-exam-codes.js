@@ -39,3 +39,4 @@ console.log('  ✅ Malformed inputs rejected as expected.\n');
 console.log('================================================================');
 console.log('🎉 ALL EXAM CODE DUAL-PREFIX TESTS PASSED! (GR- & LW- ACTIVE)');
 console.log('================================================================');
+process.exit(0);

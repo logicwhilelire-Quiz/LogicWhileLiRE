@@ -20,6 +20,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret_key_32chars_
 const { supabase } = require('./dist/db/supabase');
 const { adminAuth, requireRole, requireFacultyPermission } = require('./dist/middleware/adminAuth');
 const { studentAuth } = require('./dist/middleware/auth');
+const { listStudents } = require('./dist/controllers/hierarchyController');
 
 function createMockReqRes({ role = 'super_admin', staff_id = 'st000000-0000-0000-0000-000000000001', permissions = [], college_id = 1, headers = {}, body = {}, query = {}, params = {} } = {}) {
   const token = jwt.sign(
@@ -96,8 +97,8 @@ async function runPhase1Tests() {
     const res = { statusCode: 200, status(c) { this.statusCode = c; return this; }, json(d) { this.jsonData = d; return this; } };
     let nextCalled = false;
     await adminAuth(req, res, () => { nextCalled = true; });
-    assert.strictEqual(nextCalled, false);
-    assert.strictEqual(res.statusCode, 401);
+    assert.strictEqual(res.statusCode, 403);
+    assert.strictEqual(res.jsonData?.code, 'STUDENT_TOKEN_REJECTED');
   });
 
   await test('requireRole blocks faculty from super_admin only routes', async () => {
@@ -385,6 +386,74 @@ async function runPhase1Tests() {
 
     // Clean up
     await supabase.from('staff').delete().eq('id', 'st-fac-matrix-test');
+  });
+
+  await test('Faculty with empty section_ids sees exactly 0 students (zero-trust scoping)', async () => {
+    // 1. Create a faculty member with empty section_ids
+    await supabase.from('staff').insert({
+      id: 'st-fac-empty-sec-test',
+      name: 'Unallocated Faculty',
+      email: 'unallocated@test.com',
+      role: 'faculty',
+      college_id: 1,
+      section_ids: [],
+      permissions: ['view_results'],
+    });
+
+    const { req, res } = createMockReqRes({
+      role: 'faculty',
+      staff_id: 'st-fac-empty-sec-test',
+      college_id: 1,
+    });
+    req.admin = { role: 'faculty', staff_id: 'st-fac-empty-sec-test', college_id: 1 };
+
+    await listStudents(req, res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.jsonData.success, true);
+    assert.strictEqual(res.jsonData.count, 0);
+    assert.deepStrictEqual(res.jsonData.students, []);
+
+    // Clean up
+    await supabase.from('staff').delete().eq('id', 'st-fac-empty-sec-test');
+  });
+
+  await test('Faculty with allocated section_ids strictly sees only students in those sections', async () => {
+    const secA = 'sec-alloc-a';
+    const secB = 'sec-alloc-b';
+
+    // 1. Seed two test students in different sections
+    await supabase.from('students').insert([
+      { id: 'stu-sec-a', name: 'Student in Sec A', email: 'stu.a@test.com', college_id: 1, section_id: secA },
+      { id: 'stu-sec-b', name: 'Student in Sec B', email: 'stu.b@test.com', college_id: 1, section_id: secB },
+    ]);
+
+    // 2. Create faculty allocated ONLY to secA
+    await supabase.from('staff').insert({
+      id: 'st-fac-sec-a-test',
+      name: 'Section A Faculty',
+      email: 'sec_a_fac@test.com',
+      role: 'faculty',
+      college_id: 1,
+      section_ids: [secA],
+      permissions: ['view_results'],
+    });
+
+    const { req, res } = createMockReqRes({
+      role: 'faculty',
+      staff_id: 'st-fac-sec-a-test',
+      college_id: 1,
+    });
+    req.admin = { role: 'faculty', staff_id: 'st-fac-sec-a-test', college_id: 1 };
+
+    await listStudents(req, res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.jsonData.success, true);
+    assert.ok(res.jsonData.students.every((s) => s.section_id === secA));
+    assert.ok(!res.jsonData.students.some((s) => s.section_id === secB));
+
+    // Clean up
+    await supabase.from('students').delete().in('id', ['stu-sec-a', 'stu-sec-b']);
+    await supabase.from('staff').delete().eq('id', 'st-fac-sec-a-test');
   });
 
   // ─────────────────────────────────────────────

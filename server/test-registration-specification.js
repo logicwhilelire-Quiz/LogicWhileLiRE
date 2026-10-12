@@ -234,6 +234,7 @@ async function runGateSpecificationTests() {
   console.log('\n================================================================');
   console.log('🎉 ALL 10 GATE MODULE SPECIFICATION TESTS PASSED SUCCESSFULLY! (AL-SPEC-2026-REG)');
   console.log('================================================================');
+  process.exit(0);
 }
 
 runGateSpecificationTests().catch(async (err) => {

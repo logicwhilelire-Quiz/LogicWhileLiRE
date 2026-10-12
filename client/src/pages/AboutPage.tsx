@@ -33,7 +33,7 @@ export default function AboutPage() {
                 marginBottom: 16,
               }}
             >
-              Logic. While. LiRE.
+              Elevating Coding Knowledge
             </div>
 
             <h1
@@ -150,7 +150,7 @@ export default function AboutPage() {
             </div>
           </motion.div>
 
-          {/* Core Philosophy Section */}
+          {/* Core Philosophy Section: Official LogicWhile LiRE Triad */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20, marginBottom: 48 }}>
             <div
               style={{
@@ -159,50 +159,53 @@ export default function AboutPage() {
                 borderRadius: 'var(--radius-md, 12px)',
                 padding: '24px',
                 boxShadow: 'var(--shadow-sm)',
-              }}
-            >
-              <div style={{ fontSize: '1.8rem', marginBottom: 12 }}>📖</div>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 700, marginBottom: 8, color: 'var(--color-primary-dark)' }}>
-                1. Learn
-              </h3>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.92rem', lineHeight: 1.6, margin: 0 }}>
-                Rigorous foundational knowledge. Detailed syllabus mapping across algorithms, systems, mathematics, and distributed engineering.
-              </p>
-            </div>
-
-            <div
-              style={{
-                background: 'var(--color-surface, #FFFFFF)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md, 12px)',
-                padding: '24px',
-                boxShadow: 'var(--shadow-sm)',
-              }}
-            >
-              <div style={{ fontSize: '1.8rem', marginBottom: 12 }}>📈</div>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 700, marginBottom: 8, color: 'var(--color-primary)' }}>
-                2. Grow
-              </h3>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.92rem', lineHeight: 1.6, margin: 0 }}>
-                Continuous candidate progression. Difficulty tracking, topic accuracy index, and transparent performance telemetry over time.
-              </p>
-            </div>
-
-            <div
-              style={{
-                background: 'var(--color-surface, #FFFFFF)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md, 12px)',
-                padding: '24px',
-                boxShadow: 'var(--shadow-sm)',
+                borderTop: '4px solid #38BDF8',
               }}
             >
               <div style={{ fontSize: '1.8rem', marginBottom: 12 }}>⚡</div>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 700, marginBottom: 8, color: 'var(--color-accent)' }}>
-                3. Run
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8, color: '#0284C7' }}>
+                1. Li — Live Execution
               </h3>
               <p style={{ color: 'var(--color-text-muted)', fontSize: '0.92rem', lineHeight: 1.6, margin: 0 }}>
-                High-velocity code execution and timed performance. Real-time competitive leaderboard sprints with zero server drift.
+                Server-authoritative millisecond timers, instantaneous multi-modal proctoring, and synchronized live examination runs with absolute chronological fairness.
+              </p>
+            </div>
+
+            <div
+              style={{
+                background: 'var(--color-surface, #FFFFFF)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md, 12px)',
+                padding: '24px',
+                boxShadow: 'var(--shadow-sm)',
+                borderTop: '4px solid #EAA812',
+              }}
+            >
+              <div style={{ fontSize: '1.8rem', marginBottom: 12 }}>🛡️</div>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8, color: '#B45309' }}>
+                2. R — Real-Time Rank Engine
+              </h3>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.92rem', lineHeight: 1.6, margin: 0 }}>
+                Dynamic merit leaderboards, tamper-proof forensic audit verification, single-seat cryptographic session locks, and automated candidate ranking.
+              </p>
+            </div>
+
+            <div
+              style={{
+                background: 'var(--color-surface, #FFFFFF)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md, 12px)',
+                padding: '24px',
+                boxShadow: 'var(--shadow-sm)',
+                borderTop: '4px solid #10B981',
+              }}
+            >
+              <div style={{ fontSize: '1.8rem', marginBottom: 12 }}>🪐</div>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8, color: '#059669' }}>
+                3. E — Assessment Engine
+              </h3>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.92rem', lineHeight: 1.6, margin: 0 }}>
+                Multi-dimensional evaluation across all 5 technical sectors: Quantitative Velocity, Deductive Logic, Core CS Systems, DSA Algorithms, and Cloud Architecture.
               </p>
             </div>
           </div>
