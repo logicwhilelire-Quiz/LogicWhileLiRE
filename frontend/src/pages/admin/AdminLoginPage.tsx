@@ -69,48 +69,54 @@ export default function AdminLoginPage() {
       <div style={{ minHeight: '85vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }}>
         <div style={{ width: '100%', maxWidth: 350 }}>
           {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: 18 }}>
-            <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: 10 }}>
+          <div style={{ textAlign: 'center', marginBottom: 20 }}>
+            <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: 12 }}>
               <BrandLogo size="sm" variant="standard" showTagline={true} />
             </Link>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#002147' }}>
-              Admin Login
+            <h1 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: '#F8FAFC', letterSpacing: '-0.02em' }}>
+              Admin Control Center
             </h1>
-            <p style={{ color: '#64748B', fontSize: '0.8rem', margin: '4px 0 0' }}>
-              Institutional control &amp; exam management
+            <p style={{ color: '#94A3B8', fontSize: '0.82rem', margin: '4px 0 0' }}>
+              Institutional control &amp; master exam management
             </p>
           </div>
 
-          {/* Minimal Card */}
+          {/* Cyber-Glass Card */}
           <div
             style={{
-              background: '#FFFFFF',
-              border: '2px solid #EAA812',
-              borderRadius: 12,
-              padding: '24px 20px',
-              boxShadow: '0 8px 24px rgba(234, 168, 18, 0.12)',
+              background: 'rgba(14, 22, 44, 0.88)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1.5px solid rgba(245, 158, 11, 0.35)',
+              borderRadius: 16,
+              padding: '28px 24px',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), 0 0 35px rgba(245, 158, 11, 0.15)',
             }}
           >
             {error && (
               <div
                 style={{
-                  background: '#FEF2F2',
-                  border: '1px solid #FECACA',
-                  color: '#991B1B',
-                  borderRadius: 6,
-                  padding: '8px 12px',
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  color: '#FCA5A5',
+                  borderRadius: 8,
+                  padding: '10px 14px',
                   fontSize: '0.82rem',
-                  marginBottom: 14,
+                  marginBottom: 16,
                   fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
                 }}
               >
-                {error}
+                <span>⚠️</span>
+                <span>{error}</span>
               </div>
             )}
 
             <form onSubmit={handleSubmit}>
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#002147', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 5 }}>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#FBBF24', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
                   Username / Email
                 </label>
                 <input
@@ -124,20 +130,29 @@ export default function AdminLoginPage() {
                   autoFocus
                   style={{
                     width: '100%',
-                    padding: '9px 12px',
-                    fontSize: '0.88rem',
-                    borderRadius: 6,
-                    border: '1.5px solid #CBD5E1',
-                    background: '#F8FAFC',
-                    color: '#0F172A',
+                    padding: '11px 14px',
+                    fontSize: '0.9rem',
+                    borderRadius: 8,
+                    border: '1.5px solid rgba(245, 158, 11, 0.25)',
+                    background: 'rgba(9, 14, 31, 0.75)',
+                    color: '#F8FAFC',
                     outline: 'none',
                     boxSizing: 'border-box',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#FBBF24';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.25)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'rgba(245, 158, 11, 0.25)';
+                    e.target.style.boxShadow = 'none';
                   }}
                 />
               </div>
 
-              <div style={{ marginBottom: requireTotp ? 14 : 18 }}>
-                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#002147', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 5 }}>
+              <div style={{ marginBottom: requireTotp ? 14 : 20 }}>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#FBBF24', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
                   Password
                 </label>
                 <div style={{ position: 'relative' }}>
@@ -151,14 +166,23 @@ export default function AdminLoginPage() {
                     autoComplete="current-password"
                     style={{
                       width: '100%',
-                      padding: '9px 36px 9px 12px',
-                      fontSize: '0.88rem',
-                      borderRadius: 6,
-                      border: '1.5px solid #CBD5E1',
-                      background: '#F8FAFC',
-                      color: '#0F172A',
+                      padding: '11px 40px 11px 14px',
+                      fontSize: '0.9rem',
+                      borderRadius: 8,
+                      border: '1.5px solid rgba(245, 158, 11, 0.25)',
+                      background: 'rgba(9, 14, 31, 0.75)',
+                      color: '#F8FAFC',
                       outline: 'none',
                       boxSizing: 'border-box',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#FBBF24';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.25)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(245, 158, 11, 0.25)';
+                      e.target.style.boxShadow = 'none';
                     }}
                   />
                   <button
@@ -167,14 +191,14 @@ export default function AdminLoginPage() {
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                     style={{
                       position: 'absolute',
-                      right: 8,
+                      right: 10,
                       top: '50%',
                       transform: 'translateY(-50%)',
                       background: 'none',
                       border: 'none',
-                      color: '#64748B',
+                      color: '#94A3B8',
                       cursor: 'pointer',
-                      fontSize: '0.9rem',
+                      fontSize: '1rem',
                       padding: 4,
                     }}
                   >
@@ -184,8 +208,8 @@ export default function AdminLoginPage() {
               </div>
 
               {requireTotp && (
-                <div style={{ marginBottom: 18 }}>
-                  <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#B45309', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 5 }}>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#FBBF24', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
                     Authenticator 2FA Code
                   </label>
                   <input
@@ -198,14 +222,14 @@ export default function AdminLoginPage() {
                     onChange={(e) => setForm({ ...form, totp_code: e.target.value })}
                     style={{
                       width: '100%',
-                      padding: '9px 12px',
-                      fontSize: '0.92rem',
+                      padding: '11px 14px',
+                      fontSize: '1rem',
                       fontFamily: 'monospace',
-                      letterSpacing: '0.2em',
-                      borderRadius: 6,
+                      letterSpacing: '0.25em',
+                      borderRadius: 8,
                       border: '1.5px solid #F59E0B',
-                      background: '#FFFBEB',
-                      color: '#0F172A',
+                      background: 'rgba(245, 158, 11, 0.1)',
+                      color: '#FBBF24',
                       outline: 'none',
                       boxSizing: 'border-box',
                       textAlign: 'center',
@@ -220,16 +244,17 @@ export default function AdminLoginPage() {
                 disabled={loading}
                 style={{
                   width: '100%',
-                  padding: '10px',
-                  borderRadius: 6,
+                  padding: '12px',
+                  borderRadius: 8,
                   border: 'none',
-                  background: '#EAA812',
-                  color: '#002147',
+                  background: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)',
+                  color: '#090E1F',
                   fontWeight: 800,
-                  fontSize: '0.9rem',
+                  fontSize: '0.92rem',
+                  letterSpacing: '0.02em',
                   cursor: loading ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 2px 8px rgba(234, 168, 18, 0.3)',
-                  transition: 'opacity 0.15s ease',
+                  boxShadow: '0 4px 20px rgba(245, 158, 11, 0.35)',
+                  transition: 'all 0.2s ease',
                   opacity: loading ? 0.7 : 1,
                 }}
               >
@@ -237,16 +262,16 @@ export default function AdminLoginPage() {
               </button>
             </form>
 
-            <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #E2E8F0', textAlign: 'center', fontSize: '0.78rem', color: '#64748B' }}>
+            <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center', fontSize: '0.78rem', color: '#94A3B8' }}>
               Invigilator?{' '}
-              <Link to="/inspector" style={{ color: '#002147', fontWeight: 700, textDecoration: 'none' }}>
+              <Link to="/inspector" style={{ color: '#00D2FF', fontWeight: 800, textDecoration: 'none' }}>
                 Go to Inspector Login →
               </Link>
             </div>
           </div>
 
-          <div style={{ marginTop: 18, textAlign: 'center', fontSize: '0.78rem', color: '#64748B' }}>
-            It is developed by <strong style={{ color: '#002147', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
+          <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.78rem', color: '#64748B' }}>
+            LogicWhile LiRE • Created by <strong style={{ color: '#FBBF24', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
           </div>
         </div>
       </div>

@@ -125,49 +125,49 @@
 /* ─── DARK THEME TOKENS ─── */
 [data-theme="dark"],
 .theme-dark {
-  --bg:                #050814;
-  --bg-elevated:       #090d1a;
-  --bg-card:           #090d1a;
-  --bg-card-hover:     #0f1629;
-  --panel:             #090d1a;
-  --panel-border:      rgba(255, 255, 255, 0.08);
-  --panel-border-glow: rgba(255, 194, 0, 0.35);
+  --bg:                #090e1f;
+  --bg-elevated:       #0f172e;
+  --bg-card:           #0e162c;
+  --bg-card-hover:     #15203d;
+  --panel:             #0e162c;
+  --panel-border:      rgba(0, 180, 216, 0.18);
+  --panel-border-glow: rgba(0, 210, 255, 0.35);
 
   --text-pure:         #ffffff;
   --text-primary:      #f8fafc;
   --text-secondary:    #94a3b8;
   --text-muted:        #64748b;
 
-  --color-bg:          #050814;
-  --color-bg-subtle:   #090d1a;
-  --color-surface:     #090d1a;
-  --color-surface-2:   #0f172a;
-  --color-surface-3:   #131f37;
-  --color-border:      rgba(255, 255, 255, 0.08);
-  --color-border-hover:rgba(255, 255, 255, 0.16);
-  --color-border-glow: rgba(255, 194, 0, 0.25);
+  --color-bg:          #090e1f;
+  --color-bg-subtle:   #0d152b;
+  --color-surface:     #0e162c;
+  --color-surface-2:   #131d38;
+  --color-surface-3:   #1a2748;
+  --color-border:      rgba(255, 255, 255, 0.10);
+  --color-border-hover:rgba(0, 210, 255, 0.28);
+  --color-border-glow: rgba(0, 210, 255, 0.30);
 
   --color-primary:            #00d2ff;
   --color-primary-dark:       #0284c7;
   --color-primary-light:      rgba(0, 210, 255, 0.15);
   --color-primary-hover:      #38bdf8;
-  --color-primary-glow:       rgba(0, 210, 255, 0.25);
-  --color-primary-glow-strong:rgba(0, 210, 255, 0.45);
+  --color-primary-glow:       rgba(0, 210, 255, 0.30);
+  --color-primary-glow-strong:rgba(0, 210, 255, 0.50);
 
   --color-secondary:      #f97316;
   --color-secondary-dark: #ea580c;
   --color-accent:         #FFC200;
 
-  --color-text:        #ffffff;
+  --color-text:        #f8fafc;
   --color-text-muted:  #94a3b8;
   --color-text-faint:  #64748b;
 
-  --glass-bg:          rgba(9, 13, 26, 0.85);
-  --glass-border:      rgba(255, 255, 255, 0.08);
-  --shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.5);
-  --shadow-md:         0 4px 14px rgba(0, 0, 0, 0.6);
-  --shadow-lg:         0 12px 30px rgba(0, 0, 0, 0.7);
-  --shadow-glass:      0 8px 32px rgba(0, 0, 0, 0.6);
+  --glass-bg:          rgba(14, 22, 44, 0.88);
+  --glass-border:      rgba(0, 180, 216, 0.18);
+  --shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md:         0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-lg:         0 12px 30px rgba(0, 0, 0, 0.6);
+  --shadow-glass:      0 8px 32px rgba(0, 0, 0, 0.55);
 }
 
 @keyframes skeletonWave {
@@ -184,10 +184,11 @@ body {
   font-family: var(--font-body);
   background-color: var(--color-bg);
   background-image: 
-    radial-gradient(circle at 15% 15%, rgba(0, 210, 255, 0.04) 0%, transparent 45%),
-    radial-gradient(circle at 85% 20%, rgba(255, 194, 0, 0.03) 0%, transparent 45%),
-    radial-gradient(circle at 50% 55%, rgba(2, 132, 199, 0.02) 0%, transparent 55%),
-    radial-gradient(circle at 20% 85%, rgba(255, 194, 0, 0.03) 0%, transparent 40%);
+    radial-gradient(circle at 18% 15%, rgba(0, 210, 255, 0.10) 0%, transparent 45%),
+    radial-gradient(circle at 82% 18%, rgba(245, 158, 11, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(29, 78, 216, 0.09) 0%, transparent 60%),
+    radial-gradient(circle at 25% 85%, rgba(2, 132, 199, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 75% 85%, rgba(234, 88, 12, 0.06) 0%, transparent 45%);
   color: var(--color-text);
   line-height: 1.6;
   min-height: 100vh;
@@ -201,10 +202,10 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: radial-gradient(rgba(100, 116, 139, 0.10) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(0, 210, 255, 0.14) 1px, transparent 1px);
   background-size: 28px 28px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 20%, #000 40%, transparent 95%);
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 20%, #000 40%, transparent 95%);
+  mask-image: radial-gradient(ellipse 75% 65% at 50% 25%, #000 40%, transparent 95%);
+  -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 25%, #000 40%, transparent 95%);
   pointer-events: none;
   z-index: 0;
 }

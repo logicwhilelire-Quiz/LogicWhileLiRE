@@ -4,6 +4,17 @@ import './index.css'
 import App from './App.tsx'
 import { runStartupMigration } from './lib/storageMigration'
 
+// Auto-recover from stale Vite dynamic imports after new deployments
+window.addEventListener('vite:preloadError', (event) => {
+  console.warn('[Vite Preload Error] Module chunk missing after deployment, reloading...', event);
+  const lastReload = sessionStorage.getItem('vite_preload_reload');
+  const now = Date.now();
+  if (!lastReload || now - Number(lastReload) > 8000) {
+    sessionStorage.setItem('vite_preload_reload', String(now));
+    window.location.reload();
+  }
+});
+
 // Run backward-compatible storage migration (Phase R)
 runStartupMigration()
 
