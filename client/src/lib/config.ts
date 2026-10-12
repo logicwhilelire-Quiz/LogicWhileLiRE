@@ -34,6 +34,7 @@ import axios from 'axios';
 
 // Ensure all client axios requests support cross-origin credentials (HttpOnly cookies)
 axios.defaults.withCredentials = true;
+axios.defaults.timeout = 15000;
 
 // Request interceptor to automatically attach admin and session tokens from storage if present
 axios.interceptors.request.use((reqConfig) => {

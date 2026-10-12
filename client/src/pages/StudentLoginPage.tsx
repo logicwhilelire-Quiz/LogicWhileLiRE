@@ -85,8 +85,12 @@ export default function StudentLoginPage() {
       }
       navigate(redirectTarget);
     } catch (err: any) {
-      const resp = err?.response?.data;
-      setError(resp?.error || 'Invalid hall ticket number or password.');
+      if (err?.code === 'ECONNABORTED' || err?.message?.includes('timeout') || err?.message?.includes('Network Error')) {
+        setError('Server is warming up or temporarily unreachable. Please retry in a few moments.');
+      } else {
+        const resp = err?.response?.data;
+        setError(resp?.error || 'Invalid hall ticket number or password.');
+      }
     } finally {
       setLoading(false);
     }

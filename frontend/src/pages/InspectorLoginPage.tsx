@@ -45,7 +45,11 @@ export default function InspectorLoginPage() {
 
       navigate('/admin/inspector');
     } catch (err: any) {
-      setError(err?.response?.data?.error || 'Invalid inspector credentials.');
+      if (err?.code === 'ECONNABORTED' || err?.message?.includes('timeout') || err?.message?.includes('Network Error')) {
+        setError('Server is warming up or temporarily unreachable. Please retry in a few moments.');
+      } else {
+        setError(err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Invalid inspector credentials.');
+      }
     } finally {
       setLoading(false);
     }
