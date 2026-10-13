@@ -1482,7 +1482,11 @@ export default function QuizPage() {
     if (!currentQuestion) return
     setFlagged(prev => {
       const next = new Set(prev)
-      next.has(currentQuestion.id) ? next.delete(currentQuestion.id) : next.add(currentQuestion.id)
+      if (next.has(currentQuestion.id)) {
+        next.delete(currentQuestion.id)
+      } else {
+        next.add(currentQuestion.id)
+      }
       return next
     })
   }

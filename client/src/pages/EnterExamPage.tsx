@@ -27,9 +27,6 @@ export default function EnterExamPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [shaking, setShaking] = useState(false)
-  const [focusedField, setFocusedField] = useState<string | null>(null)
-  const [typingField, setTypingField] = useState<string | null>(null)
-  const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => {
     try {
@@ -52,9 +49,6 @@ export default function EnterExamPage() {
   const handleChange = (field: keyof FormState, value: string) => {
     setForm(prev => ({ ...prev, [field]: field === 'examCode' ? value.toUpperCase() : value }))
     setError('')
-    setTypingField(field)
-    clearTimeout(typingTimer.current)
-    typingTimer.current = setTimeout(() => setTypingField(null), 1000)
   }
 
   const triggerShake = () => {
