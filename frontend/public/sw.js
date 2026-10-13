@@ -74,7 +74,7 @@ if (isDev) {
             }
             return res;
           })
-          .catch(() => (caches.match('/index.html') as Promise<Response>))
+          .catch(() => caches.match('/index.html'))
       );
       return;
     }
@@ -90,7 +90,7 @@ if (isDev) {
             }
             return res;
           })
-          .catch(() => (caches.match(request) as Promise<Response>))
+          .catch(() => caches.match(request))
       );
       return;
     }
@@ -118,7 +118,7 @@ if (isDev) {
               headers: { 'Content-Type': 'text/plain' },
             });
           }
-          return (caches.match('/index.html') as Promise<Response>);
+          return caches.match('/index.html');
         })
     );
   });

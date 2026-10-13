@@ -75,7 +75,6 @@ export default function CandidateRegisterGatePage() {
   const [wsStatus, setWsStatus] = useState<'READY' | 'CHECKING'>('READY');
   const [otpStep, setOtpStep] = useState(false);
   const [otpCode, setOtpCode] = useState('');
-  const [devOtp, setDevOtp] = useState('');
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [registeredRoll, setRegisteredRoll] = useState('');
   const [verifyingOtp, setVerifyingOtp] = useState(false);
@@ -295,10 +294,6 @@ export default function CandidateRegisterGatePage() {
           const rollTarget = (res.data.roll_number || form.roll_number).toUpperCase().trim();
           setRegisteredEmail(emailTarget);
           setRegisteredRoll(rollTarget);
-          if (res.data.demo_otp) {
-            setDevOtp(res.data.demo_otp);
-            setOtpCode(res.data.demo_otp);
-          }
           return;
         }
 
@@ -510,30 +505,7 @@ export default function CandidateRegisterGatePage() {
                 Enter the code below to verify your account and continue.
               </p>
 
-              {devOtp && (
-                <div
-                  onClick={() => setOtpCode(devOtp)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    background: '#FEF3C7',
-                    border: '1px solid #F59E0B',
-                    color: '#92400E',
-                    padding: '6px 14px',
-                    borderRadius: 8,
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    marginBottom: 20,
-                    cursor: 'pointer',
-                  }}
-                  title="Click to auto-fill"
-                >
-                  <span>⚡ Demo / Dev OTP:</span>
-                  <span style={{ fontFamily: 'monospace', letterSpacing: '0.1em' }}>{devOtp}</span>
-                  <span style={{ fontSize: '0.72rem', textDecoration: 'underline' }}>(Click to fill)</span>
-                </div>
-              )}
+
 
               {otpSuccessMsg && (
                 <div

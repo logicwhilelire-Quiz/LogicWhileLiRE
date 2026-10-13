@@ -132,7 +132,6 @@ export default function ResultECPage() {
     null
 
   const [result, setResult] = useState<ResultData | null>(incomingResult)
-  const isDemoFallback = !result
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(!result)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
@@ -153,16 +152,7 @@ export default function ResultECPage() {
       axios.get(`${BASE}/api/exam-code/${examCode}/leaderboard`)
         .then(r => {
           const list = r.data.leaderboard || r.data.data || r.data || [];
-          if (list.length < 3) {
-            setLeaderboard([
-              ...list,
-              { rank: list.length + 1, hall_ticket: '2201A0501', name: 'Aarav Sharma', score: 32, department: 'Computer Science' },
-              { rank: list.length + 2, hall_ticket: '2201A0512', name: 'Diya Patel', score: 30, department: 'Electronics' },
-              { rank: list.length + 3, hall_ticket: '2201A0524', name: 'Rohan Varma', score: 28, department: 'Information Tech' },
-            ]);
-          } else {
-            setLeaderboard(list);
-          }
+          setLeaderboard(list);
         })
         .catch(() => {
           axios.get(`${BASE}/api/leaderboard/${examCode}`)
@@ -181,23 +171,16 @@ export default function ResultECPage() {
   }
 
   const activeResult = result || {
-    score: 82,
-    totalMarks: 100,
-    percentage: 82,
-    rank: 3,
-    totalCandidates: 148,
-    timeTaken: 1420,
-    correctAnswers: 12,
-    wrongAnswers: 2,
-    unanswered: 1,
-    topicBreakdown: {
-      'Quantitative Aptitude': 86,
-      'Logical Reasoning': 92,
-      'Core Computer Science': 78,
-      'Data Structures & Algorithms': 84,
-      'Full-Stack & Systems': 88,
-    },
-    qrToken: 'LWL-VRSEC-2026-HT2026001',
+    score: 0,
+    totalMarks: 0,
+    percentage: 0,
+    rank: 0,
+    totalCandidates: 0,
+    timeTaken: 0,
+    correctAnswers: 0,
+    wrongAnswers: 0,
+    unanswered: 0,
+    topicBreakdown: {},
   }
 
   const pct = activeResult.percentage ?? 0
@@ -276,6 +259,56 @@ export default function ResultECPage() {
     </div>
   )
 
+  if (!result) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
+        <SiteHeader />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '120px 24px 60px' }}>
+          <div
+            style={{
+              maxWidth: 520,
+              width: '100%',
+              background: '#0F172A',
+              border: '1.5px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: 16,
+              padding: '40px 32px',
+              textAlign: 'center',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)',
+            }}
+          >
+            <div style={{ fontSize: '3rem', marginBottom: 16 }}>📋</div>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#F8FAFC', marginBottom: 8 }}>
+              No Assessment Record Found
+            </h2>
+            <p style={{ color: '#94A3B8', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: 24 }}>
+              {examCode
+                ? `No completed examination attempt was located for examination code "${examCode}"${hallTicket ? ` and hall ticket "${hallTicket}"` : ''}.`
+                : 'No examination identifier was provided.'}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {examCode && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/leaderboard/${examCode}`)}
+                  className="btn btn-secondary btn-full"
+                >
+                  View Examination Leaderboard
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="btn btn-primary btn-full"
+              >
+                Go to Candidate Portal
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const TOPICS = activeResult.topicBreakdown || {
     'Quantitative Aptitude': 86,
     'Logical Reasoning': 92,
@@ -328,43 +361,7 @@ export default function ResultECPage() {
           </motion.div>
         )}
 
-        {/* ─── DEMO FALLBACK ALERT BANNER (Step 2 safety) ─── */}
-        {isDemoFallback && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{
-              maxWidth: 760,
-              margin: '0 auto 28px',
-              padding: '12px 20px',
-              background: 'var(--color-surface)',
-              border: '1px solid #334155',
-              borderRadius: 'var(--radius-md)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 12,
-              color: 'var(--color-text-muted)',
-              fontSize: '0.86rem',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            }}
-          >
-            <span style={{
-              padding: '3px 9px',
-              borderRadius: 4,
-              background: '#334155',
-              color: '#f8fafc',
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              flexShrink: 0,
-            }}>
-              Demo Preview
-            </span>
-            <span>Sample scorecard preview — no completed candidate assessment session was found for this link.</span>
-          </motion.div>
-        )}
+
 
         {/* ─── HERO SCORE: DUAL BREAKDOWN (Coding Questions Present) vs STANDARD ─── */}
         {hasCodingQuestions ? (

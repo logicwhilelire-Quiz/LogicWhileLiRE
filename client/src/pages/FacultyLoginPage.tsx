@@ -94,13 +94,7 @@ export default function FacultyLoginPage() {
     }
   }
 
-  const fillFacultyDemo = () => {
-    setForm({
-      username: 'faculty',
-      password: 'faculty123',
-    });
-    setError('');
-  };
+
 
   return (
     <AnimatedPage>
@@ -433,26 +427,7 @@ export default function FacultyLoginPage() {
               </button>
             </form>
 
-            {/* Quick Demo Credentials Pill */}
-            <div style={{ marginTop: 14, textAlign: 'center' }}>
-              <button
-                type="button"
-                onClick={fillFacultyDemo}
-                style={{
-                  background: 'rgba(16, 185, 129, 0.08)',
-                  border: '1px dashed rgba(16, 185, 129, 0.35)',
-                  color: '#6EE7B7',
-                  borderRadius: 6,
-                  padding: '5px 12px',
-                  fontSize: '0.74rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-              >
-                Fill Faculty Demo Credentials (faculty / faculty123)
-              </button>
-            </div>
+
 
             <div
               style={{

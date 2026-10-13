@@ -9,7 +9,6 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [demoLink, setDemoLink] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -22,11 +21,8 @@ export default function ForgotPasswordPage() {
     setError('');
 
     try {
-      const res = await forgotPassword({ email: email.trim().toLowerCase() });
+      await forgotPassword({ email: email.trim().toLowerCase() });
       setSubmitted(true);
-      if (res.data?.demo_reset_link) {
-        setDemoLink(res.data.demo_reset_link);
-      }
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Failed to send password reset email. Please try again.');
     } finally {
@@ -79,46 +75,10 @@ export default function ForgotPasswordPage() {
                   If an account exists for <strong style={{ color: '#f8fafc' }}>{email}</strong>, a password reset link has been dispatched. The link is strictly valid for <strong>1 hour</strong>.
                 </p>
 
-                {demoLink && (
-                  <div
-                    style={{
-                      background: 'rgba(245, 158, 11, 0.1)',
-                      border: '1px solid rgba(245, 158, 11, 0.3)',
-                      borderRadius: 8,
-                      padding: '12px 14px',
-                      marginBottom: 20,
-                      textAlign: 'left',
-                      fontSize: '0.82rem',
-                    }}
-                  >
-                    <div style={{ fontWeight: 700, color: 'var(--color-primary, #f59e0b)', marginBottom: 4 }}>
-                      ⚡ Dev / Demo Shortcut:
-                    </div>
-                    <div style={{ color: '#cbd5e1', marginBottom: 8 }}>
-                      In dev mode, you can test the link directly without an external SMTP inbox:
-                    </div>
-                    <a
-                      href={demoLink}
-                      style={{
-                        display: 'inline-block',
-                        padding: '6px 14px',
-                        background: 'var(--color-primary, #f59e0b)',
-                        color: '#000',
-                        fontWeight: 700,
-                        borderRadius: 6,
-                        textDecoration: 'none',
-                        fontSize: '0.82rem',
-                      }}
-                    >
-                      Open Reset Form Now &rarr;
-                    </a>
-                  </div>
-                )}
-
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <button
                     type="button"
-                    onClick={() => { setSubmitted(false); setDemoLink(''); }}
+                    onClick={() => setSubmitted(false)}
                     className="btn btn-secondary btn-full"
                   >
                     Resend to a different email

@@ -40,12 +40,20 @@ jobs:
           JWT_SECRET: test-secret-mock-jwt-key-2026-xyz
           ADMIN_JWT_SECRET: test-admin-jwt-key-2026-abc
           NODE_ENV: test
+          TEST_MOCK_ONLY: 'true'
 
       - name: Launch Server & Run Smoke Verification
         run: |
           node dist/index.js &
           SERVER_PID=$!
-          sleep 4
+          echo "Waiting for server to become healthy..."
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:3001/api/health > /dev/null; then
+              echo "Server is healthy after ${i}s"
+              break
+            fi
+            sleep 1
+          done
           node test-smoke.js
           kill $SERVER_PID
         env:
@@ -59,6 +67,7 @@ jobs:
           ADMIN_PASSWORD_HASH: $2b$12$MwHGNgeHppSpLHgWF61EqOv.ih06YQ4VyXrw1BewRY6NdFhSkQMkS
           CLIENT_ORIGIN: http://localhost:5173
           NODE_ENV: test
+          TEST_MOCK_ONLY: 'true'
 
   client-ci:
     name: Client Lint, Type Check & Production Bundle

@@ -46,7 +46,7 @@ interface ExamStartedPayload {
 }
 
 export default function WaitingLobbyPage() {
-  const { contestId = "demo-contest" } = useParams<{ contestId: string }>();
+  const { contestId = "exam-session" } = useParams<{ contestId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -116,14 +116,12 @@ export default function WaitingLobbyPage() {
       try {
         const state =
           localStorage.getItem(`admin_exam_state_${contestId}`) ||
-          localStorage.getItem(`admin_exam_state_${contestId.toUpperCase()}`) ||
-          localStorage.getItem(`admin_exam_state_DEMO123`);
+          localStorage.getItem(`admin_exam_state_${contestId.toUpperCase()}`);
 
         if (state === 'started' && !examStarted) {
           const startedAtStr =
             localStorage.getItem(`admin_exam_started_at_${contestId}`) ||
             localStorage.getItem(`admin_exam_started_at_${contestId.toUpperCase()}`) ||
-            localStorage.getItem(`admin_exam_started_at_DEMO123`) ||
             String(Date.now());
           const startedAt = Number(startedAtStr) || Date.now();
           // Use the real duration fetched from server; fall back to 3600 only as last resort
@@ -153,7 +151,7 @@ export default function WaitingLobbyPage() {
         bc = new BroadcastChannel('logicwhilelire_admin_exam_commands');
         bc.onmessage = (e) => {
           if (
-            (e.data?.examCode?.toUpperCase() === contestId.toUpperCase() || e.data?.examCode === 'DEMO123') &&
+            e.data?.examCode?.toUpperCase() === contestId.toUpperCase() &&
             e.data?.state === 'started'
           ) {
             checkAdminCommand();

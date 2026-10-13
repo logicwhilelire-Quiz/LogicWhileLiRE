@@ -3,27 +3,39 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 const FALLBACK_URL = Buffer.from('aHR0cHM6Ly94aHV0amVrZGJ5Y2NzY3NlbHpkeS5zdXBhYmFzZS5jbw==', 'base64').toString('utf8');
 const FALLBACK_KEY = Buffer.from('c2Jfc2VjcmV0X0RwbGpLN0l5SjFGSWlGX1BzQkI1c2dfVGNEbzJHM3M=', 'base64').toString('utf8');
 
+const isProduction = process.env.NODE_ENV === 'production';
+const isMockRequested =
+  !isProduction && (
+    process.env.TEST_MOCK_ONLY === 'true' ||
+    process.env.DEMO_MODE === 'true' ||
+    process.env.NODE_ENV === 'test' ||
+    (process.env.SUPABASE_URL || '').includes('mock')
+  );
+
 const rawUrl = process.env.TEST_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseUrl = (!rawUrl || rawUrl.includes('placeholder') || rawUrl.includes('your-project') || !rawUrl.includes('xhutjekdbyccscselzdy'))
+const supabaseUrl = isMockRequested
+  ? (rawUrl || 'https://mock.supabase.co')
+  : (!rawUrl || rawUrl.includes('placeholder') || rawUrl.includes('your-project') || !rawUrl.includes('xhutjekdbyccscselzdy'))
   ? FALLBACK_URL
   : rawUrl;
 
 let rawKey = process.env.TEST_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// If key is missing, placeholder, or not a valid modern secret key, use fallback
-if (!rawKey || rawKey.includes('placeholder') || !rawKey.startsWith('sb_secret_')) {
+// If key is missing, placeholder, or not a valid modern secret key, use fallback (unless in mock mode)
+if (!isMockRequested && (!rawKey || rawKey.includes('placeholder') || !rawKey.startsWith('sb_secret_'))) {
   rawKey = FALLBACK_KEY;
 }
 
-const supabaseServiceKey = rawKey;
+const supabaseServiceKey = rawKey || (isMockRequested ? 'mock-service-key' : FALLBACK_KEY);
 
-const isProduction = process.env.NODE_ENV === 'production';
 const isDemo =
-  (process.env.DEMO_MODE === 'true' && !process.env.TEST_SUPABASE_URL) ||
-  !supabaseUrl ||
-  !supabaseServiceKey ||
-  supabaseUrl.includes('your-project') ||
-  supabaseUrl.includes('placeholder');
+  isMockRequested ||
+  (!isProduction && (
+    !supabaseUrl ||
+    !supabaseServiceKey ||
+    supabaseUrl.includes('your-project') ||
+    supabaseUrl.includes('placeholder')
+  ));
 
 if (isProduction) {
   if (isDemo || !supabaseUrl || !supabaseServiceKey) {
@@ -33,7 +45,7 @@ if (isProduction) {
     );
   }
 } else if (isDemo) {
-  console.log('⚡ [Database] Supabase URL is placeholder or DEMO_MODE active: Using In-Memory Demo Database');
+  console.log('⚡ [Database] Mock/Demo mode active: Using In-Memory Mock Database');
 }
 
 /**

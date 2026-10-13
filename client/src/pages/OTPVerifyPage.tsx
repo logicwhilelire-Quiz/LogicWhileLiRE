@@ -10,12 +10,7 @@ export default function OTPVerifyPage() {
   const navigate = useNavigate();
   const state = location.state as { participant_id: string; email: string; demo_otp?: string } | null;
 
-  const [otp, setOtp] = useState(() => {
-    if (state?.demo_otp && state.demo_otp.length === 6) {
-      return state.demo_otp.split('');
-    }
-    return ['', '', '', '', '', ''];
-  });
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -114,32 +109,7 @@ export default function OTPVerifyPage() {
             </div>
           ) : (
             <>
-              {state?.demo_otp && (
-                <div style={{
-                  background: 'rgba(99, 102, 241, 0.12)',
-                  border: '1px dashed var(--color-primary, #6366f1)',
-                  borderRadius: '10px',
-                  padding: '10px 14px',
-                  marginBottom: '18px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  fontSize: '0.875rem'
-                }}>
-                  <span>⚡ <strong>Demo Mode OTP:</strong> <code style={{ letterSpacing: '2px', fontWeight: 'bold' }}>{state.demo_otp}</code></span>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-secondary"
-                    style={{ fontSize: '0.75rem', padding: '4px 10px' }}
-                    onClick={() => {
-                      const digits = state.demo_otp!.split('').slice(0, 6);
-                      setOtp(digits);
-                    }}
-                  >
-                    Auto-fill
-                  </button>
-                </div>
-              )}
+
 
               {apiError && (
                 <div className="alert alert-error mb-2">⚠️ {apiError}</div>

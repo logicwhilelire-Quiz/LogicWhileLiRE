@@ -175,7 +175,7 @@ const isDemo =
   !process.env.SUPABASE_URL ||
   (process.env.SUPABASE_URL || '').includes('your-project');
 
-app.get('/api/health', (_req, res) => {
+const handleHealthCheck = (_req: express.Request, res: express.Response) => {
   res.json({
     status: 'ok',
     service: 'LogicWhileLiRE Assessment Engine',
@@ -185,8 +185,10 @@ app.get('/api/health', (_req, res) => {
     demo_banner: isDemo ? 'Running on in-memory demo data. Connect Supabase to enable production persistence.' : null,
     timestamp: new Date().toISOString(),
   });
-});
-app.get('/health', (_req, res) => res.redirect(307, '/api/health'));
+};
+
+app.get('/api/health', handleHealthCheck);
+app.get('/health', handleHealthCheck);
 
 // Readiness check (live database probe)
 app.get('/api/ready', async (_req, res) => {
@@ -204,11 +206,6 @@ app.get('/api/ready', async (_req, res) => {
     },
     timestamp: new Date().toISOString(),
   });
-});
-
-// Legacy health route (keep for backwards compat)
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', demo_mode: isDemo, timestamp: new Date().toISOString() });
 });
 
 // Direct alias for public colleges

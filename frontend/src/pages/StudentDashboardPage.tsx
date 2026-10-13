@@ -498,7 +498,7 @@ export default function StudentDashboardPage() {
                 <input
                   id="dashboard-exam-code-input"
                   type="text"
-                  placeholder="Enter Exam Code (e.g. DEMO2026, DSA-SECTOR-04)"
+                  placeholder="Enter Exam Code (e.g. EXAM2026, DSA-SECTOR-04)"
                   value={examCodeInput}
                   onChange={(e) => {
                     setExamCodeInput(e.target.value.toUpperCase());
@@ -927,7 +927,7 @@ export default function StudentDashboardPage() {
 
                     <button
                       type="button"
-                      onClick={() => handleLaunchExam(exam.code || 'DEMO2026')}
+                      onClick={() => handleLaunchExam(exam.code || '')}
                       className="btn btn-primary w-full text-xs"
                       style={{ padding: '10px', fontWeight: 700, textAlign: 'center', background: 'linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)' }}
                     >

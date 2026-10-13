@@ -67,32 +67,11 @@ export default function LeaderboardECPage() {
 
     try {
       const res = await axios.get(`${BASE_URL}/api/exam-code/${activeCode}/leaderboard`);
-      const rawRows: LeaderboardRow[] = res.data.leaderboard || [];
-
-      // If less than 3, supplement with realistic top cohort
-      if (rawRows.length < 3) {
-        const demoDefaults: LeaderboardRow[] = [
-          { rank: 1, hall_ticket: '2201A0501', name: 'Aarav Sharma', score: 95, max_score: 100, percentage: 95, department: 'Aero-CS', delta: 0 },
-          { rank: 2, hall_ticket: '2201A0512', name: 'Diya Patel', score: 90, max_score: 100, percentage: 90, department: 'Electronics', delta: 1 },
-          { rank: 3, hall_ticket: '2201A0524', name: 'Rohan Varma', score: 85, max_score: 100, percentage: 85, department: 'Robotics', delta: -1 },
-          { rank: 4, hall_ticket: '2201A0533', name: 'Sneha Reddy', score: 80, max_score: 100, percentage: 80, department: 'AI & DS', delta: 0 },
-          { rank: 5, hall_ticket: '2201A0545', name: 'Kabir Mehta', score: 78, max_score: 100, percentage: 78, department: 'Computer Science', delta: 2 },
-          { rank: 6, hall_ticket: '2201A0558', name: 'Ananya Iyer', score: 72, max_score: 100, percentage: 72, department: 'Aerospace', delta: -1 },
-        ];
-        setRows(demoDefaults);
-      } else {
-        setRows(rawRows);
-      }
+      const rawRows: LeaderboardRow[] = res.data.leaderboard || res.data.data || [];
+      setRows(rawRows);
       setLastUpdated(new Date());
     } catch {
-      // Fallback demo rows
-      setRows([
-        { rank: 1, hall_ticket: '2201A0501', name: 'Aarav Sharma', score: 95, max_score: 100, percentage: 95, department: 'Aero-CS', delta: 0 },
-        { rank: 2, hall_ticket: '2201A0512', name: 'Diya Patel', score: 90, max_score: 100, percentage: 90, department: 'Electronics', delta: 1 },
-        { rank: 3, hall_ticket: '2201A0524', name: 'Rohan Varma', score: 85, max_score: 100, percentage: 85, department: 'Robotics', delta: -1 },
-        { rank: 4, hall_ticket: '2201A0533', name: 'Sneha Reddy', score: 80, max_score: 100, percentage: 80, department: 'AI & DS', delta: 0 },
-        { rank: 5, hall_ticket: '2201A0545', name: 'Kabir Mehta', score: 78, max_score: 100, percentage: 78, department: 'Computer Science', delta: 2 },
-      ]);
+      setRows([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -140,24 +119,7 @@ export default function LeaderboardECPage() {
     };
   }, [activeCode]);
 
-  // Demo Live Simulation Trigger
-  const handleSimulateShift = () => {
-    setIsRankUpdating(true);
-    setLiveEventLog('⚡ Realtime Shift: Candidate 2201A0512 submitted +10 marks algorithmic test case!');
-    setTimeout(() => {
-      setRows((prev) => {
-        if (prev.length < 2) return prev;
-        const copy = [...prev];
-        // Swap rank 1 and 2 or randomize score
-        const temp = copy[0];
-        copy[0] = { ...copy[1], rank: 1, score: 98, percentage: 98, delta: 1 };
-        copy[1] = { ...temp, rank: 2, score: 95, percentage: 95, delta: -1 };
-        return copy;
-      });
-      setIsRankUpdating(false);
-      setTimeout(() => setLiveEventLog(null), 4000);
-    }, 400);
-  };
+
 
   const displayRows = filterBranch
     ? rows.filter(
@@ -341,22 +303,7 @@ export default function LeaderboardECPage() {
             <span style={{ padding: '5px 14px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 999, fontSize: '0.82rem', color: 'rgba(255, 255, 255, 0.6)' }}>
               Updated {lastUpdated.toLocaleTimeString()}
             </span>
-            <button
-              onClick={handleSimulateShift}
-              style={{
-                padding: '5px 14px',
-                background: 'rgba(43, 127, 255, 0.15)',
-                border: '1px solid rgba(43, 127, 255, 0.4)',
-                borderRadius: 999,
-                fontSize: '0.8rem',
-                color: '#60A5FA',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              ⚡ Simulate Live Shift
-            </button>
+
           </div>
         </motion.div>
 
@@ -397,7 +344,7 @@ export default function LeaderboardECPage() {
         ) : displayRows.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '64px 24px', color: 'rgba(255,255,255,0.4)' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🏆</div>
-            <p>No results match your search filter.</p>
+            <p>{rows.length === 0 ? 'Awaiting candidate submissions for this examination.' : 'No results match your search filter.'}</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
