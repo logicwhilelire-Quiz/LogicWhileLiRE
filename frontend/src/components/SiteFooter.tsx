@@ -150,6 +150,12 @@ export default function SiteFooter() {
               <Link to="/login" className="footer-link">
                 Student Portal
               </Link>
+              <Link to="/faculty/login" className="footer-link">
+                Faculty Portal
+              </Link>
+              <Link to="/inspector" className="footer-link">
+                Inspector Console
+              </Link>
               <Link to="/admin" className="footer-link">
                 Admin Portal
               </Link>

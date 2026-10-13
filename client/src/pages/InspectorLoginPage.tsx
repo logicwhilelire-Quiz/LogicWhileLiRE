@@ -127,9 +127,9 @@ export default function InspectorLoginPage() {
               style={{
                 flex: 1,
                 textAlign: 'center',
-                padding: '8px 12px',
+                padding: '8px 8px',
                 borderRadius: 7,
-                fontSize: '0.82rem',
+                fontSize: '0.8rem',
                 fontWeight: 700,
                 color: '#94A3B8',
                 textDecoration: 'none',
@@ -144,15 +144,39 @@ export default function InspectorLoginPage() {
                 e.currentTarget.style.background = 'transparent';
               }}
             >
-              👑 Admin Portal
+              👑 Admin
+            </Link>
+            <Link
+              to="/faculty/login"
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                padding: '8px 8px',
+                borderRadius: 7,
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                color: '#94A3B8',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#34D399';
+                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#94A3B8';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              👨‍🏫 Faculty
             </Link>
             <div
               style={{
                 flex: 1,
                 textAlign: 'center',
-                padding: '8px 12px',
+                padding: '8px 8px',
                 borderRadius: 7,
-                fontSize: '0.82rem',
+                fontSize: '0.8rem',
                 fontWeight: 800,
                 background: 'linear-gradient(135deg, rgba(0, 180, 216, 0.25) 0%, rgba(0, 210, 255, 0.12) 100%)',
                 color: '#38BDF8',
@@ -160,7 +184,7 @@ export default function InspectorLoginPage() {
                 cursor: 'default',
               }}
             >
-              🛡️ Inspector Portal
+              🛡️ Inspector
             </div>
           </div>
 

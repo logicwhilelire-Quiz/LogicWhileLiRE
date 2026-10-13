@@ -22,6 +22,8 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
         const parsed = JSON.parse(adminStored);
         if (parsed.role) return parsed;
       }
+      const facultyStored = localStorage.getItem('faculty_user');
+      if (facultyStored) return JSON.parse(facultyStored);
       const inspectorStored = localStorage.getItem('inspector_user');
       if (inspectorStored) return JSON.parse(inspectorStored);
       return { role: 'super_admin', name: 'Super Administrator' };
@@ -40,7 +42,7 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
     : isInspector
     ? `College Inspector (${currentUser.college_name || 'Active Institution'})`
     : isFaculty
-    ? 'Faculty Member'
+    ? `Faculty Member (${currentUser.name || 'Trainer'})`
     : 'Authenticated Staff';
 
   const allNavItems = [
@@ -54,8 +56,8 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
     { id: 'exams', label: '4. Exam Control', path: '/admin/exams', icon: '⚙️', roles: ['super_admin', 'admin', 'faculty'] },
     { id: 'create', label: 'Create Exam', path: '/admin/create-exam', icon: '➕', roles: ['super_admin', 'admin'] },
     { id: 'exam-codes', label: 'Exam Codes', path: '/admin/exam-codes', icon: '🔑', roles: ['super_admin', 'admin'] },
-    { id: 'questions', label: '5. Question Bank', path: '/admin/questions', icon: '📝', roles: ['super_admin', 'admin'] },
-    { id: 'import', label: 'Import Questions (Excel)', path: '/admin/import', icon: '📥', roles: ['super_admin', 'admin'] },
+    { id: 'questions', label: '5. Question Bank', path: '/admin/questions', icon: '📝', roles: ['super_admin', 'admin', 'faculty'] },
+    { id: 'import', label: 'Import Questions (Excel)', path: '/admin/import', icon: '📥', roles: ['super_admin', 'admin', 'faculty'] },
 
     // Telemetry & Invigilation
     { id: 'inspector', label: 'Inspector Live Console', path: '/admin/inspector', icon: '📡', roles: ['super_admin', 'admin', 'inspector'] },
@@ -76,13 +78,17 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
 
   const handleLogout = () => {
     const wasInspector = isInspector;
+    const wasFaculty = isFaculty;
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
     localStorage.removeItem('inspector_token');
     localStorage.removeItem('inspector_user');
+    localStorage.removeItem('faculty_token');
+    localStorage.removeItem('faculty_user');
     sessionStorage.removeItem('admin_token');
     sessionStorage.removeItem('inspector_token');
-    navigate(wasInspector ? '/inspector' : '/admin');
+    sessionStorage.removeItem('faculty_token');
+    navigate(wasFaculty ? '/faculty/login' : wasInspector ? '/inspector' : '/admin');
   };
 
   return (

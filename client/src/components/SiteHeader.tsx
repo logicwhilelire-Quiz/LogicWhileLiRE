@@ -47,19 +47,21 @@ export default function SiteHeader() {
   const isLoggedIn = !!studentUser;
 
   // Clean, Uncluttered Institutional Navigation Links
-  // Keep ONLY: Home, Student Login, Admin Login, and the third role login (Inspector). Nothing else in the navigation.
+  // Institutional Navigation Links for all key roles: Student, Faculty, Inspector, Admin
   const navLinks = isLoggedIn
     ? [
         { label: 'Home', to: '/' },
         { label: 'Student Dashboard', to: '/student/dashboard' },
-        { label: 'Admin Login', to: '/admin' },
+        { label: 'Faculty Login', to: '/faculty/login' },
         { label: 'Inspector Login', to: '/inspector' },
+        { label: 'Admin Login', to: '/admin' },
       ]
     : [
         { label: 'Home', to: '/' },
         { label: 'Student Login', to: '/login' },
-        { label: 'Admin Login', to: '/admin' },
+        { label: 'Faculty Login', to: '/faculty/login' },
         { label: 'Inspector Login', to: '/inspector' },
+        { label: 'Admin Login', to: '/admin' },
       ];
 
   return (

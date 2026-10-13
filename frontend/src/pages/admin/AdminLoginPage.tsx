@@ -138,9 +138,9 @@ export default function AdminLoginPage() {
               style={{
                 flex: 1,
                 textAlign: 'center',
-                padding: '8px 12px',
+                padding: '8px 8px',
                 borderRadius: 7,
-                fontSize: '0.82rem',
+                fontSize: '0.8rem',
                 fontWeight: 800,
                 background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0.12) 100%)',
                 color: '#FBBF24',
@@ -148,16 +148,40 @@ export default function AdminLoginPage() {
                 cursor: 'default',
               }}
             >
-              👑 Admin Portal
+              👑 Admin
             </div>
+            <Link
+              to="/faculty/login"
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                padding: '8px 8px',
+                borderRadius: 7,
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                color: '#94A3B8',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#34D399';
+                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#94A3B8';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              👨‍🏫 Faculty
+            </Link>
             <Link
               to="/inspector"
               style={{
                 flex: 1,
                 textAlign: 'center',
-                padding: '8px 12px',
+                padding: '8px 8px',
                 borderRadius: 7,
-                fontSize: '0.82rem',
+                fontSize: '0.8rem',
                 fontWeight: 700,
                 color: '#94A3B8',
                 textDecoration: 'none',
@@ -172,7 +196,7 @@ export default function AdminLoginPage() {
                 e.currentTarget.style.background = 'transparent';
               }}
             >
-              🛡️ Inspector Portal
+              🛡️ Inspector
             </Link>
           </div>
 

@@ -199,7 +199,67 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* 2. Admin Console Gateway */}
+          {/* 2. Faculty & Trainer Gateway */}
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: 12,
+              border: '2px solid #10B981',
+              padding: '28px 24px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              boxShadow: '0 6px 18px rgba(16, 185, 129, 0.12)',
+              position: 'relative',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <span style={{ fontSize: '2rem' }}>👨‍🏫</span>
+                <span
+                  style={{
+                    background: '#ECFDF5',
+                    color: '#065F46',
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    padding: '3px 10px',
+                    borderRadius: 12,
+                    border: '1px solid #A7F3D0',
+                  }}
+                >
+                  Faculty &amp; Trainer
+                </span>
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#002147', margin: '0 0 10px' }}>
+                Faculty Login
+              </h3>
+              <p style={{ color: '#475569', fontSize: '0.86rem', lineHeight: 1.6, margin: '0 0 18px' }}>
+                Access assigned department sections, inspect student rosters, verify candidates, and evaluate coding challenge solutions.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <Link
+                to="/faculty/login"
+                id="landing-faculty-login-btn"
+                style={{
+                  textAlign: 'center',
+                  background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                  color: '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  padding: '11px 16px',
+                  borderRadius: 6,
+                  textDecoration: 'none',
+                  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                }}
+              >
+                Sign In as Faculty →
+              </Link>
+            </div>
+          </div>
+
+          {/* 3. Admin Console Gateway */}
           <div
             style={{
               background: '#FFFFFF',

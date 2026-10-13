@@ -64,6 +64,7 @@ const StaffManagementPage = lazyWithRetry(() => import('./pages/admin/StaffManag
 
 // ── NEW: Exam Code System (No OTP) ──────────────────────────────
 const InspectorLoginPage = lazyWithRetry(() => import('./pages/InspectorLoginPage'));
+const FacultyLoginPage = lazyWithRetry(() => import('./pages/FacultyLoginPage'));
 const LandingPage = lazyWithRetry(() => import('./pages/LandingPage'));
 const EnterExamPage = lazyWithRetry(() => import('./pages/EnterExamPage'));
 const InstructionsPage = lazyWithRetry(() => import('./pages/InstructionsPage'));
@@ -110,6 +111,9 @@ function AnimatedRoutes() {
         <Routes location={location}>
         {/* ── PUBLIC LANDING (Marketing page — default route) ── */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/faculty" element={<FacultyLoginPage />} />
+        <Route path="/faculty/login" element={<FacultyLoginPage />} />
+        <Route path="/faculty-login" element={<FacultyLoginPage />} />
         <Route path="/inspector" element={<InspectorLoginPage />} />
         <Route path="/inspector/login" element={<InspectorLoginPage />} />
         <Route path="/inspector/console" element={<InstructorConsolePage />} />
