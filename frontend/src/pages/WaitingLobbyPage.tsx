@@ -58,6 +58,8 @@ export default function WaitingLobbyPage() {
   const [startPayload, setStartPayload] = useState<ExamStartedPayload | null>(null);
   const [events, setEvents] = useState<Array<{ id: string; time: string; text: string; type: "info" | "success" | "ping" | "alert" }>>([]);
   const [countdown, setCountdown] = useState(300);
+  // Real exam duration fetched from server (used for accurate timer when exam starts via LocalStorage/BC)
+  const [examDurationSeconds, setExamDurationSeconds] = useState(3600);
   const [showProctorDesk, setShowProctorDesk] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
@@ -79,6 +81,12 @@ export default function WaitingLobbyPage() {
       try {
         const res = await getExamLobbyStats(contestId);
         const d = res.data;
+        // Cache real duration for use when admin starts via LocalStorage/BroadcastChannel
+        if (d?.duration_seconds) {
+          setExamDurationSeconds(d.duration_seconds);
+        } else if (d?.exam_started?.duration_seconds) {
+          setExamDurationSeconds(d.exam_started.duration_seconds);
+        }
         if (d?.exam_started && d.exam_started.server_start_time) {
           const s = d.exam_started;
           setExamStarted(true);
@@ -86,7 +94,7 @@ export default function WaitingLobbyPage() {
             event: "EXAM_STARTED",
             exam_id: s.exam_id || contestId.toUpperCase(),
             server_start_time: s.server_start_time,
-            duration_seconds: s.duration_seconds,
+            duration_seconds: s.duration_seconds || examDurationSeconds,
             allow_late_join: s.allow_late_join ?? true,
             elapsed_seconds: s.elapsed_seconds,
           });
@@ -115,14 +123,20 @@ export default function WaitingLobbyPage() {
           const startedAtStr =
             localStorage.getItem(`admin_exam_started_at_${contestId}`) ||
             localStorage.getItem(`admin_exam_started_at_${contestId.toUpperCase()}`) ||
+            localStorage.getItem(`admin_exam_started_at_DEMO123`) ||
             String(Date.now());
           const startedAt = Number(startedAtStr) || Date.now();
+          // Use the real duration fetched from server; fall back to 3600 only as last resort
+          const durationSec =
+            Number(localStorage.getItem(`admin_exam_duration_${contestId}`)) ||
+            Number(localStorage.getItem(`admin_exam_duration_${contestId.toUpperCase()}`)) ||
+            examDurationSeconds;
           setExamStarted(true);
           setStartPayload({
             event: 'EXAM_STARTED',
             exam_id: contestId.toUpperCase(),
             server_start_time: startedAt,
-            duration_seconds: 3600,
+            duration_seconds: durationSec,
             allow_late_join: false,
           });
           addEvent('🚀 [ADMIN COMMAND] Administrator dispatched live start command! Launching assessment…', 'alert');

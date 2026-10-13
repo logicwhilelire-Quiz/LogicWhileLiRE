@@ -27,8 +27,8 @@ if (import.meta.env.PROD && !isLocalhostHost) {
 export const API_BASE_URL: string = (rawApiUrl || 'http://localhost:3001').replace(/\/+$/, '');
 export const SOCKET_URL: string = (rawSocketUrl || rawApiUrl || 'http://localhost:3001').replace(/\/+$/, '');
 
-export const SUPABASE_URL: string = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
-export const SUPABASE_ANON_KEY: string = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+export const SUPABASE_URL: string = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://xhutjekdbyccscselzdy.supabase.co';
+export const SUPABASE_ANON_KEY: string = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 'sb_publishable_dNAfXpoQ-y4EAPF3RCh4dw_LnpRLEcw';
 
 import axios from 'axios';
 

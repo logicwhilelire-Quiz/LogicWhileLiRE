@@ -1169,19 +1169,30 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
     // Include the exam_started_state so clients can recover from page refreshes
     const startedState = getExamStartedState(code);
 
-    // Also fetch enrolled count from DB for accuracy
-    const { data: enrolled } = await supabase
-      .from('exam_code_attempts')
-      .select('id', { count: 'exact', head: true })
-      .eq('exam_code', code);
+    // Also fetch enrolled count and exam duration from DB
+    const [enrolledResult, examResult] = await Promise.all([
+      supabase
+        .from('exam_code_attempts')
+        .select('id', { count: 'exact', head: true })
+        .eq('exam_code', code),
+      supabase
+        .from('exam_codes')
+        .select('duration_minutes')
+        .eq('exam_code', code)
+        .maybeSingle(),
+    ]);
+
+    const examDurationSeconds = (examResult.data?.duration_minutes ?? 60) * 60;
 
     res.json({
       success: true,
       exam_code: code,
-      enrolled: (enrolled as any)?.count ?? stats.enrolled,
+      enrolled: (enrolledResult.data as any)?.count ?? stats.enrolled,
       connected: stats.connected,
       queue_count: stats.queue_count ?? stats.connected,
-      pending: Math.max(0, ((enrolled as any)?.count ?? 0) - stats.connected),
+      pending: Math.max(0, ((enrolledResult.data as any)?.count ?? 0) - stats.connected),
+      // Exam duration — real value from DB so WaitingLobbyPage can cache it
+      duration_seconds: examDurationSeconds,
       // Exam started state — null if not yet started
       exam_started: startedState
         ? {
@@ -1201,6 +1212,7 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
     res.status(500).json({ success: false, error: 'Stats fetch failed' });
   }
 });
+
 
 
 export default router;

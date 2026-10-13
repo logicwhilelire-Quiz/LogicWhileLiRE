@@ -165,7 +165,8 @@ app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     service: 'LogicWhileLiRE Assessment Engine',
-    version: '4.0.0',
+    version: '4.0.1',
+    build_id: 'db-fix-v4',
     environment: process.env.NODE_ENV || 'development',
     demo_mode: isDemo,
     demo_banner: isDemo ? 'Running on in-memory demo data. Connect Supabase to enable production persistence.' : null,

@@ -52,15 +52,18 @@ export default function ExamControl() {
     } catch {}
   }, [selectedControlCode]);
 
-  const broadcastExamCommand = (code: string, state: 'idle' | 'lobby' | 'started' | 'paused' | 'stopped', msg: string) => {
+  const broadcastExamCommand = (code: string, state: 'idle' | 'lobby' | 'started' | 'paused' | 'stopped', msg: string, durationMinutes?: number) => {
     try {
       localStorage.setItem(`admin_exam_state_${code}`, state);
       if (state === 'started') {
         localStorage.setItem(`admin_exam_started_at_${code}`, String(Date.now()));
+        // Store duration so WaitingLobby can use the real exam duration (not hardcoded 3600)
+        const dur = durationMinutes || exams.find((e) => e.exam_code === code || e.id === code)?.duration_minutes || 60;
+        localStorage.setItem(`admin_exam_duration_${code}`, String(dur * 60));
       }
       if (typeof BroadcastChannel !== 'undefined') {
         const bc = new BroadcastChannel('logicwhilelire_admin_exam_commands');
-        bc.postMessage({ examCode: code, state, timestamp: Date.now() });
+        bc.postMessage({ examCode: code, state, timestamp: Date.now(), durationMinutes: durationMinutes || exams.find((e) => e.exam_code === code || e.id === code)?.duration_minutes || 60 });
         bc.close();
       }
     } catch {}
@@ -74,11 +77,13 @@ export default function ExamControl() {
   };
 
   const handleStartExamCommand = async () => {
+    const selectedExam = exams.find((e) => e.exam_code === selectedControlCode || e.id === selectedControlCode);
     try {
       await startExam(selectedControlCode, { allow_late_join: false }).catch(() => {});
     } catch {}
-    broadcastExamCommand(selectedControlCode, 'started', `▶️ EXAM STARTED: Administrator has dispatched the official start command! All student assessment timers are live.`);
+    broadcastExamCommand(selectedControlCode, 'started', `▶️ EXAM STARTED: Administrator has dispatched the official start command! All student assessment timers are live.`, selectedExam?.duration_minutes);
   };
+
 
   const handlePauseExamCommand = () => {
     broadcastExamCommand(selectedControlCode, 'paused', `⏸️ EXAM PAUSED: All active student testing screens have been frozen by Administrator.`);
