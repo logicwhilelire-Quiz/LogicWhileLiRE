@@ -38,7 +38,6 @@
     "exam-engine"
   ],
   "type": "commonjs",
-  "devDependencies": {},
   "dependencies": {
     "@supabase/server": "^1.9.1",
     "@supabase/supabase-js": "^2.117.0",
@@ -73,6 +72,7 @@
     "pg": "^8.23.1",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.4",
+    "socket.io-client": "^4.8.4",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "uuid": "^14.0.2",

@@ -42,9 +42,14 @@ const failures = [];
 
 for (const file of testFiles) {
   console.log(`\n▶️ Executing ${file}...`);
+  const validAdminHash =
+    process.env.ADMIN_PASSWORD_HASH && process.env.ADMIN_PASSWORD_HASH.startsWith('$2b$')
+      ? process.env.ADMIN_PASSWORD_HASH
+      : '$2b$12$Y65kU/s0HBji1KPpvVjjh.fXc1.p4T.B35JH3xj82W7Udi6PDGPeu';
+
   try {
-    execSync(`node ${file}`, {
-      stdio: 'inherit',
+    const output = execSync(`node ${file}`, {
+      stdio: 'pipe',
       cwd: __dirname,
       env: {
         ...process.env,
@@ -53,7 +58,7 @@ for (const file of testFiles) {
         PORT: '0',
         ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin',
         ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'LiREAdmin@2026!',
-        ADMIN_PASSWORD_HASH: process.env.ADMIN_PASSWORD_HASH || '$2b$12$Y65kU/s0HBji1KPpvVjjh.fXc1.p4T.B35JH3xj82W7Udi6PDGPeu',
+        ADMIN_PASSWORD_HASH: validAdminHash,
         INSPECTOR_USERNAME: process.env.INSPECTOR_USERNAME || 'inspector',
         INSPECTOR_PASSWORD: process.env.INSPECTOR_PASSWORD || 'LiREInspector@2026!',
         TOTP_ENCRYPTION_KEY: process.env.TOTP_ENCRYPTION_KEY || 'c46153758e5927f0516f2eb1cf60e62fe006b19ee7ba35a1918ec66f37ceb9ff',
@@ -64,9 +69,22 @@ for (const file of testFiles) {
         SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || 'mock-anon-key',
       },
     });
+    process.stdout.write(output);
     passedCount++;
   } catch (err) {
-    console.error(`❌ ${file} failed with exit code ${err.status}`);
+    const stdout = err.stdout ? err.stdout.toString() : '';
+    const stderr = err.stderr ? err.stderr.toString() : '';
+    if (stdout) process.stdout.write(stdout);
+    if (stderr) process.stderr.write(stderr);
+    console.error(`❌ ${file} failed with exit code ${err.status || 1}: ${err.message || ''}`);
+    const lastLines = (stdout + '\n' + stderr)
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l && !l.includes('injected env'))
+      .slice(-5)
+      .join(' | ')
+      .replace(/[\r\n]/g, ' ');
+    console.log(`::error file=${file},title=Test Failure (${file})::${lastLines || err.message}`);
     failures.push(file);
     break;
   }
