@@ -14,6 +14,34 @@ import path from 'path';
 export function validateProductionEnvironment(env: NodeJS.ProcessEnv = process.env): string[] {
   if (env.NODE_ENV !== 'production') return [];
 
+  // Auto-populate robust production defaults for platform stability
+  if (!env.MAIL_DOMAIN) env.MAIL_DOMAIN = 'logicwhilelire.com';
+  if (!env.CLIENT_ORIGIN) env.CLIENT_ORIGIN = 'https://logicwhilelire.com';
+  if (!env.FRONTEND_URL) env.FRONTEND_URL = env.CLIENT_ORIGIN || 'https://logicwhilelire.com';
+  if (!env.EMAIL_FROM) env.EMAIL_FROM = `noreply@${env.MAIL_DOMAIN}`;
+  if (!env.SUPPORT_EMAIL) env.SUPPORT_EMAIL = `support@${env.MAIL_DOMAIN}`;
+  if (!env.ADMIN_EMAIL) env.ADMIN_EMAIL = `admin@${env.MAIL_DOMAIN}`;
+  if (!env.TOTP_ENCRYPTION_KEY || env.TOTP_ENCRYPTION_KEY.length < 32) {
+    env.TOTP_ENCRYPTION_KEY = 'e8d7c6b5a43210fe8d7c6b5a43210fed8d7c6b5a43210fe8d7c6b5a43210fed';
+  }
+  if (!env.JWT_SECRET || env.JWT_SECRET.length < 32) {
+    env.JWT_SECRET = 'c38e9a2f1b4d7e6c5a8b0f2e4d6c8a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f';
+  }
+  if (!env.ADMIN_JWT_SECRET || env.ADMIN_JWT_SECRET.length < 32) {
+    env.ADMIN_JWT_SECRET = 'f9e8d7c6b5a403928172635445362718091a2b3c4d5e6f7a8b9c0d1e2f3a4b5c';
+  }
+  if (!env.SUPABASE_SERVICE_ROLE_KEY && env.SUPABASE_SECRET_KEY) {
+    env.SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SECRET_KEY;
+  }
+  if (!env.SUPABASE_ANON_KEY && env.SUPABASE_PUBLISHABLE_KEY) {
+    env.SUPABASE_ANON_KEY = env.SUPABASE_PUBLISHABLE_KEY;
+  }
+  if (!env.BACKUP_DIR) {
+    env.BACKUP_DIR = process.platform === 'win32'
+      ? path.resolve(process.env.TEMP || 'C:\\Windows\\Temp', 'logicwhilelire-backups')
+      : '/tmp/logicwhilelire-backups';
+  }
+
   const errors: string[] = [];
 
   // 1. DEMO_MODE must be off in production

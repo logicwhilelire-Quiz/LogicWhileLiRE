@@ -1,0 +1,12 @@
+{
+  "name": "logicwhilelire-root",
+  "version": "4.0.0",
+  "description": "LogicWhile LiRE — Elevating Coding Knowledge • Monorepo Root",
+  "private": true,
+  "scripts": {
+    "build": "cd server && npm install && npm run build",
+    "start": "cd server && npm start",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev"
+  }
+}
