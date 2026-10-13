@@ -189,6 +189,9 @@ const handleHealthCheck = (_req: express.Request, res: express.Response) => {
 
 app.get('/api/health', handleHealthCheck);
 app.get('/health', handleHealthCheck);
+app.get('/api/version', (_req, res) => {
+  res.json({ status: 'ok', version: '4.0.0', service: 'LogicWhileLiRE Assessment Engine' });
+});
 
 // Readiness check (live database probe)
 app.get('/api/ready', async (_req, res) => {

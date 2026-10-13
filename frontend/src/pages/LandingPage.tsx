@@ -73,27 +73,6 @@ export default function LandingPage() {
             automated anti-cheat monitoring, and instantaneous competitive telemetry.
           </p>
 
-          {/* Quick Exam Entry Action */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <Link
-              to="/enter-exam"
-              style={{
-                background: '#EAA812',
-                color: '#002147',
-                fontWeight: 800,
-                fontSize: '0.96rem',
-                padding: '12px 28px',
-                borderRadius: 8,
-                textDecoration: 'none',
-                boxShadow: '0 4px 16px rgba(234, 168, 18, 0.35)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-              }}
-            >
-              <span>⚡</span> Enter Live Exam with Code &amp; Hall Ticket
-            </Link>
-          </div>
         </div>
       </section>
 
