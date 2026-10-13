@@ -270,6 +270,10 @@ export default function WaitingLobbyPage() {
     if (examStarted && startPayload) {
       const examCode = startPayload.exam_id || contestId;
       const hallTicket = candidate?.roll_number || (location.state as any)?.hallTicket || "2201A0501";
+      try {
+        sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
+        sessionStorage.setItem('lw_camera_consented', 'true');
+      } catch {}
       const timer = setTimeout(() => {
         navigate(`/quiz/${examCode}`, {
           state: {
@@ -287,6 +291,10 @@ export default function WaitingLobbyPage() {
   const handleManualStart = () => {
     const examCode = startPayload?.exam_id || contestId;
     const hallTicket = candidate?.roll_number || (location.state as any)?.hallTicket || "2201A0501";
+    try {
+      sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
+      sessionStorage.setItem('lw_camera_consented', 'true');
+    } catch {}
     // Compute remaining from server_start_time to honour server-authoritative timer (Sprint 2, item 4)
     const elapsed = startPayload
       ? Math.floor((Date.now() - startPayload.server_start_time) / 1000)

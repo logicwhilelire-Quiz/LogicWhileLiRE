@@ -56,6 +56,10 @@ export default function InstructionsPage() {
 
   function handleStart() {
     if (!canProceed) return;
+    try {
+      sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
+      sessionStorage.setItem('lw_camera_consented', 'true');
+    } catch {}
     navigate(`/quiz/${examCode}`, {
       state: { hallTicket: stored.hallTicket },
     });

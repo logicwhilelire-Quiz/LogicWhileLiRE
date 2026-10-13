@@ -17,7 +17,7 @@ const CSRF_COOKIE_NAME = 'XSRF-TOKEN';
 const CSRF_HEADER_NAME = 'x-xsrf-token';
 const CSRF_HEADER_ALT = 'x-csrf-token';
 
-// Endpoints that are public entrypoints or safe from CSRF
+// Endpoints that are public entrypoints, API token authenticated, or safe from CSRF
 const EXEMPT_PREFIXES = [
   '/api/health',
   '/api/ready',
@@ -37,6 +37,10 @@ const EXEMPT_PREFIXES = [
   '/api/exam/verify-code',
   '/api/contact',
   '/api/v1/contact',
+  '/api/v1/exams',
+  '/api/v1/inspector',
+  '/api/exam-code',
+  '/api/session',
 ];
 
 /**

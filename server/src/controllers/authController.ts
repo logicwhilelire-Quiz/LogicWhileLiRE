@@ -730,7 +730,23 @@ export async function getStudentDashboard(req: Request, res: Response): Promise<
     return isStudentEligibleForExam(student, exam) && (!exam.college_id || String(exam.college_id) === studentCollegeId);
   });
 
-  const upcomingExams = [...eligibleCodes, ...eligibleExams];
+  const rawUpcomingExams = [...eligibleCodes, ...eligibleExams];
+  const seenExamKeys = new Set<string>();
+  const upcomingExams = rawUpcomingExams.filter((ex: any) => {
+    const codeKey = (ex.code || ex.exam_code || '').trim().toUpperCase();
+    const titleKey = (ex.title || '').trim().toLowerCase();
+    const idKey = String(ex.id || '').trim().toLowerCase();
+
+    if (codeKey && seenExamKeys.has(`code:${codeKey}`)) return false;
+    if (idKey && seenExamKeys.has(`id:${idKey}`)) return false;
+    if (titleKey && seenExamKeys.has(`title:${titleKey}`)) return false;
+
+    if (codeKey) seenExamKeys.add(`code:${codeKey}`);
+    if (idKey) seenExamKeys.add(`id:${idKey}`);
+    if (titleKey) seenExamKeys.add(`title:${titleKey}`);
+
+    return true;
+  });
 
   // 2. Fetch past results
   const rollNumber = (student.roll_number || student.hall_ticket || '').toUpperCase();

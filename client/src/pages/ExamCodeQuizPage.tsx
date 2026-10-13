@@ -9,7 +9,6 @@ import ExamQuestionCard from '../components/exam/ExamQuestionCard'
 import ExamCodeEditor from '../components/exam/ExamCodeEditor'
 import ExamFaceMonitor from '../components/exam/ExamFaceMonitor'
 import ExamTimerProgress from '../components/exam/ExamTimerProgress'
-import ProctoringConsentModal from '../components/ProctoringConsentModal'
 import BrandLogo from '../components/BrandLogo'
 import LogicWhileLiRELoader from '../components/LogicWhileLiRELoader'
 import FullscreenEnforcementOverlay from '../components/exam/FullscreenEnforcementOverlay'
@@ -119,7 +118,7 @@ export default function QuizPage() {
   const [violationMsg, setViolationMsg] = useState('')
   const [faceStatus, setFaceStatus] = useState<FaceStatus>('loading')
   const [showProctoringAlert, setShowProctoringAlert] = useState(false)
-  const [consentGiven, setConsentGiven] = useState(() => Boolean(sessionStorage.getItem(`lw_camera_consented_${examCode}`)))
+  const [consentGiven, setConsentGiven] = useState(true)
   const [adminWarningMsg, setAdminWarningMsg] = useState('')
   const [showAdminWarning, setShowAdminWarning] = useState(false)
   const [runResult, setRunResult] = useState<{ output: string; error?: string } | null>(null)
@@ -237,37 +236,36 @@ export default function QuizPage() {
 
         sessionIdRef.current = data.sessionId || data.session_id
         const proctoringMode: 'webcam' | 'screen' | 'dual' = exam?.proctoring_mode || 'webcam'
+        const fullDuration = (exam?.duration_minutes || 60) * 60
+        let initialTimeLeft: number
+
+        if (routerServerStartTime && routerDurationSeconds) {
+          // Accurate: router state populated by WaitingLobbyPage from EXAM_STARTED
+          const elapsed = Math.floor((Date.now() - routerServerStartTime) / 1000)
+          initialTimeLeft = Math.max(0, routerDurationSeconds - elapsed)
+        } else if (exam?.started_at) {
+          // Started by inspector via POST /start
+          const startedAtMs = new Date(exam.started_at).getTime()
+          const elapsed = Math.floor((Date.now() - startedAtMs) / 1000)
+          initialTimeLeft = Math.max(0, fullDuration - elapsed)
+        } else {
+          // Standard full duration for this exam attempt (e.g. 30 or 60 min)
+          initialTimeLeft = fullDuration
+        }
+
+        const computedEndTimeMs = Date.now() + (initialTimeLeft * 1000)
+
         setSession({
           candidateId: data.candidateId || hallTicket,
           examName: exam?.exam_name || exam?.name || 'Exam',
           totalMarks: exam?.total_marks || 100,
-          duration: (exam?.duration_minutes || 60) * 60,
+          duration: fullDuration,
           questions: randomizedQuestions,
           proctoringMode,
-          endTimeMs: exam?.end_time ? new Date(exam.end_time).getTime() : undefined,
+          endTimeMs: computedEndTimeMs,
           violationThreshold: Number(exam?.max_violations) || Number(exam?.violation_threshold) || 2,
         })
 
-        // Sprint 2 item 3: compute correct remaining time from server_start_time.
-        // Priority order:
-        //   1. router state serverStartTime (set by WaitingLobbyPage from EXAM_STARTED)
-        //   2. server-returned end_time (written by POST /start endpoint)
-        //   3. full duration_minutes (fallback for exams not yet started via push-to-start)
-        let initialTimeLeft: number
-        const fullDuration = (exam?.duration_minutes || 60) * 60
-
-        if (routerServerStartTime && routerDurationSeconds) {
-          // Most accurate: router state populated by WaitingLobbyPage's EXAM_STARTED handler
-          const elapsed = Math.floor((Date.now() - routerServerStartTime) / 1000)
-          initialTimeLeft = Math.max(0, routerDurationSeconds - elapsed)
-        } else if (exam?.end_time) {
-          // Second source: server wrote end_time when POST /start was called
-          const serverEndMs = new Date(exam.end_time).getTime()
-          initialTimeLeft = Math.max(0, Math.floor((serverEndMs - Date.now()) / 1000))
-        } else {
-          // Fallback: exam hasn't been started via push-to-start yet, use full duration
-          initialTimeLeft = fullDuration
-        }
         setTimeLeft(initialTimeLeft)
 
         // ── 1.4 Offline answer restoration ──
@@ -2586,20 +2584,7 @@ export default function QuizPage() {
         )}
       </AnimatePresence>
 
-      {/* ─── PROCTORING PRIVACY & CAMERA CONSENT MODAL ─── */}
-      <ProctoringConsentModal
-        isOpen={!consentGiven}
-        onConsent={() => {
-          setConsentGiven(true);
-          sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
-          document.documentElement.requestFullscreen().catch(() => {});
-          const mode = session?.proctoringMode || 'webcam';
-          if (mode === 'screen' || mode === 'dual') {
-            startScreenShare();
-          }
-        }}
-        examName={session?.examName || examCode}
-      />
+
 
       {/* ─── FULLSCREEN ENFORCEMENT OVERLAY (1.1) ─── */}
       <FullscreenEnforcementOverlay

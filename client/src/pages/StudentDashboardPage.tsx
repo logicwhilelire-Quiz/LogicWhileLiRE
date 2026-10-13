@@ -149,9 +149,21 @@ export default function StudentDashboardPage() {
         const res = await getStudentDashboard();
         if (res.data?.success) {
           setStudent(res.data.student || localCandidate);
-          setUpcomingExams(
-            Array.isArray(res.data.upcoming_exams) ? res.data.upcoming_exams : []
-          );
+          const rawExams: UpcomingExam[] = Array.isArray(res.data.upcoming_exams) ? res.data.upcoming_exams : [];
+          const seenKeys = new Set<string>();
+          const dedupedExams = rawExams.filter((ex) => {
+            const codeKey = (ex.code || '').trim().toUpperCase();
+            const idKey = String(ex.id || '').trim().toLowerCase();
+            const titleKey = (ex.title || '').trim().toLowerCase();
+            if (codeKey && seenKeys.has(`code:${codeKey}`)) return false;
+            if (idKey && seenKeys.has(`id:${idKey}`)) return false;
+            if (titleKey && seenKeys.has(`title:${titleKey}`)) return false;
+            if (codeKey) seenKeys.add(`code:${codeKey}`);
+            if (idKey) seenKeys.add(`id:${idKey}`);
+            if (titleKey) seenKeys.add(`title:${titleKey}`);
+            return true;
+          });
+          setUpcomingExams(dedupedExams);
           setPastResults(
             Array.isArray(res.data.past_results) ? res.data.past_results : []
           );

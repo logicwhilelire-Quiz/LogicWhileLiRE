@@ -40,12 +40,21 @@ const getCookie = (name: string): string | null => {
 
 // Request interceptor to attach Bearer token fallback & CSRF token
 const requestHandler = (config: any) => {
-  const isAdminRoute = config.url?.startsWith('/api/admin');
+  const url = config.url || '';
+  const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+  const isAdminEndpoint =
+    url.startsWith('/api/admin') ||
+    url.startsWith('/api/v1/exams') ||
+    url.startsWith('/api/v1/inspector') ||
+    url.startsWith('/api/exam-code');
+
   const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
   const studentToken = localStorage.getItem('student_token') || sessionStorage.getItem('student_token');
   const sessionToken = localStorage.getItem('session_token') || sessionStorage.getItem('session_token');
 
-  if (isAdminRoute && adminToken) {
+  if ((isAdminEndpoint || isAdminPath) && adminToken) {
+    config.headers.Authorization = `Bearer ${adminToken}`;
+  } else if (adminToken && !studentToken && !sessionToken) {
     config.headers.Authorization = `Bearer ${adminToken}`;
   } else if (studentToken) {
     config.headers.Authorization = `Bearer ${studentToken}`;
