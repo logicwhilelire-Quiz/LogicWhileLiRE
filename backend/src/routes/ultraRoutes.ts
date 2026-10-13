@@ -132,8 +132,8 @@ async function executeProgram(language: string, code: string, stdin = ''): Promi
     };
   }
 
-  // Tier 2: Piston API (if private or configured PISTON_URL/PISTON_API is set)
-  const rawPiston = process.env.PISTON_URL || process.env.PISTON_API;
+  // Tier 2: Piston API (if private or configured PISTON_URL/PISTON_API is set, or public fallback)
+  const rawPiston = process.env.PISTON_URL || process.env.PISTON_API || 'https://emkc.org/api/v2/piston';
   if (rawPiston) {
     const pistonUrl = rawPiston.endsWith('/execute') ? rawPiston : `${rawPiston.replace(/\/$/, '')}/execute`;
     try {
@@ -197,11 +197,8 @@ router.post('/execute', answerRateLimit, async (req: Request, res: Response) => 
       });
     }
 
-    // Run against test cases with robust cross-checks
-    const results = [];
-    let passed = 0;
-    let fullOutput = '';
-
+    // Parallel execution across all test cases with multi-layer cross-checks and timing
+    const startExecTime = Date.now();
     const normalizeOutput = (val: string) => {
       return val
         .replace(/\r\n/g, '\n')
@@ -212,63 +209,94 @@ router.post('/execute', answerRateLimit, async (req: Request, res: Response) => 
         .trim();
     };
 
-    for (const tc of testCases) {
-      const input = (tc.input_text !== undefined ? tc.input_text : tc.input) || '';
-      const rawExpected = String((tc.expected_output !== undefined ? tc.expected_output : tc.output) || '');
-      const expected = normalizeOutput(rawExpected);
-      const runRes = await executeProgram(language, code, input);
+    const results = await Promise.all(
+      testCases.map(async (tc: any, index: number) => {
+        const input = (tc.input_text !== undefined ? tc.input_text : tc.input) || '';
+        const rawExpected = String((tc.expected_output !== undefined ? tc.expected_output : tc.output) || '');
+        const expected = normalizeOutput(rawExpected);
+        
+        const tcStart = Date.now();
+        const runRes = await executeProgram(language, code, input);
+        const durationMs = Date.now() - tcStart;
 
-      const rawActual = runRes.stdout || '';
-      const actual = normalizeOutput(rawActual);
+        const rawActual = runRes.stdout || '';
+        const actual = normalizeOutput(rawActual);
 
-      // Multi-layer cross-checks:
-      // 1. Exact normalized string match
-      let isPassed = !runRes.hasError && (actual === expected);
+        // Multi-layer cross-checks:
+        // 1. Exact normalized string match
+        let isPassed = !runRes.hasError && (actual === expected);
 
-      // 2. Case-insensitive boolean comparison (e.g., 'True' vs 'true', 'False' vs 'false')
-      if (!isPassed && !runRes.hasError) {
-        if (actual.toLowerCase() === expected.toLowerCase() && (expected.toLowerCase() === 'true' || expected.toLowerCase() === 'false')) {
-          isPassed = true;
-        }
-      }
-
-      // 3. Floating-point numerical comparison if both represent numbers
-      if (!isPassed && !runRes.hasError && actual.length > 0 && expected.length > 0) {
-        const numActual = Number(actual);
-        const numExpected = Number(expected);
-        if (!isNaN(numActual) && !isNaN(numExpected) && Math.abs(numActual - numExpected) < 1e-5) {
-          isPassed = true;
-        }
-      }
-
-      // 4. Line-by-line whitespace-trimmed array comparison
-      if (!isPassed && !runRes.hasError) {
-        const actLines = actual.split('\n').map(l => l.trim()).filter(Boolean);
-        const expLines = expected.split('\n').map(l => l.trim()).filter(Boolean);
-        if (actLines.length > 0 && actLines.length === expLines.length) {
-          if (actLines.every((l, idx) => l === expLines[idx])) {
+        // 2. Case-insensitive boolean comparison (e.g., 'True' vs 'true', 'False' vs 'false')
+        if (!isPassed && !runRes.hasError) {
+          if (actual.toLowerCase() === expected.toLowerCase() && (expected.toLowerCase() === 'true' || expected.toLowerCase() === 'false')) {
             isPassed = true;
           }
         }
-      }
 
-      if (isPassed) passed++;
+        // 3. Floating-point numerical comparison if both represent numbers
+        if (!isPassed && !runRes.hasError && actual.length > 0 && expected.length > 0) {
+          const numActual = Number(actual);
+          const numExpected = Number(expected);
+          if (!isNaN(numActual) && !isNaN(numExpected) && Math.abs(numActual - numExpected) < 1e-5) {
+            isPassed = true;
+          }
+        }
 
-      results.push({
-        id: tc.id,
-        passed: isPassed,
-        input: tc.is_hidden ? '[hidden]' : input,
-        expected: tc.is_hidden ? '[hidden]' : expected,
-        actual: tc.is_hidden ? (isPassed ? '✓' : '✗') : actual,
-        stderr: runRes.stderr,
-        marks: isPassed ? (tc.marks || 1) : 0,
-      });
+        // 4. Line-by-line whitespace-trimmed array comparison
+        if (!isPassed && !runRes.hasError) {
+          const actLines = actual.split('\n').map(l => l.trim()).filter(Boolean);
+          const expLines = expected.split('\n').map(l => l.trim()).filter(Boolean);
+          if (actLines.length > 0 && actLines.length === expLines.length) {
+            if (actLines.every((l, idx) => l === expLines[idx])) {
+              isPassed = true;
+            }
+          }
+        }
 
-      fullOutput += `Test ${results.length}: ${isPassed ? '✓ PASS' : '✗ FAIL'}\n`;
-    }
+        // 5. Array / List comparison (e.g., [1, 2, 3] vs [1,2,3] or comma-separated)
+        if (!isPassed && !runRes.hasError) {
+          try {
+            const cleanAct = actual.replace(/^\[|\]$/g, '').split(',').map(s => s.trim()).filter(Boolean);
+            const cleanExp = expected.replace(/^\[|\]$/g, '').split(',').map(s => s.trim()).filter(Boolean);
+            if (cleanAct.length > 0 && cleanAct.length === cleanExp.length) {
+              if (cleanAct.every((val, idx) => val === cleanExp[idx])) {
+                isPassed = true;
+              }
+            }
+          } catch {}
+        }
+
+        // 6. JSON object equality
+        if (!isPassed && !runRes.hasError && ((actual.startsWith('{') && expected.startsWith('{')) || (actual.startsWith('[') && expected.startsWith('[')))) {
+          try {
+            if (JSON.stringify(JSON.parse(actual)) === JSON.stringify(JSON.parse(expected))) {
+              isPassed = true;
+            }
+          } catch {}
+        }
+
+        return {
+          id: tc.id || index + 1,
+          test_index: index + 1,
+          passed: isPassed,
+          input: tc.is_hidden ? '[hidden]' : input,
+          expected: tc.is_hidden ? '[hidden]' : expected,
+          actual: tc.is_hidden ? (isPassed ? '✓' : '✗') : actual,
+          stderr: runRes.stderr,
+          marks: isPassed ? (tc.marks || 1) : 0,
+          duration_ms: durationMs,
+        };
+      })
+    );
+
+    const passed = results.filter(r => r.passed).length;
+    const fullOutput = results
+      .map((r, i) => `Test ${i + 1}: ${r.passed ? '✓ PASS' : '✗ FAIL'}${r.stderr ? ` (${r.stderr.trim()})` : ''} [${r.duration_ms}ms]`)
+      .join('\n') + '\n';
 
     const totalMarks = results.reduce((sum, r) => sum + (r.marks || 0), 0);
-    const maxMarks   = testCases.reduce((sum: number, tc: { marks?: number }) => sum + (tc.marks || 1), 0);
+    const maxMarks = testCases.reduce((sum: number, tc: { marks?: number }) => sum + (tc.marks || 1), 0);
+    const totalExecutionTimeMs = Date.now() - startExecTime;
 
     return res.json({
       success: true,
@@ -278,6 +306,7 @@ router.post('/execute', answerRateLimit, async (req: Request, res: Response) => 
       total: testCases.length,
       score: totalMarks,
       maxScore: maxMarks,
+      execution_time_ms: totalExecutionTimeMs,
       verdict: passed === testCases.length ? 'Accepted' : passed > 0 ? 'Partial' : 'Wrong Answer',
     });
 
@@ -1183,6 +1212,10 @@ router.post(
   } catch (err) {
     console.error('[ExamStart]', err);
     res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Start failed' });
+  } finally {
+    // Invalidate lobby cache immediately so next polling reflects fresh status
+    const code = ((req.params.examCode as string) || '').toUpperCase();
+    lobbyDbCache.delete(code);
   }
 });
 
@@ -1196,48 +1229,80 @@ router.post(
     const code = ((req.params.examCode as string) || '').toUpperCase();
     const { resetExamStartedState } = await import('../services/socketService');
     resetExamStartedState(code);
+    lobbyDbCache.delete(code);
     return res.json({ success: true, message: `Exam ${code} state reset` });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Reset failed' });
   }
 });
 
-// ─── INSTRUCTOR LOBBY STATS ────────────────────────────────────────────────────
+// ─── INSTRUCTOR LOBBY STATS (High-Speed Memory Cached) ──────────────────────────
 // GET /api/v1/exams/:examCode/lobby-stats
 // Returns real-time enrolled / connected / pending counts + exam_started_state.
-// The exam_started_state field is used by WaitingLobbyPage on mount to recover
-// from a page refresh after the exam has already started.
+// Uses an in-memory TTL cache (2.5s) for database queries to prevent Supabase connection
+// exhaustion when hundreds of concurrent students poll the waiting lobby simultaneously.
+interface LobbyDbCacheEntry {
+  enrolledCount: number;
+  durationSec: number;
+  timestamp: number;
+}
+const lobbyDbCache = new Map<string, LobbyDbCacheEntry>();
+const LOBBY_CACHE_TTL_MS = 2500;
+
 router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response) => {
   try {
     const code = ((req.params.examCode as string) || '').toUpperCase();
     const { getLobbyStats, getExamStartedState } = await import('../services/socketService');
+    // Socket stats are 100% in-memory and real-time
     const stats = getLobbyStats(code);
 
-    // Include the exam_started_state so clients can recover from page refreshes
+    // Real-time started state from memory (used to auto-unblock students who refreshed)
     const startedState = getExamStartedState(code);
 
-    // Also fetch enrolled count and duration from DB for accuracy
-    const [enrolled, examRow] = await Promise.all([
-      supabase
-        .from('exam_code_attempts')
-        .select('id', { count: 'exact', head: true })
-        .eq('exam_code', code),
-      supabase
-        .from('exam_codes')
-        .select('duration_minutes')
-        .eq('exam_code', code)
-        .maybeSingle(),
-    ]);
+    // Fetch enrolled count and duration from short-lived memory cache to ensure sub-2ms responses
+    const now = Date.now();
+    let cached = lobbyDbCache.get(code);
+    let enrolledCount = stats.enrolled;
+    let durationSec = 3600;
 
-    const durationSec = ((examRow.data as any)?.duration_minutes || 60) * 60;
+    if (cached && now - cached.timestamp < LOBBY_CACHE_TTL_MS) {
+      enrolledCount = cached.enrolledCount;
+      durationSec = cached.durationSec;
+    } else {
+      try {
+        const [enrolled, examRow] = await Promise.all([
+          supabase
+            .from('exam_code_attempts')
+            .select('id', { count: 'exact', head: true })
+            .eq('exam_code', code),
+          supabase
+            .from('exam_codes')
+            .select('duration_minutes')
+            .eq('exam_code', code)
+            .maybeSingle(),
+        ]);
+
+        enrolledCount = (enrolled.data as any)?.count ?? stats.enrolled;
+        durationSec = ((examRow.data as any)?.duration_minutes || 60) * 60;
+
+        lobbyDbCache.set(code, {
+          enrolledCount,
+          durationSec,
+          timestamp: now,
+        });
+      } catch {
+        enrolledCount = cached ? cached.enrolledCount : stats.enrolled;
+        durationSec = cached ? cached.durationSec : 3600;
+      }
+    }
 
     res.json({
       success: true,
       exam_code: code,
-      enrolled: (enrolled.data as any)?.count ?? stats.enrolled,
+      enrolled: enrolledCount,
       connected: stats.connected,
       queue_count: stats.queue_count ?? stats.connected,
-      pending: Math.max(0, ((enrolled.data as any)?.count ?? 0) - stats.connected),
+      pending: Math.max(0, enrolledCount - stats.connected),
       duration_seconds: durationSec,
       // Exam started state — null if not yet started
       exam_started: startedState

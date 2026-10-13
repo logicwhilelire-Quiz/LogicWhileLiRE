@@ -513,6 +513,17 @@ export async function deleteBatch(req: Request, res: Response): Promise<void> {
 
 // ── 5. HIERARCHY OVERVIEW TREE (College -> Academic Year -> Cohort -> Section -> Batch) ──
 
+interface HierarchyOverviewCacheEntry {
+  data: any;
+  timestamp: number;
+}
+const hierarchyOverviewCache = new Map<string, HierarchyOverviewCacheEntry>();
+const HIERARCHY_OVERVIEW_TTL_MS = 3000;
+
+export function invalidateHierarchyOverviewCache(): void {
+  hierarchyOverviewCache.clear();
+}
+
 export async function getHierarchyOverview(req: Request, res: Response): Promise<void> {
   const { isScoped, collegeId } = resolveCollegeScope(req);
 
@@ -528,6 +539,13 @@ export async function getHierarchyOverview(req: Request, res: Response): Promise
 
     if (staffRec?.college_id) facultyCollegeId = staffRec.college_id;
     if (Array.isArray(staffRec?.section_ids)) facultySectionIds = staffRec.section_ids;
+  }
+
+  const cacheKey = `${facultyCollegeId || 'all'}_${[...facultySectionIds].sort().join(',')}`;
+  const cached = hierarchyOverviewCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < HIERARCHY_OVERVIEW_TTL_MS) {
+    res.json(cached.data);
+    return;
   }
 
   // Fetch all entities
@@ -561,14 +579,21 @@ export async function getHierarchyOverview(req: Request, res: Response): Promise
     batQuery.then((r) => r.data || []),
   ]);
 
-  res.json({
+  const responsePayload = {
     success: true,
     colleges: colleges || [],
     academic_years: ays,
     cohorts: cohs,
     sections: secs,
     batches: bats,
+  };
+
+  hierarchyOverviewCache.set(cacheKey, {
+    data: responsePayload,
+    timestamp: Date.now(),
   });
+
+  res.json(responsePayload);
 }
 
 // ── 6. STUDENT MANAGEMENT (Belongs to exactly one section and batch) ──

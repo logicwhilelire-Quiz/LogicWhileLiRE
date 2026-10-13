@@ -32,6 +32,9 @@ runProductionBootGuard();
 
 const app = express();
 const httpServer = http.createServer(app);
+// Configure HTTP server keep-alive timeouts (65s > reverse proxy 60s default) to prevent socket drops
+httpServer.keepAliveTimeout = 65000;
+httpServer.headersTimeout = 66000;
 const PORT = parseInt(process.env.PORT || '3001');
 
 import fs from 'fs';
@@ -82,13 +85,24 @@ app.use(
   })
 );
 
-// Standard Permissions-Policy header for webcam and screen capture proctoring
+// Standard Permissions-Policy header for webcam and screen capture proctoring & Keep-Alive headers
 app.use((_req, res, next) => {
   res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), display-capture=(self)');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Keep-Alive', 'timeout=65, max=1000');
   next();
 });
 
-app.use(compression());
+app.use(
+  compression({
+    threshold: 1024,
+    level: 6,
+    filter: (req, res) => {
+      if (req.headers['x-no-compression']) return false;
+      return compression.filter(req, res);
+    },
+  })
+);
 
 app.use(
   cors({

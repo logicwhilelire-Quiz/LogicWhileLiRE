@@ -126,6 +126,10 @@ const handleExamCodeStart = async (req: any, res: any) => {
           success: false,
           error: 'The inspector has not started this examination yet. Please wait in the waiting lobby.',
           code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
+          waiting_list: true,
+          exam_name: exam.exam_name || exam.name || code,
+          duration_minutes: exam.duration_minutes || 60,
+          total_questions: exam.total_questions || 15,
         });
       }
     }
