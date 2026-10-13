@@ -1105,7 +1105,7 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
 
   // Questions strictly preserve author upload order (display_order); options are deterministically shuffled per candidate
-  const canonicalCandidate = String(studentHt || candidateId || attemptId || req.query.candidateId || req.query.hallTicket || 'student').toUpperCase().trim();
+  const canonicalCandidate = String(studentHt || req.query.candidateId || attemptId || req.query.hallTicket || 'student').toUpperCase().trim();
   const studentIdentifier = `${canonicalCandidate}_${effectiveCode}`;
   const orderedQuestions = questions || [];
 
