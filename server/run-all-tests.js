@@ -48,8 +48,8 @@ for (const file of testFiles) {
       : '$2b$12$Y65kU/s0HBji1KPpvVjjh.fXc1.p4T.B35JH3xj82W7Udi6PDGPeu';
 
   try {
-    execSync(`node ${file}`, {
-      stdio: 'inherit',
+    const output = execSync(`node ${file}`, {
+      stdio: 'pipe',
       cwd: __dirname,
       env: {
         ...process.env,
@@ -69,9 +69,22 @@ for (const file of testFiles) {
         SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || 'mock-anon-key',
       },
     });
+    process.stdout.write(output);
     passedCount++;
   } catch (err) {
+    const stdout = err.stdout ? err.stdout.toString() : '';
+    const stderr = err.stderr ? err.stderr.toString() : '';
+    if (stdout) process.stdout.write(stdout);
+    if (stderr) process.stderr.write(stderr);
     console.error(`❌ ${file} failed with exit code ${err.status || 1}: ${err.message || ''}`);
+    const lastLines = (stdout + '\n' + stderr)
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l && !l.includes('injected env'))
+      .slice(-5)
+      .join(' | ')
+      .replace(/[\r\n]/g, ' ');
+    console.log(`::error file=${file},title=Test Failure (${file})::${lastLines || err.message}`);
     failures.push(file);
     break;
   }
