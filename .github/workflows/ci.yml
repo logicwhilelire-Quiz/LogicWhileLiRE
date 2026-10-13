@@ -34,11 +34,19 @@ jobs:
       - name: Run Server Unit & Security Test Suites
         run: npm test
         env:
+          PORT: 0
           SUPABASE_URL: https://mock.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: mock-key
           SUPABASE_ANON_KEY: mock-anon-key
           JWT_SECRET: test-secret-mock-jwt-key-2026-xyz
           ADMIN_JWT_SECRET: test-admin-jwt-key-2026-abc
+          ADMIN_USERNAME: admin
+          ADMIN_PASSWORD: LiREAdmin@2026!
+          ADMIN_PASSWORD_HASH: $2b$12$Y65kU/s0HBji1KPpvVjjh.fXc1.p4T.B35JH3xj82W7Udi6PDGPeu
+          INSPECTOR_USERNAME: inspector
+          INSPECTOR_PASSWORD: LiREInspector@2026!
+          TOTP_ENCRYPTION_KEY: c46153758e5927f0516f2eb1cf60e62fe006b19ee7ba35a1918ec66f37ceb9ff
+          CLIENT_ORIGIN: http://localhost:5173
           NODE_ENV: test
           TEST_MOCK_ONLY: 'true'
 
@@ -64,7 +72,11 @@ jobs:
           JWT_SECRET: test-secret-mock-jwt-key-2026-xyz
           ADMIN_JWT_SECRET: test-admin-jwt-key-2026-abc
           ADMIN_USERNAME: admin
-          ADMIN_PASSWORD_HASH: $2b$12$MwHGNgeHppSpLHgWF61EqOv.ih06YQ4VyXrw1BewRY6NdFhSkQMkS
+          ADMIN_PASSWORD: LiREAdmin@2026!
+          ADMIN_PASSWORD_HASH: $2b$12$Y65kU/s0HBji1KPpvVjjh.fXc1.p4T.B35JH3xj82W7Udi6PDGPeu
+          INSPECTOR_USERNAME: inspector
+          INSPECTOR_PASSWORD: LiREInspector@2026!
+          TOTP_ENCRYPTION_KEY: c46153758e5927f0516f2eb1cf60e62fe006b19ee7ba35a1918ec66f37ceb9ff
           CLIENT_ORIGIN: http://localhost:5173
           NODE_ENV: test
           TEST_MOCK_ONLY: 'true'

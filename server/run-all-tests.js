@@ -51,6 +51,17 @@ for (const file of testFiles) {
         TEST_MOCK_ONLY: 'true',
         NODE_ENV: 'test',
         PORT: '0',
+        ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin',
+        ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'LiREAdmin@2026!',
+        ADMIN_PASSWORD_HASH: process.env.ADMIN_PASSWORD_HASH || '$2b$12$Y65kU/s0HBji1KPpvVjjh.fXc1.p4T.B35JH3xj82W7Udi6PDGPeu',
+        INSPECTOR_USERNAME: process.env.INSPECTOR_USERNAME || 'inspector',
+        INSPECTOR_PASSWORD: process.env.INSPECTOR_PASSWORD || 'LiREInspector@2026!',
+        TOTP_ENCRYPTION_KEY: process.env.TOTP_ENCRYPTION_KEY || 'c46153758e5927f0516f2eb1cf60e62fe006b19ee7ba35a1918ec66f37ceb9ff',
+        JWT_SECRET: process.env.JWT_SECRET || 'test-secret-mock-jwt-key-2026-xyz',
+        ADMIN_JWT_SECRET: process.env.ADMIN_JWT_SECRET || 'test-admin-jwt-key-2026-abc',
+        SUPABASE_URL: process.env.SUPABASE_URL || 'https://mock.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || 'mock-key',
+        SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || 'mock-anon-key',
       },
     });
     passedCount++;
