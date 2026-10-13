@@ -319,7 +319,7 @@ export default function CandidateRegisterGatePage() {
         setServerError(msg);
       }
     } catch (err: any) {
-      let msg = err.response?.data?.error || err.response?.data?.message || 'Server error occurred during candidate registration.';
+      let msg = err.response?.data?.error || err.response?.data?.message || 'Unable to register at this moment. Please verify your details or retry shortly.';
       if (err.response?.data?.details && Array.isArray(err.response.data.details) && err.response.data.details.length > 0) {
         const detailStr = err.response.data.details.map((d: any) => d.message || `${d.field}: ${d.message}`).join(', ');
         msg = `${msg}: ${detailStr}`;

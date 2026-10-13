@@ -17,6 +17,13 @@ if (import.meta.env.PROD && !isLocalhostHost && (!envApiUrl || envApiUrl.include
 
 const BASE_URL = API_BASE_URL;
 
+// Set global axios defaults to match api instance resilience
+axios.defaults.baseURL = BASE_URL;
+axios.defaults.timeout = 60000;
+axios.defaults.withCredentials = true;
+axios.defaults.xsrfCookieName = 'XSRF-TOKEN';
+axios.defaults.xsrfHeaderName = 'x-xsrf-token';
+
 const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: true, // send HttpOnly cookies
@@ -24,8 +31,15 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Request interceptor to attach Bearer token fallback for cross-domain environments
-api.interceptors.request.use((config) => {
+// Helper to extract CSRF token cookie when present
+const getCookie = (name: string): string | null => {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^|;\\s*)' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[2]) : null;
+};
+
+// Request interceptor to attach Bearer token fallback & CSRF token
+const requestHandler = (config: any) => {
   const isAdminRoute = config.url?.startsWith('/api/admin');
   const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
   const studentToken = localStorage.getItem('student_token') || sessionStorage.getItem('student_token');
@@ -38,26 +52,76 @@ api.interceptors.request.use((config) => {
   } else if (sessionToken) {
     config.headers.Authorization = `Bearer ${sessionToken}`;
   }
-  return config;
-});
 
-// Response interceptor to clean up invalidated or rejected demo tokens
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error?.response?.status === 401) {
-      const url = error.config?.url || '';
-      if (url.startsWith('/api/admin')) {
-        const token = localStorage.getItem('admin_token');
-        if (token && (token.startsWith('demo-') || error.response?.data?.code === 'DEMO_BYPASS_REJECTED')) {
-          localStorage.removeItem('admin_token');
-          sessionStorage.removeItem('admin_token');
-        }
-      }
-    }
-    return Promise.reject(error);
+  // Cross-domain CSRF cookie attachment
+  const xsrfToken = getCookie('XSRF-TOKEN');
+  if (xsrfToken && !config.headers['x-xsrf-token']) {
+    config.headers['x-xsrf-token'] = xsrfToken;
   }
-);
+
+  return config;
+};
+
+api.interceptors.request.use(requestHandler);
+axios.interceptors.request.use(requestHandler);
+
+// Resilient retry handler for cold-starts (Render sleep), network errors & 502/503/504
+const attachResilientRetry = (instance: any) => {
+  instance.interceptors.response.use(
+    (response: any) => response,
+    async (error: any) => {
+      const config = error?.config;
+      if (!config) return Promise.reject(error);
+
+      // Clean up invalidated auth tokens on 401
+      if (error?.response?.status === 401) {
+        const url = config.url || '';
+        if (url.startsWith('/api/admin')) {
+          const token = localStorage.getItem('admin_token');
+          if (token && (token.startsWith('demo-') || error.response?.data?.code === 'DEMO_BYPASS_REJECTED')) {
+            localStorage.removeItem('admin_token');
+            sessionStorage.removeItem('admin_token');
+          }
+        }
+        return Promise.reject(error);
+      }
+
+      // Check if candidate for silent auto-retry (cold start / transient gateway / network hiccup)
+      config.__retryCount = config.__retryCount || 0;
+      const isNetworkOrTimeout =
+        error.code === 'ECONNABORTED' ||
+        error.message?.includes('timeout') ||
+        error.message?.includes('Network Error') ||
+        !error.response;
+      const isTransientGateway =
+        error.response && [502, 503, 504].includes(error.response.status);
+
+      const maxRetries = config.method?.toLowerCase() === 'get' ? 3 : 2;
+
+      if ((isNetworkOrTimeout || isTransientGateway) && config.__retryCount < maxRetries) {
+        config.__retryCount += 1;
+        const delayMs = config.__retryCount * 1200;
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        return instance(config);
+      }
+
+      return Promise.reject(error);
+    }
+  );
+};
+
+attachResilientRetry(api);
+attachResilientRetry(axios);
+
+// Proactive background keep-alive ping (keeps Render container hot every 4 minutes while browser is open)
+if (typeof window !== 'undefined') {
+  const warmUpEngine = () => {
+    fetch(`${BASE_URL}/api/health`, { method: 'GET', keepalive: true })
+      .catch(() => {});
+  };
+  warmUpEngine();
+  setInterval(warmUpEngine, 4 * 60 * 1000);
+}
 
 // ——— Auth (Students & Recovery) ———
 export const studentLogin = (data: { login?: string; roll_number?: string; email?: string; password: string }) =>
