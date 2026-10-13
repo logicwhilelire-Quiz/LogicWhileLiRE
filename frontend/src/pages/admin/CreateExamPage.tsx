@@ -22,6 +22,14 @@ export function deriveStudyYearClient(passoutYear: number, currentDate: Date = n
   
   const yearsRemaining = passoutYear - academicEndYear
   const rawStudyYear = 4 - yearsRemaining
+
+  if (rawStudyYear > 4) {
+    return { studyYear: 5, academicYearStr, label: 'Alumni / Graduated', yearsRemaining }
+  }
+  if (rawStudyYear < 1) {
+    return { studyYear: 0, academicYearStr, label: 'Prospective / Incoming', yearsRemaining }
+  }
+
   const studyYear = Math.min(Math.max(rawStudyYear, 1), 4)
   
   const labels: Record<number, string> = {
@@ -376,7 +384,10 @@ function Step3PassoutYear({
   onSelect: (year: number) => void
 }) {
   const currentCalYear = new Date().getFullYear()
-  const candidateYears = [currentCalYear, currentCalYear + 1, currentCalYear + 2, currentCalYear + 3, currentCalYear + 4]
+  const currentMonth = new Date().getMonth()
+  const active4thYearPassout = currentMonth >= 6 ? currentCalYear + 1 : currentCalYear
+  // Active undergrad cohorts (4th, 3rd, 2nd, 1st year)
+  const candidateYears = [active4thYearPassout, active4thYearPassout + 1, active4thYearPassout + 2, active4thYearPassout + 3]
   const derived = deriveStudyYearClient(passoutYear)
 
   return (
@@ -1042,10 +1053,15 @@ export default function CreateExamPage() {
   const [colleges, setColleges] = useState<CollegeOption[]>([])
   const [staffList, setStaffList] = useState<StaffOption[]>([])
 
+  const defaultPassoutYear = (() => {
+    const d = new Date()
+    return d.getMonth() >= 6 ? d.getFullYear() + 1 : d.getFullYear()
+  })()
+
   const [form, setForm] = useState<ExamMeta>({
     college_id: 0,
     branch: 'CSE',
-    passout_year: 2026,
+    passout_year: defaultPassoutYear,
     section_ids: ['A'],
     section_id: 'A',
     batch_id: '',
