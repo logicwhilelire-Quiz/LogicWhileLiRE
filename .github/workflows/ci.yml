@@ -32,7 +32,9 @@ jobs:
         run: npm run build
 
       - name: Run Server Unit & Security Test Suites
-        run: npm test
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee /tmp/server_test.log
         env:
           PORT: 0
           SUPABASE_URL: https://mock.supabase.co
@@ -42,13 +44,23 @@ jobs:
           ADMIN_JWT_SECRET: test-admin-jwt-key-2026-abc
           ADMIN_USERNAME: admin
           ADMIN_PASSWORD: LiREAdmin@2026!
-          ADMIN_PASSWORD_HASH: $2b$12$Y65kU/s0HBji1KPpvVjjh.fXc1.p4T.B35JH3xj82W7Udi6PDGPeu
+          ADMIN_PASSWORD_HASH: '$2b$12$Y65kU/s0HBji1KPpvVjjh.fXc1.p4T.B35JH3xj82W7Udi6PDGPeu'
           INSPECTOR_USERNAME: inspector
           INSPECTOR_PASSWORD: LiREInspector@2026!
           TOTP_ENCRYPTION_KEY: c46153758e5927f0516f2eb1cf60e62fe006b19ee7ba35a1918ec66f37ceb9ff
           CLIENT_ORIGIN: http://localhost:5173
           NODE_ENV: test
           TEST_MOCK_ONLY: 'true'
+
+      - name: Publish Test Results to Job Summary
+        if: always()
+        run: |
+          if [ -f /tmp/server_test.log ]; then
+            echo "### 🧪 Server Test Suite Execution Summary" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 80 /tmp/server_test.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Launch Server & Run Smoke Verification
         run: |
@@ -73,7 +85,7 @@ jobs:
           ADMIN_JWT_SECRET: test-admin-jwt-key-2026-abc
           ADMIN_USERNAME: admin
           ADMIN_PASSWORD: LiREAdmin@2026!
-          ADMIN_PASSWORD_HASH: $2b$12$Y65kU/s0HBji1KPpvVjjh.fXc1.p4T.B35JH3xj82W7Udi6PDGPeu
+          ADMIN_PASSWORD_HASH: '$2b$12$Y65kU/s0HBji1KPpvVjjh.fXc1.p4T.B35JH3xj82W7Udi6PDGPeu'
           INSPECTOR_USERNAME: inspector
           INSPECTOR_PASSWORD: LiREInspector@2026!
           TOTP_ENCRYPTION_KEY: c46153758e5927f0516f2eb1cf60e62fe006b19ee7ba35a1918ec66f37ceb9ff
