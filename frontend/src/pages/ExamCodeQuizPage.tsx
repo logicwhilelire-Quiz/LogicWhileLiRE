@@ -522,6 +522,7 @@ export default function QuizPage() {
       })
 
       socket.on('connect', () => {
+        socket?.emit('lobby:join', { examCode: examCode.toUpperCase(), hallTicket, studentName: hallTicket })
         socket?.emit('join_lobby', { examCode: examCode.toUpperCase(), hallTicket })
         socket?.emit('join_room', `lobby:${examCode.toUpperCase()}`)
       })

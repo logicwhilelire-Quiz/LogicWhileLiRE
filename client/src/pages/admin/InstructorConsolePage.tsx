@@ -1378,6 +1378,11 @@ export default function InstructorConsolePage() {
               <strong style={{ color: "#FFFFFF" }}>{joinedCount}</strong> connected candidates in{" "}
               <strong style={{ color: "#A78BFA" }}>{currentCode}</strong> and activate the server-authoritative timer.
             </p>
+            {startError && (
+              <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.4)", color: "#F87171", marginBottom: 16, fontSize: "0.84rem" }}>
+                ⚠️ {startError}
+              </div>
+            )}
             <div style={{ display: "flex", gap: 12 }}>
               <button
                 onClick={() => setConfirmOpen(false)}
