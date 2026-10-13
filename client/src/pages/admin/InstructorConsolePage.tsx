@@ -173,11 +173,24 @@ export default function InstructorConsolePage() {
           const secs: string[] = [];
           if (Array.isArray(res.data.sections)) {
             for (const s of res.data.sections) {
-              if (s.section_name && !secs.includes(s.section_name)) {
-                secs.push(s.section_name);
+              const secName = s.section_name || s.name;
+              if (secName && !secs.includes(secName)) {
+                secs.push(secName);
               }
             }
           }
+          if (Array.isArray(res.data.enrolled_students)) {
+            for (const stu of res.data.enrolled_students) {
+              const stuSec = stu.section ? (stu.section.length === 1 ? `Section ${stu.section.toUpperCase()}` : stu.section) : null;
+              if (stuSec && !secs.includes(stuSec)) {
+                secs.push(stuSec);
+              }
+            }
+          }
+          if (secs.length === 0) {
+            secs.push('Section A', 'Section B', 'Section C', 'Section D');
+          }
+          secs.sort();
           setSectionsList(secs);
         }
       } catch (err: any) {
@@ -343,20 +356,23 @@ export default function InstructorConsolePage() {
     }
   };
 
+  const normalizeSec = (sec?: string | null) =>
+    (sec || "").trim().toLowerCase().replace(/^section\s*/i, "");
+
   // Section Filtering
   const filteredQueue = useMemo(() => {
     if (selectedSection === "ALL") return waitingStudents;
+    const target = normalizeSec(selectedSection);
     return waitingStudents.filter(
-      (s) => (s.section || "").toLowerCase() === selectedSection.toLowerCase()
+      (s) => normalizeSec(s.section) === target
     );
   }, [waitingStudents, selectedSection]);
 
   const filteredEnrolled = useMemo(() => {
     if (selectedSection === "ALL") return enrolledStudents;
+    const target = normalizeSec(selectedSection);
     return enrolledStudents.filter(
-      (s) =>
-        (s.section || "").toLowerCase() === selectedSection.toLowerCase() ||
-        (s.section || "").toLowerCase() === `section ${selectedSection}`.toLowerCase()
+      (s) => normalizeSec(s.section) === target
     );
   }, [enrolledStudents, selectedSection]);
 

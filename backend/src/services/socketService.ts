@@ -318,13 +318,31 @@ export function initSocketIO(httpServer: HttpServer): IOServer {
       if (!lobbyConnections.has(code)) lobbyConnections.set(code, new Set());
       lobbyConnections.get(code)!.add(socket.id);
 
+      let resolvedName = data.studentName;
+      let resolvedSection = data.section;
+      if (data.hallTicket) {
+        const { data: stu } = await supabase
+          .from('students')
+          .select('name, first_name, last_name, section')
+          .or(`hall_ticket.eq.${data.hallTicket},roll_number.eq.${data.hallTicket}`)
+          .maybeSingle();
+        if (stu) {
+          if (!resolvedName || resolvedName === data.hallTicket || resolvedName === 'Student Candidate') {
+            resolvedName = stu.name || `${stu.first_name || ''} ${stu.last_name || ''}`.trim() || data.hallTicket;
+          }
+          if (!resolvedSection || resolvedSection === 'General') {
+            resolvedSection = stu.section || 'A';
+          }
+        }
+      }
+
       // Record student details for queue tracking
       const studentInfo: LobbyStudent = {
         socketId: socket.id,
         examCode: code,
         hallTicket: data.hallTicket || `HT-${socket.id.slice(0, 6).toUpperCase()}`,
-        studentName: data.studentName || 'Student Candidate',
-        section: data.section || 'General',
+        studentName: resolvedName || data.studentName || 'Student Candidate',
+        section: resolvedSection || data.section || 'General',
         joinedAt: Date.now(),
       };
       socketStudents.set(socket.id, studentInfo);

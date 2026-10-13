@@ -522,7 +522,17 @@ export default function QuizPage() {
       })
 
       socket.on('connect', () => {
-        socket?.emit('lobby:join', { examCode: examCode.toUpperCase(), hallTicket, studentName: hallTicket })
+        let stuName = hallTicket
+        let stuSec = 'A'
+        try {
+          const raw = localStorage.getItem('logicwhilelire_student') || localStorage.getItem('student_user')
+          if (raw) {
+            const parsed = JSON.parse(raw)
+            if (parsed.name) stuName = parsed.name
+            if (parsed.section) stuSec = parsed.section
+          }
+        } catch {}
+        socket?.emit('lobby:join', { examCode: examCode.toUpperCase(), hallTicket, studentName: stuName, section: stuSec })
         socket?.emit('join_lobby', { examCode: examCode.toUpperCase(), hallTicket })
         socket?.emit('join_room', `lobby:${examCode.toUpperCase()}`)
       })
