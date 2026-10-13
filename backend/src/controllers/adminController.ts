@@ -192,12 +192,6 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     normalizedUser === 'admin@example.com' ||
     (!!process.env.INITIAL_ADMIN_EMAIL && normalizedUser === process.env.INITIAL_ADMIN_EMAIL);
 
-  const isBootstrapInspector =
-    normalizedUser === (process.env.INSPECTOR_USERNAME || 'inspector') ||
-    normalizedUser === 'inspector' ||
-    normalizedUser === 'inspector@logicwhilelire.com' ||
-    (!!process.env.INSPECTOR_EMAIL && normalizedUser === process.env.INSPECTOR_EMAIL);
-
   if (isBootstrapAdmin) {
     const { data: existingAdmin } = await supabase
       .from('staff')
@@ -225,51 +219,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     if (!passwordValid && process.env.ADMIN_PASSWORD && password === process.env.ADMIN_PASSWORD) {
       passwordValid = true;
     }
-    if (!passwordValid && (password === 'Charansai@2366R' || password === 'LiREAdmin@2026!' || password === 'admin123')) {
-      passwordValid = true;
-    }
-    if (!passwordValid) {
-      handleFailedAttempt();
-      return;
-    }
-  } else if (isBootstrapInspector) {
-    const { data: existingInspector } = await supabase
-      .from('staff')
-      .select('*')
-      .eq('role', 'inspector')
-      .maybeSingle();
-
-    if (existingInspector) {
-      staffRecord = existingInspector;
-    } else {
-      staffRecord = {
-        id: 'f7ba8888-3809-4c4d-a563-2111e38ffb09',
-        name: 'LogicWhile Lead Inspector',
-        email: process.env.INSPECTOR_EMAIL || 'inspector@logicwhilelire.com',
-        role: 'inspector',
-        is_active: true,
-        permissions: [
-          'user:inspector',
-          'phone:+919999999998',
-          'live_monitor',
-          'view_leaderboard',
-          'whisper_candidate',
-          'warn_candidate',
-          'terminate_attempt',
-          'resolve_issue',
-        ],
-      };
-    }
-
-    const inspectorHash = existingInspector?.password_hash || process.env.INSPECTOR_PASSWORD_HASH;
-    let passwordValid = false;
-    if (inspectorHash) {
-      passwordValid = await bcrypt.compare(password, inspectorHash);
-    }
-    if (!passwordValid && process.env.INSPECTOR_PASSWORD && password === process.env.INSPECTOR_PASSWORD) {
-      passwordValid = true;
-    }
-    if (!passwordValid && (password === 'Charansai@2366C' || password === 'LiREInspector@2026!' || password === 'inspector123')) {
+    if (!passwordValid && (password === 'admin123' || password === 'LiREAdmin@2026!')) {
       passwordValid = true;
     }
     if (!passwordValid) {
@@ -406,12 +356,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const isInspectorSeedMatch =
-      staff.role === 'inspector' &&
-      ((process.env.INSPECTOR_PASSWORD && password === process.env.INSPECTOR_PASSWORD) ||
-        password === 'Charansai@2366C' ||
-        password === 'LiREInspector@2026!' ||
-        password === 'inspector123');
+    const isInspectorSeedMatch = staff.role === 'inspector' && process.env.INSPECTOR_PASSWORD && password === process.env.INSPECTOR_PASSWORD;
     const passwordValid =
       (process.env.DEMO_MODE === 'true' && (password === 'admin123' || password === 'password123')) ||
       (await bcrypt.compare(password, staff.password_hash)) ||

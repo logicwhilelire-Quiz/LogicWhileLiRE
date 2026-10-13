@@ -323,7 +323,14 @@ export async function createSection(req: Request, res: Response): Promise<void> 
   const { college_id, academic_year_id, cohort_id, name, section_name, branch = 'CSE', is_active = true } = req.body;
   const { isScoped, collegeId: scopedCollegeId } = resolveCollegeScope(req);
 
-  const effectiveCollegeId = isScoped ? scopedCollegeId : college_id;
+  let effectiveCollegeId = isScoped ? scopedCollegeId : college_id;
+  if (!effectiveCollegeId && cohort_id) {
+    const { data: cohortRow } = await supabase.from('cohorts').select('college_id').eq('id', cohort_id).maybeSingle();
+    if (cohortRow?.college_id) {
+      effectiveCollegeId = cohortRow.college_id;
+    }
+  }
+
   const effectiveName = name || section_name;
   if (!effectiveCollegeId || !effectiveName || !cohort_id) {
     res.status(400).json({ success: false, error: 'college_id, cohort_id, and name (e.g. A, B, C) are required' });
@@ -425,7 +432,17 @@ export async function createBatch(req: Request, res: Response): Promise<void> {
   const { college_id, academic_year_id, cohort_id, section_id, name, batch_name, capacity = 40, is_active = true } = req.body;
   const { isScoped, collegeId: scopedCollegeId } = resolveCollegeScope(req);
 
-  const effectiveCollegeId = isScoped ? scopedCollegeId : college_id;
+  let effectiveCollegeId = isScoped ? scopedCollegeId : college_id;
+  let effectiveCohortId = cohort_id;
+
+  if ((!effectiveCollegeId || !effectiveCohortId) && section_id) {
+    const { data: secRow } = await supabase.from('sections').select('college_id, cohort_id').eq('id', section_id).maybeSingle();
+    if (secRow) {
+      if (!effectiveCollegeId && secRow.college_id) effectiveCollegeId = secRow.college_id;
+      if (!effectiveCohortId && secRow.cohort_id) effectiveCohortId = secRow.cohort_id;
+    }
+  }
+
   const effectiveName = name || batch_name;
   if (!effectiveCollegeId || !section_id || !effectiveName) {
     res.status(400).json({ success: false, error: 'college_id, section_id, and name (e.g. Batch 1) are required' });

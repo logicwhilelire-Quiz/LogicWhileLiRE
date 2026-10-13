@@ -305,9 +305,12 @@ export default function HierarchyManagementPage() {
     if (!sectionName.trim() || !selectedCohortId) return;
     try {
       await createSection({
+        college_id: selectedCollegeId,
+        academic_year_id: selectedYearId || undefined,
         cohort_id: selectedCohortId,
         section_name: sectionName.trim(),
-      });
+        name: sectionName.trim(),
+      } as any);
       setShowAddSectionModal(false);
       setSectionName('');
       setMessage({ text: 'Section created successfully', type: 'success' });
@@ -322,9 +325,13 @@ export default function HierarchyManagementPage() {
     if (!batchName.trim() || !selectedSectionId) return;
     try {
       await createBatch({
+        college_id: selectedCollegeId,
+        academic_year_id: selectedYearId || undefined,
+        cohort_id: selectedCohortId || undefined,
         section_id: selectedSectionId,
         batch_name: batchName.trim(),
-      });
+        name: batchName.trim(),
+      } as any);
       setShowAddBatchModal(false);
       setBatchName('');
       setMessage({ text: 'Batch created successfully', type: 'success' });

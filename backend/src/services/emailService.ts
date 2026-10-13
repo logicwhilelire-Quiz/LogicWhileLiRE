@@ -9,22 +9,36 @@ import { supabase } from '../db/supabase';
 // In dev/test fall back to sensible mock values; productionBootGuard enforces real values
 const IS_PROD = process.env.NODE_ENV === 'production';
 
-export const MAIL_DOMAIN: string = process.env.MAIL_DOMAIN || 'logicwhilelire.com';
+export const MAIL_DOMAIN: string = (() => {
+  const v = process.env.MAIL_DOMAIN;
+  if (!v && IS_PROD) throw new Error('[Boot] MAIL_DOMAIN env var is required in production.');
+  return v || 'localhost';
+})();
 
 export const EMAIL_FROM: string = (() => {
   const v = process.env.EMAIL_FROM || process.env.OTP_FROM_EMAIL;
-  return v || `LogicWhileLiRE <noreply@${MAIL_DOMAIN}>`;
+  if (!v && IS_PROD) throw new Error('[Boot] EMAIL_FROM env var is required in production.');
+  return v || `LogicWhileLiRE <noreply@localhost>`;
 })();
 
 export const EMAIL_FROM_NAME: string = process.env.EMAIL_FROM_NAME || 'LogicWhileLiRE';
 
-export const SUPPORT_EMAIL: string = process.env.SUPPORT_EMAIL || `support@${MAIL_DOMAIN}`;
+export const SUPPORT_EMAIL: string = (() => {
+  const v = process.env.SUPPORT_EMAIL;
+  if (!v && IS_PROD) throw new Error('[Boot] SUPPORT_EMAIL env var is required in production.');
+  return v || `support@localhost`;
+})();
 
-export const ADMIN_EMAIL: string = process.env.ADMIN_EMAIL || process.env.ADMIN_ALERT_EMAIL || `admin@${MAIL_DOMAIN}`;
+export const ADMIN_EMAIL: string = (() => {
+  const v = process.env.ADMIN_EMAIL || process.env.ADMIN_ALERT_EMAIL;
+  if (!v && IS_PROD) throw new Error('[Boot] ADMIN_EMAIL env var is required in production.');
+  return v || `admin@localhost`;
+})();
 
 export const FRONTEND_URL: string = (() => {
-  const v = process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || (IS_PROD ? 'https://logicwhilelire.com' : 'http://localhost:5173');
-  const origin = v.split(',')[0].trim();
+  const v = process.env.FRONTEND_URL;
+  if (!v && IS_PROD) throw new Error('[Boot] FRONTEND_URL env var is required in production.');
+  const origin = (v || process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',')[0].trim();
   return origin.replace(/\/+$/, '');
 })();
 

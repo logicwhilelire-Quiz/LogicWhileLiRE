@@ -197,18 +197,61 @@ router.post('/execute', answerRateLimit, async (req: Request, res: Response) => 
       });
     }
 
-    // Run against test cases
+    // Run against test cases with robust cross-checks
     const results = [];
     let passed = 0;
     let fullOutput = '';
 
+    const normalizeOutput = (val: string) => {
+      return val
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '')
+        .split('\n')
+        .map(line => line.trimEnd())
+        .join('\n')
+        .trim();
+    };
+
     for (const tc of testCases) {
       const input = (tc.input_text !== undefined ? tc.input_text : tc.input) || '';
-      const expected = String((tc.expected_output !== undefined ? tc.expected_output : tc.output) || '').trim();
+      const rawExpected = String((tc.expected_output !== undefined ? tc.expected_output : tc.output) || '');
+      const expected = normalizeOutput(rawExpected);
       const runRes = await executeProgram(language, code, input);
 
-      const actual = runRes.stdout.trim();
-      const isPassed = !runRes.hasError && (actual === expected);
+      const rawActual = runRes.stdout || '';
+      const actual = normalizeOutput(rawActual);
+
+      // Multi-layer cross-checks:
+      // 1. Exact normalized string match
+      let isPassed = !runRes.hasError && (actual === expected);
+
+      // 2. Case-insensitive boolean comparison (e.g., 'True' vs 'true', 'False' vs 'false')
+      if (!isPassed && !runRes.hasError) {
+        if (actual.toLowerCase() === expected.toLowerCase() && (expected.toLowerCase() === 'true' || expected.toLowerCase() === 'false')) {
+          isPassed = true;
+        }
+      }
+
+      // 3. Floating-point numerical comparison if both represent numbers
+      if (!isPassed && !runRes.hasError && actual.length > 0 && expected.length > 0) {
+        const numActual = Number(actual);
+        const numExpected = Number(expected);
+        if (!isNaN(numActual) && !isNaN(numExpected) && Math.abs(numActual - numExpected) < 1e-5) {
+          isPassed = true;
+        }
+      }
+
+      // 4. Line-by-line whitespace-trimmed array comparison
+      if (!isPassed && !runRes.hasError) {
+        const actLines = actual.split('\n').map(l => l.trim()).filter(Boolean);
+        const expLines = expected.split('\n').map(l => l.trim()).filter(Boolean);
+        if (actLines.length > 0 && actLines.length === expLines.length) {
+          if (actLines.every((l, idx) => l === expLines[idx])) {
+            isPassed = true;
+          }
+        }
+      }
+
       if (isPassed) passed++;
 
       results.push({
@@ -621,6 +664,10 @@ router.get('/exam-code/:code/start', async (req: Request, res: Response) => {
           success: false,
           error: 'The inspector has not started this examination yet. Please wait in the waiting lobby.',
           code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
+          waiting_list: true,
+          exam_name: exam.exam_name || exam.name || code,
+          duration_minutes: exam.duration_minutes || 60,
+          total_questions: exam.total_questions || 15,
         });
       }
     }
@@ -1169,8 +1216,8 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
     // Include the exam_started_state so clients can recover from page refreshes
     const startedState = getExamStartedState(code);
 
-    // Also fetch enrolled count and exam duration from DB
-    const [enrolledResult, examResult] = await Promise.all([
+    // Also fetch enrolled count and duration from DB for accuracy
+    const [enrolled, examRow] = await Promise.all([
       supabase
         .from('exam_code_attempts')
         .select('id', { count: 'exact', head: true })
@@ -1182,17 +1229,16 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
         .maybeSingle(),
     ]);
 
-    const examDurationSeconds = (examResult.data?.duration_minutes ?? 60) * 60;
+    const durationSec = ((examRow.data as any)?.duration_minutes || 60) * 60;
 
     res.json({
       success: true,
       exam_code: code,
-      enrolled: (enrolledResult.data as any)?.count ?? stats.enrolled,
+      enrolled: (enrolled.data as any)?.count ?? stats.enrolled,
       connected: stats.connected,
       queue_count: stats.queue_count ?? stats.connected,
-      pending: Math.max(0, ((enrolledResult.data as any)?.count ?? 0) - stats.connected),
-      // Exam duration — real value from DB so WaitingLobbyPage can cache it
-      duration_seconds: examDurationSeconds,
+      pending: Math.max(0, ((enrolled.data as any)?.count ?? 0) - stats.connected),
+      duration_seconds: durationSec,
       // Exam started state — null if not yet started
       exam_started: startedState
         ? {
@@ -1212,7 +1258,6 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
     res.status(500).json({ success: false, error: 'Stats fetch failed' });
   }
 });
-
 
 
 export default router;

@@ -11,21 +11,17 @@ export function getBackupDirectory(): string {
   const custom = process.env.BACKUP_DIR;
   if (custom) {
     const resolved = path.resolve(custom);
-    try {
-      if (!fs.existsSync(resolved)) fs.mkdirSync(resolved, { recursive: true });
-      fs.accessSync(resolved, fs.constants.W_OK);
-      return resolved;
-    } catch (err) {
-      console.warn(`[Backup] Custom directory '${custom}' not writable, falling back to temporary path.`);
+    // In production, enforce that BACKUP_DIR is strictly outside the repository
+    const repoRoot = path.resolve(__dirname, '../../../');
+    if (process.env.NODE_ENV === 'production' && resolved.startsWith(repoRoot)) {
+      throw new Error(`[Backup] Security violation: BACKUP_DIR (${resolved}) must reside outside the repository.`);
     }
+    return resolved;
   }
-  const fallback = process.platform === 'win32'
-    ? path.resolve(process.env.TEMP || 'C:\\Windows\\Temp', 'logicwhilelire-backups')
-    : '/tmp/logicwhilelire-backups';
-  try {
-    if (!fs.existsSync(fallback)) fs.mkdirSync(fallback, { recursive: true });
-  } catch {}
-  return fallback;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('[Backup] BACKUP_DIR environment variable must be set in production to an absolute path outside the repository.');
+  }
+  return path.resolve(__dirname, '../../backups');
 }
 
 export const BACKUP_DIR = getBackupDirectory();

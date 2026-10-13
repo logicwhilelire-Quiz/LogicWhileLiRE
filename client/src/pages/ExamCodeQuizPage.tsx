@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
-import { API_BASE_URL } from '../lib/config'
+import { io as connectSocket, Socket } from 'socket.io-client'
+import { API_BASE_URL, SOCKET_URL } from '../lib/config'
 import { supabase } from '../lib/supabaseClient'
 import ExamQuestionCard from '../components/exam/ExamQuestionCard'
 import ExamCodeEditor from '../components/exam/ExamCodeEditor'
@@ -90,6 +91,13 @@ export default function QuizPage() {
   const [session, setSession] = useState<ExamSession | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isInWaitingList, setIsInWaitingList] = useState(false)
+  const [waitingExamData, setWaitingExamData] = useState<{
+    exam_name?: string
+    duration_minutes?: number
+    total_questions?: number
+  }>({})
+  const [waitingLaunchStarting, setWaitingLaunchStarting] = useState(false)
   const [currentQ, setCurrentQ] = useState(0)
   const [answers, setAnswers] = useState<Record<string, number | string>>({})
   const [codeAnswers, setCodeAnswers] = useState<Record<string, string>>({})
@@ -179,12 +187,11 @@ export default function QuizPage() {
   }, [examCode, hallTicket, navigate])
 
   /* ── Load session ── */
-  useEffect(() => {
-    const init = async () => {
-      if (!examCode || !hallTicket) {
-        navigate('/enter-exam')
-        return
-      }
+  const init = useCallback(async () => {
+    if (!examCode || !hallTicket) {
+      navigate('/enter-exam')
+      return
+    }
       try {
         const { data } = await axios.get(`${BASE}/api/exam-code/${examCode}/start`, {
           params: { hallTicket }
@@ -440,16 +447,120 @@ export default function QuizPage() {
             proctoringMode: 'webcam',
           })
           setTimeLeft(3600)
+          setIsInWaitingList(false)
           setError('')
           return
         }
+
+        const isNotStarted =
+          (e as any)?.response?.data?.code === 'EXAM_NOT_STARTED_BY_INSPECTOR' ||
+          (e as any)?.response?.data?.waiting_list === true ||
+          (e as any)?.response?.data?.error?.toLowerCase().includes('not started') ||
+          (e as any)?.response?.data?.error?.toLowerCase().includes('waiting lobby')
+
+        if (isNotStarted) {
+          setIsInWaitingList(true)
+          setWaitingExamData({
+            exam_name: (e as any)?.response?.data?.exam_name || examCode,
+            duration_minutes: (e as any)?.response?.data?.duration_minutes || 60,
+            total_questions: (e as any)?.response?.data?.total_questions || 15,
+          })
+          setError('')
+          return
+        }
+
         setError(e instanceof Error ? e.message : 'Failed to load exam')
       } finally {
         setLoading(false)
       }
-    }
+  }, [examCode, hallTicket, navigate, routerServerStartTime, routerDurationSeconds])
+
+  useEffect(() => {
     init()
-  }, [examCode, hallTicket, navigate])
+  }, [init])
+
+  /* ── Waiting List Real-time Listener (Single Page Flow) ── */
+  useEffect(() => {
+    if (!isInWaitingList || !examCode) return
+
+    let socket: Socket | null = null
+    let pollInterval: ReturnType<typeof setInterval> | null = null
+    let bc: BroadcastChannel | null = null
+    let hasLaunched = false
+
+    const triggerLaunch = () => {
+      if (hasLaunched) return
+      hasLaunched = true
+      setWaitingLaunchStarting(true)
+      try { soundFx.playProctorBroadcastChime() } catch {}
+      setTimeout(() => {
+        setIsInWaitingList(false)
+        setWaitingLaunchStarting(false)
+        init()
+      }, 1000)
+    }
+
+    try {
+      socket = connectSocket(SOCKET_URL, {
+        transports: ['websocket', 'polling'],
+        timeout: 10000,
+      })
+
+      socket.on('connect', () => {
+        socket?.emit('join_lobby', { examCode: examCode.toUpperCase(), hallTicket })
+        socket?.emit('join_room', `lobby:${examCode.toUpperCase()}`)
+      })
+
+      socket.on('EXAM_STARTED', () => {
+        triggerLaunch()
+      })
+
+      socket.on('lobby:stats', (data: any) => {
+        if (data?.exam_started) triggerLaunch()
+      })
+    } catch {}
+
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        bc = new BroadcastChannel('logicwhilelire_admin_exam_commands')
+        bc.onmessage = (ev) => {
+          if (
+            (ev.data?.examCode?.toUpperCase() === examCode.toUpperCase() || ev.data?.examCode === 'DEMO123') &&
+            ev.data?.state === 'started'
+          ) {
+            triggerLaunch()
+          }
+        }
+      } catch {}
+    }
+
+    const checkStorage = () => {
+      const state =
+        localStorage.getItem(`admin_exam_state_${examCode}`) ||
+        localStorage.getItem(`admin_exam_state_${examCode.toUpperCase()}`)
+      if (state === 'started') triggerLaunch()
+    }
+    window.addEventListener('storage', checkStorage)
+    checkStorage()
+
+    pollInterval = setInterval(async () => {
+      try {
+        const { data } = await axios.get(`${BASE}/api/exam-code/${examCode}/start`, {
+          params: { hallTicket }
+        })
+        if (data && data.success) {
+          triggerLaunch()
+        }
+      } catch {}
+    }, 2500)
+
+    return () => {
+      if (socket) socket.disconnect()
+      if (bc) bc.close()
+      if (pollInterval) clearInterval(pollInterval)
+      window.removeEventListener('storage', checkStorage)
+    }
+  }, [isInWaitingList, examCode, hallTicket, init])
 
   /* ── Submit Handler with Network Drop Retry Queue ── */
   const handleSubmit = useCallback(async () => {
@@ -1355,11 +1466,184 @@ export default function QuizPage() {
   }
 
   /* ── Render states ── */
-  if (loading) return (
+  if (loading && !isInWaitingList) return (
     <div className="page-center" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <LogicWhileLiRELoader size="lg" message="Loading secure LogicWhileLiRE exam session & question manifest..." />
     </div>
   )
+
+  /* ── Examination Waiting List Screen (Single Page Execution) ── */
+  if (isInWaitingList) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'radial-gradient(ellipse at top, #0A1128 0%, #030712 100%)',
+          color: '#F8FAFC',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+          position: 'relative',
+          overflow: 'hidden',
+          fontFamily: 'var(--font-sans, "Inter", sans-serif)',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            opacity: 0.04,
+            backgroundImage: 'linear-gradient(#38BDF8 1px, transparent 1px), linear-gradient(90deg, #38BDF8 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+            pointerEvents: 'none',
+          }}
+        />
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 14 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            maxWidth: 640,
+            width: '100%',
+            background: 'rgba(15, 23, 42, 0.88)',
+            border: '1px solid rgba(56, 189, 248, 0.28)',
+            borderRadius: 20,
+            padding: '36px 32px',
+            backdropFilter: 'blur(24px)',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6), 0 0 35px rgba(56, 189, 248, 0.12)',
+            position: 'relative',
+            zIndex: 10,
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+            <BrandLogo size="md" variant="standard" showTagline={false} />
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 14px',
+                borderRadius: 999,
+                background: 'rgba(16, 185, 129, 0.12)',
+                border: '1px solid rgba(16, 185, 129, 0.35)',
+                color: '#34D399',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+              }}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 10px #10B981' }} />
+              <span>TERMINAL READY • IN WAITING LIST</span>
+            </div>
+          </div>
+
+          {/* Status Alert Banner */}
+          <div
+            style={{
+              background: waitingLaunchStarting ? 'rgba(16, 185, 129, 0.12)' : 'rgba(56, 189, 248, 0.08)',
+              border: waitingLaunchStarting ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(56, 189, 248, 0.25)',
+              borderRadius: 14,
+              padding: '22px 20px',
+              textAlign: 'center',
+              marginBottom: 24,
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <div style={{ fontSize: '2.6rem', marginBottom: 8 }}>
+              {waitingLaunchStarting ? '🚀' : '⏳'}
+            </div>
+            <h2 style={{ fontSize: '1.38rem', fontWeight: 800, color: '#F1F5F9', marginBottom: 6 }}>
+              {waitingLaunchStarting
+                ? 'Examination Started by Administrator!'
+                : 'Waiting for Administrator to Start Exam'}
+            </h2>
+            <p style={{ fontSize: '0.86rem', color: '#94A3B8', margin: 0, lineHeight: 1.55 }}>
+              {waitingLaunchStarting
+                ? 'Authorization confirmed. Initializing question manifest and synchronized timer...'
+                : 'Your examination terminal is locked and verified in the waiting list. The admin has the option to start the exam from the admin portal. Once launched, this screen will immediately begin your test.'}
+            </p>
+          </div>
+
+          {/* Details Grid */}
+          <div
+            style={{
+              background: 'rgba(0, 0, 0, 0.38)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: 12,
+              padding: '18px 20px',
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 16,
+              marginBottom: 24,
+              fontSize: '0.84rem',
+            }}
+          >
+            <div>
+              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
+                Candidate Hall Ticket
+              </span>
+              <strong style={{ color: '#38BDF8', fontFamily: 'monospace', fontSize: '1.05rem' }}>
+                {hallTicket}
+              </strong>
+            </div>
+
+            <div>
+              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
+                Exam Code
+              </span>
+              <strong style={{ color: '#F8FAFC', fontFamily: 'monospace', fontSize: '1.05rem' }}>
+                {examCode?.toUpperCase()}
+              </strong>
+            </div>
+
+            <div>
+              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
+                Assessment Name
+              </span>
+              <strong style={{ color: '#E2E8F0' }}>
+                {waitingExamData.exam_name || examCode}
+              </strong>
+            </div>
+
+            <div>
+              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
+                Duration
+              </span>
+              <strong style={{ color: '#E2E8F0' }}>
+                {waitingExamData.duration_minutes || 60} Minutes
+              </strong>
+            </div>
+          </div>
+
+          {/* Live Sync Bar */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 18px',
+              background: 'rgba(255, 255, 255, 0.04)',
+              borderRadius: 10,
+              fontSize: '0.78rem',
+              color: '#94A3B8',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span className="btn-spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
+              <span>Real-time channel active • Waiting for admin dispatch...</span>
+            </div>
+            <span style={{ color: '#38BDF8', fontWeight: 700 }}>
+              Live In Waiting List
+            </span>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (error) return (
     <div className="page-center">

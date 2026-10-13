@@ -38,10 +38,7 @@
     "exam-engine"
   ],
   "type": "commonjs",
-  "devDependencies": {},
-  "dependencies": {
-    "@supabase/server": "^1.9.1",
-    "@supabase/supabase-js": "^2.117.0",
+  "devDependencies": {
     "@types/archiver": "^8.0.0",
     "@types/bcrypt": "^6.0.0",
     "@types/compression": "^1.8.1",
@@ -56,6 +53,12 @@
     "@types/pdfkit": "^0.17.6",
     "@types/qrcode": "^1.5.6",
     "@types/uuid": "^10.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@supabase/server": "^1.9.1",
+    "@supabase/supabase-js": "^2.117.0",
     "archiver": "^8.0.0",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.2",
@@ -73,8 +76,6 @@
     "pg": "^8.23.1",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.4",
-    "tsx": "^4.23.15",
-    "typescript": "^7.0.2",
     "uuid": "^14.0.2",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^4.6.5"

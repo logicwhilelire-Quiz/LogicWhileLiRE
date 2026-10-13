@@ -165,8 +165,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     service: 'LogicWhileLiRE Assessment Engine',
-    version: '4.0.1',
-    build_id: 'db-fix-v4',
+    version: '4.0.0',
     environment: process.env.NODE_ENV || 'development',
     demo_mode: isDemo,
     demo_banner: isDemo ? 'Running on in-memory demo data. Connect Supabase to enable production persistence.' : null,
@@ -296,11 +295,12 @@ httpServer.listen(PORT, '0.0.0.0', 2048, async () => {
     }
   } else {
     if (process.env.NODE_ENV === 'production') {
-      console.warn('================================================================');
-      console.warn('⚡ [Database Warning] Initial connectivity probe notice:');
-      console.warn(`Details: ${dbCheck.error || 'transient latency'}`);
-      console.warn('Server is running and health check is online.');
-      console.warn('================================================================');
+      console.error('================================================================');
+      console.error('🚨 [FATAL ERROR] Production database is UNREACHABLE at boot!');
+      console.error(`Error details: ${dbCheck.error}`);
+      console.error('Terminating process to prevent accepting traffic in an unhealthy state.');
+      console.error('================================================================');
+      process.exit(1);
     } else {
       console.warn(`⚡ [Database Warning] Database connectivity probe returned: ${dbCheck.error}`);
     }

@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import {
   registerCandidate,
   getSystemCheck,
@@ -48,7 +48,7 @@ router.get('/lobby-status', getLobbyStatus);
  * GET /api/v1/assessment/metadata
  * Form dropdowns and dictionary metadata - dynamically populated from Admin-created records
  */
-router.get('/metadata', async (_req: Request, res: Response) => {
+router.get('/metadata', async (_req, res) => {
   try {
     const { supabase } = await import('../db/supabase');
     
