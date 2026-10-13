@@ -11,7 +11,6 @@ export default function InstructionsPage() {
   const [countdown, setCountdown] = useState(isDemoOrDev ? 5 : 60);
   const [canProceed, setCanProceed] = useState(false);
   const [systemOk, setSystemOk] = useState(false);
-  const [lang, setLang] = useState<'en' | 'te'>('en');
 
   // Get stored attempt
   const stored = (() => {
@@ -68,56 +67,47 @@ export default function InstructionsPage() {
   const rules = [
     {
       icon: '🔒',
-      en: 'Strict Fullscreen Lock: Pressing ESC or exiting fullscreen immediately terminates and stops the exam session.',
-      te: 'ఖచ్చితమైన పూర్తి స్క్రీన్ లాక్: ESC నొక్కడం లేదా పూర్తి స్క్రీన్ నుండి నిష్క్రమించడం పరీక్షను వెంటనే ముగిస్తుంది.',
+      text: 'Strict Fullscreen Lock: Pressing ESC or exiting fullscreen immediately terminates and stops the exam session.',
       severity: 'danger',
     },
     {
       icon: '🚫',
-      en: 'Zero-Tolerance Tab Sliding: No swiping, sliding, or switching to another tab or application. Any tab switch will immediately stop and submit your exam.',
-      te: 'ట్యాబ్ మార్పు నిషేధం: ట్యాబ్‌లు లేదా ఇతర అప్లికేషన్‌లకు మారడం వెంటనే పరీక్షను ఆపివేసి ఆటో-సబ్మిట్ చేస్తుంది.',
+      text: 'Zero-Tolerance Tab Sliding: No swiping, sliding, or switching to another tab or application. Any tab switch will immediately stop and submit your exam.',
       severity: 'danger',
     },
     {
       icon: '⏱️',
-      en: 'Timer is server-synchronized. You cannot pause or manipulate the remaining time.',
-      te: 'సమయం సర్వర్‌తో సమకాలీకరించబడింది. సమయాన్ని పాజ్ చేయడం లేదా మార్చడం సాధ్యం కాదు.',
+      text: 'Timer is server-synchronized. You cannot pause or manipulate the remaining time.',
       severity: 'info',
     },
     {
       icon: '💾',
-      en: 'Answers are auto-saved every time you select an option. If network drops, session resumes seamlessly.',
-      te: 'ప్రతి ప్రశ్నకు సమాధానం స్వయంచాలకంగా సేవ్ అవుతుంది. నెట్‌వర్క్ ఆగినా తిరిగి ప్రారంభించవచ్చు.',
+      text: 'Answers are auto-saved every time you select an option. If network drops, session resumes seamlessly.',
       severity: 'info',
     },
     {
       icon: '❌',
-      en: 'Right-click, Copy, Cut, and Paste are strictly disabled during the exam session.',
-      te: 'పరీక్ష సమయంలో రైట్-క్లిక్, కాపీ, పేస్ట్ మరియు డెవ్‌టూల్స్ పూర్తిగా నిలిపివేయబడతాయి.',
+      text: 'Right-click, Copy, Cut, and Paste are strictly disabled during the exam session.',
       severity: 'warning',
     },
     {
       icon: '🎟️',
-      en: 'Single session per hall ticket. Once submitted, re-entry is blocked by server authority.',
-      te: 'ఒక్క హాల్ టికెట్‌కు ఒకే సెషన్ అనుమతించబడుతుంది. సబ్మిట్ చేసిన తర్వాత తిరిగి ప్రవేశం ఉండదు.',
+      text: 'Single session per hall ticket. Once submitted, re-entry is blocked by server authority.',
       severity: 'danger',
     },
     {
       icon: '💻',
-      en: 'Coding questions are submitted for manual faculty review and are not part of the live instant MCQ auto-grade.',
-      te: 'కోడింగ్ ప్రశ్నలు మాన్యువల్ ఫ్యాకల్టీ మూల్యాంకనం కోసం సమర్పించబడతాయి మరియు తక్షణ MCQ ఆటో-గ్రేడ్‌లో చేర్చబడవు.',
+      text: 'Coding questions are submitted for manual faculty review and are not part of the live instant MCQ auto-grade.',
       severity: 'info',
     },
     {
       icon: '⌨️',
-      en: 'Keyboard shortcuts: 1-4 = Select option, N = Next question, P = Previous question.',
-      te: 'కీబోర్డ్ షార్ట్‌కట్‌లు: 1-4 = ఆప్షన్ ఎంపిక, N = తదుపరి ప్రశ్న, P = మునుపటి ప్రశ్న.',
+      text: 'Keyboard shortcuts: 1-4 = Select option, N = Next question, P = Previous question.',
       severity: 'info',
     },
     {
       icon: '🟢',
-      en: 'Question Palette: Green = Answered, Slate = Not Answered, Blue = Marked for Review.',
-      te: 'ప్రశ్నల పాలెట్: ఆకుపచ్చ = సమాధానమిచ్చినవి, బూడిద = సమాధానమివ్వనివి, నీలం = రివ్యూ కోసం.',
+      text: 'Question Palette: Green = Answered, Slate = Not Answered, Blue = Marked for Review.',
       severity: 'info',
     },
   ];
@@ -155,51 +145,6 @@ export default function InstructionsPage() {
         <BrandLogo size="sm" showTagline />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* Language Toggle (English / Telugu) */}
-          <div
-            style={{
-              display: 'flex',
-              background: 'rgba(255,255,255,0.06)',
-              borderRadius: 8,
-              padding: 2,
-              border: '1px solid rgba(255,255,255,0.12)',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setLang('en')}
-              style={{
-                padding: '4px 10px',
-                borderRadius: 6,
-                border: 'none',
-                background: lang === 'en' ? 'var(--color-primary, #2B7FFF)' : 'transparent',
-                color: lang === 'en' ? '#FFFFFF' : 'var(--color-text-muted, #94a3b8)',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              English
-            </button>
-            <button
-              type="button"
-              onClick={() => setLang('te')}
-              style={{
-                padding: '4px 10px',
-                borderRadius: 6,
-                border: 'none',
-                background: lang === 'te' ? 'var(--color-primary, #2B7FFF)' : 'transparent',
-                color: lang === 'te' ? '#FFFFFF' : 'var(--color-text-muted, #94a3b8)',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              తెలుగు (Telugu)
-            </button>
-          </div>
 
           <div
             style={{
@@ -241,7 +186,7 @@ export default function InstructionsPage() {
                 marginBottom: 8,
               }}
             >
-              {lang === 'en' ? 'Official Exam Instructions' : 'అధికారిక పరీక్ష సూచనలు'}
+              Official Exam Instructions
             </h1>
             <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.92rem' }}>
               {examDetails.exam_name} • {examDetails.duration_minutes} min • {examDetails.total_questions} questions
@@ -268,14 +213,14 @@ export default function InstructionsPage() {
                 letterSpacing: '0.06em',
               }}
             >
-              ⚙️ {lang === 'en' ? 'Hardware & System Verification' : 'హార్డ్‌వేర్ & సిస్టమ్ తనిఖీ'}
+              ⚙️ Hardware & System Verification
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
               {[
-                { label: lang === 'en' ? 'Network' : 'ఇంటర్నెట్', ok: true, icon: '🌐' },
-                { label: lang === 'en' ? 'Browser' : 'బ్రౌజర్', ok: true, icon: '🖥️' },
-                { label: lang === 'en' ? 'Screen Lock' : 'స్క్రీన్ లాక్', ok: true, icon: '🔐' },
-                { label: lang === 'en' ? 'Camera' : 'కెమెరా', ok: systemOk, icon: '📷' },
+                { label: 'Network', ok: true, icon: '🌐' },
+                { label: 'Browser', ok: true, icon: '🖥️' },
+                { label: 'Screen Lock', ok: true, icon: '🔐' },
+                { label: 'Camera', ok: systemOk, icon: '📷' },
               ].map((item) => (
                 <div
                   key={item.label}
@@ -322,7 +267,7 @@ export default function InstructionsPage() {
                 fontSize: '0.98rem',
               }}
             >
-              📜 {lang === 'en' ? 'Proctoring Rules & Guidelines' : 'పరీక్ష నియమాలు మరియు మార్గదర్శకాలు'}
+              📜 Proctoring Rules & Guidelines
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {rules.map((rule, i) => (
@@ -340,7 +285,7 @@ export default function InstructionsPage() {
                       lineHeight: 1.55,
                     }}
                   >
-                    {lang === 'en' ? rule.en : rule.te}
+                    {rule.text}
                   </span>
                 </div>
               ))}
@@ -370,9 +315,7 @@ export default function InstructionsPage() {
                     fontWeight: 700,
                   }}
                 >
-                  {lang === 'en'
-                    ? 'Please review instructions — candidate portal opens in'
-                    : 'దయచేసి సూచనలను సమీక్షించండి — పరీక్ష ప్రారంభం సమయం'}
+                  Please review instructions — candidate portal opens in
                 </div>
                 <div
                   style={{
@@ -434,9 +377,7 @@ export default function InstructionsPage() {
                     marginBottom: 20,
                   }}
                 >
-                  {lang === 'en'
-                    ? 'You are ready to begin. The server timer starts immediately upon clicking.'
-                    : 'మీరు సిద్ధంగా ఉన్నారు. స్టార్ట్ క్లిక్ చేయగానే సర్వర్ టైమర్ ప్రారంభమవుతుంది.'}
+                  You are ready to begin. The server timer starts immediately upon clicking.
                 </div>
                 <motion.button
                   id="start-exam-now-btn"
@@ -456,7 +397,7 @@ export default function InstructionsPage() {
                     fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
                   }}
                 >
-                  🚀 {lang === 'en' ? 'Start Exam' : 'పరీక్ష ప్రారంభించండి'}
+                  🚀 Start Exam
                 </motion.button>
               </>
             )}
