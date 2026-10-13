@@ -1105,7 +1105,8 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
 
   // Questions strictly preserve author upload order (display_order); options are deterministically shuffled per candidate
-  const studentIdentifier = String(attemptId || req.query.candidateId || req.query.hallTicket || 'student');
+  const canonicalCandidate = String(studentHt || candidateId || attemptId || req.query.candidateId || req.query.hallTicket || 'student').toUpperCase().trim();
+  const studentIdentifier = `${canonicalCandidate}_${effectiveCode}`;
   const orderedQuestions = questions || [];
 
   // Question secrecy guard & per-student option shuffling:
@@ -1132,7 +1133,13 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
     };
   });
 
-  res.json({ success: true, questions: sanitizedQuestions, total: sanitizedQuestions.length });
+  res.json({
+    success: true,
+    server_shuffled: true,
+    questions_shuffled: true,
+    questions: sanitizedQuestions,
+    total: sanitizedQuestions.length,
+  });
 }
 
 /**
@@ -1274,7 +1281,8 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
   const topicBreakdown: Record<string, { correct: number; wrong: number; score: number; maxScore: number; penalty?: number }> = {};
   const optLetters = ['A', 'B', 'C', 'D'];
 
-  const studentIdentifier = String(attempt.id || candidateId || attempt.hall_ticket_no || 'student');
+  const canonicalCandidate = String(attempt.hall_ticket_no || attempt.hall_ticket || candidateId || attempt.id || 'student').toUpperCase().trim();
+  const studentIdentifier = `${canonicalCandidate}_${effectiveCode}`;
 
   for (const q of questions) {
     const isCodingQ = q.question_type === 'code' || (!q.option_a && !q.option_b && (String(q.topic || '').toLowerCase().includes('algorithm') || String(q.topic || '').toLowerCase().includes('code')));
@@ -2074,10 +2082,21 @@ export async function importQuestionsForExamCode(req: Request, res: Response): P
       optC = parts[2] || '';
       optD = parts[3] || '';
     } else {
-      optA = String(norm['optiona'] || row['OptionA'] || row['Option A'] || row['option_a'] || '').trim();
-      optB = String(norm['optionb'] || row['OptionB'] || row['Option B'] || row['option_b'] || '').trim();
-      optC = String(norm['optionc'] || row['OptionC'] || row['Option C'] || row['option_c'] || '').trim();
-      optD = String(norm['optiond'] || row['OptionD'] || row['Option D'] || row['option_d'] || '').trim();
+      optA = String(norm['optiona'] ?? row['OptionA'] ?? row['Option A'] ?? row['option_a'] ?? '').trim();
+      optB = String(norm['optionb'] ?? row['OptionB'] ?? row['Option B'] ?? row['option_b'] ?? '').trim();
+      optC = String(norm['optionc'] ?? row['OptionC'] ?? row['Option C'] ?? row['option_c'] ?? '').trim();
+      optD = String(norm['optiond'] ?? row['OptionD'] ?? row['Option D'] ?? row['option_d'] ?? '').trim();
+    }
+
+    let starterCode = String(
+      norm['startercode'] || norm['samplecode'] || norm['code'] || norm['codesnippet'] || norm['snippet'] ||
+      row['Starter Code'] || row['Sample Code'] || row['Code'] || ''
+    ).trim();
+    if (!starterCode && question.includes('\n')) {
+      const parts = question.split(/\n\s*\n/);
+      if (parts.length > 1) {
+        starterCode = parts.slice(1).join('\n\n').trim();
+      }
     }
 
     const qType = String(norm['type'] || norm['questiontype'] || 'mcq').toLowerCase();
@@ -2120,6 +2139,7 @@ export async function importQuestionsForExamCode(req: Request, res: Response): P
     validRows.push({
       exam_code: ec.exam_code,
       question,
+      question_text: question,
       option_a: optA,
       option_b: optB,
       option_c: optC,
@@ -2131,6 +2151,7 @@ export async function importQuestionsForExamCode(req: Request, res: Response): P
       tags: tags ? tags.split(',').map((t) => t.trim()) : [],
       difficulty: ['Easy', 'Medium', 'Hard'].includes(difficulty) ? difficulty : 'Medium',
       explanation: explanation || null,
+      starter_code: starterCode || null,
       display_order: i + 1,
     });
   }
@@ -2150,6 +2171,36 @@ export async function importQuestionsForExamCode(req: Request, res: Response): P
     res.status(500).json({ success: false, error: insertError.message });
     return;
   }
+
+  // Automatically keep exam_codes total_questions count and questions table in sync
+  try {
+    const { count: totalQ } = await supabase
+      .from('questions_ec')
+      .select('id', { count: 'exact', head: true })
+      .eq('exam_code', ec.exam_code);
+    await supabase
+      .from('exam_codes')
+      .update({ total_questions: totalQ || validRows.length, is_active: true })
+      .eq('exam_code', ec.exam_code);
+
+    await supabase.from('questions').insert(
+      validRows.map((r: any) => ({
+        exam_id: ec.exam_code,
+        question_text: r.question,
+        option_a: r.option_a,
+        option_b: r.option_b,
+        option_c: r.option_c,
+        option_d: r.option_d,
+        correct_option: r.correct_answer.toLowerCase(),
+        marks: r.marks,
+        penalty: 0,
+        topic: r.topic,
+        difficulty: r.difficulty,
+        section: r.section,
+        starter_code: r.starter_code,
+      }))
+    );
+  } catch {}
 
   res.json({
     success: true,
@@ -2377,10 +2428,10 @@ export async function validateAndPreviewQuestions(req: Request, res: Response): 
       } else {
         rawType = String(norm['type'] || norm['questiontype'] || row['Type'] || '').trim();
         question = String(norm['question'] || norm['questiontext'] || row['Question'] || '').trim();
-        optA = String(norm['optiona'] || row['Option A'] || row['OptionA'] || '').trim();
-        optB = String(norm['optionb'] || row['Option B'] || row['OptionB'] || '').trim();
-        optC = String(norm['optionc'] || row['Option C'] || row['OptionC'] || '').trim();
-        optD = String(norm['optiond'] || row['Option D'] || row['OptionD'] || '').trim();
+        optA = String(norm['optiona'] ?? row['Option A'] ?? row['OptionA'] ?? '').trim();
+        optB = String(norm['optionb'] ?? row['Option B'] ?? row['OptionB'] ?? '').trim();
+        optC = String(norm['optionc'] ?? row['Option C'] ?? row['OptionC'] ?? '').trim();
+        optD = String(norm['optiond'] ?? row['Option D'] ?? row['OptionD'] ?? '').trim();
         correct = String(norm['correctanswer'] || norm['correct'] || norm['correctoption'] || row['Correct Answer'] || '').trim();
         marks = parseFloat(String(norm['marks'] || row['Marks'] || '1')) || 1;
         penalty = parseFloat(String(norm['penalty'] || norm['negativemarks'] || norm['negativemarking'] || row['Penalty'] || '0')) || 0;
@@ -2391,7 +2442,10 @@ export async function validateAndPreviewQuestions(req: Request, res: Response): 
         testCases = String(norm['testcases'] || norm['testcase'] || row['Test Cases'] || '').trim();
       }
 
-      let starterCode = String(norm['startercode'] || norm['code'] || norm['codesnippet'] || row['Starter Code'] || row['Code'] || '').trim();
+      let starterCode = String(
+        norm['startercode'] || norm['samplecode'] || norm['code'] || norm['codesnippet'] || norm['snippet'] ||
+        row['Starter Code'] || row['Sample Code'] || row['Code'] || ''
+      ).trim();
       if (!starterCode && question.includes('\n')) {
         const parts = question.split(/\n\s*\n/);
         if (parts.length > 1) {
@@ -2672,6 +2726,14 @@ export async function confirmImportQuestions(req: Request, res: Response): Promi
         tags.push('type:coding');
       }
 
+      let starterCode = q.starter_code || null;
+      if (!starterCode && q.question && (q.question.includes('\n') || q.question.includes('```'))) {
+        const parts = q.question.split(/\n\s*\n/);
+        if (parts.length > 1) {
+          starterCode = parts.slice(1).join('\n\n').trim();
+        }
+      }
+
       return {
         exam_code: targetCode,
         question: q.question,
@@ -2690,7 +2752,7 @@ export async function confirmImportQuestions(req: Request, res: Response): Promi
         difficulty: q.difficulty || 'Medium',
         tags: tags,
         test_cases: q.test_cases || null,
-        starter_code: q.starter_code || null,
+        starter_code: starterCode || null,
         display_order: idx + 1,
       };
     });

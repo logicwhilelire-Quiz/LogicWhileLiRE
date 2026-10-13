@@ -34,8 +34,9 @@ function looksLikeCode(str: string): boolean {
     /\b(def|class|function|var|let|const|import|from|while|for|if|elif|else|return|print)\b/,
     /[a-zA-Z_]\w*\s*=[^=]/,
     /(\[.*\]|\{.*\}|\(.*\))\s*$/,
-    /\/\/|#\s/,
-    /\bint\s+|float\s+|void\s+|public\s+/,
+    /\/\/|#include|#define|#\s*/,
+    /\b(int|float|void|public|static|bool|char)\s+/,
+    /\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)\b/i,
     /;\s*$/,
     /^\s{2,}|\t/m,
   ]
@@ -64,7 +65,7 @@ function parseQuestionContent(text: string, starterCode?: string | null): Parsed
   }
 
   // Check markdown code blocks: ```lang ... ```
-  const fenceMatch = text.match(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/)
+  const fenceMatch = text.match(/```([a-zA-Z0-9_-]*)\r?\n?([\s\S]*?)```/)
   if (fenceMatch) {
     const prompt = text.replace(fenceMatch[0], '').trim()
     return {
@@ -87,16 +88,19 @@ function parseQuestionContent(text: string, starterCode?: string | null): Parsed
     }
   }
 
-  // Check single newline split if first line ends with ? or :
+  // Check single newline split by scanning for the first code statement line
   const lines = text.split('\n')
-  if (lines.length > 2) {
-    const firstLine = lines[0].trim()
-    const rest = lines.slice(1).join('\n').trim()
-    if ((firstLine.endsWith('?') || firstLine.endsWith(':')) && looksLikeCode(rest)) {
+  for (let i = 1; i < lines.length; i++) {
+    const candidateCode = lines.slice(i).join('\n').trim()
+    const line = lines[i].trim()
+    if (
+      /^(def\s+|class\s+|function\s+|let\s+|const\s+|var\s+|import\s+|from\s+|#include|int\s+|void\s+|public\s+|[a-zA-Z_]\w*\s*=[^=]|while\s+|for\s+|if\s+)/.test(line) &&
+      looksLikeCode(candidateCode)
+    ) {
       return {
-        promptText: firstLine,
-        codeSnippet: rest,
-        language: detectLanguage(rest),
+        promptText: lines.slice(0, i).join('\n').trim(),
+        codeSnippet: candidateCode,
+        language: detectLanguage(candidateCode),
       }
     }
   }
@@ -189,15 +193,7 @@ function formatCodeLine(line: string) {
 }
 
 function QuestionCodeSnippet({ code, language }: { code: string; language: string }) {
-  const [copied, setCopied] = useState(false)
   const lines = useMemo(() => code.split('\n'), [code])
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }).catch(() => {})
-  }
 
   return (
     <div
@@ -250,26 +246,26 @@ function QuestionCodeSnippet({ code, language }: { code: string; language: strin
           </span>
         </div>
 
-        <button
-          onClick={handleCopy}
-          type="button"
-          style={{
-            background: copied ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.06)',
-            border: `1px solid ${copied ? '#10B981' : 'rgba(255, 255, 255, 0.12)'}`,
-            color: copied ? '#10B981' : '#94A3B8',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            padding: '4px 10px',
-            borderRadius: 6,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 4,
-          }}
-        >
-          {copied ? '✓ Copied' : '📋 Copy Code'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span
+            style={{
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              color: '#94A3B8',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              padding: '3px 9px',
+              borderRadius: 6,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <span>🔒</span>
+            <span>Anti-Tamper Locked</span>
+          </span>
+        </div>
       </div>
 
       {/* Code Editor Body */}

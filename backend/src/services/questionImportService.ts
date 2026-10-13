@@ -194,7 +194,7 @@ export function parseAndValidateXlsx(buffer: Buffer): ParseResult {
       else difficultyRaw = 'Medium';
 
       setRaw = normObj['set'] ?? normObj['setnumber'] ?? normObj['questionset'] ?? undefined;
-      starterCode = String(normObj['startercode'] ?? normObj['code'] ?? normObj['codesnippet'] ?? '').trim();
+      starterCode = String(normObj['startercode'] ?? normObj['samplecode'] ?? normObj['code'] ?? normObj['codesnippet'] ?? normObj['snippet'] ?? '').trim();
       if (!starterCode && qText.includes('\n')) {
         const parts = qText.split(/\n\s*\n/);
         if (parts.length > 1) {
@@ -338,11 +338,46 @@ export async function bulkInsertQuestions(
     }));
     const { error } = await supabase.from('questions').insert(questionsRows);
     if (error) throw new Error(`Database insert to questions failed: ${error.message}`);
+
+    // Also mirror to questions_ec so student exam portal immediately has questions
+    try {
+      const { data: examRec } = await supabase.from('exams').select('id, title, exam_code').eq('id', examIdOrCode).maybeSingle();
+      const derivedCode = String(examRec?.exam_code || `LW-${String(examIdOrCode).slice(0, 6).toUpperCase()}`).trim().toUpperCase();
+      const ecRows = insertData.map((r) => ({
+        exam_code: derivedCode,
+        question: r.question,
+        question_text: r.question,
+        option_a: r.option_a,
+        option_b: r.option_b,
+        option_c: r.option_c,
+        option_d: r.option_d,
+        correct_answer: r.correct_answer,
+        marks: r.marks,
+        topic: r.topic,
+        difficulty: r.difficulty,
+        explanation: r.explanation,
+        question_type: r.question_type,
+        starter_code: r.starter_code,
+        display_order: r.display_order,
+        tags: r.tags,
+      }));
+      await supabase.from('questions_ec').insert(ecRows);
+      await supabase.from('exam_codes').upsert({
+        exam_code: derivedCode,
+        exam_name: examRec?.title || derivedCode,
+        subject: examRec?.title || derivedCode,
+        total_questions: ecRows.length,
+        duration_minutes: 60,
+        is_active: true,
+        is_launched: true,
+      }, { onConflict: 'exam_code' });
+    } catch {}
   } else {
     // If Exam Code, insert into questions_ec
     const ecRows = insertData.map((r) => ({
       exam_code: examIdOrCode.toUpperCase(),
       question: r.question,
+      question_text: r.question,
       option_a: r.option_a,
       option_b: r.option_b,
       option_c: r.option_c,
@@ -359,6 +394,39 @@ export async function bulkInsertQuestions(
     }));
     const { error } = await supabase.from('questions_ec').insert(ecRows);
     if (error) throw new Error(`Database insert to questions_ec failed: ${error.message}`);
+
+    // Also mirror to traditional questions table and update exam_codes count
+    try {
+      const questionsRows = insertData.map((r) => ({
+        exam_id: examIdOrCode,
+        question: r.question,
+        question_text: r.question,
+        options: r.options,
+        option_a: r.option_a,
+        option_b: r.option_b,
+        option_c: r.option_c,
+        option_d: r.option_d,
+        correct_option: r.correct_option,
+        marks: r.marks,
+        topic: r.topic,
+        difficulty: r.difficulty,
+        set_number: r.set_number,
+        question_set: r.question_set,
+        explanation: r.explanation,
+        starter_code: r.starter_code,
+        display_order: r.display_order,
+      }));
+      await supabase.from('questions').insert(questionsRows);
+
+      const { count: totalQ } = await supabase
+        .from('questions_ec')
+        .select('id', { count: 'exact', head: true })
+        .eq('exam_code', examIdOrCode.toUpperCase());
+      await supabase
+        .from('exam_codes')
+        .update({ total_questions: totalQ || ecRows.length, is_active: true })
+        .eq('exam_code', examIdOrCode.toUpperCase());
+    } catch {}
   }
 
   return insertData.length;
