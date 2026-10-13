@@ -484,16 +484,321 @@ router.get('/system-alerts', requireRole('super_admin'), (req, res) => {
 router.get('/mail-logs', requireRole('super_admin', 'admin'), listMailLogsController);
 router.post('/mail-logs/:id/resend', requireRole('super_admin', 'admin'), auditLog('RESEND_EMAIL', 'mail_logs'), resendMailLogController);
 
-router.get('/results', requireRole('super_admin', 'inspector'), async (_req, res) => {
+router.get('/results', requireRole('super_admin', 'admin', 'inspector', 'faculty'), async (req, res) => {
   try {
+    const rawExamCode = ((req.query.examCode as string) || '').trim().toUpperCase();
+
+    // 1. Fetch available exams for selector
+    const { data: examList } = await supabase
+      .from('exam_codes')
+      .select('id, exam_code, exam_name, duration_minutes, total_questions, total_marks, is_active, results_published, created_at')
+      .order('created_at', { ascending: false });
+
+    const exams = examList || [];
+
+    // Determine target exam code
+    let targetCode = rawExamCode;
+    let selectedExamData = exams.find((e) => e.exam_code === targetCode);
+
+    if (!targetCode && exams.length > 0) {
+      // Prefer exam with attempts or default to first
+      targetCode = exams[0].exam_code;
+      selectedExamData = exams[0];
+    }
+
+    const searchCodes: string[] = [];
+    if (targetCode && targetCode !== 'ALL') {
+      searchCodes.push(targetCode);
+      const alt = [
+        targetCode.replace(/5/g, 'S'),
+        targetCode.replace(/S/g, '5'),
+        targetCode.replace(/0/g, 'O'),
+        targetCode.replace(/O/g, '0'),
+      ].filter((c) => c !== targetCode);
+      searchCodes.push(...alt);
+    }
+
+    // 2. Fetch attempts
+    let query = supabase
+      .from('exam_code_attempts')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (searchCodes.length > 0) {
+      query = query.in('exam_code', searchCodes);
+    }
+
+    const { data: attempts } = await query.limit(200);
+    const rows = attempts || [];
+
+    // 3. Enrich student names from students table if missing
+    const hallTickets = Array.from(new Set(rows.map((r) => r.hall_ticket_no || r.hall_ticket).filter(Boolean)));
+    const studentMap: Record<string, string> = {};
+
+    if (hallTickets.length > 0) {
+      try {
+        const { data: students } = await supabase
+          .from('students')
+          .select('name, roll_number, hall_ticket')
+          .or(hallTickets.map((ht) => `hall_ticket.eq.${ht},roll_number.eq.${ht}`).join(','));
+
+        if (students) {
+          for (const st of students) {
+            if (st.name) {
+              if (st.hall_ticket) studentMap[String(st.hall_ticket).toUpperCase()] = st.name;
+              if (st.roll_number) studentMap[String(st.roll_number).toUpperCase()] = st.name;
+            }
+          }
+        }
+      } catch (stuErr) {
+        console.warn('[AdminResults] Student enrichment notice:', stuErr);
+      }
+    }
+
+    const maxExamScore = selectedExamData?.total_marks || (rows[0]?.max_score > 0 ? rows[0]?.max_score : 10);
+
+    const formattedResults = rows.map((r: any) => {
+      const ht = String(r.hall_ticket_no || r.hall_ticket || 'UNKNOWN').toUpperCase();
+      const rawName = r.student_name && r.student_name !== ht ? r.student_name : (studentMap[ht] || ht);
+      const rawScore = Number(r.score || 0);
+      const graceMarks = Number(r.grace_marks || 0);
+      const overrideScore = r.score_override !== null && r.score_override !== undefined ? Number(r.score_override) : undefined;
+      const finalScore = (overrideScore ?? rawScore) + graceMarks;
+      const mScore = Number(r.max_score || maxExamScore || 10);
+      const isPassed = finalScore >= mScore * 0.4;
+
+      return {
+        id: r.id,
+        attempt_id: r.id,
+        exam_code: r.exam_code,
+        hall_ticket: ht,
+        name: rawName,
+        raw_score: rawScore,
+        grace_marks: graceMarks,
+        score_override: overrideScore,
+        override_reason: r.override_reason || null,
+        final_score: finalScore,
+        max_score: mScore,
+        status: r.status === 'completed' || r.status === 'submitted'
+          ? (isPassed ? 'passed' : 'failed')
+          : r.status || 'in_progress',
+        time_seconds: Number(r.time_taken_seconds || 0),
+        violations: Number(r.violation_count || 0),
+        created_at: r.created_at,
+        end_time: r.end_time || r.submitted_at,
+      };
+    });
+
+    // 4. Calculate Aggregate Stats
+    const totalCount = formattedResults.length;
+    const avgScore = totalCount > 0
+      ? (formattedResults.reduce((acc, r) => acc + r.final_score, 0) / totalCount).toFixed(1)
+      : '0.0';
+
+    const passCount = formattedResults.filter((r) => r.status === 'passed').length;
+    const passRate = totalCount > 0 ? Math.round((passCount / totalCount) * 100) : 0;
+    const totalViolations = formattedResults.reduce((acc, r) => acc + r.violations, 0);
+
+    res.json({
+      success: true,
+      selectedExam: targetCode,
+      exams: exams.map((e) => ({
+        exam_code: e.exam_code,
+        exam_name: e.exam_name,
+        total_questions: e.total_questions,
+        total_marks: e.total_marks,
+        results_published: Boolean(e.results_published),
+      })),
+      results: formattedResults,
+      count: totalCount,
+      stats: {
+        average_score: Number(avgScore),
+        max_score: maxExamScore,
+        pass_rate: passRate,
+        total_violations: totalViolations,
+        results_published: Boolean(selectedExamData?.results_published),
+        total_candidates: totalCount,
+      },
+    });
+  } catch (err: any) {
+    console.error('[AdminResults] Error:', err);
+    res.status(500).json({ success: false, error: err?.message || 'Failed to fetch results' });
+  }
+});
+
+// Override candidate score or grant grace marks on exam_code_attempts
+router.post('/results/:attemptId/override', requireRole('super_admin', 'admin', 'inspector'), async (req, res) => {
+  const { attemptId } = req.params;
+  const { score_override, grace_marks, reason } = req.body;
+
+  try {
+    const updatePayload: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (score_override !== undefined && score_override !== null && !isNaN(Number(score_override))) {
+      updatePayload.score_override = Number(score_override);
+    }
+    if (grace_marks !== undefined && grace_marks !== null && !isNaN(Number(grace_marks))) {
+      updatePayload.grace_marks = Number(grace_marks);
+    }
+    if (reason) {
+      updatePayload.override_reason = String(reason);
+    }
+
+    const { data: updated, error } = await supabase
+      .from('exam_code_attempts')
+      .update(updatePayload)
+      .eq('id', attemptId)
+      .select('*')
+      .maybeSingle();
+
+    if (error || !updated) {
+      return overrideScore(req, res);
+    }
+
+    res.json({
+      success: true,
+      message: 'Score override and adjustments applied successfully.',
+      result: updated,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message });
+  }
+});
+
+// Toggle publish results for an exam code
+router.post('/results/toggle-publish', requireRole('super_admin', 'admin'), async (req, res) => {
+  const { examCode, publish } = req.body;
+  if (!examCode) {
+    res.status(400).json({ success: false, error: 'examCode is required' });
+    return;
+  }
+
+  const code = String(examCode).trim().toUpperCase();
+  const searchCodes = [
+    code,
+    code.replace(/5/g, 'S'),
+    code.replace(/S/g, '5'),
+    code.replace(/0/g, 'O'),
+    code.replace(/O/g, '0'),
+  ];
+
+  try {
+    const { data: existing } = await supabase
+      .from('exam_codes')
+      .select('id, exam_code, results_published')
+      .in('exam_code', searchCodes)
+      .limit(1);
+
+    const currentPublished = Boolean(existing?.[0]?.results_published);
+    const newPublished = publish !== undefined ? Boolean(publish) : !currentPublished;
+
+    await supabase
+      .from('exam_codes')
+      .update({
+        results_published: newPublished,
+        updated_at: new Date().toISOString(),
+      })
+      .in('exam_code', searchCodes);
+
+    res.json({
+      success: true,
+      exam_code: code,
+      results_published: newPublished,
+      message: newPublished ? 'Results are now live to candidates.' : 'Results are now hidden from candidates.',
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message });
+  }
+});
+
+// Authoritative recalculation of all scores for an exam
+router.post('/results/recalculate', requireRole('super_admin', 'admin'), async (req, res) => {
+  const { examCode } = req.body;
+  if (!examCode) {
+    res.status(400).json({ success: false, error: 'examCode is required' });
+    return;
+  }
+
+  const code = String(examCode).trim().toUpperCase();
+  const searchCodes = [
+    code,
+    code.replace(/5/g, 'S'),
+    code.replace(/S/g, '5'),
+    code.replace(/0/g, 'O'),
+    code.replace(/O/g, '0'),
+  ];
+
+  try {
+    const { data: questions } = await supabase
+      .from('questions_ec')
+      .select('id, correct_answer, marks, penalty, negative_marks')
+      .in('exam_code', searchCodes);
+
+    if (!questions || questions.length === 0) {
+      res.status(404).json({ success: false, error: 'No questions found for this exam code' });
+      return;
+    }
+
+    const qMap = new Map(questions.map((q) => [String(q.id), q]));
+
     const { data: attempts } = await supabase
       .from('exam_code_attempts')
-      .select('id, hall_ticket_no, student_name, score, max_score, status, exam_code, created_at')
-      .order('created_at', { ascending: false })
-      .limit(100);
-    res.json({ success: true, results: attempts || [], count: attempts?.length || 0 });
-  } catch {
-    res.json({ success: true, results: [], count: 0 });
+      .select('id, answers, max_score')
+      .in('exam_code', searchCodes);
+
+    let recalculatedCount = 0;
+    if (attempts && attempts.length > 0) {
+      for (const att of attempts) {
+        const answers = att.answers || {};
+        let totalScore = 0;
+        let correctCount = 0;
+        let wrongCount = 0;
+        let maxScore = 0;
+
+        for (const [qid, q] of qMap.entries()) {
+          const qMarks = Number(q.marks || 1);
+          maxScore += qMarks;
+          const givenAns = answers[qid];
+          if (givenAns === undefined || givenAns === null || givenAns === '') continue;
+
+          const normGiven = String(givenAns).trim().toUpperCase();
+          const normCorr = String(q.correct_answer || '').trim().toUpperCase();
+
+          if (normGiven === normCorr) {
+            correctCount++;
+            totalScore += qMarks;
+          } else {
+            wrongCount++;
+            const pen = Number(q.penalty ?? q.negative_marks ?? 0);
+            totalScore -= pen;
+          }
+        }
+
+        totalScore = Math.max(0, Math.round(totalScore * 100) / 100);
+
+        await supabase
+          .from('exam_code_attempts')
+          .update({
+            score: totalScore,
+            max_score: maxScore,
+            correct_count: correctCount,
+            wrong_count: wrongCount,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', att.id);
+
+        recalculatedCount++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully recalculated ${recalculatedCount} candidate attempt(s).`,
+      recalculated_count: recalculatedCount,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message });
   }
 });
 

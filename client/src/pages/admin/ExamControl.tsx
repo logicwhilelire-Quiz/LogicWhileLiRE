@@ -306,7 +306,8 @@ export default function ExamControl() {
       const res = await createExam({
         title: form.title,
         duration_minutes: Number(form.duration_minutes),
-      });
+        exam_code: form.exam_code,
+      } as any);
 
       const newExam: ExamItem = {
         id: res.data?.exam?.id || `ex-${Date.now()}`,

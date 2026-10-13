@@ -708,11 +708,7 @@ export async function getStudentDashboard(req: Request, res: Response): Promise<
   const eligibleCodes = (allExamCodes || [])
     .filter((ec: any) => {
       // Must be eligible for student's section & cohort
-      if (!isStudentEligibleForExam(student, ec)) return false;
-      // Must have been started by the inspector (or demo exam)
-      const isDemo = String(ec.exam_code || '').includes('DEMO') || ec.exam_code === 'CS2026';
-      const isStarted = Boolean(ec.started_at) || Boolean(getExamStartedState(ec.exam_code));
-      return isDemo || isStarted;
+      return isStudentEligibleForExam(student, ec);
     })
     .map((ec: any) => ({
       id: ec.id,

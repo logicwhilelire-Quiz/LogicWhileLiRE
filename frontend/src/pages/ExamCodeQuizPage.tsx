@@ -37,6 +37,8 @@ interface ExamQuestion {
   time_limit?: number
   difficulty?: string
   topic?: string
+  starter_code?: string
+  code?: string
   test_cases?: Array<{ id: string; input_text: string; expected_output?: string; is_hidden: boolean; marks?: number }>
 }
 
@@ -54,6 +56,13 @@ interface ExamSession {
 type FaceStatus = 'ok' | 'no_face' | 'multiple' | 'looking_away' | 'loading'
 
 const BASE = API_BASE_URL
+
+const ALLOWED_MCQ_KEYS = new Set([
+  'Tab', 'Space', 'Enter', ' ',
+  'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+  '1', '2', '3', '4',
+  'Backspace',
+])
 
 function shuffleForStudent<T>(array: T[], seed: string): T[] {
   let s = 0
@@ -206,17 +215,25 @@ export default function QuizPage() {
           marks: (q.marks as number) || 1,
           difficulty: (q.difficulty as string) || 'Medium',
           topic: (q.topic as string) || 'General',
+          starter_code: (q.starter_code || q.code) as string | undefined,
+          code: (q.code || q.starter_code) as string | undefined,
           test_cases: (q.test_cases as ExamQuestion['test_cases']) || [],
         }))
-        const randomizedQuestions: ExamQuestion[] = shuffleForStudent(questions, `${hallTicket}_q_${examCode}`).map(q => {
-          if (q.options && q.options.length > 1 && q.type !== 'code') {
-            return {
-              ...q,
-              options: shuffleForStudent(q.options, `${hallTicket}_${q.id}_opts`),
-            }
-          }
-          return q
-        })
+
+        // If the server has already deterministically shuffled questions and options for this candidate,
+        // use them directly to guarantee 100% accurate option key evaluation mapping!
+        const isServerShuffled = Boolean(data.server_shuffled || data.questions_shuffled)
+        const randomizedQuestions: ExamQuestion[] = isServerShuffled
+          ? questions
+          : questions.map(q => {
+              if (q.options && q.options.length > 1 && q.type !== 'code') {
+                return {
+                  ...q,
+                  options: shuffleForStudent(q.options, `${hallTicket}_${q.id}_opts`),
+                }
+              }
+              return q
+            })
 
         sessionIdRef.current = data.sessionId || data.session_id
         const proctoringMode: 'webcam' | 'screen' | 'dual' = exam?.proctoring_mode || 'webcam'
@@ -844,26 +861,27 @@ export default function QuizPage() {
   }, [session, examCode, hallTicket, isTerminated, submitting, handleForceTermination])
 
   /* ── Strict Exam Security Listeners (Phase 1 Comprehensive Lockdown) ── */
-  const ALLOWED_MCQ_KEYS = new Set([
-    'Tab', 'Space', 'Enter', ' ',
-    'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-    '1', '2', '3', '4',
-    'Backspace',
-  ])
-
   useEffect(() => {
     if (!session || isTerminated || submitting) return
 
-    // 1. Detect tab switch
+    // 1. Detect tab switch / sliding to another tab (Zero tolerance)
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        logViolation('tab_switch', 'Tab switch or browser minimized during examination')
+        logViolation(
+          'tab_switch',
+          'Tab switch or window sliding detected during examination — zero-tolerance security lockdown triggered',
+          { isSevere: true }
+        )
       }
     }
 
-    // 2. Detect window blur
+    // 2. Detect window blur / sliding away to another app
     const handleWindowBlur = () => {
-      logViolation('window_blur', 'Exam window lost focus (switched applications or desktop window)')
+      logViolation(
+        'window_blur',
+        'Exam window lost focus (switched applications or desktop window) — zero-tolerance focus policy',
+        { isSevere: true }
+      )
     }
 
     // 3. Detect window resize / minimize
@@ -916,11 +934,11 @@ export default function QuizPage() {
       const target = e.target as HTMLElement | null
       const isInput = target && (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.isContentEditable || target.closest('.monaco-editor'))
 
-      // Detect Escape key
+      // Detect Escape key — immediately terminate exam (zero-tolerance policy)
       if (e.key === 'Escape' || e.code === 'Escape') {
         e.preventDefault()
         e.stopPropagation()
-        logViolation('escape_key', 'Escape key was pressed during examination')
+        logViolation('escape_key', 'Escape key was pressed during examination — immediate security lockdown triggered', { isSevere: true })
         return
       }
 
@@ -981,6 +999,22 @@ export default function QuizPage() {
       }
     }
 
+    // 9. Fullscreen change detection (ESC exit from fullscreen)
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && !hasTerminatedRef.current && !submitting) {
+        const newCount = fullscreenExitCountRef.current + 1
+        fullscreenExitCountRef.current = newCount
+        setFullscreenExitCount(newCount)
+        exitTimestampRef.current = Date.now()
+        setShowFullscreenOverlay(true)
+        logViolation(
+          'fullscreen_exit',
+          `Candidate exited fullscreen mode (exit #${newCount}) — zero-tolerance fullscreen policy triggered exam shutdown`,
+          { exitCount: newCount, isSevere: true }
+        )
+      }
+    }
+
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('blur', handleWindowBlur)
     window.addEventListener('resize', handleResize)
@@ -991,6 +1025,10 @@ export default function QuizPage() {
     document.addEventListener('selectstart', handleSelectStart)
     document.addEventListener('dragstart', handleDragStart)
     window.addEventListener('keydown', handleKeyDown, true)
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange)
+    document.addEventListener('msfullscreenchange', handleFullscreenChange)
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
@@ -1003,8 +1041,12 @@ export default function QuizPage() {
       document.removeEventListener('selectstart', handleSelectStart)
       document.removeEventListener('dragstart', handleDragStart)
       window.removeEventListener('keydown', handleKeyDown, true)
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
+      document.removeEventListener('msfullscreenchange', handleFullscreenChange)
     }
-  }, [session, isTerminated, submitting, logViolation])
+  }, [session, isTerminated, submitting, logViolation, fullscreenExitCountRef])
 
 
   /* ── 1.4 Background Sync & Network Listeners ── */
@@ -2490,7 +2532,7 @@ export default function QuizPage() {
                 <span style={{ fontSize: '1.2rem' }}>⚠️</span>
                 <div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{violationCount} Violation{violationCount > 1 ? 's' : ''}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)' }}>5 will auto-submit</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)'}}>{session?.violationThreshold || 2} max — exam terminates on breach</div>
                 </div>
               </div>
             </motion.div>

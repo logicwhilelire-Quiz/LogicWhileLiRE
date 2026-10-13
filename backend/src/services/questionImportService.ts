@@ -195,6 +195,12 @@ export function parseAndValidateXlsx(buffer: Buffer): ParseResult {
 
       setRaw = normObj['set'] ?? normObj['setnumber'] ?? normObj['questionset'] ?? undefined;
       starterCode = String(normObj['startercode'] ?? normObj['code'] ?? normObj['codesnippet'] ?? '').trim();
+      if (!starterCode && qText.includes('\n')) {
+        const parts = qText.split(/\n\s*\n/);
+        if (parts.length > 1) {
+          starterCode = parts.slice(1).join('\n\n').trim();
+        }
+      }
       diagramUrl = String(normObj['diagramurl'] ?? normObj['diagram'] ?? normObj['imageurl'] ?? normObj['image'] ?? '').trim();
       explanationText = String(normObj['explanation'] ?? normObj['solution'] ?? normObj['hint'] ?? '').trim();
     }

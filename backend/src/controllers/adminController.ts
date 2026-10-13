@@ -922,7 +922,7 @@ export async function listExams(req: Request, res: Response): Promise<void> {
  * POST /api/admin/exams
  */
 export async function createExam(req: Request, res: Response): Promise<void> {
-  const { title, duration_minutes, start_time, end_time, admin_email, is_leaderboard_public } = req.body;
+  const { title, duration_minutes, start_time, end_time, admin_email, is_leaderboard_public, exam_code } = req.body;
 
   const { data, error } = await supabase
     .from('exams')
@@ -940,6 +940,25 @@ export async function createExam(req: Request, res: Response): Promise<void> {
     .single();
 
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
+
+  // Automatically sync to exam_codes table so exam is immediately live on student & main portal
+  try {
+    const code = String(exam_code || `LW-${String(data.id).slice(0, 6).toUpperCase()}`).trim().toUpperCase();
+    await supabase.from('exam_codes').upsert({
+      exam_code: code,
+      exam_name: title,
+      subject: title,
+      duration_minutes: duration_minutes || 60,
+      start_time: start_time || new Date().toISOString(),
+      end_time: end_time || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      is_active: true,
+      is_launched: true,
+      college_id: req.admin?.college_id || 1,
+      total_questions: 0,
+    }, { onConflict: 'exam_code' });
+  } catch (syncErr) {
+    console.warn('[createExam] exam_codes bridge note:', syncErr);
+  }
 
   res.status(201).json({ success: true, exam: data });
 }

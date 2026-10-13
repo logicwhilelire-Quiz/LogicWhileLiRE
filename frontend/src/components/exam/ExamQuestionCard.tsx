@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Question {
@@ -7,6 +7,8 @@ interface Question {
   options?: string[]
   type?: 'mcq' | 'code' | 'aptitude'
   topic?: string
+  starter_code?: string
+  code?: string
 }
 
 interface ExamQuestionCardProps {
@@ -15,6 +17,312 @@ interface ExamQuestionCardProps {
   selectedOption?: number | null
   questionIndex: number
   sector?: { name: string; color: string }
+}
+
+function detectLanguage(code: string): string {
+  if (/\b(def\s+|elif\b|print\(|len\(|range\(|__init__|import\s+numpy)\b/.test(code)) return 'Python'
+  if (/\b(console\.log|const\s+|let\s+|function\s*\(|=>)\b/.test(code)) return 'JavaScript'
+  if (/\b(public\s+static|System\.out\.println)\b/.test(code)) return 'Java'
+  if (/\b(#include|<iostream>|std::cout)\b/.test(code)) return 'C++'
+  if (/\b(SELECT|FROM|WHERE|INSERT|UPDATE)\b/i.test(code)) return 'SQL'
+  return 'Python'
+}
+
+function looksLikeCode(str: string): boolean {
+  if (!str || str.trim().length < 6) return false
+  const codePatterns = [
+    /\b(def|class|function|var|let|const|import|from|while|for|if|elif|else|return|print)\b/,
+    /[a-zA-Z_]\w*\s*=[^=]/,
+    /(\[.*\]|\{.*\}|\(.*\))\s*$/,
+    /\/\/|#\s/,
+    /\bint\s+|float\s+|void\s+|public\s+/,
+    /;\s*$/,
+    /^\s{2,}|\t/m,
+  ]
+  let matches = 0
+  for (const p of codePatterns) {
+    if (p.test(str)) matches++
+  }
+  return matches >= 2 || (matches >= 1 && str.includes('\n'))
+}
+
+interface ParsedContent {
+  promptText: string
+  codeSnippet: string | null
+  language: string
+}
+
+function parseQuestionContent(text: string, starterCode?: string | null): ParsedContent {
+  if (starterCode && starterCode.trim()) {
+    let cleanPrompt = text.replace(starterCode, '').trim()
+    cleanPrompt = cleanPrompt.replace(/```[a-z]*\s*[\s\S]*?```/gi, '').trim()
+    return {
+      promptText: cleanPrompt || text,
+      codeSnippet: starterCode.trim(),
+      language: detectLanguage(starterCode),
+    }
+  }
+
+  // Check markdown code blocks: ```lang ... ```
+  const fenceMatch = text.match(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/)
+  if (fenceMatch) {
+    const prompt = text.replace(fenceMatch[0], '').trim()
+    return {
+      promptText: prompt,
+      codeSnippet: fenceMatch[2].trim(),
+      language: fenceMatch[1] ? fenceMatch[1].toUpperCase() : detectLanguage(fenceMatch[2]),
+    }
+  }
+
+  // Check double newline split
+  const splitDouble = text.split(/\n\s*\n/)
+  if (splitDouble.length >= 2) {
+    const candidateCode = splitDouble.slice(1).join('\n\n').trim()
+    if (looksLikeCode(candidateCode)) {
+      return {
+        promptText: splitDouble[0].trim(),
+        codeSnippet: candidateCode,
+        language: detectLanguage(candidateCode),
+      }
+    }
+  }
+
+  // Check single newline split if first line ends with ? or :
+  const lines = text.split('\n')
+  if (lines.length > 2) {
+    const firstLine = lines[0].trim()
+    const rest = lines.slice(1).join('\n').trim()
+    if ((firstLine.endsWith('?') || firstLine.endsWith(':')) && looksLikeCode(rest)) {
+      return {
+        promptText: firstLine,
+        codeSnippet: rest,
+        language: detectLanguage(rest),
+      }
+    }
+  }
+
+  return {
+    promptText: text,
+    codeSnippet: null,
+    language: 'plaintext',
+  }
+}
+
+function formatCodeLine(line: string) {
+  // Check comment
+  const commentIdx = line.indexOf('#')
+  let codePart = line
+  let commentPart = ''
+  if (commentIdx !== -1) {
+    codePart = line.slice(0, commentIdx)
+    commentPart = line.slice(commentIdx)
+  }
+
+  // Tokenize codePart into tokens
+  const tokenRegex = /(".*?"|'.*?'|\b(?:def|return|while|for|in|if|elif|else|break|continue|import|from|as|class|try|except|finally|with|pass|raise|assert|True|False|None|and|or|not|is)\b|\b(?:print|len|range|search|min|max|sum|int|str|list|dict|append)\b|\b\d+\b|[a-zA-Z_]\w*|[=+\-*/<>!&|^~%]+|[^\s\w])/g
+
+  const tokens: Array<{ text: string; type: string }> = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = tokenRegex.exec(codePart)) !== null) {
+    if (match.index > lastIndex) {
+      tokens.push({ text: codePart.slice(lastIndex, match.index), type: 'space' })
+    }
+    const val = match[0]
+    let type = 'ident'
+    if (val.startsWith('"') || val.startsWith("'")) {
+      type = 'string'
+    } else if (
+      /^(def|return|while|for|in|if|elif|else|break|continue|import|from|as|class|try|except|finally|with|pass|raise|assert|True|False|None|and|or|not|is)$/.test(val)
+    ) {
+      type = 'keyword'
+    } else if (/^(print|len|range|search|min|max|sum|int|str|list|dict|append)$/.test(val)) {
+      type = 'builtin'
+    } else if (/^\d+$/.test(val)) {
+      type = 'number'
+    } else if (/^[=+\-*/<>!&|^~%]+$/.test(val)) {
+      type = 'operator'
+    }
+    tokens.push({ text: val, type })
+    lastIndex = tokenRegex.lastIndex
+  }
+  if (lastIndex < codePart.length) {
+    tokens.push({ text: codePart.slice(lastIndex), type: 'space' })
+  }
+
+  const getColor = (t: string) => {
+    switch (t) {
+      case 'keyword':
+        return '#C084FC' // bright violet
+      case 'builtin':
+        return '#38BDF8' // cyan/sky blue
+      case 'string':
+        return '#4ADE80' // emerald green
+      case 'number':
+        return '#FBBF24' // warm amber
+      case 'operator':
+        return '#94A3B8' // slate operator
+      default:
+        return '#F1F5F9' // light text
+    }
+  }
+
+  return (
+    <>
+      {tokens.map((tok, i) => (
+        <span
+          key={i}
+          style={{
+            color: getColor(tok.type),
+            fontWeight: tok.type === 'keyword' ? 700 : 400,
+          }}
+        >
+          {tok.text}
+        </span>
+      ))}
+      {commentPart && (
+        <span style={{ color: '#64748B', fontStyle: 'italic' }}>{commentPart}</span>
+      )}
+    </>
+  )
+}
+
+function QuestionCodeSnippet({ code, language }: { code: string; language: string }) {
+  const [copied, setCopied] = useState(false)
+  const lines = useMemo(() => code.split('\n'), [code])
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(() => {})
+  }
+
+  return (
+    <div
+      style={{
+        margin: '18px 0 24px 0',
+        borderRadius: 12,
+        background: 'linear-gradient(180deg, #090D16 0%, #060911 100%)',
+        border: '1.5px solid rgba(234, 168, 18, 0.28)',
+        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5), 0 0 16px rgba(234, 168, 18, 0.08)',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Code Header Bar */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 14px',
+          background: 'rgba(255, 255, 255, 0.03)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Mac/IDE dots */}
+          <div style={{ display: 'flex', gap: 6 }}>
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#EF4444', display: 'inline-block' }} />
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#F59E0B', display: 'inline-block' }} />
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
+          </div>
+          <span
+            style={{
+              marginLeft: 8,
+              fontSize: '0.74rem',
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              color: '#FBBF24',
+              background: 'rgba(234, 168, 18, 0.12)',
+              border: '1px solid rgba(234, 168, 18, 0.3)',
+              padding: '2px 8px',
+              borderRadius: 6,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <span>🐍</span>
+            <span>{language}</span>
+          </span>
+        </div>
+
+        <button
+          onClick={handleCopy}
+          type="button"
+          style={{
+            background: copied ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.06)',
+            border: `1px solid ${copied ? '#10B981' : 'rgba(255, 255, 255, 0.12)'}`,
+            color: copied ? '#10B981' : '#94A3B8',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            padding: '4px 10px',
+            borderRadius: 6,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+          }}
+        >
+          {copied ? '✓ Copied' : '📋 Copy Code'}
+        </button>
+      </div>
+
+      {/* Code Editor Body */}
+      <div
+        style={{
+          display: 'flex',
+          padding: '14px 0',
+          fontFamily: 'ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace',
+          fontSize: '0.92rem',
+          lineHeight: 1.65,
+          overflowX: 'auto',
+        }}
+      >
+        {/* Line Numbers Gutter */}
+        <div
+          style={{
+            userSelect: 'none',
+            padding: '0 14px 0 16px',
+            textAlign: 'right',
+            color: '#475569',
+            borderRight: '1px solid rgba(255, 255, 255, 0.06)',
+            flexShrink: 0,
+            fontSize: '0.82rem',
+            lineHeight: 1.65,
+          }}
+        >
+          {lines.map((_, i) => (
+            <div key={i}>{i + 1}</div>
+          ))}
+        </div>
+
+        {/* Code Content */}
+        <pre
+          style={{
+            margin: 0,
+            padding: '0 18px',
+            fontFamily: 'inherit',
+            fontSize: 'inherit',
+            lineHeight: 1.65,
+            color: '#F1F5F9',
+            whiteSpace: 'pre',
+            tabSize: 4,
+            flex: 1,
+            overflowX: 'auto',
+          }}
+        >
+          {lines.map((line, idx) => (
+            <div key={idx}>{formatCodeLine(line) || ' '}</div>
+          ))}
+        </pre>
+      </div>
+    </div>
+  )
 }
 
 /**
@@ -37,6 +345,10 @@ export default function ExamQuestionCard({
       setPrev(questionIndex)
     }
   }, [questionIndex, prev])
+
+  const parsed = useMemo(() => {
+    return parseQuestionContent(question.text || '', question.starter_code || question.code)
+  }, [question.text, question.starter_code, question.code])
 
   const LABELS = ['A', 'B', 'C', 'D']
 
@@ -145,21 +457,30 @@ export default function ExamQuestionCard({
               </span>
             </div>
 
-            {/* Question text */}
+            {/* Question text / Prompt */}
             <p
               style={{
-                fontSize: '1.15rem',
+                fontSize: '1.12rem',
                 fontWeight: 600,
                 lineHeight: 1.65,
                 color: '#FFFFFF',
                 letterSpacing: '-0.01em',
-                marginBottom: 24,
+                marginBottom: parsed.codeSnippet ? 12 : 24,
                 fontFamily: 'var(--font-body, "Inter", sans-serif)',
                 WebkitFontSmoothing: 'antialiased',
+                whiteSpace: 'pre-line',
               }}
             >
-              {question.text}
+              {parsed.promptText}
             </p>
+
+            {/* Embedded Code Snippet (if question contains code) */}
+            {parsed.codeSnippet && (
+              <QuestionCodeSnippet
+                code={parsed.codeSnippet}
+                language={parsed.language}
+              />
+            )}
 
             {/* Options list */}
             {question.options && (

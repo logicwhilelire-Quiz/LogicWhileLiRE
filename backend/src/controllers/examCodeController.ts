@@ -681,26 +681,27 @@ export async function validateStudentEligibility(
 
   if (hasSectionTargeting) {
     if (!cleanHt) return false;
-    const { data: student } = await supabase
+    const { data: students } = await supabase
       .from('students')
       .select('*')
       .or(`hall_ticket.eq.${cleanHt},roll_number.eq.${cleanHt}${roll && roll !== cleanHt ? `,hall_ticket.eq.${roll},roll_number.eq.${roll}` : ''}`)
-      .maybeSingle();
+      .limit(10);
 
-    if (!student) return false;
-    return isStudentEligibleForExam(student, exam);
+    if (!students || students.length === 0) return false;
+    return students.some((s: any) => isStudentEligibleForExam(s, exam));
   }
 
   // Untargeted exam with optional college scope
   if (cleanHt && exam.college_id && exam.college_id !== 'ALL' && exam.college_id !== 0) {
-    const { data: student } = await supabase
+    const { data: students } = await supabase
       .from('students')
       .select('college_id')
       .or(`hall_ticket.eq.${cleanHt},roll_number.eq.${cleanHt}${roll && roll !== cleanHt ? `,hall_ticket.eq.${roll},roll_number.eq.${roll}` : ''}`)
-      .maybeSingle();
+      .limit(10);
 
-    if (student && student.college_id && String(student.college_id) !== String(exam.college_id)) {
-      return false;
+    if (students && students.length > 0) {
+      const anyCollegeMatch = students.some((s: any) => !s.college_id || String(s.college_id) === String(exam.college_id));
+      if (!anyCollegeMatch) return false;
     }
   }
 
@@ -729,7 +730,7 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
   const ec = examCode.trim().toUpperCase();
 
   // 1. Check exam code exists and is active
-  const { data: exam, error: examError } = await supabase
+  let { data: exam, error: examError } = await supabase
     .from('exam_codes')
     .select(`
       *,
@@ -738,6 +739,75 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
     .eq('exam_code', ec)
     .eq('is_active', true)
     .maybeSingle();
+
+  if (!exam) {
+    // Try swapping 5 <-> S, 0 <-> O in exam code to handle character confusion
+    const altCodes = [
+      ec.replace(/5/g, 'S'),
+      ec.replace(/S/g, '5'),
+      ec.replace(/0/g, 'O'),
+      ec.replace(/O/g, '0'),
+    ].filter((c) => c !== ec);
+
+    for (const alt of altCodes) {
+      const { data: altExam } = await supabase
+        .from('exam_codes')
+        .select(`
+          *,
+          college:college_id ( college_name, college_code )
+        `)
+        .eq('exam_code', alt)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (altExam) {
+        exam = altExam;
+        break;
+      }
+    }
+  }
+
+  if (!exam) {
+    // Auto-bridge: Check if questions were uploaded for this code, or if an exam exists in legacy exams table
+    const { data: qCheck } = await supabase
+      .from('questions_ec')
+      .select('id, question, topic')
+      .eq('exam_code', ec)
+      .limit(1);
+
+    const { data: legacyExam } = await supabase
+      .from('exams')
+      .select('*')
+      .or(`id.eq.${ec},title.eq.${ec}`)
+      .maybeSingle();
+
+    if ((qCheck && qCheck.length > 0) || legacyExam) {
+      const now = new Date();
+      const newEc = {
+        exam_code: ec,
+        exam_name: legacyExam?.title || ec,
+        subject: legacyExam?.title || (qCheck?.[0]?.topic) || 'General',
+        duration_minutes: legacyExam?.duration_minutes || 60,
+        start_time: legacyExam?.start_time || now.toISOString(),
+        end_time: legacyExam?.end_time || new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        is_active: true,
+        is_launched: true,
+        college_id: legacyExam?.college_id || 1,
+        total_questions: legacyExam?.total_questions || (qCheck?.length || 15),
+      };
+      await supabase.from('exam_codes').upsert(newEc, { onConflict: 'exam_code' });
+      const { data: freshlyCreated } = await supabase
+        .from('exam_codes')
+        .select(`
+          *,
+          college:college_id ( college_name, college_code )
+        `)
+        .eq('exam_code', ec)
+        .maybeSingle();
+      if (freshlyCreated) {
+        exam = freshlyCreated;
+      }
+    }
+  }
 
   if (examError || !exam) {
     res.status(404).json({ success: false, error: 'Invalid exam code. Please check and try again.' });
@@ -757,11 +827,13 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
 
   // 1.2 ENFORCE STUDENT EMAIL VERIFICATION (Item 9) & RESOLVE STUDENT RECORD
   const candidateRoll = extractCandidateRoll(ht);
-  const { data: studentRecord } = await supabase
+  const { data: studentRecords } = await supabase
     .from('students')
     .select('id, name, email, is_verified, roll_number, hall_ticket, college_id')
     .or(`hall_ticket.eq.${ht},roll_number.eq.${ht}${candidateRoll && candidateRoll !== ht ? `,hall_ticket.eq.${candidateRoll},roll_number.eq.${candidateRoll}` : ''}`)
-    .maybeSingle();
+    .limit(10);
+
+  const studentRecord = studentRecords?.find((s: any) => isStudentEligibleForExam(s, exam)) || studentRecords?.[0];
 
   if (studentRecord && studentRecord.is_verified === false) {
     res.status(403).json({
@@ -780,9 +852,14 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
 
   // 1.3 ENFORCE INSPECTOR START (Item 3)
   const isDemoExam = ec.includes('DEMO') || ec === 'CS2026';
-  if (!isDemoExam && !exam.started_at) {
+  const effectiveEc = exam.exam_code || ec;
+  const isExamStarted = Boolean(
+    exam.started_at ||
+    exam.is_launched
+  );
+  if (!isDemoExam && !isExamStarted) {
     const { getExamStartedState } = await import('../services/socketService');
-    const startedState = getExamStartedState(ec);
+    const startedState = getExamStartedState(ec) || getExamStartedState(effectiveEc);
     if (!startedState) {
       res.status(403).json({
         success: false,
@@ -883,7 +960,7 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
   const { count: qCount } = await supabase
     .from('questions_ec')
     .select('id', { count: 'exact', head: true })
-    .eq('exam_code', ec);
+    .eq('exam_code', effectiveEc);
 
   if (!qCount || qCount === 0) {
     res.status(503).json({
@@ -952,11 +1029,32 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
   const ec = String(code).toUpperCase();
 
   // 1. Look up exam
-  const { data: exam } = await supabase
+  let { data: exam } = await supabase
     .from('exam_codes')
     .select('*')
     .eq('exam_code', ec)
     .maybeSingle();
+
+  if (!exam) {
+    const altCodes = [
+      ec.replace(/5/g, 'S'),
+      ec.replace(/S/g, '5'),
+      ec.replace(/0/g, 'O'),
+      ec.replace(/O/g, '0'),
+    ].filter((c) => c !== ec);
+
+    for (const alt of altCodes) {
+      const { data: altExam } = await supabase
+        .from('exam_codes')
+        .select('*')
+        .eq('exam_code', alt)
+        .maybeSingle();
+      if (altExam) {
+        exam = altExam;
+        break;
+      }
+    }
+  }
 
   if (!exam) {
     res.status(404).json({ success: false, error: 'Exam not found or unavailable', code: 'EXAM_NOT_FOUND' });
@@ -996,32 +1094,23 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
     }
   }
 
+  const effectiveCode = exam.exam_code || ec;
   const { data: questions, error } = await supabase
     .from('questions_ec')
-    .select('id, question, option_a, option_b, option_c, option_d, marks, penalty, negative_marks, difficulty, topic, section, tags, display_order')
-    .eq('exam_code', String(code).toUpperCase())
+    .select('id, question, option_a, option_b, option_c, option_d, marks, penalty, negative_marks, difficulty, topic, section, tags, display_order, starter_code')
+    .eq('exam_code', effectiveCode)
     .order('display_order', { ascending: true, nullsFirst: false })
     .order('created_at');
 
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
 
-  // Phase 3: Section-wise and student-specific question shuffling
+  // Questions strictly preserve author upload order (display_order); options are deterministically shuffled per candidate
   const studentIdentifier = String(attemptId || req.query.candidateId || req.query.hallTicket || 'student');
-  const sectionsMap = new Map<string, any[]>();
-  for (const q of questions || []) {
-    const sec = q.section || q.topic || 'General';
-    if (!sectionsMap.has(sec)) sectionsMap.set(sec, []);
-    sectionsMap.get(sec)!.push(q);
-  }
-  const randomizedQuestions: any[] = [];
-  for (const [secName, qList] of sectionsMap.entries()) {
-    const shuffledList = deterministicShuffle(qList, `${studentIdentifier}_sec_${secName}`);
-    randomizedQuestions.push(...shuffledList);
-  }
+  const orderedQuestions = questions || [];
 
   // Question secrecy guard & per-student option shuffling:
   // Options are shuffled per student; grading strictly uses the server's master key.
-  const sanitizedQuestions = (randomizedQuestions || []).map((q: any) => {
+  const sanitizedQuestions = orderedQuestions.map((q: any) => {
     const studentSeed = `${studentIdentifier}_${q.id}`;
     const opts = [
       { key: 'A', text: q.option_a },
@@ -1058,22 +1147,44 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
   const candidateId = req.body.candidateId || req.body.hallTicket || req.body.hall_ticket;
 
   // Look up exam to check targeting
-  const { data: exam } = await supabase
+  let { data: exam } = await supabase
     .from('exam_codes')
     .select('*')
     .eq('exam_code', code)
     .maybeSingle();
 
   if (!exam) {
+    const altCodes = [
+      code.replace(/5/g, 'S'),
+      code.replace(/S/g, '5'),
+      code.replace(/0/g, 'O'),
+      code.replace(/O/g, '0'),
+    ].filter((c) => c !== code);
+
+    for (const alt of altCodes) {
+      const { data: altExam } = await supabase
+        .from('exam_codes')
+        .select('*')
+        .eq('exam_code', alt)
+        .maybeSingle();
+      if (altExam) {
+        exam = altExam;
+        break;
+      }
+    }
+  }
+
+  if (!exam) {
     res.status(404).json({ success: false, error: 'Exam not found or unavailable', code: 'EXAM_NOT_FOUND' });
     return;
   }
 
+  const effectiveCode = exam.exam_code || code;
   let attempt: any = null;
 
   // ── 1a & 1.4: verify session token or locate attempt by candidateId ──
   if (attemptId && session_token) {
-    const tokenCheck = await verifyAttemptToken(String(attemptId ?? ""), String(code), session_token ? String(session_token) : undefined);
+    const tokenCheck = await verifyAttemptToken(String(attemptId ?? ""), String(effectiveCode), session_token ? String(session_token) : undefined);
     if (!tokenCheck.valid) {
       if (tokenCheck.evicted) {
         res.status(409).json({ success: false, error: 'Your session was taken over from another device.', code: 'SESSION_EVICTED' });
@@ -1096,7 +1207,7 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
     const { data } = await supabase
       .from('exam_code_attempts')
       .select('*')
-      .eq('exam_code', code)
+      .eq('exam_code', effectiveCode)
       .or(`hall_ticket.eq.${candidateId},hall_ticket_no.eq.${candidateId}`)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -2280,6 +2391,14 @@ export async function validateAndPreviewQuestions(req: Request, res: Response): 
         testCases = String(norm['testcases'] || norm['testcase'] || row['Test Cases'] || '').trim();
       }
 
+      let starterCode = String(norm['startercode'] || norm['code'] || norm['codesnippet'] || row['Starter Code'] || row['Code'] || '').trim();
+      if (!starterCode && question.includes('\n')) {
+        const parts = question.split(/\n\s*\n/);
+        if (parts.length > 1) {
+          starterCode = parts.slice(1).join('\n\n').trim();
+        }
+      }
+
       // Canonical Question Type determination
       let canonicalType: 'MCQ' | 'Coding' | 'Aptitude' | 'Diagram' = 'MCQ';
       if (!rawType) {
@@ -2425,6 +2544,7 @@ export async function validateAndPreviewQuestions(req: Request, res: Response): 
         difficulty: normDiff,
         diagram_url: diagramUrl,
         test_cases: testCases,
+        starter_code: starterCode,
         errors: rowErrors,
       });
     }
@@ -2570,6 +2690,7 @@ export async function confirmImportQuestions(req: Request, res: Response): Promi
         difficulty: q.difficulty || 'Medium',
         tags: tags,
         test_cases: q.test_cases || null,
+        starter_code: q.starter_code || null,
         display_order: idx + 1,
       };
     });
@@ -2599,6 +2720,41 @@ export async function confirmImportQuestions(req: Request, res: Response): Promi
         }))
       );
     } catch {}
+
+    // Ensure exam_codes has an active, accessible record for this exam code
+    try {
+      const { data: existingCode } = await supabase
+        .from('exam_codes')
+        .select('id, exam_code, total_questions')
+        .eq('exam_code', targetCode)
+        .maybeSingle();
+
+      const now = new Date();
+      if (!existingCode) {
+        await supabase.from('exam_codes').insert({
+          exam_code: targetCode,
+          exam_name: targetCode,
+          subject: (rowsToInsert[0] && rowsToInsert[0].topic) || 'General',
+          total_questions: rowsToInsert.length,
+          duration_minutes: 60,
+          start_time: now.toISOString(),
+          end_time: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          is_active: true,
+          is_launched: true,
+          college_id: req.admin?.college_id || 1,
+        });
+      } else {
+        await supabase
+          .from('exam_codes')
+          .update({
+            total_questions: rowsToInsert.length,
+            is_active: true,
+          })
+          .eq('exam_code', targetCode);
+      }
+    } catch (ecSyncErr) {
+      console.warn('[confirmImportQuestions] exam_codes sync note:', ecSyncErr);
+    }
 
     res.json({
       success: true,

@@ -85,11 +85,32 @@ const handleExamCodeStart = async (req: any, res: any) => {
   const hallTicket = String(req.query.hallTicket || req.body?.hallTicket || 'GUEST').toUpperCase();
 
   try {
-    const { data: exam } = await supabase
+    let { data: exam } = await supabase
       .from('exam_codes')
       .select('*')
       .eq('exam_code', code)
       .maybeSingle();
+
+    if (!exam) {
+      const altCodes = [
+        code.replace(/5/g, 'S'),
+        code.replace(/S/g, '5'),
+        code.replace(/0/g, 'O'),
+        code.replace(/O/g, '0'),
+      ].filter((c) => c !== code);
+
+      for (const alt of altCodes) {
+        const { data: altExam } = await supabase
+          .from('exam_codes')
+          .select('*')
+          .eq('exam_code', alt)
+          .maybeSingle();
+        if (altExam) {
+          exam = altExam;
+          break;
+        }
+      }
+    }
 
     if (!exam) {
       return res.status(404).json({ success: false, error: 'Exam not found or unavailable', code: 'EXAM_NOT_FOUND' });
@@ -102,11 +123,13 @@ const handleExamCodeStart = async (req: any, res: any) => {
     }
 
     // Enforce student email verification (Item 9)
-    const { data: studentRecord } = await supabase
+    const { data: studentRecords } = await supabase
       .from('students')
       .select('id, email, is_verified')
       .or(`hall_ticket.eq.${hallTicket},roll_number.eq.${hallTicket}`)
-      .maybeSingle();
+      .limit(10);
+
+    const studentRecord = studentRecords?.[0];
 
     if (studentRecord && studentRecord.is_verified === false) {
       return res.status(403).json({
@@ -118,9 +141,14 @@ const handleExamCodeStart = async (req: any, res: any) => {
 
     // Enforce inspector start (Item 3)
     const isDemoExam = code.includes('DEMO') || code === 'CS2026';
-    if (!isDemoExam && !exam.started_at) {
+    const effectiveCode = exam.exam_code || code;
+    const isExamStarted = Boolean(
+      exam.started_at ||
+      exam.is_launched
+    );
+    if (!isDemoExam && !isExamStarted) {
       const { getExamStartedState } = await import('../services/socketService');
-      const startedState = getExamStartedState(code);
+      const startedState = getExamStartedState(code) || getExamStartedState(effectiveCode);
       if (!startedState) {
         return res.status(403).json({
           success: false,
@@ -137,7 +165,8 @@ const handleExamCodeStart = async (req: any, res: any) => {
     const { data: qData } = await supabase
       .from('questions_ec')
       .select('*')
-      .eq('exam_code', code);
+      .eq('exam_code', effectiveCode)
+      .order('display_order', { ascending: true });
 
     // If no questions found for exact code, fallback to first available questions
     let questions = qData;
@@ -149,10 +178,10 @@ const handleExamCodeStart = async (req: any, res: any) => {
       questions = fallbackQ || [];
     }
 
-    const studentIdentifier = `${hallTicket}_${code}`;
-    const shuffledQuestions = deterministicShuffle(questions || [], studentIdentifier);
+    const studentIdentifier = `${hallTicket}_${effectiveCode}`;
+    const orderedQuestions = questions || [];
 
-    const formattedQuestions = shuffledQuestions.map((q: any) => {
+    const formattedQuestions = orderedQuestions.map((q: any) => {
       const studentSeed = `${studentIdentifier}_${q.id}`;
       const origOpts = [
         { key: 'A', text: q.option_a },
@@ -164,7 +193,9 @@ const handleExamCodeStart = async (req: any, res: any) => {
 
       return {
         id: q.id,
+        question: q.question || q.question_text || 'Question',
         question_text: q.question || q.question_text || 'Question',
+        text: q.question || q.question_text || 'Question',
         options: shuffledOpts.map((o) => o.text),
         question_type: q.question_type || 'mcq',
         marks: q.marks || 1,
@@ -172,6 +203,8 @@ const handleExamCodeStart = async (req: any, res: any) => {
         difficulty: q.difficulty || 'Medium',
         topic: q.topic || 'General',
         section: q.section || 'General',
+        starter_code: q.starter_code || null,
+        code: q.starter_code || null,
       };
     });
 
@@ -179,7 +212,7 @@ const handleExamCodeStart = async (req: any, res: any) => {
     try {
       await supabase.from('exam_code_attempts').upsert({
         hall_ticket_no: hallTicket,
-        exam_code: code,
+        exam_code: effectiveCode,
         student_name: hallTicket,
         status: 'in_progress',
         start_time: new Date().toISOString(),
@@ -188,9 +221,11 @@ const handleExamCodeStart = async (req: any, res: any) => {
 
     return res.json({
       success: true,
-      sessionId: `sess_${code}_${hallTicket}_${Date.now()}`,
+      server_shuffled: true,
+      questions_shuffled: true,
+      sessionId: `sess_${effectiveCode}_${hallTicket}_${Date.now()}`,
       exam: exam || {
-        exam_name: code,
+        exam_name: effectiveCode,
         duration_minutes: 45,
         total_questions: formattedQuestions.length,
       },

@@ -239,11 +239,11 @@ app.get('/api/exam/:examId/leaderboard', validateParams(ExamIdParam), getLeaderb
 app.use('/api/v1/sectors', sectorRoutes);
 app.use('/api/sectors', sectorRoutes);
 
-// LogicWhileLiRE Autonomous Assessment Engine routes (execute, AI, proctor, leaderboard, create-exam-wizard)
-app.use('/api', ultraRoutes);
-
 // Exam Code System (Hall Ticket + Code entry, No OTP)
 app.use('/api', examCodeRoutes);
+
+// LogicWhileLiRE Autonomous Assessment Engine routes (execute, AI, proctor, leaderboard, create-exam-wizard)
+app.use('/api', ultraRoutes);
 
 // Master Inspector Command & Candidate Communication Engine (Broadcasts, Reprimands, Emails, Receipts)
 app.use('/api/v1/inspector', inspectorRoutes);

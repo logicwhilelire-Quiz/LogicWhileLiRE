@@ -64,15 +64,15 @@ export default function InstructionsPage() {
   const rules = [
     {
       icon: '🔒',
-      en: 'Exam will lock to Fullscreen mode. Pressing ESC counts as an integrity violation.',
-      te: 'పరీక్ష పూర్తి స్క్రీన్ మోడ్‌లో లాక్ అవుతుంది. ESC నొక్కడం ఉల్లంఘనగా నమోదు చేయబడుతుంది.',
-      severity: 'warning',
+      en: 'Strict Fullscreen Lock: Pressing ESC or exiting fullscreen immediately terminates and stops the exam session.',
+      te: 'ఖచ్చితమైన పూర్తి స్క్రీన్ లాక్: ESC నొక్కడం లేదా పూర్తి స్క్రీన్ నుండి నిష్క్రమించడం పరీక్షను వెంటనే ముగిస్తుంది.',
+      severity: 'danger',
     },
     {
-      icon: '👁️',
-      en: 'Switching tabs or windows is automatically detected. 3 violations = Auto Submit.',
-      te: 'ట్యాబ్‌లు లేదా ఇతర విండోలకు మారడం గుర్తించబడుతుంది. 3 ఉల్లంఘనలు = పరీక్ష ఆటో సబ్మిట్.',
-      severity: 'warning',
+      icon: '🚫',
+      en: 'Zero-Tolerance Tab Sliding: No swiping, sliding, or switching to another tab or application. Any tab switch will immediately stop and submit your exam.',
+      te: 'ట్యాబ్ మార్పు నిషేధం: ట్యాబ్‌లు లేదా ఇతర అప్లికేషన్‌లకు మారడం వెంటనే పరీక్షను ఆపివేసి ఆటో-సబ్మిట్ చేస్తుంది.',
+      severity: 'danger',
     },
     {
       icon: '⏱️',
