@@ -21,7 +21,7 @@ const appModule = require('./dist/index');
 const server = appModule.httpServer;
 const { deriveStudyYear, isStudentEligibleForExam } = require('./dist/utils/academicYear');
 const { supabase } = require('./dist/db/supabase');
-const { io: connectSocket } = require('../client/node_modules/socket.io-client');
+const { io: connectSocket } = require('socket.io-client');
 
 let baseUrl;
 

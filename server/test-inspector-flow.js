@@ -22,7 +22,7 @@ process.env.PORT = '0';
 const assert = require('assert');
 const http = require('http');
 const jwt = require('jsonwebtoken');
-const { io: connectSocket } = require('../client/node_modules/socket.io-client');
+const { io: connectSocket } = require('socket.io-client');
 
 let server;
 let baseUrl;
