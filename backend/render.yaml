@@ -4,12 +4,12 @@
 # ==============================================================================
 services:
   - type: web
-    name: logicwhile-quiz-server
+    name: LogicWhileLiRE-api
     runtime: node
     plan: starter
     region: oregon
     branch: main
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:

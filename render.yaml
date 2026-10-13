@@ -7,7 +7,7 @@ services:
   # 1. PRODUCTION BACKEND SERVICE
   # ——————————————————————————————————————————
   - type: web
-    name: logicwhile-quiz-server
+    name: LogicWhileLiRE-api
     runtime: node
     plan: starter
     region: oregon
