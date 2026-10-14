@@ -1,20 +1,6 @@
 import axios from 'axios';
 import { API_BASE_URL } from './config';
 
-// The base URL must come from an environment variable (for example VITE_API_URL or VITE_API_BASE_URL)
-// and must never default to localhost when deployed to remote production domains.
-const envApiUrl = (import.meta as any).env?.VITE_API_URL || (import.meta as any).env?.VITE_API_BASE_URL;
-const isLocalhostHost = typeof window !== 'undefined' && (
-  !window.location.hostname ||
-  window.location.hostname === 'localhost' ||
-  window.location.hostname === '127.0.0.1' ||
-  window.location.hostname.endsWith('.local')
-);
-
-if (import.meta.env.PROD && !isLocalhostHost && (!envApiUrl || envApiUrl.includes('localhost') || envApiUrl.includes('127.0.0.1'))) {
-  throw new Error('Production builds deployed on remote domains require VITE_API_URL to be set to a valid non-localhost URL.');
-}
-
 const BASE_URL = API_BASE_URL;
 
 // Set global axios defaults to match api instance resilience

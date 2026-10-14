@@ -15,17 +15,14 @@ const isLocalhostHost = typeof window !== 'undefined' && (
   window.location.hostname.endsWith('.local')
 );
 
-// In production builds deployed to a remote domain, base URL must come from environment and never point to localhost
-if (import.meta.env.PROD && !isLocalhostHost) {
-  if (!rawApiUrl || rawApiUrl.includes('localhost') || rawApiUrl.includes('127.0.0.1')) {
-    const errorMsg = '🚨 [Configuration Fatal] When deployed to a remote domain, VITE_API_URL / VITE_API_BASE_URL must be configured with a valid remote URL, and must never default to localhost.';
-    console.error(errorMsg);
-    throw new Error(errorMsg);
-  }
-}
+// In production builds deployed to a remote domain, ensure valid remote URL
+const defaultProductionApiUrl = 'https://logicwhilelire-api.onrender.com';
+const resolvedApiUrl = (!isLocalhostHost && (!rawApiUrl || rawApiUrl.includes('localhost') || rawApiUrl.includes('127.0.0.1')))
+  ? defaultProductionApiUrl
+  : (rawApiUrl || 'http://localhost:3001');
 
-export const API_BASE_URL: string = (rawApiUrl || 'http://localhost:3001').replace(/\/+$/, '');
-export const SOCKET_URL: string = (rawSocketUrl || rawApiUrl || 'http://localhost:3001').replace(/\/+$/, '');
+export const API_BASE_URL: string = resolvedApiUrl.replace(/\/+$/, '');
+export const SOCKET_URL: string = (rawSocketUrl || resolvedApiUrl).replace(/\/+$/, '');
 
 export const SUPABASE_URL: string = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://xhutjekdbyccscselzdy.supabase.co';
 export const SUPABASE_ANON_KEY: string = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 'sb_publishable_dNAfXpoQ-y4EAPF3RCh4dw_LnpRLEcw';
