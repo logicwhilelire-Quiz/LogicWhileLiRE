@@ -319,6 +319,29 @@ export default function ResultECPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)', position: 'relative', overflow: 'hidden' }}>
+      <style>{`
+        @media print {
+          header, footer, nav, .site-header, .site-footer, #print-scorecard-btn, button {
+            display: none !important;
+          }
+          body, .page-content, div {
+            background: #ffffff !important;
+            color: #000000 !important;
+          }
+          .page-content {
+            padding-top: 10px !important;
+          }
+          div[style*="box-shadow"], div[style*="border"] {
+            box-shadow: none !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+          }
+          h1, h2, h3, h4, span, div, p, strong {
+            color: #000000 !important;
+            text-shadow: none !important;
+          }
+        }
+      `}</style>
       {/* Celebration Confetti when qualified (never on terminated attempts) */}
       {passed && !isTerminated && <Confetti particleCount={140} durationMs={4500} />}
 
@@ -952,6 +975,30 @@ export default function ResultECPage() {
               Practice Question Bank
             </MagneticButton>
           </Link>
+          <button
+            type="button"
+            id="print-scorecard-btn"
+            onClick={() => window.print()}
+            style={{
+              background: 'linear-gradient(135deg, #EAA812 0%, #D97706 100%)',
+              color: '#002147',
+              border: 'none',
+              borderRadius: 12,
+              padding: '14px 28px',
+              fontWeight: 800,
+              fontSize: '1rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              boxShadow: '0 6px 20px rgba(234, 168, 18, 0.4)',
+              transition: 'all 0.2s ease',
+            }}
+            title="Print or save verified official score report as PDF"
+          >
+            <span>🖨️</span>
+            <span>Print Verified Scorecard</span>
+          </button>
           <Link to={`/reports/student/${hallTicket || '22R1KA0584'}`} style={{ textDecoration: 'none' }}>
             <MagneticButton
               className="btn btn-primary btn-lg"

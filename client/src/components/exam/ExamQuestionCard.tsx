@@ -14,9 +14,11 @@ interface Question {
 interface ExamQuestionCardProps {
   question: Question
   onOptionSelect?: (optionIdx: number) => void
+  onClearSelection?: () => void
   selectedOption?: number | null
   questionIndex: number
   sector?: { name: string; color: string }
+  fontSizeScale?: 'normal' | 'large' | 'xl'
 }
 
 function detectLanguage(code: string): string {
@@ -331,9 +333,11 @@ function QuestionCodeSnippet({ code, language }: { code: string; language: strin
 export default function ExamQuestionCard({
   question,
   onOptionSelect,
+  onClearSelection,
   selectedOption,
   questionIndex,
   sector,
+  fontSizeScale = 'normal',
 }: ExamQuestionCardProps) {
   const [prev, setPrev] = useState(questionIndex)
   const [direction, setDirection] = useState<'next' | 'prev'>('next')
@@ -454,15 +458,44 @@ export default function ExamQuestionCard({
                   </span>
                 )}
               </div>
-              <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>
-                Single Choice
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {selectedOption !== null && selectedOption !== undefined && onClearSelection && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onClearSelection()
+                    }}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.12)',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      color: '#F87171',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      padding: '3px 10px',
+                      borderRadius: 6,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      transition: 'all 0.2s ease',
+                    }}
+                    title="Clear selected option for this question"
+                  >
+                    <span>✕</span>
+                    <span>Clear Selection</span>
+                  </button>
+                )}
+                <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>
+                  Single Choice
+                </span>
+              </div>
             </div>
 
             {/* Question text / Prompt */}
             <p
               style={{
-                fontSize: '1.12rem',
+                fontSize: fontSizeScale === 'xl' ? '1.32rem' : fontSizeScale === 'large' ? '1.22rem' : '1.12rem',
                 fontWeight: 600,
                 lineHeight: 1.65,
                 color: '#FFFFFF',
@@ -542,7 +575,7 @@ export default function ExamQuestionCard({
 
                       <span
                         style={{
-                          fontSize: '1rem',
+                          fontSize: fontSizeScale === 'xl' ? '1.18rem' : fontSizeScale === 'large' ? '1.08rem' : '1rem',
                           fontWeight: isSelected ? 700 : 500,
                           color: isSelected ? '#FFFFFF' : '#E2E8F0',
                           lineHeight: 1.6,

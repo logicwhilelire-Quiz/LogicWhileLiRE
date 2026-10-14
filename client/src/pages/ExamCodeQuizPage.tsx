@@ -157,6 +157,25 @@ export default function QuizPage() {
   const [unreadCommsCount, setUnreadCommsCount] = useState(0)
   const [soundEnabled, setSoundEnabled] = useState(true)
 
+  /* ── Enhanced Candidate Controls & Telemetry ── */
+  const [fontSizeScale, setFontSizeScale] = useState<'normal' | 'large' | 'xl'>('normal')
+  const [paletteFilter, setPaletteFilter] = useState<'all' | 'answered' | 'unanswered' | 'flagged'>('all')
+  const [batteryLevel, setBatteryLevel] = useState<number | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+    if (typeof navigator !== 'undefined' && 'getBattery' in navigator) {
+      (navigator as any).getBattery?.().then((b: any) => {
+        if (!mounted) return
+        setBatteryLevel(Math.round(b.level * 100))
+        b.addEventListener('levelchange', () => {
+          if (mounted) setBatteryLevel(Math.round(b.level * 100))
+        })
+      }).catch(() => {})
+    }
+    return () => { mounted = false }
+  }, [])
+
   /* ── 1.4 Offline Resilience & Sync Queue ── */
   const [isOffline, setIsOffline] = useState(!navigator.onLine)
   const [showReconnectedAlert, setShowReconnectedAlert] = useState(false)
@@ -1501,6 +1520,30 @@ export default function QuizPage() {
     })
   }
 
+  const handleClearAnswer = () => {
+    if (!currentQuestion) return
+    setAnswers(prev => {
+      const next = { ...prev }
+      delete next[currentQuestion.id]
+      return next
+    })
+    if (examCode && hallTicket) {
+      bufferAnswer(examCode, hallTicket, currentQuestion.id, null as any, 'mcq')
+    }
+  }
+
+  const handleMarkAndNext = () => {
+    if (!currentQuestion) return
+    setFlagged(prev => {
+      const next = new Set(prev)
+      next.add(currentQuestion.id)
+      return next
+    })
+    if (session && currentQ < session.questions.length - 1) {
+      setCurrentQ(q => q + 1)
+    }
+  }
+
   const getSectorForQuestion = (q: ExamQuestion | undefined, idx: number) => {
     if (!q) return { name: 'Sector 1 · Quant Velocity', color: '#F59E0B' }
     if (q.topic) {
@@ -1958,6 +2001,64 @@ export default function QuizPage() {
             <span>VAULT BACKED UP (100% REALTIME)</span>
           </div>
 
+          {/* Readability Font Scaler Controls */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: 8,
+              padding: '2px',
+            }}
+            title="Adjust exam question reading font size"
+          >
+            {(['normal', 'large', 'xl'] as const).map(s => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setFontSizeScale(s)}
+                style={{
+                  background: fontSizeScale === s ? 'rgba(234, 168, 18, 0.25)' : 'transparent',
+                  border: fontSizeScale === s ? '1px solid #EAA812' : 'none',
+                  color: fontSizeScale === s ? '#EAA812' : '#94A3B8',
+                  borderRadius: 6,
+                  padding: '3px 7px',
+                  fontSize: s === 'normal' ? '0.72rem' : s === 'large' ? '0.82rem' : '0.92rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  lineHeight: 1,
+                  transition: 'all 0.15s ease',
+                }}
+                title={s === 'normal' ? 'Standard font size' : s === 'large' ? 'Large font size' : 'Extra large font size'}
+              >
+                A
+              </button>
+            ))}
+          </div>
+
+          {/* Battery Status */}
+          {batteryLevel !== null && (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '5px 10px',
+                borderRadius: 8,
+                background: batteryLevel <= 20 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                border: `1px solid ${batteryLevel <= 20 ? 'rgba(239, 68, 68, 0.4)' : 'rgba(255, 255, 255, 0.12)'}`,
+                color: batteryLevel <= 20 ? '#F87171' : '#94A3B8',
+                fontSize: '0.74rem',
+                fontWeight: 700,
+              }}
+              title={`Device Battery Level: ${batteryLevel}%`}
+            >
+              <span>{batteryLevel <= 20 ? '🪫' : '🔋'}</span>
+              <span>{batteryLevel}%</span>
+            </div>
+          )}
+
           {/* Scratchpad & Sound Controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
@@ -2326,7 +2427,9 @@ export default function QuizPage() {
             questionIndex={currentQ}
             selectedOption={typeof answers[currentQuestion.id] === 'number' ? answers[currentQuestion.id] as number : null}
             onOptionSelect={handleAnswer}
+            onClearSelection={handleClearAnswer}
             sector={getSectorForQuestion(currentQuestion, currentQ)}
+            fontSizeScale={fontSizeScale}
           />
 
           {/* When in MCQ mode, navigation sits in Left Column */}
@@ -2344,27 +2447,82 @@ export default function QuizPage() {
               backdropFilter: 'blur(16px)',
               boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
             }}>
-              <button
-                className="btn btn-secondary"
-                disabled={currentQ === 0}
-                onClick={() => setCurrentQ(q => q - 1)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
-              >
-                ← Previous
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  className="btn btn-secondary"
+                  disabled={currentQ === 0}
+                  onClick={() => setCurrentQ(q => q - 1)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
+                  title="Go to previous question (Shortcut: P or ArrowLeft)"
+                >
+                  ← Previous
+                </button>
+                {answered && (
+                  <button
+                    type="button"
+                    onClick={handleClearAnswer}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.14)',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      color: '#FCA5A5',
+                      padding: '8px 14px',
+                      borderRadius: 8,
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      transition: 'all 0.15s ease',
+                    }}
+                    title="Clear selected option for this question"
+                  >
+                    <span>✕</span>
+                    <span>Clear Response</span>
+                  </button>
+                )}
+              </div>
+
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <button
                   className={`btn ${isFlagged ? 'btn-warning' : 'btn-ghost'}`}
                   style={{ color: isFlagged ? '#F59E0B' : undefined, fontWeight: 700 }}
                   onClick={toggleFlag}
+                  title="Flag this question for later review (Shortcut: F)"
                 >
                   {isFlagged ? '🚩 Flagged' : '⚑ Flag'}
                 </button>
+
+                {currentQ < session.questions.length - 1 && (
+                  <button
+                    type="button"
+                    onClick={handleMarkAndNext}
+                    style={{
+                      background: 'rgba(245, 158, 11, 0.14)',
+                      border: '1px solid rgba(245, 158, 11, 0.4)',
+                      color: '#FBBF24',
+                      padding: '8px 14px',
+                      borderRadius: 8,
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                    title="Mark for review and advance to next question"
+                  >
+                    <span>🚩</span>
+                    <span>Review & Next</span>
+                  </button>
+                )}
+
                 {currentQ < session.questions.length - 1 ? (
                   <button
                     className="btn btn-primary"
                     onClick={() => setCurrentQ(q => q + 1)}
                     style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, padding: '8px 20px' }}
+                    title="Save & advance to next question (Shortcut: N or Enter)"
                   >
                     Next →
                   </button>
@@ -2374,7 +2532,7 @@ export default function QuizPage() {
                     onClick={() => setShowSubmitModal(true)}
                     style={{ fontWeight: 800, padding: '8px 22px' }}
                   >
-                    Submit Exam 🏁
+                    Review & Submit 🏁
                   </button>
                 )}
               </div>
@@ -2479,19 +2637,70 @@ export default function QuizPage() {
           /* Right Column in MCQ Mode: Palette & Stats */
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, height: '100%', overflowY: 'auto' }}>
             <div className="glow-card" style={{ padding: 16 }}>
-            <h4 style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '0.82rem', fontWeight: 700,
-              letterSpacing: '0.08em', textTransform: 'uppercase',
-              color: 'var(--color-text-muted)', marginBottom: 12,
-            }}>
-              Question Palette
-            </h4>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <h4 style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '0.82rem', fontWeight: 700,
+                letterSpacing: '0.08em', textTransform: 'uppercase',
+                color: 'var(--color-text-muted)', margin: 0,
+              }}>
+                Question Palette
+              </h4>
+              <span style={{ fontSize: '0.72rem', color: '#EAA812', fontWeight: 700 }}>
+                {Math.round((answeredCount / (session.questions.length || 1)) * 100)}% Done
+              </span>
+            </div>
+
+            {/* Interactive Palette Filter Tabs */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4, marginBottom: 12 }}>
+              {[
+                { id: 'all', label: 'All', count: session.questions.length },
+                { id: 'answered', label: 'Ans', count: answeredCount, color: '#10B981' },
+                { id: 'unanswered', label: 'Left', count: session.questions.length - answeredCount, color: '#94A3B8' },
+                { id: 'flagged', label: 'Flag', count: flagged.size, color: '#F59E0B' },
+              ].map(f => {
+                const isActive = paletteFilter === f.id
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setPaletteFilter(f.id as any)}
+                    style={{
+                      background: isActive ? 'rgba(234, 168, 18, 0.22)' : 'rgba(255, 255, 255, 0.04)',
+                      border: isActive ? '1px solid #EAA812' : '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: 6,
+                      padding: '5px 2px',
+                      color: isActive ? '#EAA812' : '#94A3B8',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 2,
+                      transition: 'all 0.15s ease',
+                    }}
+                    title={`Filter by ${f.label}`}
+                  >
+                    <span>{f.label}</span>
+                    <span style={{ color: f.color || (isActive ? '#EAA812' : '#CBD5E1'), fontWeight: 800 }}>
+                      {f.count}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
               {session.questions.map((q, i) => {
                 const isAns  = q.type === 'code' ? !!codeAnswers[q.id] : answers[q.id] !== undefined
                 const isFlag = flagged.has(q.id)
                 const isCurr = i === currentQ
+
+                // Filter logic
+                if (paletteFilter === 'answered' && !isAns) return null
+                if (paletteFilter === 'unanswered' && isAns) return null
+                if (paletteFilter === 'flagged' && !isFlag) return null
 
                 return (
                   <motion.button
@@ -2500,7 +2709,7 @@ export default function QuizPage() {
                     onClick={() => setCurrentQ(i)}
                     whileHover={{ scale: 1.12 }}
                     whileTap={{ scale: 0.95 }}
-                    title={`Q${i+1}${isFlag?' (Flagged)':''}`}
+                    title={`Q${i+1}${isAns ? ' (Answered)' : ' (Not Answered)'}${isFlag ? ' (Flagged)' : ''}`}
                   >
                     {isFlag ? '⚑' : i + 1}
                   </motion.button>
@@ -2570,7 +2779,7 @@ export default function QuizPage() {
       )}
       </div>
 
-      {/* ─── SUBMIT MODAL ─── */}
+      {/* ─── ENHANCED PRE-SUBMISSION AUDIT DIALOG ─── */}
       <AnimatePresence>
         {showSubmitModal && (
           <div className="modal-overlay" onClick={() => setShowSubmitModal(false)}>
@@ -2581,29 +2790,126 @@ export default function QuizPage() {
               exit={{ opacity: 0,  scale: 0.92, y: 24 }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               onClick={e => e.stopPropagation()}
+              style={{
+                maxWidth: 540,
+                width: '100%',
+                background: 'linear-gradient(145deg, #0B1120 0%, #060B1A 100%)',
+                border: '1.5px solid rgba(234, 168, 18, 0.45)',
+                borderRadius: 20,
+                padding: '28px 24px',
+                boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(234, 168, 18, 0.25)',
+              }}
             >
-              <div className="modal-icon">🏁</div>
-              <div className="modal-title">Submit Exam?</div>
-              <div className="modal-message">
-                You've answered {answeredCount} of {session.questions.length} questions.
-                {flagged.size > 0 && ` ${flagged.size} question${flagged.size > 1 ? 's are' : ' is'} flagged for review.`}
-                <br /><br />
-                <strong>This action cannot be undone.</strong>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: '2rem' }}>🏁</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#F0F4FC' }}>
+                      Pre-Submission Audit
+                    </h3>
+                    <div style={{ fontSize: '0.76rem', color: '#94A3B8', marginTop: 2 }}>
+                      {session.examName} • Time Left: <strong style={{ color: timerColor }}>{formatTime(timeLeft)}</strong>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSubmitModal(false)}
+                  style={{ background: 'transparent', border: 'none', color: '#94A3B8', fontSize: '1.3rem', cursor: 'pointer', padding: 4 }}
+                >
+                  ✕
+                </button>
               </div>
+
+              {/* Status Audit Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
+                <div style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#34D399' }}>{answeredCount}</div>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#A7F3D0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Answered</div>
+                </div>
+                <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#F87171' }}>{session.questions.length - answeredCount}</div>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#FECACA', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Unanswered</div>
+                </div>
+                <div style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#FBBF24' }}>{flagged.size}</div>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#FDE68A', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Flagged</div>
+                </div>
+              </div>
+
+              {/* Jump to first unanswered helper */}
+              {session.questions.length - answeredCount > 0 && (
+                <div style={{
+                  background: 'rgba(245, 158, 11, 0.08)',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  borderRadius: 12,
+                  padding: '12px 16px',
+                  marginBottom: 20,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                }}>
+                  <div style={{ fontSize: '0.82rem', color: '#FCD34D', lineHeight: 1.4 }}>
+                    ⚠️ You still have <strong>{session.questions.length - answeredCount}</strong> unattempted question{session.questions.length - answeredCount > 1 ? 's' : ''}.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const firstUnanswered = session.questions.findIndex((q) =>
+                        q.type === 'code' ? !codeAnswers[q.id] : answers[q.id] === undefined
+                      )
+                      if (firstUnanswered !== -1) {
+                        setCurrentQ(firstUnanswered)
+                      }
+                      setShowSubmitModal(false)
+                    }}
+                    style={{
+                      background: 'rgba(245, 158, 11, 0.22)',
+                      border: '1px solid rgba(245, 158, 11, 0.55)',
+                      color: '#FBBF24',
+                      fontSize: '0.74rem',
+                      fontWeight: 800,
+                      padding: '6px 12px',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <span>🔍</span>
+                    <span>Review Unanswered</span>
+                  </button>
+                </div>
+              )}
+
+              <p style={{ color: '#94A3B8', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 20px', textAlign: 'center' }}>
+                Are you sure you want to end your exam? Once confirmed, all your answers will be securely sealed and submitted for final evaluation.
+              </p>
+
               <div style={{ display: 'flex', gap: 12 }}>
                 <button
+                  type="button"
                   className="btn btn-ghost w-full"
                   onClick={() => setShowSubmitModal(false)}
+                  style={{ fontWeight: 700 }}
                 >
-                  Continue Exam
+                  Return to Questions
                 </button>
                 <button
                   id="confirm-submit-exam-btn"
                   className="btn btn-success w-full"
                   onClick={handleSubmit}
                   disabled={submitting}
+                  style={{
+                    fontWeight: 800,
+                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                    boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
+                  }}
                 >
-                  {submitting ? <><span className="btn-spinner" /> Submitting</> : '✓ Confirm Submit'}
+                  {submitting ? <><span className="btn-spinner" /> Sealing Answers...</> : '✓ Yes, Final Submit'}
                 </button>
               </div>
             </motion.div>

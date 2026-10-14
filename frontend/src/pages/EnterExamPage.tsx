@@ -261,6 +261,38 @@ export default function EnterExamPage() {
                     <><span>🔐</span><span>Authorize &amp; Enter Assessment Lobby →</span></>
                   )}
                 </button>
+
+                {/* 1-Click Evaluation / Demo Exam Action */}
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center' }}>
+                  <button
+                    type="button"
+                    id="quick-demo-fill-btn"
+                    onClick={() => {
+                      setForm({
+                        examCode: 'DEMO-CS2026',
+                        hallTicket: form.hallTicket || '24VR1A0501',
+                      })
+                    }}
+                    style={{
+                      background: 'rgba(56, 189, 248, 0.12)',
+                      border: '1px solid rgba(56, 189, 248, 0.35)',
+                      color: '#38BDF8',
+                      borderRadius: 8,
+                      padding: '8px 16px',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      transition: 'all 0.2s ease',
+                    }}
+                    title="Pre-fill DEMO-CS2026 exam code for quick evaluation"
+                  >
+                    <span>🚀</span>
+                    <span>Quick Fill Evaluation Demo (DEMO-CS2026)</span>
+                  </button>
+                </div>
               </form>
 
               {/* Security Note */}
