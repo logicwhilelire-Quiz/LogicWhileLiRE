@@ -88,7 +88,8 @@ export default function QuizPage() {
       return JSON.parse(raw)?.hallTicket
     } catch { return '' }
   })()
-  const hallTicket: string = stateHt || storedHt || ''
+  const isDemo = Boolean(examCode?.toUpperCase().includes('DEMO'))
+  const hallTicket: string = stateHt || storedHt || (isDemo ? 'DEMO-CANDIDATE' : '')
 
   // Sprint 2 item 3: read server_start_time from router state (set by WaitingLobbyPage on EXAM_STARTED)
   // This is the single source of truth for computing correct remaining time for late joiners.
@@ -2312,14 +2313,14 @@ export default function QuizPage() {
         flex: 1, position: 'relative', zIndex: 1,
         display: 'grid',
         gridTemplateColumns: isCode ? '1fr 1fr' : '1fr 320px',
-        gap: 16, padding: '12px 20px', maxWidth: 1400, margin: '0 auto', width: '100%',
+        gap: 16, padding: '12px 20px 16px', maxWidth: 1400, margin: '0 auto', width: '100%',
         minHeight: 0,
-        height: 'calc(100vh - 72px)',
         overflow: 'hidden',
+        boxSizing: 'border-box',
       }}>
 
         {/* ── Left Column: Question Content ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, height: '100%', overflowY: 'auto', paddingRight: 4 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minHeight: 0, height: '100%', overflowY: 'auto', paddingRight: 8, paddingBottom: 56 }}>
           <ExamQuestionCard
             question={currentQuestion}
             questionIndex={currentQ}
@@ -2330,18 +2331,31 @@ export default function QuizPage() {
 
           {/* When in MCQ mode, navigation sits in Left Column */}
           {!isCode && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 8 }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 12,
+              marginTop: 6,
+              padding: '12px 18px',
+              background: 'rgba(15, 23, 42, 0.85)',
+              border: '1px solid rgba(234, 168, 18, 0.25)',
+              borderRadius: 14,
+              backdropFilter: 'blur(16px)',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
+            }}>
               <button
                 className="btn btn-secondary"
                 disabled={currentQ === 0}
                 onClick={() => setCurrentQ(q => q - 1)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
               >
                 ← Previous
               </button>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <button
                   className={`btn ${isFlagged ? 'btn-warning' : 'btn-ghost'}`}
-                  style={{ color: isFlagged ? '#F59E0B' : undefined }}
+                  style={{ color: isFlagged ? '#F59E0B' : undefined, fontWeight: 700 }}
                   onClick={toggleFlag}
                 >
                   {isFlagged ? '🚩 Flagged' : '⚑ Flag'}
@@ -2350,6 +2364,7 @@ export default function QuizPage() {
                   <button
                     className="btn btn-primary"
                     onClick={() => setCurrentQ(q => q + 1)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, padding: '8px 20px' }}
                   >
                     Next →
                   </button>
@@ -2357,6 +2372,7 @@ export default function QuizPage() {
                   <button
                     className="btn btn-success"
                     onClick={() => setShowSubmitModal(true)}
+                    style={{ fontWeight: 800, padding: '8px 22px' }}
                   >
                     Submit Exam 🏁
                   </button>

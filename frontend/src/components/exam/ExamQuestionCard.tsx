@@ -276,7 +276,10 @@ function QuestionCodeSnippet({ code, language }: { code: string; language: strin
           fontFamily: 'ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace',
           fontSize: '0.92rem',
           lineHeight: 1.65,
+          maxHeight: 280,
+          overflowY: 'auto',
           overflowX: 'auto',
+          borderRadius: '0 0 12px 12px',
         }}
       >
         {/* Line Numbers Gutter */}
@@ -361,7 +364,7 @@ export default function ExamQuestionCard({
   }
 
   return (
-    <div style={{ position: 'relative', overflow: 'hidden' }}>
+    <div style={{ position: 'relative', width: '100%' }}>
       <AnimatePresence mode="wait" custom={direction}>
         <motion.div
           key={question.id}
@@ -371,6 +374,7 @@ export default function ExamQuestionCard({
           animate="center"
           exit="exit"
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          style={{ width: '100%' }}
         >
           <div
             className="question-card"
@@ -378,9 +382,11 @@ export default function ExamQuestionCard({
               background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(0, 33, 71, 0.95))',
               border: '1.5px solid rgba(234, 168, 18, 0.35)',
               borderRadius: 16,
-              padding: '24px 28px',
+              padding: '24px 28px 28px',
               boxShadow: '0 15px 35px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(234, 168, 18, 0.15)',
               position: 'relative',
+              width: '100%',
+              boxSizing: 'border-box',
             }}
           >
             {/* Question meta header */}
@@ -465,6 +471,8 @@ export default function ExamQuestionCard({
                 fontFamily: 'var(--font-body, "Inter", sans-serif)',
                 WebkitFontSmoothing: 'antialiased',
                 whiteSpace: 'pre-line',
+                wordBreak: 'break-word',
+                overflowWrap: 'anywhere',
               }}
             >
               {parsed.promptText}
@@ -480,7 +488,7 @@ export default function ExamQuestionCard({
 
             {/* Options list */}
             {question.options && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 16 }}>
                 {question.options.map((opt, idx) => {
                   const isSelected = selectedOption === idx
 
@@ -495,18 +503,19 @@ export default function ExamQuestionCard({
                       style={{
                         cursor: 'pointer',
                         display: 'flex',
-                        alignItems: 'center',
+                        alignItems: 'flex-start',
                         gap: 14,
                         padding: '14px 18px',
                         borderRadius: 12,
                         background: isSelected
                           ? 'linear-gradient(135deg, rgba(234, 168, 18, 0.18), rgba(0, 33, 71, 0.6))'
                           : 'rgba(255, 255, 255, 0.03)',
-                        border: `1.5px solid ${isSelected ? '#EAA812' : 'rgba(255, 255, 255, 0.09)'}`,
+                        border: `1.5px solid ${isSelected ? '#EAA812' : 'rgba(255, 255, 255, 0.12)'}`,
                         boxShadow: isSelected ? '0 0 20px rgba(234, 168, 18, 0.25)' : 'none',
                         position: 'relative',
-                        overflow: 'hidden',
-                        transition: 'background 0.2s, border-color 0.2s',
+                        transition: 'background 0.2s, border-color 0.2s, transform 0.15s',
+                        width: '100%',
+                        boxSizing: 'border-box',
                       }}
                     >
                       <div
@@ -520,6 +529,7 @@ export default function ExamQuestionCard({
                           fontWeight: 800,
                           fontSize: '0.85rem',
                           flexShrink: 0,
+                          marginTop: 2,
                           background: isSelected
                             ? 'linear-gradient(135deg, #EAA812, #D97706)'
                             : 'rgba(255, 255, 255, 0.08)',
@@ -535,8 +545,13 @@ export default function ExamQuestionCard({
                           fontSize: '1rem',
                           fontWeight: isSelected ? 700 : 500,
                           color: isSelected ? '#FFFFFF' : '#E2E8F0',
-                          lineHeight: 1.5,
+                          lineHeight: 1.6,
                           WebkitFontSmoothing: 'antialiased',
+                          flex: 1,
+                          minWidth: 0,
+                          wordBreak: 'break-word',
+                          overflowWrap: 'anywhere',
+                          userSelect: 'none',
                         }}
                       >
                         {opt}

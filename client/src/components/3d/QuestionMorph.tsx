@@ -62,7 +62,7 @@ export default function QuestionMorph({
   const LABELS = ['A', 'B', 'C', 'D']
 
   return (
-    <div style={{ position: 'relative', overflow: 'hidden' }}>
+    <div style={{ position: 'relative', width: '100%' }}>
       {/* PageWipe transition overlay — crisp, no blur */}
       <AnimatePresence>
         {wipeActive && (
@@ -170,18 +170,19 @@ export default function QuestionMorph({
                         perspective: 600,
                         cursor: 'pointer',
                         display: 'flex',
-                        alignItems: 'center',
+                        alignItems: 'flex-start',
                         gap: 14,
                         padding: '14px 18px',
                         borderRadius: 12,
                         background: isSelected
                           ? 'linear-gradient(135deg, rgba(43, 127, 255, 0.22), rgba(27, 95, 204, 0.25))'
                           : 'rgba(255, 255, 255, 0.03)',
-                        border: `1.5px solid ${isSelected ? '#3B82F6' : 'rgba(255, 255, 255, 0.09)'}`,
+                        border: `1.5px solid ${isSelected ? '#3B82F6' : 'rgba(255, 255, 255, 0.12)'}`,
                         boxShadow: isSelected ? '0 0 25px rgba(59, 130, 246, 0.25)' : 'none',
                         position: 'relative',
-                        overflow: 'hidden',
                         transition: 'background 0.2s, border-color 0.2s',
+                        width: '100%',
+                        boxSizing: 'border-box',
                       }}
                     >
                       <motion.div
@@ -199,6 +200,7 @@ export default function QuestionMorph({
                           fontWeight: 800,
                           fontSize: '0.85rem',
                           flexShrink: 0,
+                          marginTop: 2,
                           background: isSelected
                             ? 'linear-gradient(135deg, #2B7FFF, #1B5FCC)'
                             : 'rgba(255, 255, 255, 0.08)',
@@ -213,8 +215,12 @@ export default function QuestionMorph({
                         fontSize: '1rem',
                         fontWeight: isSelected ? 700 : 500,
                         color: isSelected ? '#FFFFFF' : '#E2E8F0',
-                        lineHeight: 1.5,
+                        lineHeight: 1.6,
                         WebkitFontSmoothing: 'antialiased',
+                        flex: 1,
+                        minWidth: 0,
+                        wordBreak: 'break-word',
+                        overflowWrap: 'anywhere',
                       }}>
                         {opt}
                       </span>

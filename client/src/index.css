@@ -732,14 +732,16 @@ input[type="text"], input[type="password"], input[type="email"], input[type="num
 .question-meta { display: flex; gap: 12px; margin-bottom: 16px; }
 .option-list { display: flex; flex-direction: column; gap: 10px; }
 .option-item {
-  display: flex; align-items: center; gap: 14px;
+  display: flex; align-items: flex-start; gap: 14px;
   padding: 14px 18px;
   background: rgba(255,255,255,0.02);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition-md);
-  position: relative; overflow: hidden;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
 }
 .option-item:hover {
   border-color: rgba(43,127,255,0.4);
@@ -762,6 +764,7 @@ input[type="text"], input[type="password"], input[type="email"], input[type="num
   color: var(--color-text-muted);
   transition: all var(--transition-md);
   flex-shrink: 0;
+  margin-top: 2px;
   font-family: var(--font-mono);
 }
 .option-item.selected .option-key {
@@ -770,7 +773,14 @@ input[type="text"], input[type="password"], input[type="email"], input[type="num
   color: #fff;
   box-shadow: 0 0 12px var(--color-primary-glow);
 }
-.option-text { font-size: 0.95rem; line-height: 1.5; }
+.option-text {
+  font-size: 0.98rem;
+  line-height: 1.6;
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
 
 /* ============================================================
    COUNTDOWN TIMER
