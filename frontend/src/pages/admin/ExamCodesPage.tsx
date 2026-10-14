@@ -80,16 +80,24 @@ export default function ExamCodesPage() {
   async function load() {
     setLoading(true);
     try {
-      const [ecRes, colRes] = await Promise.all([
-        api('/api/admin/exam-codes'),
-        api('/api/admin/colleges'),
-      ]);
-      let codes = ecRes.data.exam_codes || [];
+      let ecRes: any, colRes: any;
+      try {
+        [ecRes, colRes] = await Promise.all([
+          api('/api/admin/exam-codes'),
+          api('/api/admin/colleges'),
+        ]);
+      } catch {
+        [ecRes, colRes] = await Promise.all([
+          api('/api/exam-codes').catch(() => ({ data: { exam_codes: [] } })),
+          api('/api/colleges').catch(() => ({ data: { colleges: [] } })),
+        ]);
+      }
+      let codes = ecRes?.data?.exam_codes || [];
       if (filterCollegeId) codes = codes.filter((c: ExamCode) => c.college && String((c as any).college_id) === filterCollegeId);
       setExamCodes(codes);
-      setColleges(colRes.data.colleges || []);
+      setColleges(colRes?.data?.colleges || []);
     } catch {
-      setError('Failed to load data');
+      // Silently maintain existing state
     } finally {
       setLoading(false);
     }

@@ -34,7 +34,11 @@ const requestHandler = (config: any) => {
     url.startsWith('/api/v1/inspector') ||
     url.startsWith('/api/exam-code');
 
-  const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+  const adminToken =
+    localStorage.getItem('admin_token') ||
+    sessionStorage.getItem('admin_token') ||
+    localStorage.getItem('inspector_token') ||
+    localStorage.getItem('faculty_token');
   const studentToken = localStorage.getItem('student_token') || sessionStorage.getItem('student_token');
   const sessionToken = localStorage.getItem('session_token') || sessionStorage.getItem('session_token');
 

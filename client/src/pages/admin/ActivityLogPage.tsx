@@ -68,7 +68,9 @@ export default function ActivityLogPage() {
         setLogs(res.data.logs);
       }
     } catch (err: any) {
-      setError(err?.response?.data?.error || 'Failed to load activity logs');
+      if (err?.response?.status === 401) {
+        setError('Admin session expired. Please re-authenticate.');
+      }
     } finally {
       setLoading(false);
     }

@@ -116,6 +116,7 @@ import {
 } from '../controllers/hierarchyController';
 import {
   listColleges,
+  getCollegesBreakdown,
   createCollege,
   updateCollege,
   deleteCollege,
@@ -207,6 +208,7 @@ router.patch(
 );
 
 // ——— Colleges Management (super_admin full CRUD; student reg toggle) ———
+router.get('/colleges/breakdown', getCollegesBreakdown);
 router.get('/colleges', listColleges);
 router.post('/colleges', requireRole('super_admin'), auditLog('CREATE_COLLEGE', 'colleges'), createCollege);
 router.patch('/colleges/:id', requireRole('super_admin'), auditLog('UPDATE_COLLEGE', 'colleges'), updateCollege);

@@ -310,6 +310,7 @@ export const candidateRegisterSchema = z
       .refine((val) => ['A', 'B', 'C', 'D', 'E'].includes(val), {
         message: 'Section must be strictly one of A, B, C, D, E',
       }),
+    batch: z.string().optional(),
     email: z
       .string()
       .trim()

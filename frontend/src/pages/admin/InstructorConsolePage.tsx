@@ -108,7 +108,7 @@ export default function InstructorConsolePage() {
   const [events, setEvents] = useState<Array<{ id: string; time: string; text: string }>>([]);
 
   const socketRef = useRef<Socket | null>(null);
-  const adminToken = localStorage.getItem("admin_token") || "";
+  const adminToken = localStorage.getItem("admin_token") || localStorage.getItem("inspector_token") || "";
 
   const addLog = (text: string) => {
     setEvents((prev) => [

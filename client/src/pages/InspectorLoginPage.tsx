@@ -1,10 +1,54 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { adminLogin } from '../lib/api';
 import { API_BASE_URL } from '../lib/config';
 import BrandLogo from '../components/BrandLogo';
-import AnimatedPage from '../components/AnimatedPage';
+
+function InspectorGridBg() {
+  return (
+    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: '-12%', right: '-8%', width: 680, height: 680, borderRadius: '50%', background: 'radial-gradient(circle,rgba(0,180,216,0.22) 0%,transparent 65%)', filter: 'blur(75px)', animation: 'igOrb1 22s ease-in-out infinite' }} />
+      <div style={{ position: 'absolute', bottom: '-10%', left: '-8%', width: 580, height: 580, borderRadius: '50%', background: 'radial-gradient(circle,rgba(56,189,248,0.18) 0%,transparent 65%)', filter: 'blur(65px)', animation: 'igOrb2 28s ease-in-out infinite' }} />
+      <div style={{ position: 'absolute', top: '35%', left: '20%', width: 380, height: 380, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,0.12) 0%,transparent 65%)', filter: 'blur(50px)', animation: 'igOrb3 18s ease-in-out infinite' }} />
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.35, backgroundImage: 'linear-gradient(rgba(0,180,216,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,180,216,0.06) 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
+      <style>{`
+        @keyframes igOrb1 { 0%,100%{transform:translate(0,0) scale(1)} 35%{transform:translate(-52px,38px) scale(1.08)} 65%{transform:translate(28px,-30px) scale(0.92)} }
+        @keyframes igOrb2 { 0%,100%{transform:translate(0,0) scale(1)} 42%{transform:translate(55px,-42px) scale(1.1)} 70%{transform:translate(-22px,24px) scale(0.95)} }
+        @keyframes igOrb3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(38px,-52px) scale(1.14)} }
+        @keyframes igPulse { 0%,100%{opacity:0.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.2)} }
+        @keyframes igSpin { to { transform: rotate(360deg); } }
+      `}</style>
+    </div>
+  );
+}
+
+type IGPortalKey = 'Admin' | 'Faculty' | 'Inspector' | 'Student';
+const IG_PORTAL_COLORS: Record<IGPortalKey, {text:string;bg:string;border:string}> = {
+  Admin:     { text: '#FBBF24', bg: 'rgba(245,158,11,0.18)',  border: 'rgba(245,158,11,0.5)' },
+  Faculty:   { text: '#34D399', bg: 'rgba(16,185,129,0.18)',  border: 'rgba(16,185,129,0.5)' },
+  Inspector: { text: '#38BDF8', bg: 'rgba(0,180,216,0.2)',    border: 'rgba(0,180,216,0.55)' },
+  Student:   { text: '#60A5FA', bg: 'rgba(59,130,246,0.18)',  border: 'rgba(59,130,246,0.5)' },
+};
+function IGPortalTab({ label, icon, active, to }: { label: IGPortalKey; icon: string; active?: boolean; to: string }) {
+  const [hov, setHov] = useState(false);
+  const c = IG_PORTAL_COLORS[label];
+  return (
+    <Link to={to} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{
+      flex: 1, textAlign: 'center', padding: '8px 6px', borderRadius: 8, fontSize: '0.76rem', fontWeight: 800,
+      color: active || hov ? c.text : '#475569',
+      background: active ? c.bg : hov ? c.bg.replace(/0\.\d+\)$/,'0.08)') : 'transparent',
+      border: `1px solid ${active ? c.border : 'transparent'}`,
+      boxShadow: active ? `0 0 14px ${c.bg}` : 'none',
+      textDecoration: 'none', transition: 'all 0.2s ease',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+      cursor: active ? 'default' : 'pointer',
+    }}>
+      <span>{icon}</span><span>{label}</span>
+    </Link>
+  );
+}
 
 export default function InspectorLoginPage() {
   const navigate = useNavigate();
@@ -94,112 +138,36 @@ export default function InspectorLoginPage() {
   }
 
   return (
-    <AnimatedPage>
-      <div style={{ minHeight: '85vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }}>
-        <div style={{ width: '100%', maxWidth: 380 }}>
-          {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: 20 }}>
-            <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: 12 }}>
-              <BrandLogo size="sm" variant="standard" showTagline={true} />
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'linear-gradient(160deg,#060B1A 0%,#050A12 50%,#030812 100%)', fontFamily: "'Plus Jakarta Sans',-apple-system,sans-serif" }}>
+      <InspectorGridBg />
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 16px', position: 'relative', zIndex: 1 }}>
+        <motion.div initial={{ opacity: 0, y: 24, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.5, ease: [0.16,1,0.3,1] }} style={{ width: '100%', maxWidth: 420 }}>
+          {/* Brand Header */}
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
+            <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: 14 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(0,180,216,0.25)', borderRadius: 16, padding: '10px 20px', boxShadow: '0 4px 20px rgba(0,180,216,0.15)' }}>
+                <BrandLogo size="sm" variant="standard" showTagline={true} />
+              </div>
             </Link>
-            <h1 style={{ fontSize: '1.45rem', fontWeight: 800, margin: 0, color: '#F8FAFC', letterSpacing: '-0.02em' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,180,216,0.1)', border: '1px solid rgba(0,180,216,0.28)', borderRadius: 20, padding: '4px 14px', marginBottom: 10, fontSize: '0.71rem', fontWeight: 800, color: '#38BDF8', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#00B4D8', animation: 'igPulse 2.5s ease-in-out infinite' }} />
               Inspector Command Portal
-            </h1>
-            <p style={{ color: '#94A3B8', fontSize: '0.82rem', margin: '4px 0 0' }}>
-              Live invigilation &amp; telemetry monitoring console
-            </p>
-          </div>
-
-          {/* Portal Switcher Tabs */}
-          <div
-            style={{
-              display: 'flex',
-              background: 'rgba(9, 14, 31, 0.75)',
-              padding: 4,
-              borderRadius: 10,
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              marginBottom: 16,
-              gap: 4,
-            }}
-          >
-            <Link
-              to="/admin"
-              style={{
-                flex: 1,
-                textAlign: 'center',
-                padding: '8px 8px',
-                borderRadius: 7,
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                color: '#94A3B8',
-                textDecoration: 'none',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#FBBF24';
-                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#94A3B8';
-                e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              👑 Admin
-            </Link>
-            <Link
-              to="/faculty/login"
-              style={{
-                flex: 1,
-                textAlign: 'center',
-                padding: '8px 8px',
-                borderRadius: 7,
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                color: '#94A3B8',
-                textDecoration: 'none',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#34D399';
-                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#94A3B8';
-                e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              👨‍🏫 Faculty
-            </Link>
-            <div
-              style={{
-                flex: 1,
-                textAlign: 'center',
-                padding: '8px 8px',
-                borderRadius: 7,
-                fontSize: '0.8rem',
-                fontWeight: 800,
-                background: 'linear-gradient(135deg, rgba(0, 180, 216, 0.25) 0%, rgba(0, 210, 255, 0.12) 100%)',
-                color: '#38BDF8',
-                border: '1px solid rgba(0, 180, 216, 0.4)',
-                cursor: 'default',
-              }}
-            >
-              🛡️ Inspector
             </div>
+            <h1 style={{ fontSize: '1.55rem', fontWeight: 900, margin: '0 0 5px', color: '#FFFFFF', letterSpacing: '-0.025em', fontFamily: "'Rajdhani',sans-serif" }}>Inspector Sign In</h1>
+            <p style={{ color: '#64748B', fontSize: '0.82rem', margin: 0 }}>Live invigilation &amp; telemetry monitoring console</p>
           </div>
 
-          {/* Cyber-Glass Card */}
-          <div
-            style={{
-              background: 'rgba(14, 22, 44, 0.92)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1.5px solid rgba(0, 180, 216, 0.35)',
-              borderRadius: 16,
-              padding: '28px 24px',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), 0 0 35px rgba(0, 180, 216, 0.15)',
-            }}
-          >
+          {/* Portal Switcher */}
+          <div style={{ display: 'flex', background: 'rgba(9,14,31,0.8)', padding: 4, borderRadius: 12, border: '1px solid rgba(255,255,255,0.07)', marginBottom: 18, gap: 3, backdropFilter: 'blur(12px)' }}>
+            <IGPortalTab label="Admin" icon="👑" to="/admin" />
+            <IGPortalTab label="Faculty" icon="👨‍🏫" to="/faculty/login" />
+            <IGPortalTab label="Inspector" icon="🛡️" active to="/inspector" />
+            <IGPortalTab label="Student" icon="🎓" to="/login" />
+          </div>
+
+          {/* Glass Card */}
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.45 }} style={{ background: 'rgba(10,18,40,0.88)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1.5px solid rgba(0,180,216,0.3)', borderRadius: 20, padding: '30px 28px', boxShadow: '0 24px 64px rgba(0,0,0,0.6),0 0 40px rgba(0,180,216,0.1),inset 0 1px 0 rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: 1, background: 'linear-gradient(90deg,transparent,rgba(56,189,248,0.75),transparent)' }} />
             {error && (
               <div
                 style={{
@@ -424,28 +392,17 @@ export default function InspectorLoginPage() {
               </button>
             </form>
 
-            <div
-              style={{
-                marginTop: 16,
-                paddingTop: 14,
-                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                textAlign: 'center',
-                fontSize: '0.78rem',
-                color: '#94A3B8',
-              }}
-            >
+            <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)', textAlign: 'center', fontSize: '0.8rem', color: '#64748B' }}>
               Super Administrator?{' '}
-              <Link to="/admin" style={{ color: '#FBBF24', fontWeight: 800, textDecoration: 'none' }}>
-                Go to Admin Login →
-              </Link>
+              <Link to="/admin" style={{ color: '#FBBF24', fontWeight: 800, textDecoration: 'none' }}>Go to Admin Login →</Link>
             </div>
-          </div>
+          </motion.div>
 
-          <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.78rem', color: '#64748B' }}>
+          <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.75rem', color: '#334155' }}>
             LogicWhile LiRE • Created by <strong style={{ color: '#00D2FF', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
           </div>
-        </div>
+        </motion.div>
       </div>
-    </AnimatedPage>
+    </div>
   );
 }

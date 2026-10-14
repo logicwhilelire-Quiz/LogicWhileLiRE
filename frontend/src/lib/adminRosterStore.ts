@@ -33,7 +33,18 @@ export interface AdminRosterStudent {
   approved_by?: string;
   is_verified?: boolean;
   is_blocked?: boolean;
-  block_reason?: string;
+  block_reason?: string | null;
+  contact_number?: string;
+  mobile?: string;
+  live_status?: {
+    state: string;
+    label: string;
+    exam_code?: string;
+    current_question?: number;
+    score?: number;
+    max_score?: number;
+    violations?: number;
+  };
   attempts_used?: number;
   allowed_attempts?: number;
   extra_time_mins?: number;

@@ -104,6 +104,65 @@ function PortalCard({ icon, badge, badgeColor, badgeBg, title, desc, href, btnId
   );
 }
 
+interface SecurityCardProps {
+  icon: string;
+  badge: string;
+  title: string;
+  desc: string;
+  glow: string;
+  delay?: number;
+}
+function SecurityCard({ icon, badge, title, desc, glow, delay = 0 }: SecurityCardProps) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay, duration: 0.45 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: hovered
+          ? 'linear-gradient(145deg, rgba(15,23,42,0.98), rgba(6,12,30,0.95))'
+          : 'rgba(10,16,35,0.7)',
+        border: `1.5px solid ${hovered ? glow : 'rgba(255,255,255,0.08)'}`,
+        borderRadius: 16,
+        padding: '22px 20px',
+        backdropFilter: 'blur(16px)',
+        boxShadow: hovered ? `0 12px 35px rgba(0,0,0,0.4), 0 0 25px ${glow}22` : '0 4px 16px rgba(0,0,0,0.25)',
+        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+        transition: 'all 0.25s ease',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <span style={{ fontSize: '1.8rem' }}>{icon}</span>
+        <span
+          style={{
+            fontSize: '0.68rem',
+            fontWeight: 800,
+            color: glow,
+            background: `${glow}18`,
+            border: `1px solid ${glow}40`,
+            padding: '3px 10px',
+            borderRadius: 20,
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+          }}
+        >
+          {badge}
+        </span>
+      </div>
+      <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px', fontFamily: "'Rajdhani',sans-serif" }}>
+        {title}
+      </h4>
+      <p style={{ fontSize: '0.82rem', color: '#94A3B8', lineHeight: 1.6, margin: 0 }}>
+        {desc}
+      </p>
+    </motion.div>
+  );
+}
+
 interface SectorCardProps { color: string; badge: string; name: string; desc: string; delay?: number }
 function SectorCard({ color, badge, name, desc, delay = 0 }: SectorCardProps) {
   const [hovered, setHovered] = useState(false);
@@ -216,15 +275,27 @@ export default function LandingPage() {
             transition={{ delay: 0.4, duration: 0.5 }}
             style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 44 }}
           >
+            <Link to="/enter-exam" id="hero-enter-exam-btn" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: 'linear-gradient(135deg,#EAA812 0%,#F59E0B 100%)',
+              color: '#001A38', fontWeight: 800, fontSize: '0.98rem',
+              padding: '13px 30px', borderRadius: 12, textDecoration: 'none',
+              boxShadow: '0 4px 26px rgba(234,168,18,0.45)', transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 34px rgba(234,168,18,0.65)'; }}
+            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 26px rgba(234,168,18,0.45)'; }}
+            >
+              ⚡ Enter Live Exam (Code Entry)
+            </Link>
             <Link to="/login" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
               background: 'linear-gradient(135deg,#0284c7 0%,#1d4ed8 100%)',
               color: '#FFFFFF', fontWeight: 800, fontSize: '0.95rem',
-              padding: '13px 28px', borderRadius: 12, textDecoration: 'none',
-              boxShadow: '0 4px 24px rgba(2,132,199,0.4)', transition: 'all 0.2s ease',
+              padding: '13px 26px', borderRadius: 12, textDecoration: 'none',
+              boxShadow: '0 4px 24px rgba(2,132,199,0.35)', transition: 'all 0.2s ease',
             }}
             onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 32px rgba(2,132,199,0.55)'; }}
-            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 24px rgba(2,132,199,0.4)'; }}
+            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 24px rgba(2,132,199,0.35)'; }}
             >
               🎓 Student Portal
             </Link>
@@ -232,7 +303,7 @@ export default function LandingPage() {
               display: 'inline-flex', alignItems: 'center', gap: 8,
               background: 'rgba(255,255,255,0.07)',
               color: '#EAA812', fontWeight: 800, fontSize: '0.95rem',
-              padding: '13px 28px', borderRadius: 12, textDecoration: 'none',
+              padding: '13px 26px', borderRadius: 12, textDecoration: 'none',
               border: '1.5px solid rgba(234,168,18,0.4)', transition: 'all 0.2s ease',
             }}
             onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(234,168,18,0.12)'; el.style.transform = 'translateY(-2px)'; }}
@@ -257,7 +328,7 @@ export default function LandingPage() {
 
       {/* ── ACCESS PORTALS ── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '70px 24px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: 48 }}>
             <span style={{
               display: 'inline-block', background: 'rgba(234,168,18,0.12)', color: '#EAA812',
@@ -267,15 +338,16 @@ export default function LandingPage() {
             <h2 style={{
               fontSize: 'clamp(1.8rem,3.5vw,2.6rem)', fontWeight: 900, margin: '0 0 10px',
               color: '#FFFFFF', fontFamily: "'Rajdhani',sans-serif", letterSpacing: '-0.02em',
-            }}>Choose Your Authorized Portal</h2>
-            <p style={{ color: '#64748B', fontSize: '0.93rem', margin: 0 }}>Dedicated portals with role isolation and synchronized examination control.</p>
+            }}>Institutional Portals & Gateways</h2>
+            <p style={{ color: '#64748B', fontSize: '0.93rem', margin: 0 }}>Role-isolated authenticated access with continuous proctoring synchronization.</p>
           </motion.div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 20 }}>
-            <PortalCard icon="🎓" badge="Student Gateway" badgeColor="#60A5FA" badgeBg="rgba(96,165,250,0.12)" title="Student Login" desc="Access your candidate dashboard, exam schedule, performance analytics, hall ticket records, and live exam interface." href="/login" btnId="landing-student-login-btn" btnLabel="Sign In as Student" btnGradient="linear-gradient(135deg,#2563EB 0%,#1d4ed8 100%)" glowColor="#3B82F6" borderColor="rgba(59,130,246,0.16)" delay={0.1} />
-            <PortalCard icon="👨‍🏫" badge="Faculty & Trainer" badgeColor="#34D399" badgeBg="rgba(52,211,153,0.12)" title="Faculty Login" desc="Manage assigned sections, inspect rosters, verify candidates, track live exam progress, and evaluate coding solutions." href="/faculty/login" btnId="landing-faculty-login-btn" btnLabel="Sign In as Faculty" btnGradient="linear-gradient(135deg,#059669 0%,#10B981 100%)" glowColor="#10B981" borderColor="rgba(16,185,129,0.16)" delay={0.2} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 18 }}>
+            <PortalCard icon="⚡" badge="Live Exam Gate" badgeColor="#38BDF8" badgeBg="rgba(56,189,248,0.12)" title="Enter Exam Code" desc="Instant access with your official Exam Code (e.g. GR-VRSEC-XXXX) and Hall Ticket. Zero-OTP fast track entry." href="/enter-exam" btnId="landing-enter-exam-btn" btnLabel="Enter Live Exam" btnGradient="linear-gradient(135deg,#0284c7 0%,#0ea5e9 100%)" glowColor="#38BDF8" borderColor="rgba(56,189,248,0.25)" delay={0.05} />
+            <PortalCard icon="🎓" badge="Student Gateway" badgeColor="#60A5FA" badgeBg="rgba(96,165,250,0.12)" title="Student Login" desc="Access candidate dashboard, academic history, skill telemetry, and hall ticket records." href="/login" btnId="landing-student-login-btn" btnLabel="Sign In as Student" btnGradient="linear-gradient(135deg,#2563EB 0%,#1d4ed8 100%)" glowColor="#3B82F6" borderColor="rgba(59,130,246,0.16)" delay={0.12} />
+            <PortalCard icon="👨‍🏫" badge="Faculty & Trainer" badgeColor="#34D399" badgeBg="rgba(52,211,153,0.12)" title="Faculty Login" desc="Manage assigned sections, inspect rosters, verify candidates, track live exam progress, and evaluate coding solutions." href="/faculty/login" btnId="landing-faculty-login-btn" btnLabel="Sign In as Faculty" btnGradient="linear-gradient(135deg,#059669 0%,#10B981 100%)" glowColor="#10B981" borderColor="rgba(16,185,129,0.16)" delay={0.18} />
+            <PortalCard icon="🔍" badge="Invigilation" badgeColor="#A78BFA" badgeBg="rgba(167,139,250,0.12)" title="Inspector Login" desc="Live invigilation dashboard with real-time leaderboards, violation alerts, whisper messaging, and candidate communication." href="/inspector" btnId="landing-inspector-login-btn" btnLabel="Sign In as Inspector" btnGradient="linear-gradient(135deg,#7C3AED 0%,#8B5CF6 100%)" glowColor="#8B5CF6" borderColor="rgba(139,92,246,0.16)" delay={0.24} />
             <PortalCard icon="🏛️" badge="Admin Console" badgeColor="#FBBF24" badgeBg="rgba(251,191,36,0.12)" title="Admin Login" desc="Complete administrative control — manage colleges, question papers, academic hierarchy, live exam orchestration, and backups." href="/admin" btnId="landing-admin-login-btn" btnLabel="Sign In as Admin" btnGradient="linear-gradient(135deg,#D97706 0%,#EAA812 100%)" glowColor="#EAA812" borderColor="rgba(234,168,18,0.18)" delay={0.3} />
-            <PortalCard icon="🔍" badge="Invigilation" badgeColor="#A78BFA" badgeBg="rgba(167,139,250,0.12)" title="Inspector Login" desc="Live invigilation dashboard with real-time leaderboards, violation alerts, whisper messaging, and instant candidate communication." href="/inspector" btnId="landing-inspector-login-btn" btnLabel="Sign In as Inspector" btnGradient="linear-gradient(135deg,#7C3AED 0%,#8B5CF6 100%)" glowColor="#8B5CF6" borderColor="rgba(139,92,246,0.16)" delay={0.4} />
           </div>
         </div>
       </section>
@@ -300,6 +372,77 @@ export default function LandingPage() {
               <FeaturePill icon="📊" text="Radar Skill Analytics" />
               <FeaturePill icon="📋" text="Hall Ticket Generation" />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── SECURITY & INTEGRITY ARCHITECTURE ── */}
+      <section style={{ position: 'relative', zIndex: 1, padding: '20px 24px 70px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: 44 }}>
+            <span style={{
+              display: 'inline-block', background: 'rgba(56,189,248,0.12)', color: '#38BDF8',
+              border: '1px solid rgba(56,189,248,0.3)', padding: '5px 16px', borderRadius: 20,
+              fontSize: '0.73rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14,
+            }}>Enterprise Integrity Engine</span>
+            <h2 style={{
+              fontSize: 'clamp(1.8rem,3.5vw,2.5rem)', fontWeight: 900, margin: '0 0 10px',
+              color: '#FFFFFF', fontFamily: "'Rajdhani',sans-serif", letterSpacing: '-0.02em',
+            }}>Institutional Security & Anti-Cheat Architecture</h2>
+            <p style={{ color: '#64748B', fontSize: '0.92rem', margin: '0 auto', maxWidth: 660 }}>
+              End-to-end cryptographic integrity guaranteeing bulletproof exam administration and unforgeable student evaluation.
+            </p>
+          </motion.div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 18 }}>
+            <SecurityCard
+              icon="🕒"
+              badge="Timing Protocol"
+              title="Server-Authoritative Clock"
+              desc="Centralized cluster timers dictate exam windows. Local workstation clock manipulation cannot bypass countdowns, start times, or automated submission locks."
+              glow="#38BDF8"
+              delay={0.06}
+            />
+            <SecurityCard
+              icon="🔑"
+              badge="Session Concurrency"
+              title="Cryptographic Single-Session Lock"
+              desc="Every candidate attempt receives a high-entropy 32-hex session token. Simultaneous browser tabs or secondary device logins instantly evict prior sessions."
+              glow="#EAA812"
+              delay={0.12}
+            />
+            <SecurityCard
+              icon="👁️"
+              badge="Proctoring"
+              title="Multi-Vector Anti-Cheat Monitor"
+              desc="Integrated tab-switch detection, fullscreen loss interception, copy-paste blocking, and automated strike counters trigger immediate proctor escalation."
+              glow="#F43F5E"
+              delay={0.18}
+            />
+            <SecurityCard
+              icon="🛡️"
+              badge="Access Control"
+              title="Strict Multi-Role Isolation (RBAC)"
+              desc="Cryptographic JWT tokens securely isolate Student, Faculty, College Inspector, and Admin scopes. Database queries strictly enforce college tenant boundaries."
+              glow="#10B981"
+              delay={0.24}
+            />
+            <SecurityCard
+              icon="💾"
+              badge="Network Resilience"
+              title="Zero-Loss Offline Data Buffering"
+              desc="Answers are buffered immediately in client IndexedDB storage with microsecond timestamps, synchronizing seamlessly during transient campus Wi-Fi drops."
+              glow="#8B5CF6"
+              delay={0.3}
+            />
+            <SecurityCard
+              icon="📜"
+              badge="Audit & Compliance"
+              title="Immutable Audit Trails & Alerts"
+              desc="Administrative modifications, test cancellations, score adjustments, and gate pass verifications are immutably logged with IP and role fingerprints."
+              glow="#F59E0B"
+              delay={0.36}
+            />
           </div>
         </div>
       </section>

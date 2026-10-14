@@ -618,7 +618,7 @@ export async function listStudents(req: Request, res: Response): Promise<void> {
 
   let query = supabase
     .from('students')
-    .select('id, name, first_name, last_name, email, roll_number, hall_ticket, college_id, college_name, academic_year_id, cohort_id, section_id, batch_id, section, batch, branch_code, year_of_passing, is_active, is_verified, is_blocked, must_change_password, created_at')
+    .select('id, name, first_name, last_name, email, roll_number, hall_ticket, college_id, college_name, academic_year_id, cohort_id, section_id, batch_id, section, batch, branch_code, year_of_passing, contact_number, mobile, is_active, is_verified, is_blocked, must_change_password, created_at')
     .order('created_at', { ascending: false });
 
   if (isScoped && collegeId) {
@@ -657,10 +657,24 @@ export async function listStudents(req: Request, res: Response): Promise<void> {
     query = query.in('section_id', facultySectionIds);
   }
 
-  const { data: students, error } = await query;
+  const [{ data: students, error }, { data: attempts }] = await Promise.all([
+    query,
+    supabase.from('exam_code_attempts').select('hall_ticket_no, exam_code, status, score, max_score, violation_count, answers, created_at, updated_at')
+  ]);
+
   if (error) {
     res.status(500).json({ success: false, error: error.message });
     return;
+  }
+
+  const attemptsByRoll: Record<string, any> = {};
+  for (const att of (attempts || [])) {
+    const ht = String(att.hall_ticket_no || '').toUpperCase().trim();
+    if (!ht) continue;
+    const existing = attemptsByRoll[ht];
+    if (!existing || (existing.status !== 'in_progress' && att.status === 'in_progress')) {
+      attemptsByRoll[ht] = att;
+    }
   }
 
   let filtered = (students || []).map((s: any) => {
@@ -668,11 +682,54 @@ export async function listStudents(req: Request, res: Response): Promise<void> {
     const idSlug = String(s.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || '2026';
     const candSlug = String(s.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(4, 8).toUpperCase() || 'CAND';
     const safe = sanitizeStudentResponse(s);
+    const yop = Number(s.year_of_passing || s.passout_year) || 2028;
+
+    const attempt = attemptsByRoll[roll.toUpperCase()];
+    let liveStatus: {
+      state: string;
+      label: string;
+      exam_code?: string;
+      current_question?: number;
+      score?: number;
+      max_score?: number;
+      violations?: number;
+    } = { state: 'pending', label: '⏳ Pending Admin Clearance' };
+
+    if (s.is_blocked) {
+      liveStatus = { state: 'blocked', label: '🛑 Blocked by Admin' };
+    } else if (attempt && attempt.status === 'in_progress') {
+      const qCount = attempt.answers ? Object.keys(attempt.answers).length : 0;
+      liveStatus = {
+        state: 'in_exam',
+        label: `🟢 In Exam: ${attempt.exam_code} (Q${qCount + 1})`,
+        exam_code: attempt.exam_code,
+        current_question: qCount + 1,
+        score: attempt.score || 0,
+        max_score: attempt.max_score || 10,
+        violations: attempt.violation_count || 0
+      };
+    } else if (attempt && (attempt.status === 'completed' || attempt.status === 'submitted')) {
+      liveStatus = {
+        state: 'completed',
+        label: `🏁 Submitted: ${attempt.score || 0}/${attempt.max_score || 10}`,
+        exam_code: attempt.exam_code,
+        score: attempt.score || 0,
+        max_score: attempt.max_score || 10,
+        violations: attempt.violation_count || 0
+      };
+    } else if (s.is_verified) {
+      liveStatus = { state: 'cleared', label: '✓ Cleared & Ready' };
+    }
+
     return {
       ...safe,
       branch: s.branch_code || s.branch || 'CSE',
+      batch: s.batch || `Batch ${yop}`,
+      passout_year: yop,
+      contact_number: s.contact_number || s.mobile || '',
       student_gate_pass: `GP-STU-${roll}-${idSlug}`,
       candidate_gate_pass: `GP-CAND-${roll}-${candSlug}`,
+      live_status: liveStatus,
     };
   });
 

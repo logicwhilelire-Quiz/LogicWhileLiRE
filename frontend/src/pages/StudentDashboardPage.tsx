@@ -192,6 +192,11 @@ export default function StudentDashboardPage() {
     }
     localStorage.removeItem('student_token');
     localStorage.removeItem('student_user');
+    localStorage.removeItem('logicwhilelire_attempt');
+    localStorage.removeItem('lw_attempt');
+    localStorage.removeItem('candidate_gate_pass');
+    localStorage.removeItem('student_gate_pass');
+    sessionStorage.clear();
     navigate('/login');
   }
 

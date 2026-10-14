@@ -17,9 +17,9 @@ const isLocalhostHost = typeof window !== 'undefined' && (
 
 // In production builds deployed to a remote domain, ensure valid remote URL
 const defaultProductionApiUrl = 'https://logicwhilelire-api.onrender.com';
-const resolvedApiUrl = (!isLocalhostHost && (!rawApiUrl || rawApiUrl.includes('localhost') || rawApiUrl.includes('127.0.0.1')))
-  ? defaultProductionApiUrl
-  : (rawApiUrl || 'http://localhost:3001');
+const resolvedApiUrl = isLocalhostHost
+  ? ((rawApiUrl && (rawApiUrl.includes('localhost') || rawApiUrl.includes('127.0.0.1'))) ? rawApiUrl : 'http://localhost:3001')
+  : (rawApiUrl || defaultProductionApiUrl);
 
 export const API_BASE_URL: string = resolvedApiUrl.replace(/\/+$/, '');
 export const SOCKET_URL: string = (rawSocketUrl || resolvedApiUrl).replace(/\/+$/, '');

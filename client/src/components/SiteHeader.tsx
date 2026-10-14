@@ -40,6 +40,11 @@ export default function SiteHeader() {
   const handleLogout = () => {
     localStorage.removeItem('student_token');
     localStorage.removeItem('student_user');
+    localStorage.removeItem('logicwhilelire_attempt');
+    localStorage.removeItem('lw_attempt');
+    localStorage.removeItem('candidate_gate_pass');
+    localStorage.removeItem('student_gate_pass');
+    sessionStorage.clear();
     setStudentUser(null);
     navigate('/login');
   };
@@ -192,6 +197,45 @@ export default function SiteHeader() {
               </Link>
             ))}
 
+            {/* Fast-Track Exam Entry CTA */}
+            <Link
+              to="/enter-exam"
+              id="header-enter-exam-cta"
+              style={{
+                textDecoration: 'none',
+                marginLeft: 4,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'linear-gradient(135deg, #EAA812 0%, #F59E0B 100%)',
+                  color: '#001A38',
+                  fontWeight: 800,
+                  fontSize: '13px',
+                  padding: '7px 14px',
+                  borderRadius: 8,
+                  boxShadow: '0 2px 12px rgba(234, 168, 18, 0.35)',
+                  letterSpacing: '0.02em',
+                  transition: 'all 0.18s ease',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 18px rgba(234, 168, 18, 0.55)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = '';
+                  e.currentTarget.style.boxShadow = '0 2px 12px rgba(234, 168, 18, 0.35)';
+                }}
+              >
+                <span>⚡</span>
+                <span>Enter Exam</span>
+              </div>
+            </Link>
+
             {/* Logged in state: student indicator + Logout */}
             {isLoggedIn && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8 }}>
@@ -266,6 +310,28 @@ export default function SiteHeader() {
                 boxShadow: '0 12px 30px rgba(0,0,0,0.5)',
               }}
             >
+              <Link
+                to="/enter-exam"
+                onClick={() => setMenuOpen(false)}
+                style={{
+                  textDecoration: 'none',
+                  background: 'linear-gradient(135deg, #EAA812 0%, #F59E0B 100%)',
+                  color: '#001A38',
+                  fontWeight: 800,
+                  fontSize: '14px',
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  textAlign: 'center',
+                  marginBottom: 6,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+              >
+                <span>⚡</span>
+                <span>Enter Live Exam (Code Entry)</span>
+              </Link>
               {navLinks.map(({ label, to }) => (
                 <Link key={to} to={to} onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
                   <div

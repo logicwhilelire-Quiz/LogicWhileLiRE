@@ -30,6 +30,8 @@ interface StudentRosterItem {
   hall_ticket: string;
   name: string;
   email: string;
+  contact_number?: string;
+  mobile?: string;
   branch: string;
   college_id?: number | string;
   college_name?: string;
@@ -40,13 +42,22 @@ interface StudentRosterItem {
   candidate_gate_pass?: string;
   is_verified?: boolean;
   is_blocked: boolean;
-  block_reason?: string;
+  block_reason?: string | null;
   attempts_used: number;
   allowed_attempts: number;
   extra_time_mins: number;
   temporary_password?: string;
   email_dispatched?: boolean;
   email_dispatched_at?: string;
+  live_status?: {
+    state: string;
+    label: string;
+    exam_code?: string;
+    current_question?: number;
+    score?: number;
+    max_score?: number;
+    violations?: number;
+  };
 }
 
 export default function StudentControl() {
@@ -56,6 +67,8 @@ export default function StudentControl() {
   const [collegeFilter, setCollegeFilter] = useState('ALL');
   const [sectionFilter, setSectionFilter] = useState('ALL');
   const [batchFilter, setBatchFilter] = useState('ALL');
+  const [passoutYearFilter, setPassoutYearFilter] = useState<string>('ALL');
+  const [liveStatusFilter, setLiveStatusFilter] = useState<string>('ALL');
   const [verificationFilter, setVerificationFilter] = useState<'ALL' | 'VERIFIED' | 'UNVERIFIED'>('ALL');
   const [uploadMsg, setUploadMsg] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -192,6 +205,8 @@ export default function StudentControl() {
       hall_ticket: s.hall_ticket || (s as any).roll_number || '',
       name: s.name,
       email: s.email,
+      contact_number: s.contact_number || s.mobile || '',
+      mobile: s.mobile || s.contact_number || '',
       branch: s.branch || (s as any).branch_code || 'CSE',
       college_name: s.college_name,
       college_id: s.college_id,
@@ -203,6 +218,7 @@ export default function StudentControl() {
       is_verified: s.is_verified,
       is_blocked: !!s.is_blocked,
       block_reason: s.block_reason,
+      live_status: s.live_status || { state: s.is_verified ? 'cleared' : 'pending', label: s.is_verified ? '✓ Cleared & Ready' : '⏳ Pending Admin Clearance' },
       attempts_used: s.attempts_used || 0,
       allowed_attempts: s.allowed_attempts || 1,
       extra_time_mins: s.extra_time_mins || 0,
@@ -229,7 +245,7 @@ export default function StudentControl() {
       })
       .catch(() => {
         axios
-          .get(`${API_BASE_URL}/api/exam-code/colleges`)
+          .get(`${API_BASE_URL}/api/exam-code/colleges`, { headers })
           .then((r) => {
             if (r.data?.colleges) setColleges(r.data.colleges);
           })
@@ -246,21 +262,34 @@ export default function StudentControl() {
             hall_ticket: s.roll_number || s.hall_ticket || '',
             name: s.name || s.student_name || 'Candidate',
             email: s.email || '',
+            contact_number: s.contact_number || s.mobile || '',
+            mobile: s.mobile || s.contact_number || '',
             branch: s.branch || s.branch_code || 'CSE',
             college_name: s.college_name || 'VR Siddhartha Engineering College',
+            college_id: s.college_id,
             section: s.section || 'A',
-            batch: s.batch || 'Batch 1',
+            batch: s.batch || (s.year_of_passing ? `Batch ${s.year_of_passing}` : 'Batch 1'),
             passout_year: s.passout_year || s.year_of_passing || 2026,
             student_gate_pass: s.student_gate_pass || `GP-STU-${s.roll_number || s.hall_ticket || 'STU'}-${String(s.id || '101').slice(-4).toUpperCase()}`,
             candidate_gate_pass: s.candidate_gate_pass || `GP-CAND-${s.roll_number || s.hall_ticket || 'CAND'}-${String(s.id || '202').slice(-4).toUpperCase()}`,
             is_verified: s.is_verified !== false,
             is_blocked: Boolean(s.is_blocked),
             block_reason: s.block_reason,
+            live_status: s.live_status || {
+              state: s.is_verified !== false ? 'cleared' : 'pending',
+              label: s.is_verified !== false ? '✓ Cleared & Ready' : '⏳ Pending Admin Clearance',
+            },
             attempts_used: s.attempts_used || 0,
             allowed_attempts: s.allowed_attempts || 1,
             extra_time_mins: s.extra_time_mins || 0,
           }));
-          setStudents(mapped);
+
+          // Merge without losing local entries
+          setStudents((prev) => {
+            const apiRolls = new Set(mapped.map((m) => m.hall_ticket.toUpperCase()));
+            const localOnly = prev.filter((p) => !apiRolls.has(p.hall_ticket.toUpperCase()));
+            return [...mapped, ...localOnly];
+          });
         }
       })
       .catch(() => {});
@@ -631,6 +660,13 @@ export default function StudentControl() {
     const matchesCollege = collegeFilter === 'ALL' || (s.college_name && s.college_name.includes(collegeFilter));
     const matchesSection = sectionFilter === 'ALL' || s.section === sectionFilter;
     const matchesBatch = batchFilter === 'ALL' || (s.batch && s.batch.includes(batchFilter));
+    const matchesPassoutYear = passoutYearFilter === 'ALL' || String(s.passout_year) === String(passoutYearFilter);
+    const matchesLiveStatus = liveStatusFilter === 'ALL' ||
+      (liveStatusFilter === 'IN_EXAM' && s.live_status?.state === 'in_exam') ||
+      (liveStatusFilter === 'CLEARED' && (s.live_status?.state === 'cleared' || (s.is_verified && s.live_status?.state !== 'in_exam'))) ||
+      (liveStatusFilter === 'PENDING' && (s.live_status?.state === 'pending' || !s.is_verified)) ||
+      (liveStatusFilter === 'COMPLETED' && s.live_status?.state === 'completed') ||
+      (liveStatusFilter === 'BLOCKED' && s.is_blocked);
     const matchesVerification =
       verificationFilter === 'ALL' ||
       (verificationFilter === 'VERIFIED' && s.is_verified !== false) ||
@@ -639,11 +675,13 @@ export default function StudentControl() {
       s.name.toLowerCase().includes(search.toLowerCase()) ||
       s.hall_ticket.toLowerCase().includes(search.toLowerCase()) ||
       s.email.toLowerCase().includes(search.toLowerCase()) ||
+      (s.contact_number && s.contact_number.includes(search)) ||
       (s.college_name && s.college_name.toLowerCase().includes(search.toLowerCase())) ||
+      (s.branch && s.branch.toLowerCase().includes(search.toLowerCase())) ||
       (s.batch && s.batch.toLowerCase().includes(search.toLowerCase())) ||
       (s.student_gate_pass && s.student_gate_pass.toLowerCase().includes(search.toLowerCase())) ||
       (s.candidate_gate_pass && s.candidate_gate_pass.toLowerCase().includes(search.toLowerCase()));
-    return matchesBranch && matchesCollege && matchesSection && matchesBatch && matchesVerification && matchesSearch;
+    return matchesBranch && matchesCollege && matchesSection && matchesBatch && matchesPassoutYear && matchesLiveStatus && matchesVerification && matchesSearch;
   });
 
   return (
@@ -1028,11 +1066,39 @@ export default function StudentControl() {
             </div>
           )}
 
+          {/* Dynamic Roster & Hierarchy Intelligence Strip */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 20 }}>
+            <div className="card" style={{ padding: '12px 16px', background: 'rgba(15, 23, 42, 0.7)', borderRadius: 10, border: '1px solid rgba(56, 189, 248, 0.25)' }}>
+              <div style={{ fontSize: '0.70rem', color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase' }}>Filtered Students</div>
+              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#38BDF8' }}>
+                {filtered.length} <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>/ {students.length} total</span>
+              </div>
+            </div>
+            <div className="card" style={{ padding: '12px 16px', background: 'rgba(15, 23, 42, 0.7)', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+              <div style={{ fontSize: '0.70rem', color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase' }}>Live In Exam Now</div>
+              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#34D399' }}>
+                {students.filter(s => s.live_status?.state === 'in_exam').length} <span style={{ fontSize: '0.78rem', color: '#6EE7B7' }}>active</span>
+              </div>
+            </div>
+            <div className="card" style={{ padding: '12px 16px', background: 'rgba(15, 23, 42, 0.7)', borderRadius: 10, border: '1px solid rgba(168, 85, 247, 0.25)' }}>
+              <div style={{ fontSize: '0.70rem', color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase' }}>Branches Represented</div>
+              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#C084FC' }}>
+                {new Set(students.map(s => s.branch).filter(Boolean)).size} <span style={{ fontSize: '0.78rem', color: '#D8B4FE' }}>branches</span>
+              </div>
+            </div>
+            <div className="card" style={{ padding: '12px 16px', background: 'rgba(15, 23, 42, 0.7)', borderRadius: 10, border: '1px solid rgba(245, 158, 11, 0.25)' }}>
+              <div style={{ fontSize: '0.70rem', color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase' }}>Graduation Years (YOP)</div>
+              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#FBBF24' }}>
+                {Array.from(new Set(students.map(s => s.passout_year).filter(Boolean))).sort().join(', ') || '2026, 2027, 2028'}
+              </div>
+            </div>
+          </div>
+
           {/* Filter Bar */}
           <div
             style={{
               display: 'flex',
-              gap: 14,
+              gap: 12,
               marginBottom: 20,
               flexWrap: 'wrap',
               background: 'rgba(15, 23, 42, 0.6)',
@@ -1042,22 +1108,22 @@ export default function StudentControl() {
               alignItems: 'center',
             }}
           >
-            <div style={{ flex: 1, minWidth: 220 }}>
+            <div style={{ flex: 1, minWidth: 200 }}>
               <input
                 className="form-input"
                 style={{ width: '100%', fontSize: '0.86rem', padding: '8px 14px' }}
-                placeholder="Search by Hall Ticket, Student Name, College, or Email..."
+                placeholder="Search by Hall Ticket, Name, College, Email, Phone..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
             {/* College Filter */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>COLLEGE:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>COLLEGE:</span>
               <select
                 className="form-input"
-                style={{ fontSize: '0.85rem', padding: '6px 12px', minWidth: 180 }}
+                style={{ fontSize: '0.84rem', padding: '6px 10px', minWidth: 160 }}
                 value={collegeFilter}
                 onChange={(e) => setCollegeFilter(e.target.value)}
               >
@@ -1071,11 +1137,11 @@ export default function StudentControl() {
             </div>
 
             {/* Branch Filter */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>BRANCH:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>BRANCH:</span>
               <select
                 className="form-input"
-                style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+                style={{ fontSize: '0.84rem', padding: '6px 10px' }}
                 value={branchFilter}
                 onChange={(e) => setBranchFilter(e.target.value)}
               >
@@ -1086,15 +1152,16 @@ export default function StudentControl() {
                 <option value="ECE">ECE</option>
                 <option value="AIML">AIML</option>
                 <option value="MECH">MECH</option>
+                <option value="CIVIL">CIVIL</option>
               </select>
             </div>
 
             {/* Section Filter */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>SECTION:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>SECTION:</span>
               <select
                 className="form-input"
-                style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+                style={{ fontSize: '0.84rem', padding: '6px 10px' }}
                 value={sectionFilter}
                 onChange={(e) => setSectionFilter(e.target.value)}
               >
@@ -1107,15 +1174,17 @@ export default function StudentControl() {
                 <option value="A">Section A</option>
                 <option value="B">Section B</option>
                 <option value="C">Section C</option>
+                <option value="D">Section D</option>
+                <option value="E">Section E</option>
               </select>
             </div>
 
             {/* Batch / Group Filter */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>BATCH/GROUP:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>BATCH:</span>
               <select
                 className="form-input"
-                style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+                style={{ fontSize: '0.84rem', padding: '6px 10px' }}
                 value={batchFilter}
                 onChange={(e) => setBatchFilter(e.target.value)}
               >
@@ -1123,21 +1192,61 @@ export default function StudentControl() {
                 <option value="Batch 1">Batch 1</option>
                 <option value="Batch 2">Batch 2</option>
                 <option value="Batch 3">Batch 3</option>
+                <option value="Batch 2026">Batch 2026</option>
+                <option value="Batch 2027">Batch 2027</option>
+                <option value="Batch 2028">Batch 2028</option>
                 <option value="Group Alpha">Group Alpha</option>
                 <option value="Group Beta">Group Beta</option>
               </select>
             </div>
 
-            {/* Email Verification Filter */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>VERIFICATION:</span>
+            {/* Passout Year (YOP) Filter */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: '0.76rem', color: '#FBBF24', fontWeight: 800 }}>PASSOUT YEAR:</span>
               <select
                 className="form-input"
-                style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+                style={{ fontSize: '0.84rem', padding: '6px 10px', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#FDE68A' }}
+                value={passoutYearFilter}
+                onChange={(e) => setPassoutYearFilter(e.target.value)}
+              >
+                <option value="ALL">All Years (YOP)</option>
+                <option value="2025">2025 Class</option>
+                <option value="2026">2026 Class</option>
+                <option value="2027">2027 Class</option>
+                <option value="2028">2028 Class</option>
+                <option value="2029">2029 Class</option>
+                <option value="2030">2030 Class</option>
+              </select>
+            </div>
+
+            {/* Live Activity Status Filter */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: '0.76rem', color: '#34D399', fontWeight: 800 }}>LIVE STATUS:</span>
+              <select
+                className="form-input"
+                style={{ fontSize: '0.84rem', padding: '6px 10px', borderColor: 'rgba(16, 185, 129, 0.4)', color: '#6EE7B7' }}
+                value={liveStatusFilter}
+                onChange={(e) => setLiveStatusFilter(e.target.value)}
+              >
+                <option value="ALL">All Live Statuses</option>
+                <option value="IN_EXAM">🟢 Live in Exam</option>
+                <option value="CLEARED">✓ Cleared &amp; Ready</option>
+                <option value="PENDING">⏳ Pending Clearance</option>
+                <option value="COMPLETED">🏁 Exam Completed</option>
+                <option value="BLOCKED">🛑 Blocked by Admin</option>
+              </select>
+            </div>
+
+            {/* Email Verification Filter */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>VERIFIED:</span>
+              <select
+                className="form-input"
+                style={{ fontSize: '0.84rem', padding: '6px 10px' }}
                 value={verificationFilter}
                 onChange={(e) => setVerificationFilter(e.target.value as any)}
               >
-                <option value="ALL">All Students</option>
+                <option value="ALL">All Accounts</option>
                 <option value="VERIFIED">Verified Only (✓)</option>
                 <option value="UNVERIFIED">Pending Verification (⏳)</option>
               </select>
@@ -1282,12 +1391,12 @@ export default function StudentControl() {
                     </th>
                   )}
                   <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>HALL TICKET / ROLL NO</th>
-                  <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>CANDIDATE NAME</th>
-                  <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>COLLEGE, SEC &amp; BATCH</th>
-                  <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>GATE PASSES &amp; STATUS</th>
-                  <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>EMAIL STATUS</th>
-                  <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>ATTEMPTS</th>
-                  <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>EXTRA TIME</th>
+                  <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>CANDIDATE NAME &amp; CONTACT</th>
+                  <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>COLLEGE, BRANCH &amp; BATCH</th>
+                  <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>PASSOUT YEAR</th>
+                  <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>CURRENT LIVE STATUS</th>
+                  <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>GATE PASSES</th>
+                  <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)' }}>CLEARANCE STATUS</th>
                   <th style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-text-muted)', textAlign: 'right' }}>ADMIN ACTIONS</th>
                 </tr>
               </thead>
@@ -1302,7 +1411,7 @@ export default function StudentControl() {
                       <div style={{ fontSize: '0.86rem', color: '#94A3B8', maxWidth: 440, margin: '0 auto', lineHeight: 1.5 }}>
                         {!isSuperAdmin
                           ? 'No academic sections are currently assigned to your faculty account. Please contact your Super Administrator to assign your branch sections.'
-                          : search || branchFilter !== 'ALL' || collegeFilter !== 'ALL' || sectionFilter !== 'ALL'
+                          : search || branchFilter !== 'ALL' || collegeFilter !== 'ALL' || sectionFilter !== 'ALL' || passoutYearFilter !== 'ALL' || liveStatusFilter !== 'ALL'
                           ? 'No students matched the selected filter criteria. Try clearing search filters.'
                           : 'No students have been enrolled yet. Use Bulk Import (.XLSX) or Add Candidate above to get started.'}
                       </div>
@@ -1345,12 +1454,77 @@ export default function StudentControl() {
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{s.name}</div>
                       <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)' }}>{s.email}</div>
+                      {(s.contact_number || s.mobile) && (
+                        <div style={{ fontSize: '0.74rem', color: '#38BDF8', fontFamily: 'monospace', marginTop: 2 }}>
+                          📞 {(s.contact_number || s.mobile || '').startsWith('+91') ? (s.contact_number || s.mobile) : `+91 ${s.contact_number || s.mobile}`}
+                        </div>
+                      )}
                     </td>
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ fontWeight: 600, color: '#E2E8F0', fontSize: '0.84rem' }}>{s.college_name || 'VR Siddhartha Eng College'}</div>
                       <div style={{ fontSize: '0.76rem', color: 'var(--color-text-faint)' }}>
-                        Branch: <strong>{s.branch}</strong> &bull; Sec: <strong>{s.section || 'A'}</strong> &bull; Group: <strong>{s.batch || 'Batch 1'}</strong> &bull; YOP: {s.passout_year || 2026}
+                        Branch: <strong>{s.branch}</strong> &bull; Sec: <strong>{s.section || 'A'}</strong> &bull; Group: <strong>{s.batch || 'Batch 1'}</strong>
                       </div>
+                    </td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <span
+                        style={{
+                          fontWeight: 800,
+                          color: '#FBBF24',
+                          background: 'rgba(245, 158, 11, 0.12)',
+                          border: '1px solid rgba(245, 158, 11, 0.3)',
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          fontSize: '0.80rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        🎓 {s.passout_year || 2028}
+                      </span>
+                      <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: 3 }}>
+                        {s.batch || `Batch ${s.passout_year || 2028}`}
+                      </div>
+                    </td>
+                    <td style={{ padding: '14px 16px' }}>
+                      {s.is_blocked ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, background: 'rgba(239, 68, 68, 0.15)', color: '#F87171', border: '1px solid rgba(239, 68, 68, 0.3)', fontSize: '0.74rem', fontWeight: 800 }}>
+                          🛑 BLOCKED
+                        </span>
+                      ) : s.live_status?.state === 'in_exam' ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, background: 'rgba(16, 185, 129, 0.2)', color: '#34D399', border: '1px solid rgba(16, 185, 129, 0.4)', fontSize: '0.75rem', fontWeight: 800 }}>
+                            {s.live_status.label}
+                          </span>
+                          <span style={{ fontSize: '0.70rem', color: '#94A3B8' }}>
+                            Score: {s.live_status.score ?? 0} &bull; Violations: {s.live_status.violations ?? 0}
+                          </span>
+                        </div>
+                      ) : s.live_status?.state === 'completed' ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.3)', fontSize: '0.74rem', fontWeight: 800 }}>
+                          {s.live_status.label}
+                        </span>
+                      ) : s.is_verified !== false ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, background: 'rgba(16, 185, 129, 0.12)', color: '#34D399', border: '1px solid rgba(16, 185, 129, 0.3)', fontSize: '0.74rem', fontWeight: 700 }}>
+                          ✓ Cleared &amp; Ready
+                        </span>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, background: 'rgba(245, 158, 11, 0.18)', color: '#FBBF24', border: '1px solid rgba(245, 158, 11, 0.4)', fontSize: '0.72rem', fontWeight: 800 }}>
+                            ⏳ Pending Clearance
+                          </span>
+                          {isSuperAdmin && (
+                            <button
+                              onClick={() => handleApproveClearance(s)}
+                              className="btn btn-sm"
+                              style={{ background: 'linear-gradient(135deg, #10B981, #059669)', color: '#FFFFFF', border: 'none', fontSize: '0.70rem', fontWeight: 800, padding: '3px 8px', borderRadius: 4, cursor: 'pointer' }}
+                            >
+                              ⚡ Clear &amp; Approve
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>

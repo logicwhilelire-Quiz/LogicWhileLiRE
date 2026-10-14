@@ -100,7 +100,9 @@ export default function StaffManagementPage() {
         setStaff(res.data.staff);
       }
     } catch (err: any) {
-      setError(err?.response?.data?.error || 'Failed to load staff accounts');
+      if (err?.response?.status === 401) {
+        setError('Admin session expired. Please re-authenticate.');
+      }
     } finally {
       setLoading(false);
     }

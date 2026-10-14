@@ -278,6 +278,7 @@ export default function CandidateRegisterGatePage() {
         roll_number: form.roll_number.toUpperCase().trim(),
         branch_code: form.branch_code.toUpperCase().trim(),
         section: form.section.trim(),
+        batch: `Batch ${form.year_of_passing}`,
         email: form.email.toLowerCase().trim(),
         contact_number: form.contact_number.trim(),
         password: form.password,
@@ -288,6 +289,45 @@ export default function CandidateRegisterGatePage() {
       const res = await axios.post(`${API_BASE_URL}/api/v1/assessment/register-candidate`, payload);
 
       if (res.data?.success) {
+        // Automatically sync new candidate registration to authoritative Admin Roster
+        try {
+          const rawRoster = localStorage.getItem('admin_roster_students');
+          const currentList = rawRoster ? JSON.parse(rawRoster) : [];
+          if (Array.isArray(currentList)) {
+            const rollClean = payload.roll_number.toUpperCase();
+            if (!currentList.some((s: any) => s.hall_ticket === rollClean || s.roll_number === rollClean)) {
+              currentList.unshift({
+                id: res.data.candidate?.id || `reg-${Date.now()}`,
+                hall_ticket: rollClean,
+                roll_number: rollClean,
+                name: `${payload.first_name} ${payload.last_name}`.trim(),
+                email: payload.email,
+                branch: payload.branch_code,
+                branch_code: payload.branch_code,
+                college_name: payload.college_name || 'VR Siddhartha Engineering College',
+                college_id: payload.college_id,
+                section: payload.section,
+                batch: `Batch ${payload.year_of_passing}`,
+                passout_year: payload.year_of_passing,
+                year_of_passing: payload.year_of_passing,
+                contact_number: payload.contact_number,
+                mobile: `+91 ${payload.contact_number}`,
+                student_gate_pass: `GP-STU-${rollClean}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+                candidate_gate_pass: `GP-CAND-${rollClean}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+                is_verified: false,
+                is_blocked: false,
+                status: 'pending_clearance',
+                registered_at: new Date().toISOString(),
+                live_status: { state: 'pending', label: '⏳ Pending Admin Clearance' },
+                attempts_used: 0,
+                allowed_attempts: 1,
+                extra_time_mins: 0,
+              });
+              localStorage.setItem('admin_roster_students', JSON.stringify(currentList));
+            }
+          }
+        } catch {}
+
         if (res.data.requires_otp) {
           setOtpStep(true);
           const emailTarget = (res.data.email || form.email).toLowerCase().trim();

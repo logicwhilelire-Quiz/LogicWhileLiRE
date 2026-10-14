@@ -155,6 +155,7 @@ export async function registerCandidate(req: Request, res: Response): Promise<vo
     hall_ticket: normalizedRoll,
     branch_code: branch_code.toUpperCase().trim(),
     section: section.trim(),
+    batch: req.body.batch || `Batch ${Number(year_of_passing)}`,
     contact_number: normalizedContact,
     mobile: formattedMobile,
     password_hash: passwordHash,
