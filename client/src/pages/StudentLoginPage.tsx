@@ -150,7 +150,7 @@ export default function StudentLoginPage() {
           {/* Portal Switcher */}
           <div style={{ display: 'flex', background: 'rgba(9,14,31,0.8)', padding: 4, borderRadius: 12, border: '1px solid rgba(255,255,255,0.07)', marginBottom: 18, gap: 3, backdropFilter: 'blur(12px)' }}>
             <PortalTab label="Student" icon="🎓" active to="/login" />
-            <PortalTab label="Faculty" icon="👨\u200d🏫" to="/faculty/login" />
+            <PortalTab label="Faculty" icon="👨‍🏫" to="/faculty/login" />
             <PortalTab label="Admin" icon="👑" to="/admin" />
             <PortalTab label="Inspector" icon="🛡️" to="/inspector" />
           </div>

@@ -142,7 +142,7 @@ router.post('/demo-login', (req, res) => {
   const role = (req.body?.role || 'super_admin') as StaffRole;
   const staff = {
     id: role === 'inspector' ? 'st000000-0000-0000-0000-000000000004' : role === 'faculty' ? 'st000000-0000-0000-0000-000000000003' : 'st000000-0000-0000-0000-000000000001',
-    name: role === 'inspector' ? 'Dr. K. V. Rao (Principal / Inspector)' : role === 'faculty' ? 'Prof. S. Sharma' : 'R. Charan Sai (Super Admin)',
+    name: role === 'inspector' ? 'LogicWhile Lead Inspector' : role === 'faculty' ? 'LogicWhile Lead Faculty' : 'LogicWhile Super Admin',
     email: role === 'inspector' ? 'inspector@logicwhilelire.com' : role === 'faculty' ? 'faculty@logicwhilelire.com' : 'admin@logicwhilelire.com',
     role,
     college_id: role === 'super_admin' ? null : 1,

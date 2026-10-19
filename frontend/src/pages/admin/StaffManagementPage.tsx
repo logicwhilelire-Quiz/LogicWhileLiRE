@@ -466,7 +466,7 @@ export default function StaffManagementPage() {
                     className="form-input"
                     type="text"
                     required
-                    placeholder="e.g. Dr. Rajesh Sharma"
+                    placeholder="e.g. Dr. K. V. Rao / Faculty Trainer"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                   />
@@ -479,7 +479,7 @@ export default function StaffManagementPage() {
                     className="form-input"
                     type="email"
                     required
-                    placeholder="e.g. rajesh@logicwhilelire.com"
+                    placeholder="e.g. faculty@logicwhilelire.com"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                   />

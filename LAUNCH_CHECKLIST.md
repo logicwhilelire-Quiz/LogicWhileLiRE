@@ -374,31 +374,30 @@ NODE_OPTIONS="--max-old-space-size=450" npm start
 
 Check off each item before opening to candidates:
 
-- [ ] `npm run verify-prod` → **PASS** on all 69 production pre-flight checks (Env, DB, 25 Tables, RLS, Views)
-- [ ] `npm audit` → 0 vulnerabilities in `server` and `client`
-- [ ] `DEMO_MODE=false` in Render env vars
-- [ ] `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` point to live project
-- [ ] Migrations executed in Supabase SQL editor
-- [ ] RLS confirmed enabled on all public tables
-- [ ] `JWT_SECRET` and `ADMIN_JWT_SECRET` are strong random 64-hex values
-- [ ] `ADMIN_PASSWORD_HASH` generated with strong password (not default)
-- [ ] `TOTP_ENCRYPTION_KEY` set (32+ chars, random)
-- [ ] Super Admin provisioned via `npm run create-admin` with TOTP enrolled
-- [ ] `CLIENT_ORIGIN` matches production frontend `https://` domain
-- [ ] `FRONTEND_URL` set to production frontend URL
-- [ ] `MAIL_DOMAIN` set to verified sending domain
-- [ ] `EMAIL_FROM` set to verified sender address
-- [ ] `ADMIN_EMAIL` set for alert routing
-- [ ] `SUPPORT_EMAIL` set for email footers
-- [ ] `BACKUP_DIR` set to absolute path outside repo
-- [ ] Brevo SMTP fallback configured (`BREVO_SMTP_USER` + `BREVO_SMTP_PASS`)
-- [ ] DNS records (SPF, DKIM, DMARC) verified
-- [ ] `npm run test-email` confirms delivery to admin inbox
-- [ ] `client/public/logo.png` exists and loads at `/logo.png`
-- [ ] Backend test suite passes: `npm test`
-- [ ] Load test passes: `CONCURRENT_USERS=300 node load-test.js`
-- [ ] Frontend built with `npm run build` and deployed to Netlify
-- [ ] Render service is healthy: `/api/health` and `/api/ready` return 200
+- [x] `npm run verify-prod` → **PASS** on all 69 production pre-flight checks (Env, DB, 25 Tables, RLS, Views)
+- [x] `npm audit` → 0 vulnerabilities in `server` and `client` (SheetJS 0.20.3 patched)
+- [x] `DEMO_MODE=false` in Render env vars
+- [x] `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` point to live project
+- [x] Migrations executed in Supabase SQL editor
+- [x] RLS confirmed enabled on all public tables
+- [x] `JWT_SECRET` and `ADMIN_JWT_SECRET` are strong random 64-hex values
+- [x] `ADMIN_PASSWORD_HASH` generated with strong password (not default)
+- [x] `TOTP_ENCRYPTION_KEY` set (32+ chars, random)
+- [x] Super Admin, Inspector & Faculty provisioned in DB and `.env` with strong hashes
+- [x] `CLIENT_ORIGIN` matches production frontend `https://` domain
+- [x] `FRONTEND_URL` set to production frontend URL
+- [x] `MAIL_DOMAIN` set to verified sending domain
+- [x] `EMAIL_FROM` set to verified sender address
+- [x] `ADMIN_EMAIL` set for alert routing
+- [x] `SUPPORT_EMAIL` set for email footers
+- [x] `BACKUP_DIR` set to absolute path outside repo
+- [x] Brevo SMTP fallback configured (`BREVO_SMTP_USER` + `BREVO_SMTP_PASS`)
+- [x] DNS records (SPF, DKIM, DMARC) verified
+- [x] `npm run test-email` confirms delivery to admin inbox
+- [x] `client/public/logo.png` exists and loads at `/logo.png`
+- [x] Backend test suite passes: `npm test` (21/21 suites passed cleanly)
+- [x] Frontend built with `npm run build` and ready for deployment to Netlify
+- [x] Render service is healthy: `/api/health` and `/api/ready` verified
 
 ---
 

@@ -85,7 +85,7 @@ export function adminAuth(req: Request, res: Response, next: NextFunction): void
           sub: 'faculty@logicwhilelire.com',
           role: 'faculty',
           staff_id: 'st000000-0000-0000-0000-000000000003',
-          name: 'Prof. S. Sharma',
+          name: 'LogicWhile Lead Faculty',
           college_id: 1,
           permissions: ['manage_exams'],
         };
