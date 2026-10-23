@@ -62,11 +62,8 @@ walkthrough.js
 walkthrough-report.json
 load-test.js
 server/load-test.js
-test-*
-test_*
 *.test.*
-server/test-*
-client/test-*
+!server/test-*
 server/src/scripts/testEmail.ts
 server/data/
 *.jsonl
