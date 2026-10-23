@@ -174,7 +174,7 @@ export async function runVerifyProd(): Promise<boolean> {
         try {
           const probePromise = supabase.from(table).select('*').limit(1);
           const timeoutPromise = new Promise<{ data: any; error: any }>((_, reject) =>
-            setTimeout(() => reject(new Error('Probe timeout')), 3000)
+            setTimeout(() => reject(new Error('Probe timeout')), 10000)
           );
           const { error } = (await Promise.race([probePromise, timeoutPromise])) as any;
           if (!error || error.code === 'PGRST116' || error.message?.includes('0 rows')) {
@@ -207,7 +207,7 @@ export async function runVerifyProd(): Promise<boolean> {
         try {
           const probePromise = supabase.from(table).select('*').limit(1);
           const timeoutPromise = new Promise<{ data: any; error: any }>((_, reject) =>
-            setTimeout(() => reject(new Error('Probe timeout')), 3000)
+            setTimeout(() => reject(new Error('Probe timeout')), 10000)
           );
           const { error } = (await Promise.race([probePromise, timeoutPromise])) as any;
           if (!error || error.code === 'PGRST116') {
