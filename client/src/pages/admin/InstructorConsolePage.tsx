@@ -327,6 +327,15 @@ export default function InstructorConsolePage() {
         setConfirmOpen(false);
         setActiveTab("leaderboard");
         addLog(`🚀 EXAM_STARTED triggered by Inspector for ${currentCode}!`);
+        try {
+          localStorage.setItem(`admin_exam_state_${currentCode}`, 'started');
+          localStorage.setItem(`admin_exam_started_at_${currentCode}`, String(Date.now()));
+          if (typeof BroadcastChannel !== 'undefined') {
+            const bc = new BroadcastChannel('logicwhilelire_admin_exam_commands');
+            bc.postMessage({ examCode: currentCode, state: 'started', timestamp: Date.now() });
+            bc.close();
+          }
+        } catch {}
       }
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.message || "Exam start failed";
@@ -349,6 +358,14 @@ export default function InstructorConsolePage() {
       });
       setExamStarted(false);
       addLog(`🛑 EXAM STOPPED by Inspector for ${currentCode}.`);
+      try {
+        localStorage.setItem(`admin_exam_state_${currentCode}`, 'stopped');
+        if (typeof BroadcastChannel !== 'undefined') {
+          const bc = new BroadcastChannel('logicwhilelire_admin_exam_commands');
+          bc.postMessage({ examCode: currentCode, state: 'stopped', timestamp: Date.now() });
+          bc.close();
+        }
+      } catch {}
     } catch (err: any) {
       addLog(`❌ STOP ERROR: ${err?.message}`);
     } finally {

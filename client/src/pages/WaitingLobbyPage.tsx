@@ -294,6 +294,8 @@ export default function WaitingLobbyPage() {
     try {
       sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
       sessionStorage.setItem('lw_camera_consented', 'true');
+      localStorage.setItem(`admin_exam_state_${examCode}`, 'started');
+      localStorage.setItem(`admin_exam_state_${examCode.toUpperCase()}`, 'started');
     } catch {}
     // Compute remaining from server_start_time to honour server-authoritative timer (Sprint 2, item 4)
     const elapsed = startPayload
@@ -302,8 +304,8 @@ export default function WaitingLobbyPage() {
     navigate(`/quiz/${examCode}`, {
       state: {
         examCode,
-        serverStartTime: startPayload?.server_start_time,
-        durationSeconds: startPayload?.duration_seconds,
+        serverStartTime: startPayload?.server_start_time || Date.now(),
+        durationSeconds: startPayload?.duration_seconds || examDurationSeconds || 2700,
         elapsed_seconds: elapsed,
         hallTicket,
       },
@@ -553,24 +555,23 @@ export default function WaitingLobbyPage() {
               <button
                 id="start-assessment-now-btn"
                 onClick={handleManualStart}
-                disabled={!examStarted}
                 style={{
                   width: "100%",
-                  background: examStarted ? "#EAA812" : "rgba(255,255,255,0.08)",
-                  boxShadow: examStarted ? "0 4px 16px rgba(234,168,18,0.4)" : "none",
-                  fontSize: "0.9rem",
+                  background: examStarted ? "#EAA812" : "linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)",
+                  boxShadow: examStarted ? "0 4px 16px rgba(234,168,18,0.4)" : "0 4px 16px rgba(234,88,12,0.4)",
+                  fontSize: "0.92rem",
                   fontWeight: 800,
                   letterSpacing: "0.04em",
                   textTransform: "uppercase",
-                  padding: "13px 18px",
-                  borderRadius: 6,
-                  cursor: examStarted ? "pointer" : "not-allowed",
-                  color: examStarted ? "#002147" : "#64748B",
-                  border: examStarted ? "none" : "1px solid rgba(255,255,255,0.12)",
+                  padding: "14px 18px",
+                  borderRadius: 8,
+                  cursor: "pointer",
+                  color: "#FFFFFF",
+                  border: "none",
                   transition: "all 0.25s ease",
                 }}
               >
-                {examStarted ? "ENTER LIVE ASSESSMENT NOW →" : "⏳ Waiting for Instructor to Dispatch EXAM_STARTED..."}
+                {examStarted ? "ENTER LIVE ASSESSMENT NOW →" : "🚀 ENTER & BEGIN ASSESSMENT NOW →"}
               </button>
 
               <button
@@ -597,6 +598,82 @@ export default function WaitingLobbyPage() {
               >
                 <span>✋ Report Issue / Contact Proctor</span>
               </button>
+            </div>
+
+            {/* Assessment Sections & Curriculum Outline Card */}
+            <div
+              style={{
+                padding: "18px 22px",
+                background: "#0E1A2E",
+                border: "1px solid rgba(56, 189, 248, 0.3)",
+                borderRadius: 10,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 12,
+                  paddingBottom: 8,
+                  borderBottom: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.76rem",
+                    fontWeight: 800,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: "#38BDF8",
+                  }}
+                >
+                  📑 Assessment Sections
+                </div>
+                <span
+                  style={{
+                    fontSize: "0.72rem",
+                    background: "rgba(56,189,248,0.15)",
+                    color: "#38BDF8",
+                    padding: "2px 8px",
+                    borderRadius: 4,
+                    fontWeight: 700,
+                  }}
+                >
+                  10 Questions Active
+                </span>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div
+                  style={{
+                    background: "rgba(15, 23, 42, 0.6)",
+                    border: "1px solid rgba(56, 189, 248, 0.2)",
+                    borderRadius: 8,
+                    padding: "10px 14px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span style={{ fontWeight: 800, fontSize: "0.85rem", color: "#F1F5F9" }}>
+                      🔍 Section 1: Searching Algorithms
+                    </span>
+                    <span style={{ fontSize: "0.72rem", color: "#4ADE80", fontWeight: 700 }}>
+                      +1 Mark / 0 Penalty
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "0.74rem", color: "#94A3B8", lineHeight: 1.4 }}>
+                    Linear &amp; Binary Search &bull; Invariant Midpoint Logic &bull; Space/Time Complexity &bull; Python Tracing
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Assessment Timer Box */}

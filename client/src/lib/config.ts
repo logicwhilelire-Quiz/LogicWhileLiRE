@@ -21,8 +21,12 @@ const resolvedApiUrl = isLocalhostHost
   ? ((rawApiUrl && (rawApiUrl.includes('localhost') || rawApiUrl.includes('127.0.0.1'))) ? rawApiUrl : 'http://localhost:3001')
   : (rawApiUrl || defaultProductionApiUrl);
 
+const resolvedSocketUrl = isLocalhostHost
+  ? ((rawSocketUrl && (rawSocketUrl.includes('localhost') || rawSocketUrl.includes('127.0.0.1'))) ? rawSocketUrl : 'http://localhost:3001')
+  : (rawSocketUrl || resolvedApiUrl);
+
 export const API_BASE_URL: string = resolvedApiUrl.replace(/\/+$/, '');
-export const SOCKET_URL: string = (rawSocketUrl || resolvedApiUrl).replace(/\/+$/, '');
+export const SOCKET_URL: string = resolvedSocketUrl.replace(/\/+$/, '');
 
 export const SUPABASE_URL: string = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://xhutjekdbyccscselzdy.supabase.co';
 export const SUPABASE_ANON_KEY: string = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 'sb_publishable_dNAfXpoQ-y4EAPF3RCh4dw_LnpRLEcw';

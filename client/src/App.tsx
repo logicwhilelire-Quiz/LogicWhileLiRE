@@ -76,6 +76,7 @@ const PracticeArenaPage = lazyWithRetry(() => import('./pages/PracticeArenaPage'
 const InstitutionalStudentReportPage = lazyWithRetry(() => import('./pages/InstitutionalStudentReportPage'));
 const AboutPage = lazyWithRetry(() => import('./pages/AboutPage'));
 const NotFoundPage = lazyWithRetry(() => import('./pages/NotFoundPage'));
+const ExamDemoPage = lazyWithRetry(() => import('./pages/ExamDemoPage'));
 
 // ── NEW: Admin pages ─────────────────────────────────────────────
 const CollegesPage = lazyWithRetry(() => import('./pages/admin/CollegesPage'));
@@ -130,6 +131,11 @@ function AnimatedRoutes() {
         <Route path="/result-ec/:examCode" element={<ResultECPage />} />
         <Route path="/leaderboard-ec/:examCode" element={<LeaderboardECPage />} />
         <Route path="/leaderboard/:examCode" element={<LeaderboardECPage />} />
+
+        {/* ── EXAM LIVE DEMO & SHOWCASE ── */}
+        <Route path="/demo" element={<ExamDemoPage />} />
+        <Route path="/exam-demo" element={<ExamDemoPage />} />
+        <Route path="/demo/exam" element={<ExamDemoPage />} />
 
         {/* ── RETIRED CERTIFICATE VERIFICATION (C4 Spec) ── */}
         <Route path="/verify/:token" element={<VerifyCertificatePage />} />

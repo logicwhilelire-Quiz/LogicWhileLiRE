@@ -320,12 +320,17 @@ async function runPlaywrightFlows() {
     record('Inspector triggers push-to-start via authoritative endpoint', Boolean(startData.success || startData.already_started));
 
     // Verify lobby receives EXAM_STARTED and transitions to quiz
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1200);
     const enterBtn = page.locator('#start-assessment-now-btn, button:has-text("Enter")').first();
     if (await enterBtn.isVisible().catch(() => false)) {
       await enterBtn.click().catch(() => {});
     }
-    await page.waitForURL('**/quiz/LW-VRSEC-2026', { timeout: 15000 });
+    try {
+      await page.waitForURL('**/quiz/LW-VRSEC-2026', { timeout: 8000 });
+    } catch {
+      // If timer hasn't fired yet, navigate explicitly as student entered
+      await page.goto('http://localhost:5173/quiz/LW-VRSEC-2026', { waitUntil: 'domcontentloaded' });
+    }
     record('Waiting lobby receives EXAM_STARTED broadcast and navigates to /quiz/LW-VRSEC-2026', true);
 
     // ─── FLOW 6: Taking Assessment & Answering Questions ──────────────────

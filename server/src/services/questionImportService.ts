@@ -17,6 +17,11 @@ export const questionRowSchema = z.object({
     .union([z.string(), z.number()])
     .transform((v) => Number(v))
     .pipe(z.number().positive('marks must be a positive number')),
+  penalty: z
+    .union([z.string(), z.number()])
+    .optional()
+    .transform((v) => (v === undefined || v === null || v === '' ? 0 : Math.abs(Number(v)))),
+  section: z.string().optional().default('General'),
   topic: z.string().optional().default('General'),
   difficulty: z.enum(['Easy', 'Medium', 'Hard']).optional().default('Medium'),
   starter_code: z.string().optional(),
@@ -111,6 +116,8 @@ export function parseAndValidateXlsx(buffer: Buffer): ParseResult {
     let optD = '';
     let correctRaw = '';
     let marksRaw: unknown = 1;
+    let penaltyRaw: unknown = 0;
+    let sectionRaw = 'General';
     let topicRaw = 'General';
     let difficultyRaw: 'Easy' | 'Medium' | 'Hard' = 'Medium';
     let setRaw: unknown = undefined;
@@ -187,6 +194,8 @@ export function parseAndValidateXlsx(buffer: Buffer): ParseResult {
 
       marksRaw = normObj['marks'] ?? normObj['mark'] ?? normObj['points'] ?? 1;
       topicRaw = String(normObj['topic'] ?? normObj['subject'] ?? normObj['domain'] ?? 'General').trim();
+      sectionRaw = String((normObj['section'] ?? normObj['sectionname'] ?? normObj['category']) || topicRaw || 'General').trim();
+      penaltyRaw = normObj['penalty'] ?? normObj['negativemarks'] ?? normObj['negative'] ?? 0;
       
       const diffStr = String(normObj['difficulty'] ?? normObj['level'] ?? 'Medium').trim().toLowerCase();
       if (diffStr === 'easy') difficultyRaw = 'Easy';
@@ -251,6 +260,8 @@ export function parseAndValidateXlsx(buffer: Buffer): ParseResult {
       option_d: optD,
       correct_option: correctOption,
       marks: marksRaw,
+      penalty: penaltyRaw,
+      section: sectionRaw || topicRaw || 'General',
       topic: topicRaw || 'General',
       difficulty: difficultyRaw,
       starter_code: starterCode || undefined,
@@ -309,6 +320,8 @@ export async function bulkInsertQuestions(
       correct_option: row.correct_option,
       correct_answer: row.correct_option,
       marks: row.marks,
+      penalty: row.penalty || 0,
+      section: row.section || row.topic || 'General',
       topic: row.topic,
       difficulty: row.difficulty,
       starter_code: row.starter_code || null,
@@ -317,7 +330,7 @@ export async function bulkInsertQuestions(
       set_number: setNumber,
       question_set: setLetter,
       display_order: index + 1,
-      tags: [row.question_type, row.topic.toLowerCase().replace(/\s+/g, '_')],
+      tags: [row.question_type, (row.section || row.topic).toLowerCase().replace(/\s+/g, '_')],
     };
   });
 
@@ -329,6 +342,8 @@ export async function bulkInsertQuestions(
       options: r.options,
       correct_option: r.correct_option,
       marks: r.marks,
+      penalty: r.penalty,
+      section: r.section,
       topic: r.topic,
       difficulty: r.difficulty,
       set_number: r.set_number,
@@ -353,6 +368,8 @@ export async function bulkInsertQuestions(
         option_d: r.option_d,
         correct_answer: r.correct_answer,
         marks: r.marks,
+        penalty: r.penalty,
+        section: r.section,
         topic: r.topic,
         difficulty: r.difficulty,
         explanation: r.explanation,
@@ -384,6 +401,8 @@ export async function bulkInsertQuestions(
       option_d: r.option_d,
       correct_answer: r.correct_answer,
       marks: r.marks,
+      penalty: r.penalty,
+      section: r.section,
       topic: r.topic,
       difficulty: r.difficulty,
       explanation: r.explanation,

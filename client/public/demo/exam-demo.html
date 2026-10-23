@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>LogicWhile LiRE — Exam Colour Coding Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#050810;--gold:#EAA812;--violet:#C084FC;--cyan:#38BDF8;--green:#4ADE80;--orange:#FB923C;--yellow:#F1FA8C;--emerald:#34D399;--slate:#64748B;--text:#F1F5F9;--sub:#94A3B8;--font-head:'Space Grotesk',sans-serif;--font-body:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(43,127,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(43,127,255,0.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.top-bar{position:sticky;top:0;z-index:100;background:rgba(5,8,16,0.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(234,168,18,0.2);padding:12px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;font-family:var(--font-head);font-weight:800;font-size:1.1rem;color:var(--gold);text-shadow:0 0 20px #EAA81250}
+.brand-logo{width:38px;height:38px;background:linear-gradient(135deg,#EAA812,#D97706);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 0 14px #EAA81240}
+.timer-pill{display:flex;align-items:center;gap:8px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);padding:6px 16px;border-radius:999px;font-family:var(--font-mono);font-size:0.95rem;font-weight:700;color:#F87171;animation:pulse-timer 2s infinite}
+@keyframes pulse-timer{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}50%{box-shadow:0 0 12px 2px rgba(239,68,68,0.25)}}
+.exam-layout{position:relative;z-index:1;display:grid;grid-template-columns:260px 1fr;gap:0;max-width:1400px;margin:0 auto;min-height:calc(100vh - 62px)}
+.sidebar{background:rgba(8,14,28,0.9);border-right:1px solid rgba(255,255,255,0.06);padding:24px 16px;display:flex;flex-direction:column;gap:16px;position:sticky;top:62px;height:calc(100vh - 62px);overflow-y:auto}
+.section-header{font-family:var(--font-head);font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate);display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.section-header::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.06)}
+.q-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.q-btn{width:100%;aspect-ratio:1;border-radius:8px;border:1.5px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:var(--sub);font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center}
+.q-btn:hover{border-color:var(--gold);color:var(--gold)}
+.q-btn.answered{background:rgba(234,168,18,0.15);border-color:#EAA812;color:var(--gold)}
+.q-btn.active{background:linear-gradient(135deg,rgba(234,168,18,0.3),rgba(0,33,71,0.8));border-color:var(--gold);color:#fff;box-shadow:0 0 12px rgba(234,168,18,0.35)}
+.q-btn.code-type{border-color:rgba(251,146,60,0.4);color:var(--orange)}
+.q-btn.code-type.answered{background:rgba(251,146,60,0.15)}
+.progress-ring{width:64px;height:64px;border-radius:50%;background:conic-gradient(var(--gold) 40%,rgba(255,255,255,0.06) 0);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(234,168,18,0.2)}
+.progress-inner{width:48px;height:48px;background:var(--bg);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:0.8rem;font-weight:800;color:var(--gold)}
+.stats-row{display:flex;gap:10px}
+.stat-pill{flex:1;padding:8px;border-radius:8px;text-align:center}
+.stat-pill .num{font-size:1.1rem;font-weight:800;font-family:var(--font-head)}
+.stat-pill .lbl{font-size:0.6rem;color:var(--slate);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px}
+.main-area{padding:28px 32px;display:flex;flex-direction:column;gap:20px;overflow-y:auto}
+.q-card{background:linear-gradient(145deg,rgba(11,18,34,0.98),rgba(0,28,62,0.97));border:1.5px solid rgba(234,168,18,0.35);border-radius:18px;padding:24px 28px 28px;box-shadow:0 15px 40px rgba(0,0,0,0.5),inset 0 1px 0 rgba(234,168,18,0.12)}
+.q-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.q-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.q-num{font-family:var(--font-head);font-weight:800;font-size:0.85rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);text-shadow:0 0 14px #EAA81255}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:0.72rem;font-weight:700;letter-spacing:0.05em}
+.badge-code{background:rgba(251,146,60,0.15);border:1px solid rgba(251,146,60,0.45);color:var(--orange)}
+.badge-apt{background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.45);color:#60A5FA}
+.badge-mcq{background:rgba(148,163,184,0.12);border:1px solid rgba(148,163,184,0.25);color:var(--sub)}
+.q-text{font-size:1.13rem;font-weight:600;line-height:1.7;color:#F1F5F9;margin-bottom:16px;white-space:pre-line}
+/* Code block */
+.code-block{border-radius:14px;overflow:hidden;margin:0 0 20px;border:1.5px solid}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid}
+.code-header-left{display:flex;align-items:center;gap:10px}
+.traffic-lights{display:flex;gap:5px}
+.tl{width:11px;height:11px;border-radius:50%;display:inline-block}
+.tl.red{background:#EF4444;box-shadow:0 0 6px #EF444488}
+.tl.yellow{background:#F59E0B;box-shadow:0 0 6px #F59E0B88}
+.tl.green{background:#10B981;box-shadow:0 0 6px #10B98188}
+.lang-badge{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;border:1px solid}
+.lock-badge{font-size:0.68rem;font-weight:700;color:var(--slate);background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);padding:2px 9px;border-radius:6px;display:inline-flex;align-items:center;gap:4px}
+.code-body{display:flex;font-family:var(--font-mono);font-size:0.91rem;line-height:1.72;max-height:320px;overflow-y:auto;overflow-x:auto;background:rgba(6,9,18,0.97);padding:12px 0}
+.line-nums{padding:0 12px 0 16px;text-align:right;border-right:1px solid rgba(255,255,255,0.06);flex-shrink:0;min-width:42px;font-size:0.79rem;color:#374151;user-select:none}
+.line-nums div{line-height:1.72}
+.code-lines{flex:1;padding:0 20px;white-space:pre}
+.code-line{line-height:1.72;padding-left:6px;margin-left:-6px;border-left:2px solid transparent;border-radius:0 4px 4px 0;transition:all 0.15s;cursor:default}
+/* Token colours */
+.kw{color:#C084FC;font-weight:700;text-shadow:0 0 10px #C084FC50}
+.bi{color:#38BDF8;text-shadow:0 0 10px #38BDF850}
+.str{color:#4ADE80;text-shadow:0 0 10px #4ADE8050}
+.num{color:#FB923C;text-shadow:0 0 10px #FB923C50}
+.op{color:#F1FA8C;text-shadow:0 0 8px #F1FA8C40}
+.cm{color:#64748B;font-style:italic}
+.ty{color:#34D399;text-shadow:0 0 10px #34D39950}
+.ct{color:#FDE68A}
+.pu{color:#94A3B8}
+.id{color:#E2E8F0}
+.sp{color:transparent}
+/* Legend */
+.legend{display:flex;align-items:center;gap:14px;padding:7px 16px;background:rgba(0,0,0,0.3);border-top:1px solid rgba(255,255,255,0.04);flex-wrap:wrap}
+.legend-item{display:inline-flex;align-items:center;gap:5px}
+.legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.legend-lbl{font-size:0.62rem;color:var(--slate);font-family:var(--font-mono)}
+/* Options */
+.options{display:flex;flex-direction:column;gap:11px;margin-top:16px}
+.option{display:flex;align-items:flex-start;gap:14px;padding:13px 18px;border-radius:12px;border:1.5px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);cursor:pointer;transition:all 0.2s}
+.option:hover{transform:translateX(4px)}
+.opt-label{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0;margin-top:1px;transition:all 0.2s}
+.opt-text{font-size:1rem;font-weight:500;color:#CBD5E1;line-height:1.6;flex:1;transition:color 0.2s}
+/* Editor */
+.editor-wrap{border-radius:12px;overflow:hidden;border:1px solid;transition:border-color 0.3s,box-shadow 0.3s}
+.editor-topbar{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.lang-tabs{display:flex;gap:3px;flex:1;flex-wrap:wrap}
+.lang-tab{padding:3px 9px;border-radius:6px;font-size:0.71rem;font-weight:500;border:1px solid transparent;background:transparent;color:#4B5563;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all 0.18s}
+.editor-body{display:flex;height:260px;background:#080E1C}
+.ed-gutter{width:50px;flex-shrink:0;background:rgba(0,0,0,0.35);border-right:1px solid;padding-top:12px;user-select:none;overflow:hidden}
+.ed-ln{height:21px;line-height:21px;padding-right:12px;text-align:right;font-size:0.72rem;font-family:var(--font-mono);color:rgba(255,255,255,0.14);transition:color 0.12s}
+.ed-ln.cur{font-weight:700}
+.ed-area{flex:1;position:relative;overflow:auto}
+.ed-pre{position:absolute;top:0;left:0;right:0;padding:12px 16px;font-family:var(--font-mono);font-size:0.88rem;line-height:21px;white-space:pre;pointer-events:none;user-select:none;color:transparent;z-index:0}
+.ed-pre .kw{color:#C084FC;font-weight:700}.ed-pre .bi{color:#38BDF8}.ed-pre .str{color:#4ADE80}.ed-pre .num{color:#FB923C}.ed-pre .op{color:#F1FA8C}.ed-pre .cm{color:#64748B;font-style:italic}.ed-pre .ty{color:#34D399}.ed-pre .id{color:#E2E8F0}.ed-pre .pu{color:#94A3B8}
+.ed-ta{position:relative;z-index:1;width:100%;min-height:100%;padding:12px 16px;background:transparent;border:none;outline:none;resize:none;font-family:var(--font-mono);font-size:0.88rem;line-height:21px;color:transparent;tab-size:2;-webkit-text-fill-color:transparent}
+.run-bar{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid}
+.run-btn{padding:6px 18px;border-radius:8px;border:1px solid;color:#fff;font-weight:700;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s}
+.run-btn:hover{transform:translateY(-1px)}
+.verdict-pill{padding:3px 12px;border-radius:999px;font-size:0.75rem;font-weight:700;letter-spacing:0.04em;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.4);color:#10B981}
+/* Nav */
+.nav-btns{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-top:1px solid rgba(255,255,255,0.06)}
+.btn-prev{padding:10px 24px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:var(--sub);font-family:var(--font-head);font-weight:700;font-size:0.9rem;cursor:pointer;transition:all 0.2s}
+.btn-prev:hover{border-color:rgba(255,255,255,0.25);color:var(--text)}
+.btn-next{padding:10px 24px;border-radius:10px;background:linear-gradient(135deg,#EAA812cc,#D97706cc);border:1px solid rgba(234,168,18,0.5);color:#000;font-family:var(--font-head);font-weight:700;font-size:0.9rem;cursor:pointer;box-shadow:0 0 20px rgba(234,168,18,0.3);transition:all 0.2s;display:flex;align-items:center;gap:8px}
+.btn-next:hover{box-shadow:0 0 30px rgba(234,168,18,0.5);transform:translateY(-1px)}
+.btn-submit{padding:10px 28px;border-radius:10px;background:linear-gradient(135deg,#10B981cc,#059669cc);border:1px solid rgba(16,185,129,0.5);color:#fff;font-family:var(--font-head);font-weight:700;font-size:0.9rem;cursor:pointer;box-shadow:0 0 20px rgba(16,185,129,0.3);display:flex;align-items:center;gap:8px;transition:all 0.2s}
+.btn-submit:hover{box-shadow:0 0 30px rgba(16,185,129,0.5);transform:translateY(-1px)}
+.demo-float{position:fixed;bottom:20px;right:20px;z-index:999;background:rgba(234,168,18,0.12);border:1px solid rgba(234,168,18,0.35);padding:8px 16px;border-radius:999px;font-size:0.78rem;font-weight:700;color:var(--gold);box-shadow:0 0 20px rgba(234,168,18,0.2);display:flex;align-items:center;gap:6px;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:rgba(0,0,0,0.2)}
+::-webkit-scrollbar-thumb{background:rgba(234,168,18,0.25);border-radius:3px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:200;align-items:center;justify-content:center}
+.modal-box{background:linear-gradient(145deg,rgba(11,18,34,0.99),rgba(0,28,62,0.99));border:1.5px solid rgba(234,168,18,0.35);border-radius:20px;padding:36px 40px;max-width:440px;width:90%;box-shadow:0 30px 60px rgba(0,0,0,0.7)}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="brand">
+    <div class="brand-logo">🧠</div>
+    <div>
+      <div>LogicWhile <span style="background:linear-gradient(90deg,#EAA812,#F59E0B);-webkit-background-clip:text;-webkit-text-fill-color:transparent">LiRE</span></div>
+      <div style="font-size:0.62rem;color:#64748B;font-weight:500;letter-spacing:0.06em">ELEVATING CODING KNOWLEDGE</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:0.78rem;color:#64748B;font-family:'JetBrains Mono'">Exam: <span style="color:#EAA812;font-weight:700">GR-RVIT-PBPSVT</span></span>
+    <div class="timer-pill">⏱ <span id="timer-val">28:47</span></div>
+    <div style="padding:6px 14px;border-radius:999px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);color:#10B981;font-size:0.78rem;font-weight:700;display:flex;align-items:center;gap:6px">
+      <span style="width:6px;height:6px;border-radius:50%;background:#10B981;box-shadow:0 0 6px #10B981;display:inline-block;animation:pulse-timer 1.5s infinite"></span>AI Proctor Active
+    </div>
+    <div style="padding:6px 14px;border-radius:999px;background:rgba(234,168,18,0.1);border:1px solid rgba(234,168,18,0.25);color:#94A3B8;font-size:0.78rem;font-weight:700">
+      🪐 Jyothirmye · 24HU1A05F9
+    </div>
+  </div>
+</div>
+
+<div class="exam-layout">
+  <aside class="sidebar">
+    <div>
+      <div class="section-header">Progress</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+        <div class="progress-ring"><div class="progress-inner" id="prog-inner">6/15</div></div>
+        <div><div style="font-size:0.85rem;font-weight:700;color:#F1F5F9" id="prog-txt">6 Answered</div><div style="font-size:0.72rem;color:#64748B;margin-top:2px" id="prog-sub">9 Remaining</div></div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-pill" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2)"><div class="num" style="color:#10B981" id="stat-ans">6</div><div class="lbl">Done</div></div>
+        <div class="stat-pill" style="background:rgba(234,168,18,0.1);border:1px solid rgba(234,168,18,0.2)"><div class="num" style="color:#EAA812">3</div><div class="lbl">Flagged</div></div>
+        <div class="stat-pill" style="background:rgba(148,163,184,0.08);border:1px solid rgba(148,163,184,0.15)"><div class="num" style="color:#94A3B8" id="stat-skip">6</div><div class="lbl">Skipped</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="section-header">Questions</div>
+      <div class="q-grid" id="q-grid"></div>
+    </div>
+    <div style="margin-top:auto">
+      <div class="section-header">Legend</div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.73rem;color:#94A3B8"><div style="width:14px;height:14px;border-radius:4px;background:rgba(234,168,18,0.15);border:1.5px solid #EAA812"></div>Answered</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.73rem;color:#94A3B8"><div style="width:14px;height:14px;border-radius:4px;background:rgba(251,146,60,0.1);border:1.5px solid rgba(251,146,60,0.4)"></div>Code Question</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.73rem;color:#94A3B8"><div style="width:14px;height:14px;border-radius:4px;background:rgba(255,255,255,0.03);border:1.5px solid rgba(255,255,255,0.1)"></div>Not Answered</div>
+      </div>
+    </div>
+    <button onclick="document.getElementById('submit-modal').style.display='flex'" style="width:100%;padding:11px;border-radius:10px;background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(5,150,105,0.2));border:1px solid rgba(16,185,129,0.4);color:#34D399;font-family:'Space Grotesk';font-weight:800;font-size:0.9rem;cursor:pointer;box-shadow:0 0 18px rgba(16,185,129,0.15)">
+      ✅ Submit Exam
+    </button>
+  </aside>
+  <main class="main-area" id="main-area"></main>
+</div>
+
+<div class="demo-float">✨ LogicWhile LiRE — Colour Coding Demo</div>
+
+<div class="modal-overlay" id="submit-modal">
+  <div class="modal-box">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:3rem;margin-bottom:12px">🚀</div>
+      <div style="font-family:'Space Grotesk';font-size:1.4rem;font-weight:800;color:#F1F5F9;margin-bottom:8px">Submit Exam?</div>
+      <div style="font-size:0.88rem;color:#64748B">You have answered <strong style="color:#EAA812" id="ans-count">6 of 15</strong> questions.</div>
+    </div>
+    <div style="display:flex;gap:12px">
+      <button onclick="document.getElementById('submit-modal').style.display='none'" style="flex:1;padding:11px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#94A3B8;font-weight:700;cursor:pointer;font-family:'Space Grotesk'">Cancel</button>
+      <button onclick="document.getElementById('submit-modal').style.display='none'" style="flex:1;padding:11px;border-radius:10px;background:linear-gradient(135deg,#10B981,#059669);border:1px solid rgba(16,185,129,0.5);color:#fff;font-weight:700;cursor:pointer;font-family:'Space Grotesk';box-shadow:0 0 20px rgba(16,185,129,0.3)">✅ Confirm Submit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const QUESTIONS=[
+  {id:'q1',num:1,type:'code',sector:{name:'Sector 4: DSA',color:'#38BDF8'},text:'What does the following Python recursive function return when called with fibonacci(7)?',language:'Python',langIcon:'🐍',langAccent:'#3B82F6',code:[{p:[{t:'kw',v:'def '},{t:'id',v:'fibonacci'},{t:'pu',v:'('},{t:'id',v:'n'},{t:'pu',v:'):'}]},{p:[{t:'sp',v:'    '},{t:'kw',v:'if '},{t:'id',v:'n'},{t:'op',v:' <= '},{t:'num',v:'1'},{t:'op',v:':'}]},{p:[{t:'sp',v:'        '},{t:'kw',v:'return '},{t:'id',v:'n'}]},{p:[{t:'sp',v:'    '},{t:'kw',v:'return '},{t:'id',v:'fibonacci'},{t:'pu',v:'('},{t:'id',v:'n'},{t:'op',v:'-'},{t:'num',v:'1'},{t:'pu',v:')'},{t:'op',v:'+'},{t:'id',v:'fibonacci'},{t:'pu',v:'('},{t:'id',v:'n'},{t:'op',v:'-'},{t:'num',v:'2'},{t:'pu',v:')'}]},{p:[]},{p:[{t:'bi',v:'print'},{t:'pu',v:'('},{t:'id',v:'fibonacci'},{t:'pu',v:'('},{t:'num',v:'7'},{t:'pu',v:'))'}]},{p:[{t:'cm',v:'# Output = ?'}]}],options:['8','12','13','21'],sel:2},
+  {id:'q2',num:2,type:'mcq',sector:{name:'Sector 3: Core CS',color:'#10B981'},text:'What does the following JavaScript snippet log to the console?',language:'JavaScript',langIcon:'🟨',langAccent:'#F59E0B',code:[{p:[{t:'kw',v:'const '},{t:'id',v:'arr'},{t:'op',v:'='},{t:'pu',v:'['},{t:'num',v:'1'},{t:'pu',v:','},{t:'num',v:'2'},{t:'pu',v:','},{t:'num',v:'3'},{t:'pu',v:','},{t:'num',v:'4'},{t:'pu',v:','},{t:'num',v:'5'},{t:'pu',v:']'}]},{p:[{t:'kw',v:'const '},{t:'id',v:'result'},{t:'op',v:'='},{t:'id',v:'arr'},{t:'pu',v:'.'},{t:'bi',v:'filter'},{t:'pu',v:'('},{t:'id',v:'x'},{t:'op',v:'=>'},{t:'id',v:'x'},{t:'op',v:'%'},{t:'num',v:'2'},{t:'op',v:'==='},{t:'num',v:'0'},{t:'pu',v:')'},{t:'pu',v:'.'},{t:'bi',v:'map'},{t:'pu',v:'('},{t:'id',v:'x'},{t:'op',v:'=>'},{t:'id',v:'x'},{t:'op',v:'*'},{t:'id',v:'x'},{t:'pu',v:')'}]},{p:[{t:'bi',v:'console'},{t:'pu',v:'.'},{t:'bi',v:'log'},{t:'pu',v:'('},{t:'id',v:'result'},{t:'pu',v:')'}]}],options:['[4, 16]','[1,4,9,16,25]','[2, 4]','[4, 8]'],sel:null},
+  {id:'q3',num:3,type:'code',sector:{name:'Sector 4: DSA',color:'#38BDF8'},text:'Write a Java function that reverses a string without using built-in reverse methods.',language:'Java',langIcon:'☕',langAccent:'#EF4444',isEditor:true,starterCode:'import java.util.Scanner;\n\npublic class Solution {\n    public static String reverse(String s) {\n        // Write your solution here\n        \n    }\n    \n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String input = sc.nextLine();\n        System.out.println(reverse(input));\n    }\n}',options:null,sel:null},
+  {id:'q4',num:4,type:'mcq',sector:{name:'Sector 3: Core CS',color:'#10B981'},text:'What is the time complexity of the following C++ linear search?',language:'C++',langIcon:'⚙️',langAccent:'#8B5CF6',code:[{p:[{t:'ty',v:'int '},{t:'id',v:'findMax'},{t:'pu',v:'('},{t:'bi',v:'vector'},{t:'pu',v:'<'},{t:'ty',v:'int'},{t:'pu',v:'>&'},{t:'id',v:'arr'},{t:'pu',v:')'}]},{p:[{t:'pu',v:'{'}]},{p:[{t:'sp',v:'    '},{t:'ty',v:'int '},{t:'id',v:'mx'},{t:'op',v:'='},{t:'id',v:'arr'},{t:'pu',v:'['},{t:'num',v:'0'},{t:'pu',v:'];'}]},{p:[{t:'sp',v:'    '},{t:'kw',v:'for '},{t:'pu',v:'('},{t:'ty',v:'int '},{t:'id',v:'i'},{t:'op',v:'='},{t:'num',v:'1'},{t:'pu',v:';'},{t:'id',v:'i'},{t:'op',v:'<'},{t:'id',v:'arr'},{t:'pu',v:'.'},{t:'bi',v:'size'},{t:'pu',v:'();'},{t:'id',v:'i'},{t:'op',v:'++'},{t:'pu',v:')'}]},{p:[{t:'sp',v:'        '},{t:'kw',v:'if '},{t:'pu',v:'('},{t:'id',v:'arr'},{t:'pu',v:'['},{t:'id',v:'i'},{t:'pu',v:']'},{t:'op',v:'>'},{t:'id',v:'mx'},{t:'pu',v:')'}]},{p:[{t:'sp',v:'            '},{t:'id',v:'mx'},{t:'op',v:'='},{t:'id',v:'arr'},{t:'pu',v:'['},{t:'id',v:'i'},{t:'pu',v:'];'}]},{p:[{t:'sp',v:'    '},{t:'kw',v:'return '},{t:'id',v:'mx'},{t:'pu',v:';'}]},{p:[{t:'pu',v:'}'}]}],options:['O(1)','O(log n)','O(n)','O(n²)'],sel:null},
+  {id:'q5',num:5,type:'aptitude',sector:{name:'Sector 1: Quant',color:'#F59E0B'},text:'A train travels 360 km in 4 hours. Another travels the same distance in 3 hours. What is the ratio of their speeds?',language:null,code:null,options:['3:4','4:3','2:3','3:2'],sel:1},
+  {id:'q6',num:6,type:'code',sector:{name:'Sector 4: DSA',color:'#38BDF8'},text:'What is the output of this Rust program?',language:'Rust',langIcon:'🦀',langAccent:'#F97316',code:[{p:[{t:'kw',v:'fn '},{t:'id',v:'main'},{t:'pu',v:'()'}]},{p:[{t:'pu',v:'{'}]},{p:[{t:'sp',v:'    '},{t:'kw',v:'let mut '},{t:'id',v:'v'},{t:'pu',v:':'},{t:'ty',v:'Vec'},{t:'pu',v:'<'},{t:'ty',v:'i32'},{t:'pu',v:'> = '},{t:'bi',v:'vec'},{t:'op',v:'!'},{t:'pu',v:'['},{t:'num',v:'1'},{t:'pu',v:','},{t:'num',v:'2'},{t:'pu',v:','},{t:'num',v:'3'},{t:'pu',v:'];'}]},{p:[{t:'sp',v:'    '},{t:'id',v:'v'},{t:'pu',v:'.'},{t:'id',v:'push'},{t:'pu',v:'('},{t:'num',v:'4'},{t:'pu',v:');'}]},{p:[{t:'sp',v:'    '},{t:'kw',v:'let '},{t:'id',v:'sum'},{t:'pu',v:':'},{t:'ty',v:' i32'},{t:'op',v:'='},{t:'id',v:'v'},{t:'pu',v:'.'},{t:'id',v:'iter'},{t:'pu',v:'().'},{t:'bi',v:'sum'},{t:'pu',v:'();'}]},{p:[{t:'sp',v:'    '},{t:'bi',v:'println'},{t:'op',v:'!'},{t:'pu',v:'('},{t:'str',v:'"Sum = {}"'},{t:'pu',v:','},{t:'id',v:'sum'},{t:'pu',v:');'}]},{p:[{t:'pu',v:'}'}]}],options:['Sum = 6','Sum = 10','Sum = 9','Sum = 12'],sel:null},
+  {id:'q7',num:7,type:'mcq',sector:{name:'Sector 3: Core CS',color:'#10B981'},text:"Which of the following JavaScript expressions evaluates to true?\n\nconsole.log(\"5\" == 5)   // Line 1\nconsole.log(\"5\" === 5)  // Line 2",language:null,code:null,options:['Both lines: true','Line1: true, Line2: false','Line1: false, Line2: true','Both lines: false'],sel:null},
+  {id:'q8',num:8,type:'code',sector:{name:'Sector 4: DSA',color:'#38BDF8'},text:'What is the output of this C++ program?',language:'C++',langIcon:'⚙️',langAccent:'#8B5CF6',code:[{p:[{t:'kw',v:'#include'},{t:'str',v:'<iostream>'}]},{p:[{t:'kw',v:'#include'},{t:'str',v:'<vector>'}]},{p:[{t:'kw',v:'#include'},{t:'str',v:'<algorithm>'}]},{p:[{t:'kw',v:'using namespace '},{t:'ty',v:'std'},{t:'pu',v:';'}]},{p:[]},{p:[{t:'ty',v:'int '},{t:'id',v:'main'},{t:'pu',v:'()'}]},{p:[{t:'pu',v:'{'}]},{p:[{t:'sp',v:'    '},{t:'bi',v:'vector'},{t:'pu',v:'<'},{t:'ty',v:'int'},{t:'pu',v:'> '},{t:'id',v:'v'},{t:'op',v:'='},{t:'pu',v:'{'},{t:'num',v:'5'},{t:'pu',v:','},{t:'num',v:'2'},{t:'pu',v:','},{t:'num',v:'8'},{t:'pu',v:','},{t:'num',v:'1'},{t:'pu',v:','},{t:'num',v:'9'},{t:'pu',v:'};'}]},{p:[{t:'sp',v:'    '},{t:'id',v:'sort'},{t:'pu',v:'('},{t:'id',v:'v'},{t:'pu',v:'.'},{t:'id',v:'begin'},{t:'pu',v:'(),'},{t:'id',v:'v'},{t:'pu',v:'.'},{t:'id',v:'end'},{t:'pu',v:'());'}]},{p:[{t:'sp',v:'    '},{t:'bi',v:'cout'},{t:'op',v:'<<'},{t:'id',v:'v'},{t:'pu',v:'['},{t:'num',v:'0'},{t:'pu',v:']'},{t:'op',v:'<<'},{t:'str',v:'" "'},{t:'op',v:'<<'},{t:'id',v:'v'},{t:'pu',v:'['},{t:'num',v:'4'},{t:'pu',v:']'},{t:'op',v:'<<'},{t:'bi',v:'endl'},{t:'pu',v:';'}]},{p:[{t:'sp',v:'    '},{t:'kw',v:'return '},{t:'num',v:'0'},{t:'pu',v:';'}]},{p:[{t:'pu',v:'}'}]}],options:['5 9','1 9','1 5','9 1'],sel:null},
+  {id:'q9',num:9,type:'code',sector:{name:'Sector 4: DSA',color:'#38BDF8'},text:'Implement the binary search algorithm in Go.',language:'Go',langIcon:'🔷',langAccent:'#10B981',isEditor:true,starterCode:'package main\n\nimport "fmt"\n\nfunc binarySearch(arr []int, target int) int {\n    lo, hi := 0, len(arr)-1\n    for lo <= hi {\n        // Write your solution\n    }\n    return -1\n}\n\nfunc main() {\n    arr := []int{1,3,5,7,9,11}\n    fmt.Println(binarySearch(arr, 7))\n}',options:null,sel:null},
+  {id:'q10',num:10,type:'aptitude',sector:{name:'Sector 2: Logic',color:'#8B5CF6'},text:'A clock shows 3:15. What is the angle between the hour and minute hands?',language:null,code:null,options:['0°','7.5°','15°','22.5°'],sel:null},
+  {id:'q11',num:11,type:'code',sector:{name:'Sector 3: Core CS',color:'#10B981'},text:'What does this SQL query return?',language:'SQL',langIcon:'🗄️',langAccent:'#EC4899',code:[{p:[{t:'kw',v:'SELECT '},{t:'id',v:'department'},{t:'pu',v:','},{t:'bi',v:'COUNT'},{t:'pu',v:'(*) AS '},{t:'id',v:'employee_count'}]},{p:[{t:'kw',v:'FROM '},{t:'id',v:'employees'}]},{p:[{t:'kw',v:'WHERE '},{t:'id',v:'salary'},{t:'op',v:' > '},{t:'num',v:'50000'}]},{p:[{t:'kw',v:'GROUP BY '},{t:'id',v:'department'}]},{p:[{t:'kw',v:'HAVING '},{t:'bi',v:'COUNT'},{t:'pu',v:'(*)'},{t:'op',v:' >= '},{t:'num',v:'5'}]},{p:[{t:'kw',v:'ORDER BY '},{t:'id',v:'employee_count'},{t:'kw',v:' DESC'},{t:'pu',v:';'}]}],options:['All employees earning > 50000','Departments with count of high-earners ≥ 5, sorted desc','All employees grouped by dept','Departments where at least one earns > 50000'],sel:null},
+  {id:'q12',num:12,type:'code',sector:{name:'Sector 4: DSA',color:'#38BDF8'},text:'What is the output of the following Rust ownership example?',language:'Rust',langIcon:'🦀',langAccent:'#F97316',code:[{p:[{t:'kw',v:'fn '},{t:'id',v:'main'},{t:'pu',v:'()'}]},{p:[{t:'pu',v:'{'}]},{p:[{t:'sp',v:'    '},{t:'kw',v:'let '},{t:'id',v:'s1'},{t:'op',v:' = '},{t:'ty',v:'String'},{t:'pu',v:'::from('},{t:'str',v:'"hello"'},{t:'pu',v:');'}]},{p:[{t:'sp',v:'    '},{t:'kw',v:'let '},{t:'id',v:'s2'},{t:'op',v:' = &'},{t:'id',v:'s1'},{t:'pu',v:';'}]},{p:[{t:'sp',v:'    '},{t:'bi',v:'println'},{t:'op',v:'!'},{t:'pu',v:'('},{t:'str',v:'"{} {}"'},{t:'pu',v:','},{t:'id',v:'s1'},{t:'pu',v:','},{t:'id',v:'s2'},{t:'pu',v:');'}]},{p:[{t:'pu',v:'}'}]}],options:['Compile error: moved value','hello hello','Error: double borrow','hello &hello'],sel:null},
+  {id:'q13',num:13,type:'mcq',sector:{name:'Sector 2: Logic',color:'#8B5CF6'},text:'In a group of 100 students, 60 study Maths, 50 study Science, and 30 study both. How many study neither?',language:null,code:null,options:['20','15','25','10'],sel:null},
+  {id:'q14',num:14,type:'mcq',sector:{name:'Sector 5: Full-Stack',color:'#F43F5E'},text:'Which HTTP status code indicates a successful POST that created a new resource?',language:null,code:null,options:['200 OK','201 Created','204 No Content','301 Moved Permanently'],sel:null},
+  {id:'q15',num:15,type:'code',sector:{name:'Sector 4: DSA',color:'#38BDF8'},text:'Implement a Python function to check if a string is a palindrome.',language:'Python',langIcon:'🐍',langAccent:'#3B82F6',isEditor:true,starterCode:'import sys\n\ndef is_palindrome(s):\n    # Write your solution here\n    pass\n\ndef solve():\n    line = sys.stdin.read().strip()\n    print(is_palindrome(line))\n\nif __name__ == "__main__":\n    solve()',options:null,sel:null},
+];
+
+// Mark first 6 as answered (demo)
+[0,1,2,3,4,5].forEach(i => { if(QUESTIONS[i]) QUESTIONS[i].sel = QUESTIONS[i].sel ?? (QUESTIONS[i].options ? 0 : null); });
+
+let curQ = 6;
+const ACCENTS=['#C084FC','#38BDF8','#4ADE80','#FB923C'];
+const LABELS=['A','B','C','D'];
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function toks(parts){
+  return parts.map(p=>{
+    const v=esc(p.v||'');
+    if(!p.t||p.t==='sp') return '<span>'+v+'</span>';
+    return '<span class="'+p.t+'">'+v+'</span>';
+  }).join('');
+}
+
+function codeBlock(q){
+  if(!q.code) return '';
+  const a=q.langAccent||'#EAA812';
+  const lines=q.code.map((l,i)=>'<div class="line-nums-line">'+( i+1)+'</div>').join('');
+  const clines=q.code.map((l)=>{
+    const inner=l.p&&l.p.length?toks(l.p):'&nbsp;';
+    return '<div class="code-line" onmouseenter="this.style.background=\''+a+'12\';this.style.borderLeftColor=\''+a+'\'" onmouseleave="this.style.background=\'\';this.style.borderLeftColor=\'transparent\'">'+inner+'</div>';
+  }).join('');
+  return '<div class="code-block" style="border-color:'+a+'45;box-shadow:0 8px 32px rgba(0,0,0,0.55),0 0 24px '+a+'18">'+
+    '<div class="code-header" style="background:linear-gradient(90deg,'+a+'18,transparent);border-bottom-color:'+a+'30">'+
+      '<div class="code-header-left">'+
+        '<div class="traffic-lights"><span class="tl red"></span><span class="tl yellow"></span><span class="tl green"></span></div>'+
+        '<div class="lang-badge" style="color:'+a+';background:'+a+'18;border-color:'+a+'40;box-shadow:0 0 10px '+a+'25"><span>'+(q.langIcon||'📄')+'</span><span>'+(q.language||'Code')+'</span></div>'+
+        '<span style="font-size:0.68rem;color:#475569;font-family:JetBrains Mono">'+q.code.length+' lines</span>'+
+      '</div>'+
+      '<div class="lock-badge">🔒 Anti-Tamper Locked</div>'+
+    '</div>'+
+    '<div class="code-body">'+
+      '<div class="line-nums">'+q.code.map((_,i)=>'<div>'+( i+1)+'</div>').join('')+'</div>'+
+      '<div class="code-lines">'+clines+'</div>'+
+    '</div>'+
+    '<div class="legend">'+
+      [['#C084FC','Keyword'],['#38BDF8','Built-in'],['#4ADE80','String'],['#FB923C','Number'],['#F1FA8C','Operator'],['#34D399','Type'],['#64748B','Comment']].map(([c,l])=>
+        '<span class="legend-item"><span class="legend-dot" style="background:'+c+';box-shadow:0 0 5px '+c+'80"></span><span class="legend-lbl">'+l+'</span></span>'
+      ).join('')+
+    '</div></div>';
+}
+
+function buildHL(code,lang){
+  const kwJ=['public','private','static','void','class','import','new','return','if','else','for','while','extends','implements','null','this','String','int','boolean','long','double','float','char','byte','short'];
+  const kwP=['def','return','while','for','in','if','elif','else','break','continue','import','from','as','class','try','except','finally','with','pass','raise','True','False','None','not','and','or'];
+  const buJ=['System','Scanner','println','print','readLine','nextLine','ArrayList','HashMap'];
+  const buP=['print','len','range','min','max','sum','int','str','list','dict','append','input','open','zip','enumerate','map','filter','sorted'];
+  const kwG=['package','import','func','var','const','type','struct','interface','go','defer','select','return','if','else','for','range','switch','case','break','nil','true','false'];
+  return code.split('\n').map(line=>{
+    let h='';
+    const rx=/("(?:[^"\\]|\\.)*")|('(?:[^'\\]|\\.)*')|(//.*|#.*)|(\/\/.*)|(d+)|([a-zA-Z_]w*)|([=><!&|+-*\/%^~]+)|([{}()\[\],;.:?])|(\s+)/g;
+    let m;
+    while((m=rx.exec(line))!==null){
+      const v=m[0];
+      if(/^\/\/|^#/.test(v)) h+='<span class="cm">'+esc(v)+'</span>';
+      else if(/^["']/.test(v)) h+='<span class="str">'+esc(v)+'</span>';
+      else if(/^d+$/.test(v)) h+='<span class="num">'+esc(v)+'</span>';
+      else if(/^[=><!&|+-*\/%^~]+$/.test(v)) h+='<span class="op">'+esc(v)+'</span>';
+      else if(/^[{}()\[\],;.:?]$/.test(v)) h+='<span class="pu">'+esc(v)+'</span>';
+      else if(/^[a-zA-Z_]w*$/.test(v)){
+        const kws=lang==='java'?kwJ:lang==='go'?kwG:kwP;
+        const bis=lang==='java'?buJ:buP;
+        if(kws.includes(v)) h+='<span class="kw">'+esc(v)+'</span>';
+        else if(bis.includes(v)) h+='<span class="bi">'+esc(v)+'</span>';
+        else if(/^[A-Z]/.test(v)) h+='<span class="ty">'+esc(v)+'</span>';
+        else h+='<span class="id">'+esc(v)+'</span>';
+      } else h+=esc(v);
+    }
+    return '<div style="min-height:1em">'+( h||'&nbsp;')+'</div>';
+  }).join('');
+}
+
+function editor(q){
+  const a=q.langAccent||'#3B82F6';
+  const code=(q.starterCode||'').replace(/\\n/g,'\n');
+  const lnCount=code.split('\n').length;
+  const langId=q.language?q.language.toLowerCase():'python';
+  const tabs=[{id:'python',icon:'🐍',label:'Python 3',ac:'#3B82F6'},{id:'javascript',icon:'🟨',label:'JavaScript',ac:'#F59E0B'},{id:'java',icon:'☕',label:'Java',ac:'#EF4444'},{id:'c++',icon:'⚙️',label:'C++',ac:'#8B5CF6'},{id:'c',icon:'🔵',label:'C',ac:'#06B6D4'},{id:'go',icon:'🔷',label:'Go',ac:'#10B981'},{id:'rust',icon:'🦀',label:'Rust',ac:'#F97316'}];
+  return '<div class="editor-wrap" id="ed-'+q.id+'" style="border-color:'+a+'40;box-shadow:0 10px 32px rgba(0,0,0,0.6),0 0 20px '+a+'15">'+
+    '<div class="editor-topbar" style="background:linear-gradient(90deg,'+a+'14,rgba(8,14,28,0.95));border-bottom-color:'+a+'28">'+
+      '<div class="traffic-lights"><span class="tl red"></span><span class="tl yellow"></span><span class="tl green"></span></div>'+
+      '<div class="lang-tabs">'+tabs.map(l=>'<button class="lang-tab'+(l.id===langId?' active':'')+'" style="'+(l.id===langId?'border-color:'+l.ac+'60;background:'+l.ac+'22;color:'+l.ac+';box-shadow:0 0 8px '+l.ac+'25':'')+'" onclick="switchEdLang(this,\''+l.ac+'\',\''+q.id+'\',\''+l.id+'\'"><span>'+l.icon+'</span><span>'+l.label+'</span></button>').join('')+'</div>'+
+      '<span style="font-size:0.68rem;color:#64748B;font-family:JetBrains Mono" id="ln-'+q.id+'">Ln 1</span>'+
+      '<span style="font-size:0.65rem;color:#4B5563;margin-left:8px">Ctrl+↵</span>'+
+    '</div>'+
+    '<div class="editor-body">'+
+      '<div class="ed-gutter" id="gutter-'+q.id+'" style="border-right-color:'+a+'15">'+Array.from({length:lnCount},(_,i)=>'<div class="ed-ln'+(i===0?' cur':'')+'" style="'+(i===0?'color:'+a+';':'')+'" >'+( i+1)+'</div>').join('')+'</div>'+
+      '<div class="ed-area">'+
+        '<pre class="ed-pre" id="hl-'+q.id+'">'+buildHL(code,langId)+'</pre>'+
+        '<textarea class="ed-ta" id="ta-'+q.id+'" spellcheck="false" style="caret-color:'+a+'" oninput="onEdInput(this,\''+q.id+'\',\''+langId+'\')" onclick="onEdCursor(this,\''+q.id+'\')" onkeyup="onEdCursor(this,\''+q.id+'\')">'+esc(code)+'</textarea>'+
+      '</div>'+
+    '</div>'+
+    '<div class="run-bar" id="runbar-'+q.id+'" style="border-top-color:'+a+'20;background:linear-gradient(90deg,'+a+'10,rgba(0,0,0,0.3))">'+
+      '<button class="run-btn" style="background:linear-gradient(135deg,'+a+'cc,'+a+'88);border-color:'+a+'60;box-shadow:0 0 12px '+a+'40" onclick="runCode(this,\''+q.id+'\')"><span>▶</span><span>Run Code</span></button>'+
+      '<span style="font-size:0.75rem;color:#64748B">3 public · 2 hidden test cases</span>'+
+      '<div style="flex:1"></div>'+
+      '<div id="verdict-'+q.id+'"></div>'+
+    '</div></div>';
+}
+
+function opts(q){
+  if(!q.options) return '';
+  return '<div class="options">'+q.options.map((o,i)=>{
+    const a=ACCENTS[i]; const isSel=q.sel===i;
+    return '<div class="option" style="'+(isSel?'background:linear-gradient(135deg,'+a+'22,rgba(0,28,62,0.7));border-color:'+a+';box-shadow:0 0 22px '+a+'30':'')+'" onclick="selectOpt(\''+q.id+'\','+i+')">'+
+      '<div class="opt-label" style="background:'+(isSel?'linear-gradient(135deg,'+a+','+a+'cc);color:#0B1220;border-color:transparent;box-shadow:0 2px 12px '+a+'55':a+'18+\')\'+ style=\'color:'+a+';border:1.5px solid '+a+'35\'')+'">'+(isSel?'✓':LABELS[i])+'</div>'+
+      '<div style="font-size:1rem;font-weight:'+(isSel?700:500)+';color:'+(isSel?'#fff':'#CBD5E1')+';line-height:1.6;flex:1;transition:color 0.2s;user-select:none">'+esc(o)+'</div>'+
+    '</div>';
+  }).join('')+'</div>';
+}
+
+// simpler opts rendering
+function renderOpts(q){
+  if(!q.options) return '';
+  const rows=q.options.map((o,i)=>{
+    const a=ACCENTS[i]; const sel=q.sel===i;
+    const lblBg=sel?('linear-gradient(135deg,'+a+','+a+'cc)'):a+'18';
+    const lblCol=sel?'#0B1220':a;
+    const lblBorder=sel?'transparent':a+'35';
+    const lblShadow=sel?('0 2px 12px '+a+'55'):'none';
+    return '<div onclick="selectOpt(\''+q.id+'\','+i+')" style="cursor:pointer;display:flex;align-items:flex-start;gap:14px;padding:13px 18px;border-radius:12px;border:1.5px solid '+(sel?a:'rgba(255,255,255,0.1)')+';background:'+(sel?'linear-gradient(135deg,'+a+'22,rgba(0,28,62,0.7))':'rgba(255,255,255,0.03)')+';box-shadow:'+(sel?'0 0 22px '+a+'30':'none')+';margin-bottom:11px;transition:all 0.2s" onmouseenter="this.style.transform=\'translateX(4px)\'" onmouseleave="this.style.transform=\'\'">'+
+      '<div style="width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0;margin-top:1px;background:'+lblBg+';color:'+lblCol+';border:1.5px solid '+lblBorder+';box-shadow:'+lblShadow+';transition:all 0.2s">'+(sel?'✓':LABELS[i])+'</div>'+
+      '<div style="font-size:1rem;font-weight:'+(sel?700:500)+';color:'+(sel?'#fff':'#CBD5E1')+';line-height:1.6;flex:1;user-select:none">'+esc(o)+'</div>'+
+    '</div>';
+  });
+  return '<div style="margin-top:16px">'+rows.join('')+'</div>';
+}
+
+function renderQ(idx){
+  const q=QUESTIONS[idx];
+  if(!q) return;
+  const tb=q.type==='code'?'<span class="badge badge-code">💻 CODE</span>':q.type==='aptitude'?'<span class="badge badge-apt">🧠 APTITUDE</span>':'<span class="badge badge-mcq">📝 MCQ</span>';
+  const sb=q.sector?'<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:0.72rem;font-weight:700;background:'+q.sector.color+'15;border:1px solid '+q.sector.color+'40;color:'+q.sector.color+';box-shadow:0 0 12px '+q.sector.color+'22"><span>🪐</span><span>'+q.sector.name+'</span></span>':'';
+  const clearBtn=q.sel!=null&&q.options?'<button onclick="clearOpt(\''+q.id+'\')" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);color:#F87171;font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:4px">✕ Clear</button>':'';
+  const isLast=idx===QUESTIONS.length-1;
+  document.getElementById('main-area').innerHTML=
+    '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px">'+sb+'<div style="font-size:0.78rem;color:#475569;font-weight:600">Single Choice</div></div>'+
+    '<div class="q-card">'+
+      '<div class="q-header"><div class="q-meta"><span class="q-num">Question '+q.num+'</span>'+sb+tb+'</div><div style="display:flex;align-items:center;gap:10px">'+clearBtn+'</div></div>'+
+      '<div class="q-text">'+esc(q.text)+'</div>'+
+      (q.code&&!q.isEditor?codeBlock(q):'')+
+      (q.isEditor?editor(q):'')+
+      renderOpts(q)+
+    '</div>'+
+    '<div class="nav-btns">'+
+      '<button class="btn-prev" onclick="goQ(-1)" '+(idx===0?'style="opacity:0.4;cursor:not-allowed" disabled':'')+'>← Previous</button>'+
+      '<div style="font-size:0.82rem;color:#475569;font-weight:600">'+(idx+1)+' / '+QUESTIONS.length+'</div>'+
+      (isLast?'<button class="btn-submit" onclick="document.getElementById(\'submit-modal\').style.display=\'flex\'">✅ Submit Exam</button>':'<button class="btn-next" onclick="goQ(1)">Next →</button>')+
+    '</div>';
+  buildGrid();
+}
+
+function buildGrid(){
+  const g=document.getElementById('q-grid');
+  if(!g) return;
+  g.innerHTML=QUESTIONS.map((q,i)=>{
+    const cls=['q-btn'];
+    if(q.sel!=null) cls.push('answered');
+    if(i===curQ) cls.push('active');
+    if(q.type==='code') cls.push('code-type');
+    return '<div class="'+cls.join(' ')+'" onclick="switchQ('+i+')">'+q.num+'</div>';
+  }).join('');
+  // update stats
+  const ans=QUESTIONS.filter(q=>q.sel!=null).length;
+  const skip=QUESTIONS.length-ans;
+  const pi=document.getElementById('prog-inner'); if(pi) pi.textContent=ans+'/'+QUESTIONS.length;
+  const pt=document.getElementById('prog-txt'); if(pt) pt.textContent=ans+' Answered';
+  const ps=document.getElementById('prog-sub'); if(ps) ps.textContent=skip+' Remaining';
+  const sa=document.getElementById('stat-ans'); if(sa) sa.textContent=ans;
+  const ss=document.getElementById('stat-skip'); if(ss) ss.textContent=skip;
+  const ac=document.getElementById('ans-count'); if(ac) ac.textContent=ans+' of '+QUESTIONS.length;
+}
+
+function goQ(d){ switchQ(Math.max(0,Math.min(QUESTIONS.length-1,curQ+d))); }
+function switchQ(i){ curQ=i; renderQ(i); }
+function selectOpt(qid,i){
+  const q=QUESTIONS.find(q=>q.id===qid); if(!q) return;
+  q.sel=i; renderQ(curQ);
+}
+function clearOpt(qid){
+  const q=QUESTIONS.find(q=>q.id===qid); if(!q) return;
+  q.sel=null; renderQ(curQ);
+}
+function onEdInput(ta,qid,lang){
+  const hl=document.getElementById('hl-'+qid); if(hl) hl.innerHTML=buildHL(ta.value,lang);
+  // sync line count
+  const g=document.getElementById('gutter-'+qid);
+  if(g){ const n=ta.value.split('\n').length; g.innerHTML=Array.from({length:n},(_,i)=>'<div class="ed-ln">'+( i+1)+'</div>').join(''); }
+}
+function onEdCursor(ta,qid){
+  const ln=ta.value.slice(0,ta.selectionStart).split('\n').length;
+  const el=document.getElementById('ln-'+qid); if(el) el.textContent='Ln '+ln;
+}
+function switchEdLang(btn,acc,qid,langId){
+  const wrap=document.getElementById('ed-'+qid); if(!wrap) return;
+  wrap.querySelectorAll('.lang-tab').forEach(b=>{ b.style.borderColor='transparent';b.style.background='transparent';b.style.color='#4B5563';b.style.boxShadow='none'; });
+  btn.style.borderColor=acc+'60'; btn.style.background=acc+'22'; btn.style.color=acc; btn.style.boxShadow='0 0 8px '+acc+'25';
+  wrap.style.borderColor=acc+'40'; wrap.style.boxShadow='0 10px 32px rgba(0,0,0,0.6),0 0 20px '+acc+'15';
+  const tbar=wrap.querySelector('.editor-topbar'); if(tbar){ tbar.style.background='linear-gradient(90deg,'+acc+'14,rgba(8,14,28,0.95))'; tbar.style.borderBottomColor=acc+'28'; }
+  const gutter=document.getElementById('gutter-'+qid); if(gutter) gutter.style.borderRightColor=acc+'15';
+  const ta=document.getElementById('ta-'+qid); if(ta){ ta.style.caretColor=acc; const hl=document.getElementById('hl-'+qid); if(hl) hl.innerHTML=buildHL(ta.value,langId); }
+  const rb=document.getElementById('runbar-'+qid); if(rb){ rb.style.borderTopColor=acc+'20'; rb.style.background='linear-gradient(90deg,'+acc+'10,rgba(0,0,0,0.3))'; }
+  const runBtn=rb?rb.querySelector('.run-btn'):null;
+  if(runBtn){ runBtn.style.background='linear-gradient(135deg,'+acc+'cc,'+acc+'88)'; runBtn.style.borderColor=acc+'60'; runBtn.style.boxShadow='0 0 12px '+acc+'40'; }
+}
+function runCode(btn,qid){
+  btn.innerHTML='<span style="display:inline-block;width:12px;height:12px;border:1.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite"></span> Running...';
+  setTimeout(()=>{
+    btn.innerHTML='<span>▶</span><span>Run Code</span>';
+    const v=document.getElementById('verdict-'+qid);
+    if(v) v.innerHTML='<div class="verdict-pill">✅ Accepted · 3/3 Passed</div>';
+  },1800);
+}
+// Timer
+let t=28*60+47;
+setInterval(()=>{ t=Math.max(0,t-1); const m=String(Math.floor(t/60)).padStart(2,'0'); const s=String(t%60).padStart(2,'0'); const el=document.getElementById('timer-val'); if(el) el.textContent=m+':'+s; },1000);
+
+renderQ(curQ);
+buildGrid();
+</script>
+</body>
+</html>

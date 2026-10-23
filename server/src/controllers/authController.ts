@@ -813,11 +813,11 @@ export async function getStudentDashboard(req: Request, res: Response): Promise<
     upcoming_exams: upcomingExams,
     past_results: pastResults,
     rank: {
-      college_rank: Math.min(globalRank, 15),
-      overall_rank: globalRank,
+      college_rank: pastResults.length > 0 ? Math.min(globalRank, 15) : null,
+      overall_rank: pastResults.length > 0 ? globalRank : null,
       total_students: totalStudents,
-      average_score: avgScore,
-      percentile,
+      average_score: pastResults.length > 0 ? avgScore : null,
+      percentile: pastResults.length > 0 ? percentile : null,
       exams_completed: pastResults.length,
     },
   });

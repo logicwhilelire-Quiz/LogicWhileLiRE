@@ -56,17 +56,15 @@ export default function SiteHeader() {
   const navLinks = isLoggedIn
     ? [
         { label: 'Home', to: '/' },
-        { label: 'Student Dashboard', to: '/student/dashboard' },
-        { label: 'Faculty Login', to: '/faculty/login' },
-        { label: 'Inspector Login', to: '/inspector' },
-        { label: 'Admin Login', to: '/admin' },
+        { label: 'Student Gate', to: '/student/dashboard' },
+        { label: 'Inspector', to: '/inspector' },
+        { label: 'Admin', to: '/admin' },
       ]
     : [
         { label: 'Home', to: '/' },
-        { label: 'Student Login', to: '/login' },
-        { label: 'Faculty Login', to: '/faculty/login' },
-        { label: 'Inspector Login', to: '/inspector' },
-        { label: 'Admin Login', to: '/admin' },
+        { label: 'Student / Candidate Gate', to: '/login' },
+        { label: 'Inspector', to: '/inspector' },
+        { label: 'Admin', to: '/admin' },
       ];
 
   return (

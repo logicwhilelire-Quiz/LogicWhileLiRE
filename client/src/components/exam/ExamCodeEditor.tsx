@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from 'react'
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
 import { API_BASE_URL } from '../../lib/config'
@@ -212,6 +212,20 @@ export default function ExamCodeEditor({
     }
   }, [value, selectedLang, testCases, questionId, running, onRunComplete])
 
+  // ─── Language accent colour ─────────────────────────────────────────────────
+  const accentColor = useMemo(() => {
+    const accents: Record<string, string> = {
+      python: '#3B82F6',
+      javascript: '#F59E0B',
+      'c++': '#8B5CF6',
+      java: '#EF4444',
+      c: '#06B6D4',
+      go: '#10B981',
+      rust: '#F97316',
+    }
+    return accents[selectedLang] || '#2B7FFF'
+  }, [selectedLang])
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && showRunButton) {
@@ -234,12 +248,12 @@ export default function ExamCodeEditor({
     <div
       style={{
         borderRadius: 'var(--radius-lg, 12px)',
-        border: '1px solid rgba(43, 127, 255, 0.25)',
-        background: '#0B1220',
+        border: `1px solid ${accentColor}40`,
+        background: '#080E1C',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+        boxShadow: `0 10px 32px rgba(0,0,0,0.6), 0 0 20px ${accentColor}15`,
         height: outputVisible && runResult ? 'auto' : height,
       }}
     >
@@ -249,14 +263,14 @@ export default function ExamCodeEditor({
           display: 'flex',
           alignItems: 'center',
           padding: '8px 14px',
-          background: 'rgba(15, 23, 42, 0.8)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          background: `linear-gradient(90deg, ${accentColor}14, rgba(8,14,28,0.95))`,
+          borderBottom: `1px solid ${accentColor}28`,
         }}
       >
         <div style={{ display: 'flex', gap: 6 }}>
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#EF4444' }} />
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#F59E0B' }} />
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10B981' }} />
+          <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#EF4444', boxShadow: '0 0 6px #EF444488' }} />
+          <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#F59E0B', boxShadow: '0 0 6px #F59E0B88' }} />
+          <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B98188' }} />
         </div>
 
         <div style={{ flex: 1, display: 'flex', gap: 4, marginLeft: 16 }}>
@@ -269,9 +283,9 @@ export default function ExamCodeEditor({
                 borderRadius: 4,
                 fontSize: '0.72rem',
                 fontWeight: 600,
-                border: selectedLang === l.id ? '1px solid rgba(43, 127, 255, 0.5)' : '1px solid transparent',
-                background: selectedLang === l.id ? 'rgba(43, 127, 255, 0.2)' : 'transparent',
-                color: selectedLang === l.id ? '#60A5FA' : 'var(--color-text-faint, #64748B)',
+                border: selectedLang === l.id ? `1px solid ${accentColor}50` : '1px solid transparent',
+                background: selectedLang === l.id ? `${accentColor}22` : 'transparent',
+                color: selectedLang === l.id ? accentColor : '#4B5563',
                 cursor: 'pointer',
               }}
             >
@@ -306,7 +320,7 @@ export default function ExamCodeEditor({
             width: 48,
             flexShrink: 0,
             background: 'rgba(0,0,0,0.3)',
-            borderRight: '1px solid rgba(255,255,255,0.06)',
+            borderRight: `1px solid ${accentColor}15`,
             overflowY: 'hidden',
             paddingTop: 12,
             userSelect: 'none',
@@ -322,7 +336,7 @@ export default function ExamCodeEditor({
                 textAlign: 'right',
                 fontSize: '0.72rem',
                 fontFamily: 'var(--font-mono, monospace)',
-                color: n === cursorLine ? '#60A5FA' : 'rgba(255,255,255,0.18)',
+                color: n === cursorLine ? accentColor : 'rgba(255,255,255,0.14)',
               }}
             >
               {n}
@@ -374,7 +388,7 @@ export default function ExamCodeEditor({
               fontSize: '0.88rem',
               lineHeight: '21px',
               color: '#E2E8F0',
-              caretColor: '#2B7FFF',
+              caretColor: accentColor,
               tabSize: 2,
             }}
           />
@@ -408,12 +422,12 @@ export default function ExamCodeEditor({
       {showRunButton && (
         <div
           style={{
-            borderTop: '1px solid rgba(255,255,255,0.06)',
+            borderTop: `1px solid ${accentColor}20`,
             padding: '8px 12px',
             display: 'flex',
             gap: 10,
             alignItems: 'center',
-            background: 'rgba(0,0,0,0.25)',
+            background: `linear-gradient(90deg, ${accentColor}10, rgba(0,0,0,0.3))`,
           }}
         >
           <button

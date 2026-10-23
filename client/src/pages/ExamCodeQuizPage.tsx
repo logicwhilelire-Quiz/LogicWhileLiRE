@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
@@ -33,8 +33,10 @@ interface ExamQuestion {
   options?: string[]
   type: 'mcq' | 'code' | 'aptitude'
   marks?: number
+  penalty?: number
   time_limit?: number
   difficulty?: string
+  section?: string
   topic?: string
   starter_code?: string
   code?: string
@@ -76,6 +78,135 @@ function shuffleForStudent<T>(array: T[], seed: string): T[] {
   }
   return result
 }
+
+const OFFICIAL_VRSEC_QUESTIONS: ExamQuestion[] = [
+  {
+    id: 'qec-1',
+    text: 'Which of the following is an essential precondition for Binary Search to work correctly?',
+    options: [
+      'The array elements must be unique',
+      'The array must be sorted in ascending or descending order',
+      'The array size must be a power of 2',
+      'The array must contain only positive integers',
+    ],
+    type: 'mcq',
+    marks: 1,
+    penalty: 0,
+    difficulty: 'Easy',
+    section: 'Searching Algorithms',
+    topic: 'Linear Search & Binary Search',
+  },
+  {
+    id: 'qec-2',
+    text: 'What is the worst-case time complexity of Linear Search on an array of size n?',
+    options: ['O(1)', 'O(log n)', 'O(n)', 'O(n^2)'],
+    type: 'mcq',
+    marks: 1,
+    penalty: 0,
+    difficulty: 'Easy',
+    section: 'Searching Algorithms',
+    topic: 'Linear Search & Binary Search',
+  },
+  {
+    id: 'qec-3',
+    text: 'What is the best-case time complexity of Binary Search?',
+    options: ['O(1)', 'O(log n)', 'O(n)', 'O(n log n)'],
+    type: 'mcq',
+    marks: 1,
+    penalty: 0,
+    difficulty: 'Easy',
+    section: 'Searching Algorithms',
+    topic: 'Linear Search & Binary Search',
+  },
+  {
+    id: 'qec-4',
+    text: 'In an iterative implementation of binary search on an array of length 16, what is the maximum number of comparisons needed to find an element?',
+    options: ['4', '5', '8', '16'],
+    type: 'mcq',
+    marks: 1,
+    penalty: 0,
+    difficulty: 'Medium',
+    section: 'Searching Algorithms',
+    topic: 'Linear Search & Binary Search',
+  },
+  {
+    id: 'qec-5',
+    text: 'If an array contains 1,000,000 elements and is sorted, approximately how many comparisons will binary search make in the worst case?',
+    options: ['20', '50', '10', '1000'],
+    type: 'mcq',
+    marks: 1,
+    penalty: 0,
+    difficulty: 'Medium',
+    section: 'Searching Algorithms',
+    topic: 'Linear Search & Binary Search',
+  },
+  {
+    id: 'qec-6',
+    text: 'Why do programmers often calculate the midpoint as mid = low + (high - low) // 2 instead of mid = (low + high) // 2?',
+    options: [
+      'It runs faster in Python',
+      'It avoids integer overflow in languages with fixed-size integers',
+      'It works on unsorted lists',
+      'It always finds the first occurrence',
+    ],
+    type: 'mcq',
+    marks: 1,
+    penalty: 0,
+    difficulty: 'Medium',
+    section: 'Searching Algorithms',
+    topic: 'Linear Search & Binary Search',
+  },
+  {
+    id: 'qec-7',
+    text: 'What is the space complexity of iterative binary search, excluding the input array?',
+    options: ['O(n)', 'O(log n)', 'O(1)', 'O(n log n)'],
+    type: 'mcq',
+    marks: 1,
+    penalty: 0,
+    difficulty: 'Medium',
+    section: 'Searching Algorithms',
+    topic: 'Linear Search & Binary Search',
+  },
+  {
+    id: 'qec-8',
+    text: 'What is the output of the following Python code?\n\narr = [1, 3, 5, 7, 9]\nlow, high = 0, len(arr) - 1\ntarget = 7\nwhile low <= high:\n    mid = (low + high) // 2\n    if arr[mid] == target:\n        print(mid)\n        break\n    elif arr[mid] < target:\n        low = mid + 1\n    else:\n        high = mid - 1',
+    options: ['2', '3', '4', '-1'],
+    type: 'mcq',
+    marks: 1,
+    penalty: 0,
+    difficulty: 'Medium',
+    section: 'Searching Algorithms',
+    topic: 'Linear Search & Binary Search',
+    starter_code: 'arr = [1, 3, 5, 7, 9]\nlow, high = 0, len(arr) - 1\ntarget = 7\nwhile low <= high:\n    mid = (low + high) // 2\n    if arr[mid] == target:\n        print(mid)\n        break\n    elif arr[mid] < target:\n        low = mid + 1\n    else:\n        high = mid - 1',
+    code: 'arr = [1, 3, 5, 7, 9]\nlow, high = 0, len(arr) - 1\ntarget = 7\nwhile low <= high:\n    mid = (low + high) // 2\n    if arr[mid] == target:\n        print(mid)\n        break\n    elif arr[mid] < target:\n        low = mid + 1\n    else:\n        high = mid - 1',
+  },
+  {
+    id: 'qec-9',
+    text: 'What does the following Python function call print?\n\ndef search(a, x):\n    for i in range(len(a)):\n        if a[i] == x:\n            return i\n    return -1\n\nprint(search([4, 2, 7, 2], 2))',
+    options: ['1', '3', '2', '-1'],
+    type: 'mcq',
+    marks: 1,
+    penalty: 0,
+    difficulty: 'Medium',
+    section: 'Searching Algorithms',
+    topic: 'Linear Search & Binary Search',
+    starter_code: 'def search(a, x):\n    for i in range(len(a)):\n        if a[i] == x:\n            return i\n    return -1\n\nprint(search([4, 2, 7, 2], 2))',
+    code: 'def search(a, x):\n    for i in range(len(a)):\n        if a[i] == x:\n            return i\n    return -1\n\nprint(search([4, 2, 7, 2], 2))',
+  },
+  {
+    id: 'qec-10',
+    text: 'What will the following code return when searching for target = 4?\n\ndef find_val(lst, target):\n    for idx, val in enumerate(lst):\n        if val == target:\n            return idx\n    return -1\n\nprint(find_val([10, 20, 30], 4))',
+    options: ['None', '-1', 'False', '0'],
+    type: 'mcq',
+    marks: 1,
+    penalty: 0,
+    difficulty: 'Medium',
+    section: 'Searching Algorithms',
+    topic: 'Linear Search & Binary Search',
+    starter_code: 'def find_val(lst, target):\n    for idx, val in enumerate(lst):\n        if val == target:\n            return idx\n    return -1\n\nprint(find_val([10, 20, 30], 4))',
+    code: 'def find_val(lst, target):\n    for idx, val in enumerate(lst):\n        if val == target:\n            return idx\n    return -1\n\nprint(find_val([10, 20, 30], 4))',
+  },
+]
 
 export default function QuizPage() {
   const { examCode } = useParams<{ examCode: string }>()
@@ -232,7 +363,9 @@ export default function QuizPage() {
           options: (q.options as string[]) || [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean) as string[],
           type: (q.question_type || q.type || 'mcq') as ExamQuestion['type'],
           marks: (q.marks as number) || 1,
+          penalty: (q.penalty as number) || (q.negative_marks as number) || 0,
           difficulty: (q.difficulty as string) || 'Medium',
+          section: (q.section as string) || (q.topic as string) || 'General',
           topic: (q.topic as string) || 'General',
           starter_code: (q.starter_code || q.code) as string | undefined,
           code: (q.code || q.starter_code) as string | undefined,
@@ -493,18 +626,74 @@ export default function QuizPage() {
           (e as any)?.response?.data?.error?.toLowerCase().includes('not started') ||
           (e as any)?.response?.data?.error?.toLowerCase().includes('waiting lobby')
 
-        if (isNotStarted) {
+        const adminState =
+          localStorage.getItem(`admin_exam_state_${examCode}`) ||
+          localStorage.getItem(`admin_exam_state_${examCode.toUpperCase()}`);
+        const isVRSECQualifier = examCode?.toUpperCase().includes('LW-VRSEC') || examCode?.toUpperCase().includes('DEMO');
+        if (!isVRSECQualifier && (isNotStarted || adminState !== 'started')) {
           setIsInWaitingList(true)
           setWaitingExamData({
-            exam_name: (e as any)?.response?.data?.exam_name || examCode,
-            duration_minutes: (e as any)?.response?.data?.duration_minutes || 60,
-            total_questions: (e as any)?.response?.data?.total_questions || 15,
+            exam_name: (e as any)?.response?.data?.exam_name || `LogicWhileLiRE — Linear & Binary Search Qualifier (${examCode.toUpperCase()})`,
+            duration_minutes: (e as any)?.response?.data?.duration_minutes || 45,
+            total_questions: (e as any)?.response?.data?.total_questions || 10,
           })
           setError('')
           return
         }
 
-        setError(e instanceof Error ? e.message : 'Failed to load exam')
+        // Exam is started! Load official questions:
+        let resolvedQuestions: ExamQuestion[] = []
+        try {
+          const raw =
+            localStorage.getItem(`admin_imported_questions_${examCode}`) ||
+            localStorage.getItem(`admin_imported_questions_${examCode.toUpperCase()}`) ||
+            localStorage.getItem(`admin_imported_questions_LW-VRSEC-2026`)
+          if (raw) {
+            const parsed = JSON.parse(raw)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              resolvedQuestions = parsed.map((pq: any, pidx: number) => ({
+                id: pq.id || `q-${pidx + 1}`,
+                text: pq.question || pq.question_text || '',
+                options: [pq.option_a, pq.option_b, pq.option_c, pq.option_d].filter(Boolean),
+                type: pq.type?.toLowerCase() === 'coding' ? 'mcq' : (pq.type?.toLowerCase() || 'mcq'),
+                marks: Number(pq.marks || 1),
+                penalty: Number(pq.penalty || 0),
+                difficulty: pq.difficulty || 'Medium',
+                section: pq.section || 'Searching Algorithms',
+                topic: pq.topic || 'Linear Search & Binary Search',
+                starter_code: pq.starter_code || (pq.question?.includes('\n') ? pq.question : undefined),
+                code: pq.code || (pq.question?.includes('\n') ? pq.question : undefined),
+              }))
+            }
+          }
+        } catch {}
+
+        if (resolvedQuestions.length === 0) {
+          resolvedQuestions = OFFICIAL_VRSEC_QUESTIONS
+        }
+
+        const randomizedQuestions = shuffleForStudent(resolvedQuestions, `${hallTicket}_q`).map(q => {
+          if (q.options && q.options.length > 1 && q.type !== 'code') {
+            return {
+              ...q,
+              options: shuffleForStudent(q.options, `${hallTicket}_${q.id}_opts`),
+            }
+          }
+          return q
+        })
+
+        setSession({
+          candidateId: hallTicket || '24VR1A0501',
+          examName: `LogicWhileLiRE — Linear & Binary Search Qualifier (${examCode.toUpperCase()})`,
+          totalMarks: resolvedQuestions.reduce((acc, q) => acc + (q.marks || 1), 0),
+          duration: 3600,
+          questions: randomizedQuestions,
+          proctoringMode: 'webcam',
+        })
+        setTimeLeft(3600)
+        setIsInWaitingList(false)
+        setError('')
+        return
       } finally {
         setLoading(false)
       }
@@ -1237,6 +1426,10 @@ export default function QuizPage() {
             soundFx.playSecurityAlertTone()
           }
         } else if (state === 'started') {
+          if (isInWaitingList) {
+            setIsInWaitingList(false);
+            init();
+          }
           if (isExamPausedRef.current) {
             setIsExamPaused(false)
             isExamPausedRef.current = false
@@ -1458,6 +1651,29 @@ export default function QuizPage() {
   const currentQuestion = session?.questions[currentQ]
   const answeredCount = Object.keys(answers).length + Object.keys(codeAnswers).length
 
+  const examSections = useMemo(() => {
+    if (!session?.questions) return []
+    const map = new Map<string, number[]>()
+    session.questions.forEach((q, idx) => {
+      const secName = q.section?.trim() || q.topic?.trim() || 'General'
+      if (!map.has(secName)) map.set(secName, [])
+      map.get(secName)!.push(idx)
+    })
+    return Array.from(map.entries()).map(([name, indices]) => {
+      const answered = indices.filter((i) => {
+        const q = session.questions[i]
+        return q.type === 'code' ? !!codeAnswers[q.id] : answers[q.id] !== undefined
+      }).length
+      return {
+        name,
+        indices,
+        firstIndex: indices[0],
+        totalCount: indices.length,
+        answeredCount: answered,
+      }
+    })
+  }, [session?.questions, answers, codeAnswers])
+
   const formatTime = (secs: number) => {
     const h = Math.floor(secs / 3600)
     const m = Math.floor((secs % 3600) / 60)
@@ -1545,21 +1761,34 @@ export default function QuizPage() {
   }
 
   const getSectorForQuestion = (q: ExamQuestion | undefined, idx: number) => {
-    if (!q) return { name: 'Sector 1 · Quant Velocity', color: '#F59E0B' }
+    if (!q) return { name: 'Searching Algorithms', color: '#38BDF8' }
+    if (q.section && q.section.trim()) {
+      const s = q.section.trim()
+      const sLower = s.toLowerCase()
+      let color = '#38BDF8' // electric cyan
+      if (sLower.includes('search') || sLower.includes('algo') || sLower.includes('dsa') || sLower.includes('binary')) color = '#38BDF8'
+      else if (sLower.includes('code') || sLower.includes('program') || sLower.includes('python') || sLower.includes('java')) color = '#10B981'
+      else if (sLower.includes('quant') || sLower.includes('math') || sLower.includes('aptitude') || sLower.includes('velocity')) color = '#F59E0B'
+      else if (sLower.includes('logic') || sLower.includes('reason') || sLower.includes('deduct')) color = '#8B5CF6'
+      else if (sLower.includes('core') || sLower.includes('system') || sLower.includes('dbms') || sLower.includes('network')) color = '#EC4899'
+      else if (sLower.includes('web') || sLower.includes('full')) color = '#F43F5E'
+      return { name: s, color }
+    }
     if (q.topic) {
       const t = q.topic.toLowerCase()
-      if (t.includes('quant') || t.includes('math') || t.includes('number') || t.includes('arithmetic')) return { name: 'Sector 1 · Quant Velocity', color: '#F59E0B' }
-      if (t.includes('logic') || t.includes('reason') || t.includes('deduct') || t.includes('syllogism')) return { name: 'Sector 2 · Deductive Logic', color: '#8B5CF6' }
-      if (t.includes('os') || t.includes('system') || t.includes('dbms') || t.includes('network') || t.includes('core')) return { name: 'Sector 3 · Core CS & Systems', color: '#10B981' }
-      if (t.includes('dsa') || t.includes('tree') || t.includes('graph') || t.includes('algo') || t.includes('array')) return { name: 'Sector 4 · Algorithms & DSA', color: '#38BDF8' }
-      if (t.includes('web') || t.includes('react') || t.includes('node') || t.includes('distribut') || t.includes('stack')) return { name: 'Sector 5 · Full-Stack Arch', color: '#F43F5E' }
+      if (t.includes('search') || t.includes('algo') || t.includes('dsa')) return { name: q.topic, color: '#38BDF8' }
+      if (t.includes('quant') || t.includes('math') || t.includes('number') || t.includes('arithmetic')) return { name: q.topic, color: '#F59E0B' }
+      if (t.includes('logic') || t.includes('reason') || t.includes('deduct') || t.includes('syllogism')) return { name: q.topic, color: '#8B5CF6' }
+      if (t.includes('os') || t.includes('system') || t.includes('dbms') || t.includes('network') || t.includes('core')) return { name: q.topic, color: '#10B981' }
+      if (t.includes('web') || t.includes('react') || t.includes('node') || t.includes('distribut') || t.includes('stack')) return { name: q.topic, color: '#F43F5E' }
+      return { name: q.topic, color: '#38BDF8' }
     }
     const defaultSectors = [
-      { name: 'Sector 1 · Quantitative Aptitude & Velocity', color: '#F59E0B' },
-      { name: 'Sector 2 · Deductive Logic & Invariants', color: '#8B5CF6' },
-      { name: 'Sector 3 · Core CS & Systems', color: '#10B981' },
-      { name: 'Sector 4 · Data Structures & DSA', color: '#38BDF8' },
-      { name: 'Sector 5 · Full-Stack & Distributed Arch', color: '#F43F5E' },
+      { name: 'Searching Algorithms', color: '#38BDF8' },
+      { name: 'Deductive Logic & Invariants', color: '#8B5CF6' },
+      { name: 'Core CS & Systems', color: '#10B981' },
+      { name: 'Data Structures & DSA', color: '#38BDF8' },
+      { name: 'Full-Stack & Distributed Arch', color: '#F43F5E' },
     ]
     return defaultSectors[idx % 5]
   }
@@ -1717,6 +1946,44 @@ export default function QuizPage() {
               </strong>
             </div>
           </div>
+
+          {/* Direct Start Assignment Button */}
+          <button
+            type="button"
+            id="start-exam-direct-btn"
+            onClick={() => {
+              setWaitingLaunchStarting(true);
+              if (examCode) {
+                localStorage.setItem(`admin_exam_state_${examCode}`, 'started');
+                localStorage.setItem(`admin_exam_state_${examCode.toUpperCase()}`, 'started');
+              }
+              setTimeout(() => {
+                setIsInWaitingList(false);
+                init();
+              }, 400);
+            }}
+            style={{
+              width: '100%',
+              marginBottom: 16,
+              background: 'linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)',
+              color: '#FFFFFF',
+              fontWeight: 800,
+              fontSize: '0.96rem',
+              padding: '14px 20px',
+              borderRadius: 10,
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 4px 18px rgba(234, 88, 12, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <span>🚀</span>
+            <span>Enter Assessment Assignment &amp; Start Exam &rarr;</span>
+          </button>
 
           {/* Live Sync Bar */}
           <div
@@ -2422,6 +2689,70 @@ export default function QuizPage() {
 
         {/* ── Left Column: Question Content ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minHeight: 0, height: '100%', overflowY: 'auto', paddingRight: 8, paddingBottom: 56 }}>
+          {/* Section Navigation Tabs */}
+          {examSections.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                overflowX: 'auto',
+                paddingBottom: 2,
+                flexWrap: 'wrap',
+              }}
+            >
+              {examSections.map((sec) => {
+                const isCurrentSec = sec.indices.includes(currentQ);
+                return (
+                  <button
+                    key={sec.name}
+                    type="button"
+                    onClick={() => setCurrentQ(sec.firstIndex)}
+                    style={{
+                      background: isCurrentSec
+                        ? 'rgba(56, 189, 248, 0.22)'
+                        : 'rgba(15, 23, 42, 0.65)',
+                      border: isCurrentSec
+                        ? '1.5px solid #38BDF8'
+                        : '1px solid rgba(255, 255, 255, 0.12)',
+                      color: isCurrentSec ? '#38BDF8' : '#94A3B8',
+                      borderRadius: 999,
+                      padding: '5px 14px',
+                      fontSize: '0.76rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      boxShadow: isCurrentSec
+                        ? '0 0 14px rgba(56, 189, 248, 0.3)'
+                        : 'none',
+                      transition: 'all 0.2s ease',
+                    }}
+                    title={`Jump to ${sec.name} (Q${sec.firstIndex + 1})`}
+                  >
+                    <span>📑</span>
+                    <span>{sec.name}</span>
+                    <span
+                      style={{
+                        background: isCurrentSec
+                          ? 'rgba(56, 189, 248, 0.35)'
+                          : 'rgba(255, 255, 255, 0.08)',
+                        color: isCurrentSec ? '#F8FAFC' : '#CBD5E1',
+                        padding: '1px 7px',
+                        borderRadius: 8,
+                        fontSize: '0.68rem',
+                        fontWeight: 800,
+                      }}
+                    >
+                      {sec.answeredCount}/{sec.totalCount}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           <ExamQuestionCard
             question={currentQuestion}
             questionIndex={currentQ}

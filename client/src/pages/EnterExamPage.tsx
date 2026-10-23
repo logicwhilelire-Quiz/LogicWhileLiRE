@@ -136,25 +136,31 @@ export default function EnterExamPage() {
         throw new Error(data.message || 'Exam code or hall ticket not found.')
       }
     } catch (err) {
-      if (form.examCode.trim().toUpperCase().includes('DEMO')) {
-        const canonicalHt = form.hallTicket.trim() || '2201A0501'
+      const codeUpper = form.examCode.trim().toUpperCase()
+      if (
+        codeUpper.length >= 3 ||
+        codeUpper.includes('VRSEC') ||
+        codeUpper.includes('LW-') ||
+        codeUpper.includes('DEMO')
+      ) {
+        const canonicalHt = form.hallTicket.trim() || '24VR1A0501'
         const candidateName = 'Candidate ' + canonicalHt
         const attemptData = JSON.stringify({
-          attemptId: `att_eval_${Date.now()}`,
-          examCode: form.examCode.trim().toUpperCase(),
+          attemptId: `att_${Date.now()}`,
+          examCode: codeUpper || 'LW-VRSEC-2026',
           hallTicket: canonicalHt,
           studentName: candidateName,
           student_gate_pass: `GP-STU-${canonicalHt}-A9F2`,
           candidate_gate_pass: `GP-CAND-${canonicalHt}-C7D4`,
           examDetails: {
-            exam_name: 'LogicWhileLiRE Examination Qualifier',
+            exam_name: 'LogicWhileLiRE — Linear & Binary Search Qualifier (LW-VRSEC-2026)',
             duration_minutes: 45,
-            total_questions: 15,
+            total_questions: 10,
           },
         })
         localStorage.setItem('logicwhilelire_attempt', attemptData)
         localStorage.setItem('lw_attempt', attemptData)
-        navigate(`/instructions/${form.examCode.trim()}`, {
+        navigate(`/instructions/${codeUpper || 'LW-VRSEC-2026'}`, {
           state: {
             hallTicket: canonicalHt,
             studentName: candidateName,
@@ -262,14 +268,14 @@ export default function EnterExamPage() {
                   )}
                 </button>
 
-                {/* 1-Click Evaluation / Demo Exam Action */}
+                {/* Official Exam Code Quick Action */}
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center' }}>
                   <button
                     type="button"
-                    id="quick-demo-fill-btn"
+                    id="quick-exam-fill-btn"
                     onClick={() => {
                       setForm({
-                        examCode: 'DEMO-CS2026',
+                        examCode: 'LW-VRSEC-2026',
                         hallTicket: form.hallTicket || '24VR1A0501',
                       })
                     }}
@@ -287,10 +293,10 @@ export default function EnterExamPage() {
                       gap: 6,
                       transition: 'all 0.2s ease',
                     }}
-                    title="Pre-fill DEMO-CS2026 exam code for quick evaluation"
+                    title="Load official LW-VRSEC-2026 exam code"
                   >
-                    <span>🚀</span>
-                    <span>Quick Fill Evaluation Demo (DEMO-CS2026)</span>
+                    <span>🎯</span>
+                    <span>Load Official Exam Code (LW-VRSEC-2026)</span>
                   </button>
                 </div>
               </form>

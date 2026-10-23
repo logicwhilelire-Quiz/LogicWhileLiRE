@@ -237,7 +237,7 @@ router.patch('/exams/:id/settings', requireRole('super_admin'), auditLog('UPDATE
 
 // ——— Questions & Question Papers CRUD (super_admin only) ———
 router.get('/questions', listQuestions);
-router.post('/questions', requireFacultyPermission('create_questions'), auditLog('CREATE_QUESTION', 'questions'), createQuestion);
+router.post('/questions', requireRole('super_admin'), auditLog('CREATE_QUESTION', 'questions'), createQuestion);
 router.patch('/questions/:id', requireRole('super_admin'), auditLog('UPDATE_QUESTION', 'questions'), updateQuestion);
 router.put('/questions/:id', requireRole('super_admin'), auditLog('UPDATE_QUESTION', 'questions'), updateQuestion);
 router.delete('/questions/:id', requireRole('super_admin'), auditLog('DELETE_QUESTION', 'questions'), deleteQuestion);
@@ -443,7 +443,7 @@ router.post(
   },
   bulkImportStudents
 );
-router.get('/students/export', requireRole('super_admin', 'faculty'), exportBatchStudents);
+router.get('/students/export', requireRole('super_admin'), exportBatchStudents);
 router.post('/students/:id/reset-password', requireRole('super_admin'), auditLog('RESET_STUDENT_PASSWORD', 'students'), resetStudentPassword);
 
 // ——— Bulk Email Verification (super_admin only) ———

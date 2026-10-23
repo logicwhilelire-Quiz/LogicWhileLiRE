@@ -116,11 +116,10 @@ async function runTests() {
   console.log('  ✅ Zero default admin passwords or seeded credentials in seed.sql');
   passed++;
 
-  // Verify partner colleges and sample exam code
-  assert.strictEqual(seedContent.includes('VRSEC'), true, 'Seed script must include partner college VRSEC');
-  assert.strictEqual(seedContent.includes('GR-VRSEC-SAMPLE'), true, 'Seed script must include benchmark sample exam code');
-  assert.strictEqual(seedContent.includes('questions_ec'), true, 'Seed script must include sample questions');
-  console.log('  ✅ Partner colleges and sample benchmark exam code GR-VRSEC-SAMPLE seeded');
+  // Verify clean data: Zero demo colleges or fake exams in seed script
+  assert.strictEqual(seedContent.includes('GR-VRSEC-SAMPLE'), false, 'Seed script must NOT contain sample exam codes');
+  assert.strictEqual(seedContent.includes('INSERT INTO students'), false, 'Seed script must NOT contain sample students');
+  console.log('  ✅ Zero demo colleges, students, or fake exams in seed.sql (Clean Data verified)');
   passed++;
 
   // ─── [C] Boot Fail-Fast & Readiness Probe ──────────────────────────────────
