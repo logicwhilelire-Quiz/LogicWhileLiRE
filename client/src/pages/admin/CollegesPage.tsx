@@ -168,25 +168,28 @@ export default function CollegesPage() {
     setError('');
     try {
       let loadedColleges: College[] = [];
+      let loaded = false;
 
       // Tier 1: Enriched admin breakdown
       try {
         const res = await api('/api/admin/colleges?breakdown=true');
-        if (res.data?.colleges && res.data.colleges.length > 0) {
+        if (res.data && Array.isArray(res.data.colleges)) {
           loadedColleges = res.data.colleges.map(enhanceCollegeRecord);
           if (res.data.overall_summary) setOverallSummary(res.data.overall_summary);
+          loaded = true;
         }
       } catch {
         // Silently continue to Tier 2
       }
 
       // Tier 2: Public breakdown fallback
-      if (loadedColleges.length === 0) {
+      if (!loaded) {
         try {
           const fbRes = await api('/api/colleges?breakdown=true');
-          if (fbRes.data?.colleges && fbRes.data.colleges.length > 0) {
+          if (fbRes.data && Array.isArray(fbRes.data.colleges)) {
             loadedColleges = fbRes.data.colleges.map(enhanceCollegeRecord);
             if (fbRes.data.overall_summary) setOverallSummary(fbRes.data.overall_summary);
+            loaded = true;
           }
         } catch {
           // Silently continue to Tier 3
@@ -194,11 +197,12 @@ export default function CollegesPage() {
       }
 
       // Tier 3: Standard colleges list
-      if (loadedColleges.length === 0) {
+      if (!loaded) {
         try {
           const plainRes = await api('/api/admin/colleges');
-          if (plainRes.data?.colleges && plainRes.data.colleges.length > 0) {
+          if (plainRes.data && Array.isArray(plainRes.data.colleges)) {
             loadedColleges = plainRes.data.colleges.map(enhanceCollegeRecord);
+            loaded = true;
           }
         } catch {
           // Silently continue to Tier 4
@@ -206,41 +210,22 @@ export default function CollegesPage() {
       }
 
       // Tier 4: Public colleges endpoint
-      if (loadedColleges.length === 0) {
+      if (!loaded) {
         try {
           const pubRes = await api('/api/colleges');
-          if (pubRes.data?.colleges && pubRes.data.colleges.length > 0) {
+          if (pubRes.data && Array.isArray(pubRes.data.colleges)) {
             loadedColleges = pubRes.data.colleges.map(enhanceCollegeRecord);
+            loaded = true;
           }
         } catch {
-          // Silently continue to Tier 5
+          // Silently continue
         }
       }
 
-      // Tier 5: Resilient default college baseline (guarantees UI is never empty or displaying failed messages)
-      if (loadedColleges.length === 0 && colleges.length === 0) {
-        loadedColleges = [
-          enhanceCollegeRecord({
-            id: 81,
-            college_name: 'VR Siddhartha Engineering College',
-            college_code: 'VRSEC',
-            city: 'Vijayawada',
-            state: 'Andhra Pradesh',
-            contact_email: 'principal@college.edu',
-            contact_phone: '+91 9999999999',
-            is_active: true,
-            registration_enabled: true,
-            created_at: new Date().toISOString(),
-          })
-        ];
-      }
-
-      if (loadedColleges.length > 0) {
-        setColleges(loadedColleges);
-        if (inspectCollege) {
-          const updated = loadedColleges.find(c => c.id === inspectCollege.id);
-          if (updated) setInspectCollege(updated);
-        }
+      setColleges(loadedColleges);
+      if (inspectCollege) {
+        const updated = loadedColleges.find(c => c.id === inspectCollege.id);
+        setInspectCollege(updated || null);
       }
     } finally {
       setLoading(false);
@@ -299,29 +284,34 @@ export default function CollegesPage() {
   }
 
   async function handleToggle(college: College) {
+    setError('');
     try {
       await api(`/api/admin/colleges/${college.id}`, { method: 'PATCH', data: { is_active: !college.is_active } });
       setColleges(prev => prev.map(c => c.id === college.id ? { ...c, is_active: !c.is_active } : c));
-    } catch {
-      setError('Failed to update status');
+      setSuccess(`College "${college.college_name}" status set to ${!college.is_active ? 'Active' : 'Disabled'}`);
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to update status');
     }
   }
 
   async function handleToggleRegistration(college: College) {
+    setError('');
     try {
       const nextVal = !(college.registration_enabled !== false);
       await api(`/api/admin/colleges/${college.id}`, { method: 'PATCH', data: { registration_enabled: nextVal } });
       setColleges(prev => prev.map(c => c.id === college.id ? { ...c, registration_enabled: nextVal } : c));
       setSuccess(`Student registration ${nextVal ? 'ENABLED' : 'DISABLED'} for ${college.college_name}`);
-    } catch {
-      setError('Failed to update registration status');
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to update registration status');
     }
   }
 
   async function handleDelete(college: College) {
     if (!confirm(`Delete ${college.college_name}? This will also delete all exam codes for this college.`)) return;
+    setError('');
     try {
       await api(`/api/admin/colleges/${college.id}`, { method: 'DELETE' });
+      setSuccess(`College "${college.college_name}" deleted successfully`);
       load();
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Delete failed');
