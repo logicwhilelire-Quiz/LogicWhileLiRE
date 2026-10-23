@@ -265,7 +265,7 @@ export default function StudentControl() {
             contact_number: s.contact_number || s.mobile || '',
             mobile: s.mobile || s.contact_number || '',
             branch: s.branch || s.branch_code || 'CSE',
-            college_name: s.college_name || 'VR Siddhartha Engineering College',
+            college_name: s.college_name || '',
             college_id: s.college_id,
             section: s.section || 'A',
             batch: s.batch || (s.year_of_passing ? `Batch ${s.year_of_passing}` : 'Batch 1'),
@@ -301,7 +301,7 @@ export default function StudentControl() {
     name: '',
     email: '',
     branch: 'CSE',
-    college_name: 'VR Siddhartha Engineering College',
+    college_name: '',
     section: 'CSM-A',
     batch: 'Batch 1',
     passout_year: 2026,
@@ -466,7 +466,7 @@ export default function StudentControl() {
         const cleanEmail = String(rawEmail).trim().toLowerCase();
         const branch = String(row['Branch'] || row['Branch Code'] || row['Department'] || row['Dept'] || 'CSE').trim().toUpperCase();
         const section = String(row['Section'] || row['Sec'] || 'A').trim().toUpperCase();
-        const college = String(row['College'] || row['College Name'] || 'VR Siddhartha Engineering College').trim();
+        const college = String(row['College'] || row['College Name'] || '').trim();
         const yop = parseInt(String(row['Year of Passing'] || row['YOP'] || row['Batch'] || 2028), 10) || 2028;
         const password = String(row['Password'] || `Student#${Math.floor(100000 + Math.random() * 900000)}!`);
 
@@ -1461,7 +1461,7 @@ export default function StudentControl() {
                       )}
                     </td>
                     <td style={{ padding: '14px 16px' }}>
-                      <div style={{ fontWeight: 600, color: '#E2E8F0', fontSize: '0.84rem' }}>{s.college_name || 'VR Siddhartha Eng College'}</div>
+                      <div style={{ fontWeight: 600, color: '#E2E8F0', fontSize: '0.84rem' }}>{s.college_name || '—'}</div>
                       <div style={{ fontSize: '0.76rem', color: 'var(--color-text-faint)' }}>
                         Branch: <strong>{s.branch}</strong> &bull; Sec: <strong>{s.section || 'A'}</strong> &bull; Group: <strong>{s.batch || 'Batch 1'}</strong>
                       </div>
@@ -1844,7 +1844,7 @@ export default function StudentControl() {
                           </option>
                         ))
                       ) : (
-                        <option value="VR Siddhartha Engineering College">VR Siddhartha Engineering College</option>
+                        <option value="">No Colleges Configured</option>
                       )}
                     </select>
                   </div>

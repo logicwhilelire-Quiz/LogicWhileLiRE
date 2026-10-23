@@ -703,7 +703,7 @@ export default function PracticeArenaPage() {
           section: 'A',
           section_id: 'sec-cse-a',
           college_id: 1,
-          college_name: 'VR Siddhartha Engineering College',
+          college_name: att.collegeName || '',
         };
         localStorage.setItem('student_user', JSON.stringify(synthUser));
         if (!token) localStorage.setItem('student_token', `token-roster-${att.hallTicket || '24VR1A0501'}`);

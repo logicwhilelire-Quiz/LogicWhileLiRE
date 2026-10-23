@@ -10,6 +10,8 @@ import {
   type StaffMember,
 } from '../../lib/api';
 import AdminSidebar from '../../components/layout/AdminSidebar';
+import axios from 'axios';
+import { API_BASE_URL } from '../../lib/config';
 import AnimatedPage from '../../components/AnimatedPage';
 import AnimatedCounter from '../../components/AnimatedCounter';
 
@@ -63,6 +65,7 @@ export default function StaffManagementPage() {
   const [activePermissions, setActivePermissions] = useState<string[]>([]);
   const [savingPerms, setSavingPerms] = useState(false);
 
+  const [colleges, setColleges] = useState<{ id: number; college_name: string; college_code: string }[]>([]);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -90,6 +93,7 @@ export default function StaffManagementPage() {
       return;
     }
     fetchStaff();
+    axios.get(`${API_BASE_URL}/api/colleges`).then(r => { if (r.data?.colleges) setColleges(r.data.colleges); }).catch(() => {});
   }, [isSuperAdmin]);
 
   async function fetchStaff() {
@@ -520,8 +524,15 @@ export default function StaffManagementPage() {
                       value={form.college_id}
                       onChange={(e) => setForm({ ...form, college_id: Number(e.target.value) })}
                     >
-                      <option value={1}>VR Siddhartha Engineering College (#1)</option>
-                      <option value={2}>KL University (#2)</option>
+                      {colleges.length > 0 ? (
+                        colleges.map(c => (
+                          <option key={c.id} value={c.id}>
+                            {c.college_name} ({c.college_code})
+                          </option>
+                        ))
+                      ) : (
+                        <option value={0}>No colleges configured yet</option>
+                      )}
                     </select>
                   </div>
                 )}

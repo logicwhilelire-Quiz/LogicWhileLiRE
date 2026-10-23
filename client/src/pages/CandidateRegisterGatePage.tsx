@@ -305,7 +305,7 @@ export default function CandidateRegisterGatePage() {
                 email: payload.email,
                 branch: payload.branch_code,
                 branch_code: payload.branch_code,
-                college_name: payload.college_name || 'VR Siddhartha Engineering College',
+                college_name: payload.college_name || '',
                 college_id: payload.college_id,
                 section: payload.section,
                 batch: `Batch ${payload.year_of_passing}`,
