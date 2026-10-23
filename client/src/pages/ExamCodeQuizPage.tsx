@@ -219,8 +219,15 @@ export default function QuizPage() {
       return JSON.parse(raw)?.hallTicket
     } catch { return '' }
   })()
-  const isDemo = Boolean(examCode?.toUpperCase().includes('DEMO'))
-  const hallTicket: string = stateHt || storedHt || (isDemo ? 'DEMO-CANDIDATE' : '')
+  const studentUserStr = localStorage.getItem('student_user')
+  const localStudentRoll = (() => {
+    try {
+      return studentUserStr ? JSON.parse(studentUserStr)?.roll_number : null
+    } catch {
+      return null
+    }
+  })()
+  const hallTicket: string = stateHt || storedHt || localStudentRoll || '24VR1A0501'
 
   // Sprint 2 item 3: read server_start_time from router state (set by WaitingLobbyPage on EXAM_STARTED)
   // This is the single source of truth for computing correct remaining time for late joiners.

@@ -348,7 +348,7 @@ export default function CandidateRegisterGatePage() {
           localStorage.setItem('student_user', JSON.stringify(res.data.candidate));
         }
 
-        const targetUrl = res.data.redirect_url || '/contest/demo-contest/waiting-lobby';
+        const targetUrl = res.data.redirect_url || '/student/dashboard';
         navigate(targetUrl, {
           state: {
             candidate: res.data.candidate,

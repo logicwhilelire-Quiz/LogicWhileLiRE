@@ -132,10 +132,10 @@ function AnimatedRoutes() {
         <Route path="/leaderboard-ec/:examCode" element={<LeaderboardECPage />} />
         <Route path="/leaderboard/:examCode" element={<LeaderboardECPage />} />
 
-        {/* ── EXAM LIVE DEMO & SHOWCASE ── */}
-        <Route path="/demo" element={<ExamDemoPage />} />
-        <Route path="/exam-demo" element={<ExamDemoPage />} />
-        <Route path="/demo/exam" element={<ExamDemoPage />} />
+        {/* ── LIVE EXAMINATION STATION & SECTORS ── */}
+        <Route path="/demo" element={<Navigate to="/enter-exam" replace />} />
+        <Route path="/exam-demo" element={<Navigate to="/enter-exam" replace />} />
+        <Route path="/demo/exam" element={<Navigate to="/enter-exam" replace />} />
 
         {/* ── RETIRED CERTIFICATE VERIFICATION (C4 Spec) ── */}
         <Route path="/verify/:token" element={<VerifyCertificatePage />} />
@@ -165,9 +165,9 @@ function AnimatedRoutes() {
         <Route path="/contest/:contestId/waiting-lobby" element={<WaitingLobbyPage />} />
         <Route path="/waiting-lobby/:contestId" element={<WaitingLobbyPage />} />
         <Route path="/lobby/:contestId" element={<WaitingLobbyPage />} />
-        <Route path="/contest/waiting-lobby" element={<Navigate to="/contest/demo-contest/waiting-lobby" replace />} />
-        <Route path="/waiting-lobby" element={<Navigate to="/contest/demo-contest/waiting-lobby" replace />} />
-        <Route path="/enter-quiz" element={<Navigate to="/contest/demo-contest/waiting-lobby" replace />} />
+        <Route path="/contest/waiting-lobby" element={<Navigate to="/waiting-lobby/LW-VRSEC-2026" replace />} />
+        <Route path="/waiting-lobby" element={<Navigate to="/waiting-lobby/LW-VRSEC-2026" replace />} />
+        <Route path="/enter-quiz" element={<Navigate to="/enter-exam" replace />} />
 
         {/* Student Auth & Recovery */}
         <Route path="/login" element={<StudentLoginPage />} />
