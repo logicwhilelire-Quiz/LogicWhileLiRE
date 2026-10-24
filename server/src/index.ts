@@ -109,11 +109,26 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       const cleanOrigin = origin.replace(/\/+$/, '');
-      if (
+      let isAllowed =
         allowedOrigins.includes(cleanOrigin) ||
         allowedOrigins.includes(origin) ||
-        (process.env.NODE_ENV !== 'production' && (cleanOrigin.startsWith('http://localhost:') || cleanOrigin.startsWith('http://127.0.0.1:')))
-      ) {
+        (process.env.NODE_ENV !== 'production' && (cleanOrigin.startsWith('http://localhost:') || cleanOrigin.startsWith('http://127.0.0.1:')));
+
+      if (!isAllowed) {
+        try {
+          const url = new URL(cleanOrigin);
+          if (
+            url.hostname.endsWith('.pages.dev') ||
+            url.hostname.endsWith('.netlify.app') ||
+            url.hostname.endsWith('.logicwhilelire.com') ||
+            url.hostname === 'logicwhilelire.com'
+          ) {
+            isAllowed = true;
+          }
+        } catch {}
+      }
+
+      if (isAllowed) {
         return callback(null, true);
       }
       callback(new Error('CORS: Origin not allowed'));
@@ -214,6 +229,21 @@ app.get('/api/ready', async (_req, res) => {
 // Direct alias for public colleges
 app.get('/colleges', (_req, res) => {
   res.redirect(307, '/api/colleges');
+});
+
+// Root API Welcome & System Info
+app.get('/', (_req, res) => {
+  res.json({
+    service: 'LogicWhileLiRE Assessment Engine API',
+    status: 'online',
+    version: '4.0.0',
+    endpoints: {
+      health: '/api/health',
+      ready: '/api/ready',
+    },
+    developed_by: 'R. Charan Sai Krishna',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // Authentication (Students & Password Reset)

@@ -228,7 +228,21 @@ export function initSocketIO(httpServer: HttpServer): IOServer {
       origin: (origin, callback) => {
         if (!origin) return callback(null, true);
         const cleanOrigin = origin.replace(/\/+$/, '');
-        if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes(origin)) {
+        let isAllowed = allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes(origin);
+        if (!isAllowed) {
+          try {
+            const url = new URL(cleanOrigin);
+            if (
+              url.hostname.endsWith('.pages.dev') ||
+              url.hostname.endsWith('.netlify.app') ||
+              url.hostname.endsWith('.logicwhilelire.com') ||
+              url.hostname === 'logicwhilelire.com'
+            ) {
+              isAllowed = true;
+            }
+          } catch {}
+        }
+        if (isAllowed) {
           return callback(null, true);
         }
         callback(new Error('CORS: Socket origin not allowed'));
