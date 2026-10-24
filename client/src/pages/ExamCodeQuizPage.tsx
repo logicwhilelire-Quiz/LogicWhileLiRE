@@ -84,6 +84,7 @@ export default function QuizPage() {
   const { examCode } = useParams<{ examCode: string }>()
   const navigate = useNavigate()
   const location = useLocation()
+  const searchHt = new URLSearchParams(location.search).get('hallTicket')
   const stateHt = (location.state as { hallTicket?: string } | null)?.hallTicket
   const storedHt = (() => {
     try {
@@ -99,7 +100,7 @@ export default function QuizPage() {
       return null
     }
   })()
-  const hallTicket: string = stateHt || storedHt || localStudentRoll || ''
+  const hallTicket: string = stateHt || searchHt || storedHt || localStudentRoll || ''
 
   // Sprint 2 item 3: read server_start_time from router state (set by WaitingLobbyPage on EXAM_STARTED)
   // This is the single source of truth for computing correct remaining time for late joiners.
