@@ -218,7 +218,7 @@ export async function emitBatchRoomTelemetry(examCode: string): Promise<void> {
 // ─────────────────────────────────────────────
 
 export function initSocketIO(httpServer: HttpServer): IOServer {
-  const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
+  const allowedOrigins = (process.env.CLIENT_ORIGIN || process.env.CORS_ORIGIN || 'http://localhost:5173')
     .split(',')
     .map((o) => o.trim().replace(/\/+$/, ''))
     .filter(Boolean);

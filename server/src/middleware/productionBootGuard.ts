@@ -58,17 +58,23 @@ export function validateProductionEnvironment(env: NodeJS.ProcessEnv = process.e
     return FORBIDDEN_PLACEHOLDER_DOMAINS.some((p) => lower.includes(p));
   };
 
-  // 5. CLIENT_ORIGIN validation
+  // 5. CLIENT_ORIGIN validation (supports both CLIENT_ORIGIN and CORS_ORIGIN)
+  if (!env.CLIENT_ORIGIN && env.CORS_ORIGIN) {
+    env.CLIENT_ORIGIN = env.CORS_ORIGIN;
+  }
   const clientOrigin = env.CLIENT_ORIGIN || '';
   if (!clientOrigin) {
-    errors.push('CLIENT_ORIGIN must be explicitly configured in production.');
+    errors.push('CLIENT_ORIGIN (or CORS_ORIGIN) must be explicitly configured in production.');
   } else if (!clientOrigin.startsWith('https://')) {
     errors.push('CLIENT_ORIGIN must be a real https:// URL in production (e.g. https://app.logicwhilelire.com).');
   } else if (hasPlaceholder(clientOrigin)) {
     errors.push('CLIENT_ORIGIN cannot use placeholder domains (example.com, yourdomain.com, localhost, 127.0.0.1).');
   }
 
-  // 6. FRONTEND_URL validation
+  // 6. FRONTEND_URL validation (auto-defaults to CLIENT_ORIGIN if missing)
+  if (!env.FRONTEND_URL && clientOrigin) {
+    env.FRONTEND_URL = clientOrigin.split(',')[0].trim();
+  }
   const frontendUrl = env.FRONTEND_URL || '';
   if (!frontendUrl) {
     errors.push('FRONTEND_URL must be explicitly configured in production.');
@@ -78,7 +84,10 @@ export function validateProductionEnvironment(env: NodeJS.ProcessEnv = process.e
     errors.push('FRONTEND_URL cannot use placeholder domains (example.com, yourdomain.com, localhost, 127.0.0.1).');
   }
 
-  // 7. MAIL_DOMAIN validation
+  // 7. MAIL_DOMAIN validation (auto-defaults to logicwhilelire.com if missing)
+  if (!env.MAIL_DOMAIN) {
+    env.MAIL_DOMAIN = 'logicwhilelire.com';
+  }
   const mailDomain = env.MAIL_DOMAIN || '';
   if (!mailDomain) {
     errors.push('MAIL_DOMAIN must be explicitly configured in production.');

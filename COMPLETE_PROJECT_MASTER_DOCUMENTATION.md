@@ -20,18 +20,15 @@ In accordance with institutional requirements:
 
 The platform enforces Role-Based Access Control (RBAC) with granular security scopes across four distinct user tiers:
 
-| User Tier | Portal URL | Username / Identifier | Password / Secret | Assigned Permissions & Scopes |
+| User Tier | Portal URL | Username / Identifier | Password / Authentication Policy | Assigned Permissions & Scopes |
 | :--- | :--- | :--- | :--- | :--- |
-| **Super Admin** | `/admin/login` | `admin` | `LiREAdmin@2026!` | **Global Unrestricted Access**: Provision colleges, manage sections, create exams, upload questions, configure 2FA, view live telemetry across all institutions, clear student re-entry. Email: `admin@logicwhilelire.com`. |
-| **Exam Inspector** | `/inspector/login` | `inspector` | `LiREInspector@2026!` | **Live Invigilation & Proctoring**: Remote live room supervision, pause/resume candidates, push time extensions, inspect webcam feeds, broadcast emergency warnings, resolve drop-box tickets, terminate malpractice. Email: `inspector@logicwhilelire.com`. |
-| **Faculty Member** | `/faculty/login` | `faculty` | `LiREFaculty@2026!` | **Scoped Institutional Access**: Strictly restricted to assigned College (`college_id`) and assigned Sections (`section_ids`). Can view question banks, monitor class progress, and export section grade rosters. Email: `faculty@logicwhilelire.com`. |
-| **Student / Candidate** | `/enter-exam` or `/student/login` | Hall Ticket (e.g. `22VRSECCSE001`) | `StudentPass@2026!` (for dashboard) | **Assessment Execution**: Direct hall ticket entry into scheduled exams matching assigned college, graduation year, and section. Direct scorecard review upon authoritative submission. |
+| **Super Admin** | `/admin/login` | `admin` | Set via server onboarding env / mandatory reset on first login | **Global Unrestricted Access**: Provision colleges, manage sections, create exams, upload questions, configure 2FA, view live telemetry across all institutions, clear student re-entry. Email: `admin@logicwhilelire.com`. |
+| **Exam Inspector** | `/inspector/login` | `inspector` | Set via server onboarding env / mandatory reset on first login | **Live Invigilation & Proctoring**: Remote live room supervision, pause/resume candidates, push time extensions, inspect webcam feeds, broadcast emergency warnings, resolve drop-box tickets, terminate malpractice. Email: `inspector@logicwhilelire.com`. |
+| **Faculty Member** | `/faculty/login` | Assigned by Admin | Set on staff creation / secure link | **Scoped Institutional Access**: Strictly restricted to assigned College (`college_id`) and assigned Sections (`section_ids`). Can view question banks, monitor class progress, and export section grade rosters. |
+| **Student / Candidate** | `/enter-exam` or `/student/login` | Hall Ticket Number | Verified password / 2FA OTP | **Assessment Execution**: Direct hall ticket entry into scheduled exams matching assigned college, graduation year, and section. Direct scorecard review upon authoritative submission. |
 
-### Verified Student Test Accounts (Pre-Enrolled)
-The following pre-enrolled verified students are available across collegiate sections:
-- **VRSEC Section CSE-A**: `22VRSECCSE001`, `22VRSECCSE002`, `22VRSECCSE003`, `22VRSECCSE004`, `22VRSECCSE005`
-- **VRSEC Section CSE-B**: `22VRSECCSE006`, `22VRSECCSE007`, `22VRSECCSE008`, `22VRSECCSE009`, `22VRSECCSE010`
-- **General Qualified Candidates**: `24HU1A05F9`, `RVACJ31411`, `24A91A051483`
+### Candidate Authentication & Master Roster Verification
+Candidates authenticate through registered institutional hall ticket and email verification. Master roster data (colleges, branches, batches, sections, hall tickets) is provisioned exclusively by the Super Admin in the central database ledger.
 
 ---
 
@@ -94,14 +91,16 @@ Every assessment is balanced across **5 Core Technical Sectors** to measure tota
 
 ---
 
-## 5. Collegiate Hierarchy & Active Academic Sections
+## 5. Collegiate Hierarchy & Dynamic Academic Partitioning
 
-| College Code | College ID | Institution Name | Active Sections |
-| :--- | :---: | :--- | :--- |
-| **VRSEC** | `1` | Velagapudi Ramakrishna Siddhartha Engineering College | `CSE-A`, `CSE-B`, `CSE-C`, `CSM-A`, `CSM-B`, `IT-A`, `IT-B` |
-| **KLU** | `2` | Koneru Lakshmaiah Education Foundation | `KLU-CSE-01`, `KLU-CSE-02`, `KLU-CSIT-01` |
-| **VVIT** | `3` | Vasireddy Venkatadri Institute of Technology | `VVIT-CSE-A`, `VVIT-CSE-B`, `VVIT-CSD` |
-| **LOGICWHILE** | `80` | LogicWhile LiRE Benchmark Academy | `LW-SECT-01`, `LW-SECT-02`, `LW-GLOBAL` |
+All institutions, departments, and cohorts are provisioned and administered dynamically by the Super Admin:
+
+| Master Level | Provisioning Method | Governance Scope |
+| :--- | :---: | :--- |
+| **University / College** | Admin Portal (`/admin/colleges`) | Institutional domain, registration toggles, and metadata |
+| **Academic Batch** | Admin Hierarchy (`/admin/hierarchy`) | Graduation year and curriculum lifecycle |
+| **Department / Cohort** | Admin Hierarchy (`/admin/hierarchy`) | Engineering discipline and branch codes |
+| **Section Allocation** | Admin Hierarchy (`/admin/hierarchy`) | Section cohorts for targeted, isolated assessments |
 
 ---
 
@@ -111,8 +110,9 @@ Every assessment is balanced across **5 Core Technical Sectors** to measure tota
 2. **Window Blur & Tab Switch Detector**: Window blurs and tab switches increment the 2-strike maximum threshold and dispatch alerts to the proctor desk.
 3. **Hardware Keyboard Shield**: Nullifies `F12`, `Ctrl+Shift+I`, `Alt+Tab`, `Ctrl+U`, copy/paste. Right click is disabled.
 4. **Dynamic Anti-Leak Watermark (`AntiLeakWatermark`)**: Overlays candidate roll number and ISO timestamp across all question cards.
-5. **Microphone Audio Decibel Monitor (`useAudioProctor`)**: Triggers audible/visible warnings when sound exceeds `-24 dB`.
+5. **Acoustic False-Positive Eradication**: All microphone hardware access and noise analyzers have been removed from testing flows to prevent ambient room noise disruptions.
 6. **Restart Guard**: HTTP 403 `ATTEMPT_TERMINATED` locks out terminated candidates until Admin allows re-entry.
+
 
 ---
 
