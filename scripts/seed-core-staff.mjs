@@ -230,6 +230,32 @@ async function runSeed() {
     console.log(`✅ [Inspector] Created ${inspectorEmail} (ID: ${res.id}, username: ${inspectorUsername}, role: inspector, must_change_password: true)`);
   }
 
+  // 3. Seed Faculty
+  const facultyPassword =
+    process.env.FACULTY_INITIAL_PASSWORD ||
+    process.env.INITIAL_FACULTY_PASSWORD ||
+    process.env.FACULTY_PASSWORD;
+  const facultyEmail = process.env.FACULTY_EMAIL || 'faculty@logicwhilelire.com';
+  const facultyUsername = process.env.FACULTY_USERNAME || 'faculty';
+  const facultyPhone = process.env.FACULTY_PHONE || '+919999999997';
+
+  const existingFaculty = await checkAccountExists(facultyEmail, facultyUsername);
+  if (existingFaculty) {
+    console.log(`ℹ️ [Faculty] Account ${facultyEmail} (username: ${facultyUsername}) already exists. Skipping.`);
+  } else if (facultyPassword) {
+    const res = await insertStaffAccount({
+      name: 'LogicWhile Lead Faculty',
+      email: facultyEmail,
+      username: facultyUsername,
+      phone: facultyPhone,
+      role: 'faculty',
+      password: facultyPassword,
+    });
+    console.log(`✅ [Faculty] Created ${facultyEmail} (ID: ${res.id}, username: ${facultyUsername}, role: faculty, must_change_password: true)`);
+  } else {
+    console.log(`ℹ️ [Faculty] FACULTY_INITIAL_PASSWORD not set in environment; skipping faculty creation.`);
+  }
+
   console.log('================================================================');
   console.log('🎉 Core staff seed complete (Idempotent: 0 records deleted).');
   console.log('================================================================\n');
