@@ -444,7 +444,7 @@ router.post('/test-email', adminAuth, async (req: Request, res: Response) => {
       recipient,
       name = 'Test Candidate',
       hallTicket = 'HT-TEST-001',
-      examCode = 'DEMO123',
+      examCode = 'EXAM-001',
       examTitle = 'LogicWhileLiRE Certification Exam',
     } = req.body;
 

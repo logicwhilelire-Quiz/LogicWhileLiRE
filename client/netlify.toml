@@ -30,7 +30,7 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(self), microphone=(self), display-capture=(self)"
+    Permissions-Policy = "camera=(self), display-capture=(self)"
 
 # index.html must NEVER be cached so deployments are picked up immediately
 [[headers]]

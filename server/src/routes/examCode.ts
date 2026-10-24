@@ -139,14 +139,13 @@ const handleExamCodeStart = async (req: any, res: any) => {
       });
     }
 
-    // Enforce inspector start (Item 3)
-    const isDemoExam = code.includes('DEMO') || code === 'CS2026';
+    // Enforce inspector start (Synchronized Launch)
     const effectiveCode = exam.exam_code || code;
     const isExamStarted = Boolean(
       exam.started_at ||
       exam.is_launched
     );
-    if (!isDemoExam && !isExamStarted) {
+    if (!isExamStarted) {
       const { getExamStartedState } = await import('../services/socketService');
       const startedState = getExamStartedState(code) || getExamStartedState(effectiveCode);
       if (!startedState) {

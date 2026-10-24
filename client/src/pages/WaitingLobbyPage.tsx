@@ -178,13 +178,25 @@ export default function WaitingLobbyPage() {
       if (stored) {
         try { setCandidate(JSON.parse(stored)); } catch { /* ignore */ }
       } else {
-        setCandidate({
-          first_name: "Venkata Srinivas", last_name: "Katta",
-          name: "Venkata Srinivas Katta", college_id: "COL-UNIV-042",
-          college_name: "University College of Eng.", year_of_passing: 2028,
-          roll_number: "22B91A0501", branch_code: "CSM", section: "B",
-          email: "srinivas.k@college.edu", contact_number: "+91 9876543210",
-        });
+        const attemptRaw = localStorage.getItem('logicwhilelire_attempt') || localStorage.getItem('lw_attempt');
+        let parsedRoll = '';
+        let parsedName = '';
+        if (attemptRaw) {
+          try {
+            const parsed = JSON.parse(attemptRaw);
+            parsedRoll = parsed.hallTicket || '';
+            parsedName = parsed.studentName || parsedRoll;
+          } catch {}
+        }
+        if (parsedRoll) {
+          setCandidate({
+            name: parsedName,
+            roll_number: parsedRoll,
+          });
+        } else {
+          navigate(`/enter-exam?code=${encodeURIComponent(contestId)}`, { replace: true });
+          return;
+        }
       }
     }
 
@@ -269,7 +281,7 @@ export default function WaitingLobbyPage() {
   useEffect(() => {
     if (examStarted && startPayload) {
       const examCode = startPayload.exam_id || contestId;
-      const hallTicket = candidate?.roll_number || (location.state as any)?.hallTicket || "2201A0501";
+      const hallTicket = candidate?.roll_number || (location.state as any)?.hallTicket || "";
       try {
         sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
         sessionStorage.setItem('lw_camera_consented', 'true');
@@ -290,7 +302,7 @@ export default function WaitingLobbyPage() {
 
   const handleManualStart = () => {
     const examCode = startPayload?.exam_id || contestId;
-    const hallTicket = candidate?.roll_number || (location.state as any)?.hallTicket || "2201A0501";
+    const hallTicket = candidate?.roll_number || (location.state as any)?.hallTicket || "";
     try {
       sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
       sessionStorage.setItem('lw_camera_consented', 'true');
@@ -323,7 +335,10 @@ export default function WaitingLobbyPage() {
   const minutes = Math.floor(countdown / 60);
   const seconds = countdown % 60;
   const timeFormatted = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  const displayName = candidate?.name || `${candidate?.first_name || "Venkata"} ${candidate?.last_name || "Katta"}`.trim();
+  const displayName = candidate?.name ||
+    `${candidate?.first_name || ''} ${candidate?.last_name || ''}`.trim() ||
+    candidate?.roll_number ||
+    'Student Candidate';
 
   return (
     <AnimatedPage>

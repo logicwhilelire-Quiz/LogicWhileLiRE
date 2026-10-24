@@ -332,7 +332,7 @@ export default function ExamControl() {
     } catch {
       // Fallback local create
       const newExam: ExamItem = {
-        id: `demo-${Date.now()}`,
+        id: `exam-${Date.now()}`,
         title: form.title,
         exam_code: form.exam_code,
         duration_minutes: Number(form.duration_minutes),

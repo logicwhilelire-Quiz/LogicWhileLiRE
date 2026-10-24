@@ -152,7 +152,7 @@ export default function StudentControl() {
   };
 
   const handleClearRosterFresh = () => {
-    if (!window.confirm('⚠️ Reset Student Roster to Fresh State?\n\nThis will remove all demo and current student entries from local storage so you can start 100% fresh with new institutional imports. Are you sure?')) {
+    if (!window.confirm('⚠️ Reset Student Roster to Fresh State?\n\nThis will remove all current student entries from local storage so you can start 100% fresh with new institutional imports. Are you sure?')) {
       return;
     }
     clearAllAdminStudents();

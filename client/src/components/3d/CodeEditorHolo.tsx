@@ -184,7 +184,7 @@ export default function CodeEditorHolo({
         onTestPass?.(result.score || result.passed * 10, result.maxScore || (result.total || 1) * 10)
       }
     } catch (err) {
-      // ── Resilient Client-Side Sandbox Simulation for Demo / Offline Modes ──
+      // ── Resilient Client-Side Sandbox Simulation for Offline Modes ──
       if (testCases && testCases.length > 0) {
         let passedCount = 0
         const simResults: TestResult[] = testCases.map((tc, idx) => {

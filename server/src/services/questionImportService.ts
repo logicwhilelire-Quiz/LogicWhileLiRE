@@ -297,7 +297,7 @@ export async function bulkInsertQuestions(
   rows: QuestionRow[],
   defaultSetCount: number = 2
 ): Promise<number> {
-  const isExamCode = /^(?:LWL|LIRE|GR|LW|DEMO|[A-Z0-9]+-[A-Z0-9]+)/i.test(examIdOrCode);
+  const isExamCode = /^(?:LWL|LIRE|GR|LW|EXAM|[A-Z0-9]+-[A-Z0-9]+)/i.test(examIdOrCode);
 
   const insertData = rows.map((row, index) => {
     const setNumber = row.set && row.set > 0 ? row.set : (index % defaultSetCount) + 1;
@@ -378,7 +378,6 @@ export async function bulkInsertQuestions(
         display_order: r.display_order,
         tags: r.tags,
       }));
-      await supabase.from('questions_ec').insert(ecRows);
       await supabase.from('exam_codes').upsert({
         exam_code: derivedCode,
         exam_name: examRec?.title || derivedCode,
@@ -388,11 +387,38 @@ export async function bulkInsertQuestions(
         is_active: true,
         is_launched: true,
       }, { onConflict: 'exam_code' });
+      await supabase.from('questions_ec').insert(ecRows);
     } catch {}
   } else {
-    // If Exam Code, insert into questions_ec
+    // If Exam Code, ensure exam_codes parent record exists first
+    const upperCode = examIdOrCode.toUpperCase();
+    try {
+      const { data: existingCode } = await supabase
+        .from('exam_codes')
+        .select('id, exam_code, total_questions')
+        .eq('exam_code', upperCode)
+        .maybeSingle();
+
+      const now = new Date();
+      if (!existingCode) {
+        await supabase.from('exam_codes').insert({
+          exam_code: upperCode,
+          exam_name: upperCode,
+          subject: insertData[0]?.topic || 'General',
+          total_questions: insertData.length,
+          duration_minutes: 60,
+          start_time: now.toISOString(),
+          end_time: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          is_active: true,
+          is_launched: true,
+        });
+      }
+    } catch (ecErr) {
+      console.warn('[questionImportService] exam_codes prep warning:', ecErr);
+    }
+
     const ecRows = insertData.map((r) => ({
-      exam_code: examIdOrCode.toUpperCase(),
+      exam_code: upperCode,
       question: r.question,
       question_text: r.question,
       option_a: r.option_a,

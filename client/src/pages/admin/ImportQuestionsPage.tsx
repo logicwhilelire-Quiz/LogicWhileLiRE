@@ -291,7 +291,11 @@ export default function ImportQuestionsPage() {
       setGeneralError('No validated questions available for import.');
       return;
     }
-    const targetCode = examCode.trim() || 'DEFAULT';
+    const targetCode = examCode.trim().toUpperCase();
+    if (!targetCode) {
+      setGeneralError('Please enter an Exam Code before importing questions.');
+      return;
+    }
     const validQuestions = previewData.preview.filter((q) => q.valid);
 
     if (validQuestions.length === 0) {
@@ -302,39 +306,22 @@ export default function ImportQuestionsPage() {
     setImporting(true);
     setGeneralError(null);
 
-    // Try server commit
+    // Commit strictly to the central database under authoritative Admin Control
     try {
       await confirmImportQuestions({
         examCode: targetCode,
         examId: targetCode,
         questions: validQuestions,
       });
+      setImportSuccess(`Successfully imported ${validQuestions.length} questions into exam "${targetCode}"! Questions are committed to the central database under Admin Control.`);
+      setFile(null);
+      setPreviewData(null);
     } catch (err: any) {
-      console.warn('Backend import commit deferred, saving locally...', err);
+      console.error('Backend import commit failed:', err);
+      setGeneralError(err.response?.data?.message || err.message || 'Failed to commit questions to the database. Ensure server is reachable.');
+    } finally {
+      setImporting(false);
     }
-
-    // Always persist to local and session caches so questions are immediately usable
-    try {
-      localStorage.setItem(`admin_imported_questions_${targetCode}`, JSON.stringify(validQuestions));
-      localStorage.setItem(`admin_imported_questions_${targetCode.toUpperCase()}`, JSON.stringify(validQuestions));
-      localStorage.setItem(`admin_imported_questions_LW-VRSEC-2026`, JSON.stringify(validQuestions));
-      const existingExams = JSON.parse(localStorage.getItem('admin_created_exams') || '[]');
-      if (!existingExams.some((e: any) => (e.exam_code || e.id) === targetCode)) {
-        existingExams.unshift({
-          id: targetCode,
-          exam_code: targetCode,
-          title: `Assessment (${targetCode})`,
-          duration_minutes: 45,
-          total_questions: validQuestions.length,
-        });
-        localStorage.setItem('admin_created_exams', JSON.stringify(existingExams));
-      }
-    } catch {}
-
-    setImportSuccess(`Successfully imported ${validQuestions.length} questions into exam "${targetCode}"! Questions are verified, persistent, and ready for immediate candidate testing.`);
-    setFile(null);
-    setPreviewData(null);
-    setImporting(false);
   }
 
   return (
@@ -405,7 +392,7 @@ export default function ImportQuestionsPage() {
                     id="import-exam-selector"
                     className="form-input font-mono"
                     type="text"
-                    placeholder="e.g. GR-VRSEC-001 or DEMO123"
+                    placeholder="e.g. GR-UNIV-001 or CS2026-A"
                     value={examCode}
                     onChange={(e) => setExamCode(e.target.value.toUpperCase())}
                     style={{ flex: 1 }}

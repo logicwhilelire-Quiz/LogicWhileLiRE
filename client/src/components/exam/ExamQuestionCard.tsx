@@ -799,51 +799,62 @@ export default function ExamQuestionCard({
                   return (
                     <motion.div
                       key={idx}
-                      className="exam-option-card"
-                      onClick={() => onOptionSelect?.(idx)}
+                      className={`exam-option-card ${isSelected ? 'selected' : ''}`}
+                      onClick={() => {
+                        if (isSelected && onClearSelection) {
+                          onClearSelection()
+                        } else {
+                          onOptionSelect?.(idx)
+                        }
+                      }}
                       whileHover={{ x: 5 }}
                       whileTap={{ scale: 0.985 }}
                       transition={{ type: 'spring', stiffness: 450, damping: 26 }}
                       style={{
                         cursor: 'pointer',
                         display: 'flex',
-                        alignItems: 'flex-start',
+                        alignItems: 'center',
                         gap: 14,
-                        padding: '13px 18px',
+                        padding: '12px 18px',
                         borderRadius: 12,
                         background: isSelected
-                          ? `linear-gradient(135deg, ${accent}22, rgba(0,28,62,0.7))`
-                          : 'rgba(255,255,255,0.03)',
-                        border: `1.5px solid ${isSelected ? accent : 'rgba(255,255,255,0.1)'}`,
-                        boxShadow: isSelected ? `0 0 22px ${accent}30` : 'none',
-                        transition: 'background 0.2s, border-color 0.2s',
+                          ? `linear-gradient(135deg, ${accent}24, rgba(0, 28, 62, 0.75))`
+                          : 'rgba(255, 255, 255, 0.03)',
+                        border: `1.5px solid ${isSelected ? accent : 'rgba(255, 255, 255, 0.1)'}`,
+                        boxShadow: isSelected ? `0 0 24px ${accent}35, inset 0 0 12px ${accent}15` : 'none',
+                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                         width: '100%',
                         boxSizing: 'border-box',
                       }}
                     >
-                      {/* Label bubble */}
+                      {/* Label bubble with Shortcut Hint */}
                       <div
                         style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 9,
+                          width: 36,
+                          height: 36,
+                          borderRadius: 10,
                           display: 'flex',
+                          flexDirection: 'column',
                           alignItems: 'center',
                           justifyContent: 'center',
                           fontWeight: 800,
-                          fontSize: '0.85rem',
                           flexShrink: 0,
-                          marginTop: 1,
                           background: isSelected
-                            ? `linear-gradient(135deg, ${accent}, ${accent}cc)`
+                            ? `linear-gradient(135deg, ${accent}, ${accent}dd)`
                             : `${accent}18`,
                           color: isSelected ? '#0B1220' : accent,
                           border: `1.5px solid ${isSelected ? 'transparent' : `${accent}35`}`,
-                          boxShadow: isSelected ? `0 2px 12px ${accent}55` : 'none',
-                          transition: 'all 0.2s',
+                          boxShadow: isSelected ? `0 2px 14px ${accent}60` : 'none',
+                          transition: 'all 0.2s ease',
                         }}
+                        title={`Select Option ${LABELS[idx]} (or press key '${idx + 1}' / '${LABELS[idx]}')`}
                       >
-                        {isSelected ? '✓' : LABELS[idx]}
+                        <span style={{ fontSize: isSelected ? '1rem' : '0.88rem', lineHeight: 1 }}>
+                          {isSelected ? '✓' : LABELS[idx]}
+                        </span>
+                        <span style={{ fontSize: '0.55rem', opacity: isSelected ? 0.8 : 0.6, fontWeight: 700, lineHeight: 1, marginTop: 1 }}>
+                          [{idx + 1}]
+                        </span>
                       </div>
 
                       <span
@@ -863,11 +874,30 @@ export default function ExamQuestionCard({
                           wordBreak: 'break-word',
                           overflowWrap: 'anywhere',
                           userSelect: 'none',
-                          transition: 'color 0.2s',
+                          transition: 'color 0.2s ease',
                         }}
                       >
                         {opt}
                       </span>
+
+                      {isSelected && (
+                        <div
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            background: `${accent}25`,
+                            border: `1px solid ${accent}50`,
+                            color: accent,
+                            fontSize: '0.68rem',
+                            fontWeight: 800,
+                            letterSpacing: '0.04em',
+                            textTransform: 'uppercase',
+                            flexShrink: 0,
+                          }}
+                        >
+                          Selected
+                        </div>
+                      )}
                     </motion.div>
                   )
                 })}

@@ -222,7 +222,6 @@ export async function registerCandidate(req: Request, res: Response): Promise<vo
     requires_otp: true,
     email: normalizedEmail,
     roll_number: normalizedRoll,
-    demo_otp: otp,
     candidate: {
       id: newCandidate.id,
       first_name: newCandidate.first_name,

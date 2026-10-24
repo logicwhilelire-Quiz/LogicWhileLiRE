@@ -443,7 +443,6 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     const isInspectorSeedMatch = staff.role === 'inspector' && ((process.env.INSPECTOR_PASSWORD && password === process.env.INSPECTOR_PASSWORD) || password === 'inspector123' || password === 'LiREInspector@2026!');
     const isFacultySeedMatch = staff.role === 'faculty' && ((process.env.FACULTY_PASSWORD && password === process.env.FACULTY_PASSWORD) || password === 'faculty123' || password === 'LiREAdmin@2026!');
     const passwordValid =
-      (process.env.DEMO_MODE === 'true' && (password === 'admin123' || password === 'password123')) ||
       (await bcrypt.compare(password, staff.password_hash)) ||
       Boolean(isInspectorSeedMatch) ||
       Boolean(isFacultySeedMatch);
@@ -729,9 +728,7 @@ export async function requestLoginOtp(req: Request, res: Response): Promise<void
       res.status(401).json({ success: false, error: 'Invalid credentials' });
       return;
     }
-    const passwordValid =
-      (process.env.DEMO_MODE === 'true' && (password === 'admin123' || password === 'password123')) ||
-      (await bcrypt.compare(password, staff.password_hash));
+    const passwordValid = (await bcrypt.compare(password, staff.password_hash));
     if (!passwordValid) {
       res.status(401).json({ success: false, error: 'Invalid credentials' });
       return;
@@ -2677,6 +2674,41 @@ export async function createQuestion(req: Request, res: Response): Promise<void>
       starter_code: starter_code || null,
       created_at: new Date().toISOString(),
     };
+
+    // Ensure parent exam_codes record exists to satisfy foreign key constraint
+    try {
+      const { data: existingCode } = await supabase
+        .from('exam_codes')
+        .select('id, exam_code, total_questions')
+        .eq('exam_code', targetCode)
+        .maybeSingle();
+
+      if (!existingCode) {
+        const now = new Date();
+        await supabase.from('exam_codes').insert({
+          exam_code: targetCode,
+          exam_name: targetCode,
+          subject: topic || 'General',
+          total_questions: 1,
+          duration_minutes: 60,
+          start_time: now.toISOString(),
+          end_time: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          is_active: true,
+          is_launched: true,
+          college_id: req.admin?.college_id || 1,
+        });
+      } else {
+        await supabase
+          .from('exam_codes')
+          .update({
+            total_questions: (existingCode.total_questions || 0) + 1,
+            is_active: true,
+          })
+          .eq('exam_code', targetCode);
+      }
+    } catch (ecSyncErr) {
+      console.warn('[createQuestion] exam_codes sync note:', ecSyncErr);
+    }
 
     const { data, error } = await supabase
       .from('questions_ec')

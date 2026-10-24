@@ -216,8 +216,8 @@ export default function StudentLoginPage() {
             </div>
           </motion.div>
 
-          <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.75rem', color: '#334155' }}>
-            LogicWhile LiRE • Created by <strong style={{ color: '#38BDF8', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
+          <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.75rem', color: '#64748B' }}>
+            LogicWhile LiRE • Developed by <strong style={{ color: '#EAA812', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
           </div>
         </motion.div>
       </div>

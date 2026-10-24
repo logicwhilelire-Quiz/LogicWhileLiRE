@@ -53,7 +53,7 @@ function AGPortalTab({ label, icon, active, to }: { label: AGPortalKey; icon: st
 export default function AdminLoginPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    username: localStorage.getItem('last_admin_user') || 'admin',
+    username: localStorage.getItem('last_admin_user') || '',
     password: '',
     totp_code: '',
   });
@@ -451,8 +451,8 @@ export default function AdminLoginPage() {
             </div>
           </motion.div>
 
-          <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.75rem', color: '#334155' }}>
-            LogicWhile LiRE • Created by <strong style={{ color: '#FBBF24', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
+          <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.75rem', color: '#64748B' }}>
+            LogicWhile LiRE • Developed by <strong style={{ color: '#EAA812', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
           </div>
         </motion.div>
       </div>

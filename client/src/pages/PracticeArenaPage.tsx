@@ -692,27 +692,25 @@ export default function PracticeArenaPage() {
     } else if (attemptStr) {
       try {
         const att = JSON.parse(attemptStr);
-        const synthUser = {
-          id: 'stu-current',
-          name: att.studentName || 'Student Candidate',
-          first_name: (att.studentName || 'Student').split(' ')[0],
-          last_name: (att.studentName || '').split(' ')[1] || '',
-          roll_number: att.hallTicket || '24VR1A0501',
-          hall_ticket: att.hallTicket || '24VR1A0501',
-          branch_code: 'CSE',
-          section: 'A',
-          section_id: 'sec-cse-a',
-          college_id: 1,
-          college_name: att.collegeName || '',
-        };
-        localStorage.setItem('student_user', JSON.stringify(synthUser));
-        if (!token) localStorage.setItem('student_token', `token-roster-${att.hallTicket || '24VR1A0501'}`);
-        setStudentUser(synthUser);
-      } catch {
-        setStudentUser({ name: 'Student Candidate', roll_number: '24VR1A0501', section: 'A' });
-      }
-    } else if (token) {
-      setStudentUser({ name: 'Student Candidate', roll_number: '24VR1A0501', section: 'A' });
+        if (att.hallTicket) {
+          const synthUser = {
+            id: 'stu-current',
+            name: att.studentName || 'Student Candidate',
+            first_name: (att.studentName || 'Student').split(' ')[0],
+            last_name: (att.studentName || '').split(' ')[1] || '',
+            roll_number: att.hallTicket,
+            hall_ticket: att.hallTicket,
+            branch_code: 'CSE',
+            section: 'A',
+            section_id: 'sec-cse-a',
+            college_id: 1,
+            college_name: att.collegeName || '',
+          };
+          localStorage.setItem('student_user', JSON.stringify(synthUser));
+          if (!token) localStorage.setItem('student_token', `token-roster-${att.hallTicket}`);
+          setStudentUser(synthUser);
+        }
+      } catch {}
     }
   }, [navigate]);
 

@@ -7,8 +7,8 @@ import CodeRain from '../components/3d/CodeRain';
 export default function InstructionsPage() {
   const { examCode } = useParams<{ examCode: string }>();
   const navigate = useNavigate();
-  const isDemoOrDev = Boolean(examCode?.toUpperCase().includes('DEMO') || import.meta.env.DEV);
-  const [countdown, setCountdown] = useState(isDemoOrDev ? 5 : 60);
+  const isDev = Boolean(import.meta.env.DEV);
+  const [countdown, setCountdown] = useState(isDev ? 5 : 60);
   const [canProceed, setCanProceed] = useState(false);
   const [systemOk, setSystemOk] = useState(false);
 
@@ -189,7 +189,7 @@ export default function InstructionsPage() {
               Official Exam Instructions
             </h1>
             <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.92rem' }}>
-              {examDetails.exam_name} • {examDetails.duration_minutes} min • {examDetails.total_questions} questions
+              {examDetails.exam_name || stored.examCode || 'Assessment'} • {examDetails.duration_minutes || 45} min • {examDetails.total_questions || 10} questions
             </p>
           </div>
 

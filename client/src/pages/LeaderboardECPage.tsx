@@ -43,7 +43,7 @@ const MEDAL: Record<number, { bg: string; text: string; icon: string }> = {
 
 export default function LeaderboardECPage() {
   const { examCode } = useParams<{ examCode: string }>();
-  const activeCode = examCode || 'DEMO123';
+  const activeCode = examCode || '';
   const navigate = useNavigate();
 
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
@@ -59,6 +59,11 @@ export default function LeaderboardECPage() {
 
   // Load Leaderboard data
   async function load(silent = false) {
+    if (!activeCode) {
+      setLoading(false);
+      setRows([]);
+      return;
+    }
     if (!silent) setLoading(true);
     else {
       setRefreshing(true);
@@ -66,12 +71,54 @@ export default function LeaderboardECPage() {
     }
 
     try {
-      const res = await axios.get(`${BASE_URL}/api/exam-code/${activeCode}/leaderboard`);
+      const res = await axios.get(`${BASE_URL}/api/exam-code/${encodeURIComponent(activeCode)}/leaderboard`);
       const rawRows: LeaderboardRow[] = res.data.leaderboard || res.data.data || [];
-      setRows(rawRows);
+      if (rawRows.length > 0) {
+        setRows(rawRows);
+      } else {
+        const localResRaw = localStorage.getItem(`logicwhilelire_results_${activeCode}`);
+        const localHt = localStorage.getItem(`hallTicket_${activeCode}`) || myHT || 'Candidate';
+        if (localResRaw) {
+          const lr = JSON.parse(localResRaw);
+          setRows([{
+            rank: 1,
+            hall_ticket: localHt,
+            name: `${localHt} (You)`,
+            score: lr.score || 0,
+            max_score: lr.totalMarks || 100,
+            percentage: lr.percentage || 0,
+            department: 'General',
+            time_taken_seconds: lr.timeTaken || 0,
+            status: 'completed',
+          }]);
+        } else {
+          setRows([]);
+        }
+      }
       setLastUpdated(new Date());
     } catch {
-      setRows([]);
+      const localResRaw = localStorage.getItem(`logicwhilelire_results_${activeCode}`);
+      const localHt = localStorage.getItem(`hallTicket_${activeCode}`) || myHT || 'Candidate';
+      if (localResRaw) {
+        try {
+          const lr = JSON.parse(localResRaw);
+          setRows([{
+            rank: 1,
+            hall_ticket: localHt,
+            name: `${localHt} (You)`,
+            score: lr.score || 0,
+            max_score: lr.totalMarks || 100,
+            percentage: lr.percentage || 0,
+            department: 'General',
+            time_taken_seconds: lr.timeTaken || 0,
+            status: 'completed',
+          }]);
+        } catch {
+          setRows([]);
+        }
+      } else {
+        setRows([]);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);

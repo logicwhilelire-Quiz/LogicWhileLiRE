@@ -95,9 +95,9 @@ export default function AdminMonitorPage() {
           .catch(() => {})
       })
 
-    supabase.from('exam_codes').select('code, title').then(({ data }) => {
+    supabase.from('exam_codes').select('exam_code, title').then(({ data }) => {
       if (data && data.length > 0) {
-        setAvailableExamCodes(Array.from(new Set(data.map(d => d.code).filter(Boolean))))
+        setAvailableExamCodes(Array.from(new Set(data.map((d: any) => d.exam_code || d.code).filter(Boolean))))
       }
     })
   }, [])
@@ -496,6 +496,58 @@ export default function AdminMonitorPage() {
     setTimeout(() => setActionNotice(''), 4000)
   }
 
+  /* ── Master Exam Start: Admin Push-To-Start ── */
+  const [isStartingExam, setIsStartingExam] = useState(false)
+  const handleStartExam = async () => {
+    if (!examCode) return
+    if (!window.confirm(`Launch and start exam [${examCode}] for all connected students now?`)) return
+    setIsStartingExam(true)
+    try {
+      // 1. Trigger backend push-to-start REST API
+      const token = localStorage.getItem('admin_token') || localStorage.getItem('token')
+      await axios.post(`${BASE_URL}/api/v1/exams/${examCode}/start`, { allow_late_join: true }, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }).catch(() => {
+        // Fallback to admin route if v1 returned error
+        return axios.post(`${BASE_URL}/api/admin/exams/${examCode}/start`, {}, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+      })
+
+      // 2. Broadcast via BroadcastChannel so waiting lobbies instantly receive it
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('logicwhilelire_admin_exam_commands')
+        bc.postMessage({ examCode, state: 'started', timestamp: Date.now() })
+        bc.close()
+      }
+
+      // 3. Update localStorage fallback
+      localStorage.setItem(`admin_exam_command_state_${examCode}`, JSON.stringify({
+        state: 'started',
+        timestamp: Date.now(),
+        message: `Admin started exam ${examCode}`,
+      }))
+      localStorage.setItem('admin_exam_command_event', String(Date.now()))
+
+      // 4. Supabase broadcast channel if connected
+      if (broadcastChannelRef.current) {
+        broadcastChannelRef.current.send({
+          type: 'broadcast',
+          event: 'exam_started',
+          payload: { examCode, timestamp: Date.now() },
+        })
+      }
+
+      setActionNotice(`🚀 EXAM STARTED: Official start command dispatched for [${examCode}]!`)
+      setTimeout(() => setActionNotice(''), 5000)
+    } catch (err: any) {
+      setActionNotice(`❌ Failed to start exam: ${err?.response?.data?.message || err?.message || 'Server error'}`)
+      setTimeout(() => setActionNotice(''), 4000)
+    } finally {
+      setIsStartingExam(false)
+    }
+  }
+
   /* ── Export Forensic Audit Log (JSON) ── */
   const handleExportAudit = () => {
     const report = {
@@ -691,6 +743,24 @@ export default function AdminMonitorPage() {
               {soundEnabled ? '🔊' : '🔇'}
             </button>
 
+            {/* Start Exam for All Button */}
+            <button
+              onClick={handleStartExam}
+              disabled={isStartingExam || !examCode}
+              style={{
+                padding: '6px 14px', borderRadius: 'var(--radius-sm)',
+                border: '1px solid #10B981',
+                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                color: '#FFFFFF', fontSize: '0.76rem', fontWeight: 900,
+                cursor: !examCode || isStartingExam ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6,
+                boxShadow: '0 2px 10px rgba(16, 185, 129, 0.35)',
+              }}
+              title="Official push-to-start trigger: releases students from waiting lobby into live test"
+            >
+              <span>{isStartingExam ? '⏳ Starting...' : '🚀 Start Exam for All'}</span>
+            </button>
+
             {/* Broadcast to All Button */}
             <button
               onClick={() => setBroadcastModalOpen(true)}
@@ -809,9 +879,13 @@ export default function AdminMonitorPage() {
                   color: '#38BDF8', padding: '6px 12px', borderRadius: 8, fontSize: '0.86rem', fontWeight: 700, fontFamily: 'var(--font-mono)'
                 }}
               >
-                {Array.from(new Set(['DEMO123', 'DEMO100', 'CS2026', ...availableExamCodes])).map(code => (
-                  <option key={code} value={code}>{code}</option>
-                ))}
+                {availableExamCodes.length === 0 ? (
+                  <option value={examCode || ''}>{examCode || 'No Active Exams'}</option>
+                ) : (
+                  Array.from(new Set([examCode, ...availableExamCodes].filter(Boolean))).map(code => (
+                    <option key={code} value={code}>{code}</option>
+                  ))
+                )}
               </select>
             </div>
           </div>

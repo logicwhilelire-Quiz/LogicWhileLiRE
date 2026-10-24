@@ -13,7 +13,7 @@ export const MAIL_DOMAIN: string = process.env.MAIL_DOMAIN || 'logicwhilelire.co
 
 export const EMAIL_FROM: string = (() => {
   const v = process.env.EMAIL_FROM || process.env.OTP_FROM_EMAIL;
-  return v || `LogicWhileLiRE <noreply@${MAIL_DOMAIN}>`;
+  return v || `LogicWhile LiRE <admin@${MAIL_DOMAIN}>`;
 })();
 
 export const EMAIL_FROM_NAME: string = process.env.EMAIL_FROM_NAME || 'LogicWhileLiRE';

@@ -209,7 +209,7 @@ function Step1College({
       <div style={{ marginBottom: 16 }}>
         <input
           type="text"
-          placeholder="Search college by name or code (e.g. VRSEC)..."
+          placeholder="Search college by name or code (e.g. UNIV)..."
           className="form-input"
           value={search}
           onChange={e => setSearch(e.target.value)}

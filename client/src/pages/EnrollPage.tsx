@@ -36,7 +36,6 @@ export default function EnrollPage() {
         state: {
           participant_id: res.data.participant_id,
           email: form.email,
-          demo_otp: res.data.demo_otp,
         },
       });
     } catch (err: any) {

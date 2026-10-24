@@ -10,12 +10,12 @@ export const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 export const MAIL_FROM_NOREPLY =
   process.env.MAIL_FROM_NOREPLY ||
   process.env.EMAIL_FROM ||
-  'LogicWhile LiRE <noreply@logicwhilelire.com>';
+  'LogicWhile LiRE <admin@logicwhilelire.com>';
 
 export const MAIL_REPLY_TO =
   process.env.MAIL_REPLY_TO ||
   process.env.SUPPORT_EMAIL ||
-  'support@logicwhilelire.com';
+  'admin@logicwhilelire.com';
 
 export const FRONTEND_URL = (() => {
   const v = process.env.FRONTEND_URL || process.env.CLIENT_URL || process.env.CLIENT_ORIGIN;
@@ -31,8 +31,8 @@ export const INSPECTOR_MAIL_ADDRESS = process.env.INSPECTOR_MAIL_ADDRESS || 'ins
 export const OTP_MAIL_FROM = process.env.OTP_FROM_EMAIL || 'LogicWhile LiRE Security <admin@logicwhilelire.com>';
 export const OTP_MAIL_REPLY_TO = process.env.OTP_REPLY_TO || 'admin@logicwhilelire.com';
 
-export const LOGIN_ID_MAIL_FROM = process.env.LOGIN_ID_FROM_EMAIL || 'LogicWhile LiRE Inspections <inspector@logicwhilelire.com>';
-export const LOGIN_ID_MAIL_REPLY_TO = process.env.LOGIN_ID_REPLY_TO || 'inspector@logicwhilelire.com';
+export const LOGIN_ID_MAIL_FROM = process.env.LOGIN_ID_FROM_EMAIL || 'LogicWhile LiRE <admin@logicwhilelire.com>';
+export const LOGIN_ID_MAIL_REPLY_TO = process.env.LOGIN_ID_REPLY_TO || 'admin@logicwhilelire.com';
 
 // ============================================================================
 // TYPES & INTERFACES

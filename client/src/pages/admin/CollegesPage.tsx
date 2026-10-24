@@ -1622,13 +1622,13 @@ export default function CollegesPage() {
               <form id="college-form" onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">College Name *</label>
-                  <input className="form-input" placeholder="VR Siddhartha Engineering College" value={form.college_name}
+                  <input className="form-input" placeholder="University Institute of Technology" value={form.college_name}
                     onChange={e => setForm(p => ({ ...p, college_name: e.target.value }))} required />
                 </div>
 
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">College Code *</label>
-                  <input className="form-input font-mono" placeholder="VRSEC" value={form.college_code}
+                  <input className="form-input font-mono" placeholder="UNIV01" value={form.college_code}
                     onChange={e => setForm(p => ({ ...p, college_code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }))}
                     required disabled={!!editCollege}
                     style={{ fontFamily: 'monospace', letterSpacing: '0.08em' }} />

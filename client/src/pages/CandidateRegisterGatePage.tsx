@@ -79,7 +79,6 @@ export default function CandidateRegisterGatePage() {
   const [registeredRoll, setRegisteredRoll] = useState('');
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [otpSuccessMsg, setOtpSuccessMsg] = useState('');
-  const [demoOtp, setDemoOtp] = useState('');
 
   useEffect(() => {
     // 1. Fetch live admin-controlled metadata
@@ -335,9 +334,6 @@ export default function CandidateRegisterGatePage() {
           const rollTarget = (res.data.roll_number || form.roll_number).toUpperCase().trim();
           setRegisteredEmail(emailTarget);
           setRegisteredRoll(rollTarget);
-          if (res.data.demo_otp) {
-            setDemoOtp(res.data.demo_otp);
-          }
           return;
         }
 
@@ -559,13 +555,6 @@ export default function CandidateRegisterGatePage() {
                 <strong style={{ color: '#002147' }}>{registeredEmail}</strong>.
                 Enter the code below to verify your account and continue.
               </p>
-
-              {demoOtp && (
-                <div style={{ margin: '0 0 16px', padding: '8px 12px', background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 6, fontSize: '0.82rem', color: '#92400E' }}>
-                  <span>Demo / Dev OTP: </span>
-                  <code style={{ fontWeight: 800, background: '#FDE68A', padding: '2px 6px', borderRadius: 4 }}>{demoOtp}</code>
-                </div>
-              )}
 
 
 

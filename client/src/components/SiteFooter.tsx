@@ -250,7 +250,7 @@ export default function SiteFooter() {
         {/* Bottom Bar */}
         <div className="footer-bottom" style={{ borderColor: 'var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: '20px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: '0.86rem' }}>
-            <span>© 2026 LogicWhile LiRE. All rights reserved. • It is developed by <strong style={{ color: '#EAA812', fontWeight: 700 }}>R. Charan Sai Krishna</strong></span>
+            <span>© 2026 LogicWhile LiRE. All rights reserved. • Developed by <strong style={{ color: '#EAA812', fontWeight: 700 }}>R. Charan Sai Krishna</strong></span>
           </div>
           <span style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
             <button
@@ -476,8 +476,8 @@ export default function SiteFooter() {
                         <h4 style={{ margin: 0, color: '#f8fafc' }}>Candidate Workflow &amp; Examination Protocol</h4>
                         <ol style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
                           <li><strong>Registration &amp; Verification:</strong> Candidates self-register via enabled colleges with hall ticket, university email, and a strong password verified via 6-digit email OTP.</li>
-                          <li><strong>Exam Code Entry:</strong> Join via unique passcodes formatted as <code>GR-&#123;COLLEGE&#125;-&#123;6CHAR&#125;</code> (e.g. <code>GR-VRSEC-8X9P2Q</code>) or legacy codes.</li>
-                          <li><strong>Hardware &amp; AI Check:</strong> Camera, microphone, and fullscreen mode are verified prior to entering the live waiting lobby.</li>
+                          <li><strong>Exam Code Entry:</strong> Join via unique passcodes formatted as <code>GR-&#123;COLLEGE&#125;-&#123;6CHAR&#125;</code> (e.g. <code>GR-UNIV-8X9P2Q</code>) or legacy codes.</li>
+                          <li><strong>Hardware &amp; AI Check:</strong> Camera presence and fullscreen security mode are verified prior to entering the live waiting lobby.</li>
                           <li><strong>Continuous Auto-Save:</strong> Every answer change is instantly synchronized and saved into the persistent database.</li>
                           <li><strong>Instant Scorecard:</strong> Upon automated or candidate submission, verified scorecards with sector-wise accuracy breakdown and tie-break rankings are published.</li>
                         </ol>

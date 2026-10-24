@@ -14,6 +14,7 @@ interface StudentProfile {
   name: string;
   email: string;
   roll_number: string;
+  hall_ticket?: string;
   college_id: number | string;
   college_name?: string;
   section?: string;
@@ -147,49 +148,13 @@ export default function StudentDashboardPage() {
       try {
         setLoading(true);
         const res = await getStudentDashboard();
-        const defaultExams: UpcomingExam[] = [
-          {
-            id: 'exam-vrsec-2026',
-            title: 'LogicWhileLiRE — Linear & Binary Search Qualifier',
-            code: 'LW-VRSEC-2026',
-            duration_minutes: 45,
-            start_time: new Date().toISOString(),
-            end_time: new Date(Date.now() + 7 * 86400000).toISOString(),
-            is_active: true,
-            college_id: localCandidate?.college_id || 'VRSEC',
-          },
-        ];
-
-        try {
-          const adminCreated = JSON.parse(localStorage.getItem('admin_created_exams') || '[]');
-          adminCreated.forEach((ac: any) => {
-            const acCode = ac.exam_code || ac.id;
-            if (acCode && !defaultExams.some((de) => de.code === acCode)) {
-              defaultExams.push({
-                id: ac.id || acCode,
-                title: ac.title || `Assessment Assignment (${acCode})`,
-                code: acCode,
-                duration_minutes: ac.duration_minutes || 45,
-                start_time: new Date().toISOString(),
-                end_time: new Date(Date.now() + 7 * 86400000).toISOString(),
-                is_active: true,
-              });
-            }
-          });
-        } catch {}
 
         if (res.data?.success) {
           setStudent(res.data.student || localCandidate);
           const rawExams: UpcomingExam[] = Array.isArray(res.data.upcoming_exams) ? res.data.upcoming_exams : [];
-          const combinedExams = [...rawExams];
-          defaultExams.forEach((de) => {
-            if (!combinedExams.some((ce) => ce.code && ce.code.toUpperCase() === de.code?.toUpperCase())) {
-              combinedExams.push(de);
-            }
-          });
 
           const seenKeys = new Set<string>();
-          const dedupedExams = combinedExams.filter((ex) => {
+          const dedupedExams = rawExams.filter((ex) => {
             const codeKey = (ex.code || '').trim().toUpperCase();
             const idKey = String(ex.id || '').trim().toLowerCase();
             if (codeKey && seenKeys.has(`code:${codeKey}`)) return false;
@@ -205,37 +170,7 @@ export default function StudentDashboardPage() {
           setRank(res.data.rank || null);
         }
       } catch (err: any) {
-        // Resilient fallback with active assignments
-        const defaultExams: UpcomingExam[] = [
-          {
-            id: 'exam-vrsec-2026',
-            title: 'LogicWhileLiRE — Linear & Binary Search Qualifier',
-            code: 'LW-VRSEC-2026',
-            duration_minutes: 45,
-            start_time: new Date().toISOString(),
-            end_time: new Date(Date.now() + 7 * 86400000).toISOString(),
-            is_active: true,
-            college_id: localCandidate?.college_id || 'VRSEC',
-          },
-        ];
-        try {
-          const adminCreated = JSON.parse(localStorage.getItem('admin_created_exams') || '[]');
-          adminCreated.forEach((ac: any) => {
-            const acCode = ac.exam_code || ac.id;
-            if (acCode && !defaultExams.some((de) => de.code === acCode)) {
-              defaultExams.push({
-                id: ac.id || acCode,
-                title: ac.title || `Assessment Assignment (${acCode})`,
-                code: acCode,
-                duration_minutes: ac.duration_minutes || 45,
-                start_time: new Date().toISOString(),
-                end_time: new Date(Date.now() + 7 * 86400000).toISOString(),
-                is_active: true,
-              });
-            }
-          });
-        } catch {}
-        setUpcomingExams(defaultExams);
+        setUpcomingExams([]);
         setPastResults([]);
         setRank(null);
       } finally {
@@ -270,7 +205,11 @@ export default function StudentDashboardPage() {
     }
     setLaunchError('');
 
-    const hallTicket = student?.roll_number || '24VR1A0501';
+    const hallTicket = student?.roll_number || student?.hall_ticket || '';
+    if (!hallTicket) {
+      setLaunchError('Please ensure your student session is active with a verified Roll Number, or enter via the Examination Gate.');
+      return;
+    }
     const studentName = student?.name || 'Student Candidate';
 
     // Store candidate attempt credentials in localStorage
@@ -282,10 +221,7 @@ export default function StudentDashboardPage() {
       student_gate_pass: `GP-STU-${hallTicket}-A9F2`,
       candidate_gate_pass: `GP-CAND-${hallTicket}-C7D4`,
       examDetails: {
-        exam_name:
-          targetCode === 'LW-VRSEC-2026'
-            ? 'LogicWhileLiRE — Linear & Binary Search Qualifier (LW-VRSEC-2026)'
-            : `Assessment Assignment (${targetCode})`,
+        exam_name: `Assessment Assignment (${targetCode})`,
         duration_minutes: 45,
         total_questions: 10,
       },

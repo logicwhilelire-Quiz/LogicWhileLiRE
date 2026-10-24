@@ -8,7 +8,7 @@ export default function OTPVerifyPage() {
   const { examId } = useParams<{ examId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const state = location.state as { participant_id: string; email: string; demo_otp?: string } | null;
+  const state = location.state as { participant_id: string; email: string } | null;
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);

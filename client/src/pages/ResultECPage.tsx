@@ -55,6 +55,7 @@ interface ResultData {
   coding_questions?: CodingQuestionItem[]
   hasCodingQuestions?: boolean
   has_coding_questions?: boolean
+  offline_evaluated?: boolean
 }
 
 interface LeaderboardEntry {
@@ -131,9 +132,20 @@ export default function ResultECPage() {
     (rawResult?.score !== undefined ? rawResult : null) ||
     null
 
-  const [result, setResult] = useState<ResultData | null>(incomingResult)
+  const storedResult: ResultData | null = (() => {
+    try {
+      if (!examCode) return null
+      const raw = localStorage.getItem(`logicwhilelire_results_${examCode}`) ||
+        sessionStorage.getItem(`logicwhilelire_results_${examCode}`) ||
+        localStorage.getItem(`logicwhilelire_results_${examCode.toUpperCase()}`)
+      if (raw) return JSON.parse(raw)
+    } catch {}
+    return null
+  })()
+
+  const [result, setResult] = useState<ResultData | null>(incomingResult || storedResult)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
-  const [loading, setLoading] = useState(!result)
+  const [loading, setLoading] = useState(!incomingResult && !storedResult)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
@@ -144,7 +156,15 @@ export default function ResultECPage() {
           if (apiData) setResult(apiData)
           setLoading(false)
         })
-        .catch(() => setLoading(false))
+        .catch(() => {
+          try {
+            const raw = localStorage.getItem(`logicwhilelire_results_${examCode}`) || sessionStorage.getItem(`logicwhilelire_results_${examCode}`)
+            if (raw) setResult(JSON.parse(raw))
+          } catch {}
+          setLoading(false)
+        })
+    } else {
+      setLoading(false)
     }
 
     // Load leaderboard using canonical exam-code endpoint
@@ -204,24 +224,14 @@ export default function ResultECPage() {
     activeResult.codingQuestions ||
     []
 
-  const isDemo123 = Boolean(examCode && examCode.toUpperCase().includes('DEMO123'))
   const hasCodingQuestions = Boolean(
     activeResult.has_coding_questions ||
     activeResult.hasCodingQuestions ||
     initialCodingQuestions.length > 0 ||
-    isDemo123 ||
     Object.keys(resolvedCodeAnswers).length > 0
   )
 
-  const resolvedCodingQuestions: CodingQuestionItem[] =
-    initialCodingQuestions.length > 0
-      ? initialCodingQuestions
-      : hasCodingQuestions
-      ? [
-          { id: `${(examCode || 'demo123').toLowerCase()}-code-01`, title: '⚡ CODING CHALLENGE: Two Sum', marks: 10 },
-          { id: `${(examCode || 'demo123').toLowerCase()}-code-02`, title: '⚡ CODING CHALLENGE: Valid Anagram', marks: 10 },
-        ]
-      : []
+  const resolvedCodingQuestions: CodingQuestionItem[] = initialCodingQuestions
 
   const codingMarksTotal = resolvedCodingQuestions.reduce((sum, cq) => sum + (cq.marks || 10), 0)
   const effectiveMcqMaxMarks =
@@ -532,7 +542,7 @@ export default function ResultECPage() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, margin: '14px 0' }}>
                     {resolvedCodingQuestions.map((cq, idx) => {
-                      const codeVal = resolvedCodeAnswers[cq.id] || resolvedCodeAnswers[`demo123-code-0${idx + 1}`] || ''
+                      const codeVal = resolvedCodeAnswers[cq.id] || ''
                       const isAttempted = cq.submitted ?? Boolean(typeof codeVal === 'string' && codeVal.trim().length > 0)
 
                       return (
@@ -693,6 +703,34 @@ export default function ResultECPage() {
                 Rank #{animatedRank} of {totalCandidates}
               </motion.span>
             </motion.div>
+
+            {activeResult.offline_evaluated && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.55 }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  marginTop: 14,
+                  padding: '6px 18px',
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  borderRadius: 999,
+                  color: '#34D399',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  width: 'fit-content',
+                  margin: '14px auto 0',
+                }}
+              >
+                <span>🛡️ Certified Offline Evaluation</span>
+                <span style={{ opacity: 0.4 }}>•</span>
+                <span>Cryptographically Encrypted & Queued for Cloud Sync</span>
+              </motion.div>
+            )}
           </motion.div>
         )}
 

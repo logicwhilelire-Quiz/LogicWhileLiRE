@@ -140,9 +140,51 @@ export async function migrateIndexedDB(): Promise<void> {
 }
 
 /**
+ * Purges legacy mock/demo exam attempts and keys from browser storage to ensure
+ * clean operational state.
+ */
+export function purgeLegacyDemoData(): void {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+
+    // Purge known demo / mock keys
+    const demoKeysToRemove = [
+      'admin_exam_state_DEMO123',
+      'admin_exam_state_DEMO100',
+      'admin_exam_state_LW-VRSEC-2026',
+      'admin_imported_questions_LW-VRSEC-2026',
+      'admin_imported_questions_DEMO123',
+      'logicwhile_demo_state',
+    ];
+
+    demoKeysToRemove.forEach(k => {
+      try { localStorage.removeItem(k); } catch {}
+    });
+
+    // Check if stored candidate attempt belongs to demo codes
+    const attemptStr = localStorage.getItem('logicwhilelire_attempt') || localStorage.getItem('lw_attempt');
+    if (attemptStr) {
+      try {
+        const att = JSON.parse(attemptStr);
+        const code = (att.examCode || '').toUpperCase();
+        if (code.includes('DEMO') || code === 'LW-VRSEC-2026') {
+          localStorage.removeItem('logicwhilelire_attempt');
+          localStorage.removeItem('lw_attempt');
+          localStorage.removeItem('student_gate_pass');
+          localStorage.removeItem('candidate_gate_pass');
+        }
+      } catch {}
+    }
+  } catch (err) {
+    console.warn('[LogicWhileLiRE] Demo purge notice:', err);
+  }
+}
+
+/**
  * Master migration invocation called at app startup.
  */
 export function runStartupMigration(): void {
+  purgeLegacyDemoData();
   migrateLocalStorage();
   migrateIndexedDB().catch(() => {});
 }

@@ -683,9 +683,8 @@ router.get('/exam-code/:code/start', async (req: Request, res: Response) => {
       });
     }
 
-    // Enforce inspector start (Item 3)
-    const isDemoExam = code.includes('DEMO') || code === 'CS2026';
-    if (!isDemoExam && !exam.started_at) {
+    // Enforce inspector start (Synchronized Launch)
+    if (!exam.started_at) {
       const { getExamStartedState } = await import('../services/socketService');
       const startedState = getExamStartedState(code);
       if (!startedState) {
@@ -893,25 +892,9 @@ router.get('/exam-code/:code/result', async (req: Request, res: Response) => {
       .maybeSingle();
 
     if (!attempt) {
-      // Return a demo score result if in demo mode
-      return res.json({
-        success: true,
-        data: {
-          score: 85,
-          totalMarks: 100,
-          percentage: 85,
-          correctAnswers: 12,
-          wrongAnswers: 2,
-          unanswered: 1,
-          timeTaken: 1420,
-          qrToken: `cert_${code}_${hallTicket || 'DEMO'}`,
-          code_answers: {},
-          mcq_score: 85,
-          mcq_max_score: 100,
-          mcq_percentage: 85,
-          coding_questions: [],
-          has_coding_questions: false,
-        },
+      return res.status(404).json({
+        success: false,
+        error: 'Evaluation record not found for this candidate.',
       });
     }
 

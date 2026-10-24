@@ -76,7 +76,6 @@ const PracticeArenaPage = lazyWithRetry(() => import('./pages/PracticeArenaPage'
 const InstitutionalStudentReportPage = lazyWithRetry(() => import('./pages/InstitutionalStudentReportPage'));
 const AboutPage = lazyWithRetry(() => import('./pages/AboutPage'));
 const NotFoundPage = lazyWithRetry(() => import('./pages/NotFoundPage'));
-const ExamDemoPage = lazyWithRetry(() => import('./pages/ExamDemoPage'));
 
 // ── NEW: Admin pages ─────────────────────────────────────────────
 const CollegesPage = lazyWithRetry(() => import('./pages/admin/CollegesPage'));
@@ -119,7 +118,7 @@ function AnimatedRoutes() {
         <Route path="/inspector/login" element={<InspectorLoginPage />} />
         <Route path="/inspector/console" element={<InstructorConsolePage />} />
         <Route path="/inspector/console/:examCode" element={<InstructorConsolePage />} />
-        <Route path="/inspector/monitor" element={<MonitorControl />} />
+        <Route path="/inspector/monitor" element={<InstructorConsolePage />} />
         <Route path="/inspector/results" element={<ResultControl />} />
 
         {/* ── EXAM CODE SYSTEM (No OTP — Hall Ticket + Code) ── */}
@@ -165,8 +164,8 @@ function AnimatedRoutes() {
         <Route path="/contest/:contestId/waiting-lobby" element={<WaitingLobbyPage />} />
         <Route path="/waiting-lobby/:contestId" element={<WaitingLobbyPage />} />
         <Route path="/lobby/:contestId" element={<WaitingLobbyPage />} />
-        <Route path="/contest/waiting-lobby" element={<Navigate to="/waiting-lobby/LW-VRSEC-2026" replace />} />
-        <Route path="/waiting-lobby" element={<Navigate to="/waiting-lobby/LW-VRSEC-2026" replace />} />
+        <Route path="/contest/waiting-lobby" element={<Navigate to="/enter-exam" replace />} />
+        <Route path="/waiting-lobby" element={<Navigate to="/enter-exam" replace />} />
         <Route path="/enter-quiz" element={<Navigate to="/enter-exam" replace />} />
 
         {/* Student Auth & Recovery */}

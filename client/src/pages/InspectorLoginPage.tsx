@@ -53,7 +53,7 @@ function IGPortalTab({ label, icon, active, to }: { label: IGPortalKey; icon: st
 export default function InspectorLoginPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    username: localStorage.getItem('last_inspector_user') || 'inspector',
+    username: localStorage.getItem('last_inspector_user') || '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -398,8 +398,8 @@ export default function InspectorLoginPage() {
             </div>
           </motion.div>
 
-          <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.75rem', color: '#334155' }}>
-            LogicWhile LiRE • Created by <strong style={{ color: '#00D2FF', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
+          <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.75rem', color: '#64748B' }}>
+            LogicWhile LiRE • Developed by <strong style={{ color: '#EAA812', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
           </div>
         </motion.div>
       </div>

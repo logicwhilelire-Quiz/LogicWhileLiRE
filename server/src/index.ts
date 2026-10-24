@@ -87,7 +87,7 @@ app.use(
 
 // Standard Permissions-Policy header for webcam and screen capture proctoring & Keep-Alive headers
 app.use((_req, res, next) => {
-  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), display-capture=(self)');
+  res.setHeader('Permissions-Policy', 'camera=(self), display-capture=(self)');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('Keep-Alive', 'timeout=65, max=1000');
   next();

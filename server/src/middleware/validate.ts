@@ -288,8 +288,8 @@ export const candidateRegisterSchema = z
     year_of_passing: z
       .union([z.number(), z.string()])
       .transform((val) => Number(val))
-      .refine((val) => [2027, 2028, 2029, 2030].includes(val), {
-        message: 'Year of passing must be one of 2027, 2028, 2029, 2030',
+      .refine((val) => [2026, 2027, 2028, 2029, 2030].includes(val), {
+        message: 'Year of passing must be one of 2026, 2027, 2028, 2029, 2030',
       }),
     roll_number: z
       .string()

@@ -361,7 +361,7 @@ export default function LandingPage() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9 }}>
               <FeaturePill icon="⚡" text="Server-Authoritative Timers" />
               <FeaturePill icon="👁️" text="Webcam + Screen Proctoring" />
-              <FeaturePill icon="🎙️" text="Audio Spike Detection" />
+              <FeaturePill icon="🚀" text="Live Rank Engine (LiRE)" />
               <FeaturePill icon="📡" text="Offline Answer Buffering" />
               <FeaturePill icon="🏆" text="Real-Time Leaderboard" />
               <FeaturePill icon="🔐" text="Multi-Role RBAC" />
