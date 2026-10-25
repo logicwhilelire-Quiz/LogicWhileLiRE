@@ -31,7 +31,10 @@ END $$;
 ALTER TABLE colleges ADD COLUMN IF NOT EXISTS registration_enabled BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE colleges ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
 
--- staff (RBAC, 2FA & lockout)
+-- staff (RBAC, 2FA, lockout, usernames & login linking)
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS username TEXT;
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE staff ADD COLUMN IF NOT EXISTS permissions JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE staff ADD COLUMN IF NOT EXISTS is_2fa_enabled BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE staff ADD COLUMN IF NOT EXISTS totp_secret TEXT;
@@ -210,6 +213,21 @@ CREATE TABLE IF NOT EXISTS email_queue (
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS mail_logs (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  to_email            TEXT NOT NULL,
+  template            TEXT NOT NULL,
+  subject             TEXT NOT NULL,
+  status              TEXT NOT NULL DEFAULT 'sent' CHECK (status IN ('sent', 'delivered', 'failed', 'resending')),
+  resend_id           TEXT,
+  error_message       TEXT,
+  metadata            JSONB DEFAULT '{}'::jsonb,
+  html_content        TEXT,
+  sent_by             TEXT DEFAULT 'system',
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- ─── 5. COMPATIBILITY VIEWS (security_invoker = true) ──────────────────────────
 CREATE OR REPLACE VIEW candidates WITH (security_invoker = true) AS SELECT * FROM participants;
 CREATE OR REPLACE VIEW sessions WITH (security_invoker = true) AS SELECT * FROM exam_sessions;
@@ -218,6 +236,15 @@ CREATE OR REPLACE VIEW audit_logs WITH (security_invoker = true) AS SELECT * FRO
 -- ─── 6. PERFORMANCE INDEXES ──────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_colleges_code ON colleges(college_code);
 CREATE INDEX IF NOT EXISTS idx_staff_email ON staff(email);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_staff_username_unique ON staff (LOWER(username)) WHERE username IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_staff_username ON staff (username) WHERE username IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_staff_phone ON staff (phone) WHERE phone IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_mail_logs_to_email ON mail_logs(to_email);
+CREATE INDEX IF NOT EXISTS idx_mail_logs_template ON mail_logs(template);
+CREATE INDEX IF NOT EXISTS idx_mail_logs_status ON mail_logs(status);
+CREATE INDEX IF NOT EXISTS idx_mail_logs_created_at ON mail_logs(created_at DESC);
+
 CREATE INDEX IF NOT EXISTS idx_students_college_roll ON students(college_id, roll_number);
 CREATE INDEX IF NOT EXISTS idx_students_email ON students(email);
 CREATE INDEX IF NOT EXISTS idx_students_targeting ON students(college_id, branch_code, year_of_passing, section);
@@ -235,6 +262,7 @@ ALTER TABLE IF EXISTS cohorts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS colleges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS deliverable_failures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS email_queue ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS mail_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS sections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS staff ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS student_roster ENABLE ROW LEVEL SECURITY;
@@ -251,6 +279,7 @@ DECLARE
     'colleges',
     'deliverable_failures',
     'email_queue',
+    'mail_logs',
     'sections',
     'staff',
     'student_roster',

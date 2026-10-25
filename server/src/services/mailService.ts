@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import { supabase } from '../db/supabase';
-import { getTransporter, getBrevoTransporter, dailyEmailQuota } from './emailService';
+import { getTransporter, getBrevoTransporter, dailyEmailQuota, logDeliverableFailure } from './emailService';
 
 // ============================================================================
 // CONFIGURATION & ENVIRONMENT
@@ -109,7 +109,7 @@ function sanitizeLogData(metadata?: Record<string, any>, html?: string): {
 // ============================================================================
 // 1. CORE DISPATCH SERVICE: sendMail
 // ============================================================================
-export async function sendMail(options: SendMailOptions): Promise<SendMailResult> {
+export async function sendMail(options: SendMailOptions, maxRetries: number = 2): Promise<SendMailResult> {
   const toList = Array.isArray(options.to) ? options.to : [options.to];
   const toStr = toList.join(', ');
   const templateName = options.template || 'custom';
@@ -122,75 +122,118 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
   let resendId: string | null = null;
   let isSuccess = false;
   let errorMessage: string | null = null;
+  let transportUsed = 'unknown';
 
-  // 1. Check daily quota tracker if available
   const quotaCheck = dailyEmailQuota.canSend();
-  if (!quotaCheck.allowed) {
-    errorMessage = quotaCheck.reason || 'Daily outbound email quota reached.';
-    console.warn(`[MailService] 🛑 ${errorMessage}`);
-  } else {
-    // Attempt dispatch via Resend API
+  const brevoFallback = getBrevoTransporter();
+  const smtpTransporter = getTransporter();
+
+  // If daily cap exceeded, engage Brevo fallback transport immediately rather than dropping
+  const forceFallbackToBrevo = !quotaCheck.allowed;
+  if (forceFallbackToBrevo) {
+    console.warn(`[MailService] ⚠️ Resend quota reached (${dailyEmailQuota.getCap()}/day). Engaging secondary transport for [${templateName}] to ${toStr}`);
+  }
+
+  // Multi-attempt retry loop
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      if (resendApiKey) {
-        const res = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: senderAddress,
-            to: toList,
-            subject: options.subject,
-            html: options.html,
-            text: options.text || undefined,
-            reply_to: replyToAddress,
-          }),
-        });
-
-        const resData = (await res.json().catch(() => ({}))) as any;
-        if (!res.ok) {
-          throw new Error(resData?.message || `Resend API returned status ${res.status}`);
-        }
-
-        resendId = resData?.id || `resend_${Date.now()}`;
-        isSuccess = true;
-        dailyEmailQuota.recordSent();
-        console.log(`[MailService:Resend] ✅ Sent [${templateName}] to ${toStr} (ID: ${resendId})`);
-      } else {
-        // Fallback to SMTP transport (Resend SMTP or Brevo)
-        const smtp = getTransporter() || getBrevoTransporter();
-        if (smtp) {
-          const info = await smtp.sendMail({
-            from: senderAddress,
-            to: toStr,
-            subject: options.subject,
-            html: options.html,
-            text: options.text,
-            replyTo: replyToAddress,
+      // Priority 1: Resend HTTPS API (if key available and not forced to fallback)
+      if (resendApiKey && !forceFallbackToBrevo) {
+        try {
+          const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: senderAddress,
+              to: toList,
+              subject: options.subject,
+              html: options.html,
+              text: options.text || undefined,
+              reply_to: replyToAddress,
+            }),
           });
-          resendId = info.messageId || `smtp_${Date.now()}`;
+
+          const resData = (await res.json().catch(() => ({}))) as any;
+          if (!res.ok) {
+            const errMsg = resData?.message || `Resend API returned status ${res.status}`;
+            throw new Error(`[RESEND_ERROR] ${errMsg}`);
+          }
+
+          resendId = resData?.id || `resend_${Date.now()}`;
           isSuccess = true;
+          transportUsed = 'resend_api';
           dailyEmailQuota.recordSent();
-          console.log(`[MailService:SMTP] ✅ Sent [${templateName}] to ${toStr} (ID: ${resendId})`);
-        } else if (process.env.NODE_ENV !== 'production' || process.env.DEMO_MODE === 'true') {
-          // Dev mock fallback
-          resendId = `mock_${Date.now()}`;
-          isSuccess = true;
-          dailyEmailQuota.recordSent();
-          console.log(`[MailService:Mock] 🧪 Simulating send [${templateName}] to ${toStr}`);
-        } else {
-          throw new Error('No email transport configured. RESEND_API_KEY missing.');
+          console.log(`[MailService:Resend] ✅ Sent [${templateName}] to ${toStr} (ID: ${resendId}) attempt ${attempt}`);
+          break;
+        } catch (resendErr: any) {
+          console.warn(`[MailService:Resend] ⚠️ Resend dispatch failed (attempt ${attempt}): ${resendErr?.message}. Trying fallback transport...`);
+          // Try Brevo or SMTP fallback immediately
+          const fallback = brevoFallback || smtpTransporter;
+          if (fallback) {
+            const info = await fallback.sendMail({
+              from: senderAddress,
+              to: toStr,
+              subject: options.subject,
+              html: options.html,
+              text: options.text,
+              replyTo: replyToAddress,
+            });
+            resendId = info.messageId || `fallback_${Date.now()}`;
+            isSuccess = true;
+            transportUsed = brevoFallback ? 'brevo_fallback' : 'smtp_fallback';
+            dailyEmailQuota.recordSent();
+            console.log(`[MailService:Fallback] ✅ Delivered [${templateName}] to ${toStr} via ${transportUsed} (ID: ${resendId})`);
+            break;
+          }
+          throw resendErr;
         }
       }
+
+      // Priority 2: Brevo or Primary SMTP Transport
+      const activeSmtp = brevoFallback || smtpTransporter;
+      if (activeSmtp) {
+        const info = await activeSmtp.sendMail({
+          from: senderAddress,
+          to: toStr,
+          subject: options.subject,
+          html: options.html,
+          text: options.text,
+          replyTo: replyToAddress,
+        });
+        resendId = info.messageId || `smtp_${Date.now()}`;
+        isSuccess = true;
+        transportUsed = brevoFallback ? 'brevo_smtp' : 'primary_smtp';
+        dailyEmailQuota.recordSent();
+        console.log(`[MailService:SMTP] ✅ Sent [${templateName}] to ${toStr} (ID: ${resendId})`);
+        break;
+      }
+
+      // Priority 3: Non-production Mock
+      if (process.env.NODE_ENV !== 'production' || process.env.DEMO_MODE === 'true') {
+        resendId = `mock_${Date.now()}`;
+        isSuccess = true;
+        transportUsed = 'dev_mock';
+        dailyEmailQuota.recordSent();
+        console.log(`[MailService:Mock] 🧪 Simulating send [${templateName}] to ${toStr}`);
+        break;
+      }
+
+      throw new Error('No email transport configured in production. Set RESEND_API_KEY or BREVO_SMTP_USER/PASS.');
     } catch (err: any) {
       errorMessage = err?.message || String(err);
-      console.error(`[MailService] ❌ Dispatch failed for [${templateName}] to ${toStr}:`, errorMessage);
+      console.warn(`[MailService] Attempt ${attempt}/${maxRetries} failed for [${templateName}] to ${toStr}: ${errorMessage}`);
+      if (attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+      }
     }
   }
 
   // 2. Prepare sanitization & log record
   const { cleanMetadata, cleanHtml } = sanitizeLogData(options.metadata, options.html);
+  cleanMetadata.transport_used = transportUsed;
   const nowIso = new Date().toISOString();
   const logRecordId = crypto.randomUUID();
 
@@ -237,11 +280,28 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
       .maybeSingle();
 
     if (error) {
-      // Table may not yet be cached or created on remote DB; memory buffer has it preserved
       console.warn(`[MailService:Log] Notice: Supabase mail_logs insert skipped (${error.message}). In-memory buffer active.`);
     }
   } catch (dbErr: any) {
     console.warn(`[MailService:Log] Database logging warning: ${dbErr?.message}`);
+  }
+
+  // 4. Log deliverable failure in database if all attempts failed
+  if (!isSuccess && errorMessage) {
+    try {
+      await logDeliverableFailure(
+        {
+          to: toStr,
+          subject: options.subject,
+          text: options.text || '',
+          html: options.html,
+          emailType: (templateName as any),
+          metadata: cleanMetadata,
+        },
+        errorMessage,
+        maxRetries
+      );
+    } catch {}
   }
 
   return {

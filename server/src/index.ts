@@ -25,16 +25,18 @@ import { startSessionCron } from './jobs/sessionCron';
 import { startBackupScheduler } from './services/backupScheduler';
 import { validateParams, ExamIdParam } from './middleware/validate';
 import { initSocketIO } from './services/socketService';
-import { verifyDatabaseConnectivity } from './db/supabase';
+import { verifyDatabaseConnectivity, getCircuitState, cleanupAllChannels } from './db/supabase';
+import { emailQueue } from './services/emailQueue';
 
 // ── PRODUCTION BOOT GUARD (must be first — refuses to start with weak secrets) ──
 runProductionBootGuard();
 
 const app = express();
 const httpServer = http.createServer(app);
-// Configure HTTP server keep-alive timeouts (65s > reverse proxy 60s default) to prevent socket drops
-httpServer.keepAliveTimeout = 65000;
-httpServer.headersTimeout = 66000;
+// Configure HTTP server keep-alive timeouts for Render / AWS / Cloudflare reverse proxies
+// 120s keepAliveTimeout prevents premature socket close ECONNRESET during long proctoring sessions
+httpServer.keepAliveTimeout = 120000;
+httpServer.headersTimeout = 125000;
 const PORT = parseInt(process.env.PORT || '3001');
 
 import fs from 'fs';
@@ -134,8 +136,8 @@ app.use(
       callback(new Error('CORS: Origin not allowed'));
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'x-load-test'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'x-load-test', 'x-xsrf-token', 'x-csrf-token'],
   })
 );
 
@@ -191,12 +193,27 @@ const isDemo =
   (process.env.SUPABASE_URL || '').includes('your-project');
 
 const handleHealthCheck = (_req: express.Request, res: express.Response) => {
+  const mem = process.memoryUsage();
+  const queueStats = emailQueue.getStats();
+  const circuit = getCircuitState();
+
   res.json({
     status: 'ok',
     service: 'LogicWhileLiRE Assessment Engine',
     version: '4.0.0',
     environment: process.env.NODE_ENV || 'development',
     demo_mode: isDemo,
+    uptime_seconds: Math.floor(process.uptime()),
+    memory: {
+      rss_mb: Math.round((mem.rss / 1024 / 1024) * 10) / 10,
+      heap_used_mb: Math.round((mem.heapUsed / 1024 / 1024) * 10) / 10,
+    },
+    circuit_breaker: circuit.state,
+    email_queue: {
+      pending: queueStats.pending,
+      processing: queueStats.processing,
+      completed: queueStats.completed,
+    },
     demo_banner: isDemo ? 'Running on in-memory demo data. Connect Supabase to enable production persistence.' : null,
     timestamp: new Date().toISOString(),
   });
@@ -204,12 +221,14 @@ const handleHealthCheck = (_req: express.Request, res: express.Response) => {
 
 app.get('/api/health', handleHealthCheck);
 app.get('/health', handleHealthCheck);
+app.get('/healthz', (_req, res) => res.status(200).send('OK'));
+app.get('/ping', (_req, res) => res.status(200).send('pong'));
 app.get('/api/version', (_req, res) => {
   res.json({ status: 'ok', version: '4.0.0', service: 'LogicWhileLiRE Assessment Engine' });
 });
 
 // Readiness check (live database probe)
-app.get('/api/ready', async (_req, res) => {
+app.get(['/api/ready', '/ready'], async (_req, res) => {
   const dbStatus = await verifyDatabaseConnectivity();
   const statusCode = dbStatus.connected ? 200 : 503;
   res.status(statusCode).json({
@@ -359,8 +378,14 @@ process.on('uncaughtException', (err: Error) => {
   console.error('[Server] Uncaught Exception:', err);
 });
 
-const handleGracefulShutdown = (signal: string) => {
+const handleGracefulShutdown = async (signal: string) => {
   console.log(`[Server] Received ${signal}. Starting graceful shutdown...`);
+  try {
+    await emailQueue.drain(4000);
+  } catch {}
+  try {
+    await cleanupAllChannels();
+  } catch {}
   httpServer.close(() => {
     console.log('[Server] HTTP and WebSocket server closed cleanly.');
     process.exit(0);

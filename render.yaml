@@ -93,6 +93,10 @@ services:
         value: smtp-relay.brevo.com
       - key: BREVO_SMTP_PORT
         value: "587"
+      - key: BREVO_API_KEY
+        sync: false
+      - key: SLOW_QUERY_THRESHOLD_MS
+        value: "500"
 
 
   # ——————————————————————————————————————————
@@ -185,4 +189,8 @@ services:
         value: smtp-relay.brevo.com
       - key: BREVO_SMTP_PORT
         value: "587"
+      - key: BREVO_API_KEY
+        sync: false
+      - key: SLOW_QUERY_THRESHOLD_MS
+        value: "500"
 

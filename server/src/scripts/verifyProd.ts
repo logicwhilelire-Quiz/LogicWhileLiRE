@@ -29,6 +29,7 @@ export const EXPECTED_TABLES = [
   'exam_sessions',
   'exams',
   'leaderboard',
+  'mail_logs',
   'participants',
   'platform_settings',
   'proctor_logs',

@@ -4,7 +4,10 @@
   "description": "LogicWhile LiRE — Elevating Coding Knowledge • Monorepo Root",
   "private": true,
   "scripts": {
-    "build": "cd server && npm install && npm run build",
+    "build": "cd client && npm install && npm run build",
+    "buildVite": "cd client && npm install && npm run build",
+    "build:client": "cd client && npm install && npm run build",
+    "build:server": "cd server && npm install && npm run build",
     "start": "cd server && npm start",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev"

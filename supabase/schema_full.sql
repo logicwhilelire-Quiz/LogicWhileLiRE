@@ -73,7 +73,10 @@ CREATE TABLE IF NOT EXISTS staff (
   id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name                    TEXT NOT NULL,
   email                   TEXT UNIQUE NOT NULL,
+  username                TEXT,
+  phone                   TEXT,
   password_hash           TEXT NOT NULL,
+  must_change_password    BOOLEAN NOT NULL DEFAULT FALSE,
   role                    TEXT NOT NULL DEFAULT 'faculty' CHECK (role IN ('super_admin', 'inspector', 'faculty', 'college_admin', 'exam_coordinator', 'proctor')),
   college_id              INT REFERENCES colleges(id) ON DELETE SET NULL,
   permissions             JSONB DEFAULT '[]'::jsonb,
@@ -691,6 +694,22 @@ CREATE TABLE IF NOT EXISTS pilot_inquiries (
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ─── 26c. TABLE: mail_logs (Outbound Dispatch Audit & Resend Telemetry) ────────
+CREATE TABLE IF NOT EXISTS mail_logs (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  to_email            TEXT NOT NULL,
+  template            TEXT NOT NULL,
+  subject             TEXT NOT NULL,
+  status              TEXT NOT NULL DEFAULT 'sent' CHECK (status IN ('sent', 'delivered', 'failed', 'resending')),
+  resend_id           TEXT,
+  error_message       TEXT,
+  metadata            JSONB DEFAULT '{}'::jsonb,
+  html_content        TEXT,
+  sent_by             TEXT DEFAULT 'system',
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- ─── 27. COMPATIBILITY VIEWS (security_invoker = true) ──────────────────────────
 CREATE OR REPLACE VIEW candidates WITH (security_invoker = true) AS SELECT * FROM participants;
 CREATE OR REPLACE VIEW sessions WITH (security_invoker = true) AS SELECT * FROM exam_sessions;
@@ -709,8 +728,16 @@ CREATE INDEX IF NOT EXISTS idx_colleges_code ON colleges(college_code);
 CREATE INDEX IF NOT EXISTS idx_colleges_active ON colleges(is_active);
 
 CREATE INDEX IF NOT EXISTS idx_staff_email ON staff(email);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_staff_username_unique ON staff (LOWER(username)) WHERE username IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_staff_username ON staff (username) WHERE username IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_staff_phone ON staff (phone) WHERE phone IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_staff_role ON staff(role);
 CREATE INDEX IF NOT EXISTS idx_staff_college ON staff(college_id);
+
+CREATE INDEX IF NOT EXISTS idx_mail_logs_to_email ON mail_logs(to_email);
+CREATE INDEX IF NOT EXISTS idx_mail_logs_template ON mail_logs(template);
+CREATE INDEX IF NOT EXISTS idx_mail_logs_status ON mail_logs(status);
+CREATE INDEX IF NOT EXISTS idx_mail_logs_created_at ON mail_logs(created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_students_college_roll ON students(college_id, roll_number);
 CREATE INDEX IF NOT EXISTS idx_students_email ON students(email);
@@ -813,6 +840,7 @@ DECLARE
     'exam_sessions',
     'exams',
     'leaderboard',
+    'mail_logs',
     'participants',
     'pilot_inquiries',
     'platform_settings',
@@ -866,6 +894,9 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO service_role;
 ALTER TABLE IF EXISTS colleges ADD COLUMN IF NOT EXISTS registration_enabled BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE IF EXISTS colleges ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
 
+ALTER TABLE IF EXISTS staff ADD COLUMN IF NOT EXISTS username TEXT;
+ALTER TABLE IF EXISTS staff ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE IF EXISTS staff ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE IF EXISTS staff ADD COLUMN IF NOT EXISTS permissions JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE IF EXISTS staff ADD COLUMN IF NOT EXISTS is_2fa_enabled BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE IF EXISTS staff ADD COLUMN IF NOT EXISTS totp_secret TEXT;
