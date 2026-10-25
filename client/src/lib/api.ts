@@ -27,20 +27,31 @@ const getCookie = (name: string): string | null => {
 // Request interceptor to attach Bearer token fallback & CSRF token
 const requestHandler = (config: any) => {
   const url = config.url || '';
-  const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const isInspectorContext = pathname.startsWith('/admin/inspector') || pathname.startsWith('/inspector') || url.startsWith('/api/v1/inspector');
+  const isFacultyContext = pathname.startsWith('/faculty') || (!localStorage.getItem('admin_token') && !!localStorage.getItem('faculty_token'));
+
+  let adminToken =
+    localStorage.getItem('admin_token') ||
+    sessionStorage.getItem('admin_token');
+
+  if (isInspectorContext) {
+    adminToken = localStorage.getItem('inspector_token') || adminToken;
+  } else if (isFacultyContext) {
+    adminToken = localStorage.getItem('faculty_token') || adminToken;
+  } else {
+    adminToken = adminToken || localStorage.getItem('faculty_token') || localStorage.getItem('inspector_token');
+  }
+
+  const studentToken = localStorage.getItem('student_token') || sessionStorage.getItem('student_token');
+  const sessionToken = localStorage.getItem('session_token') || sessionStorage.getItem('session_token');
+
+  const isAdminPath = pathname.startsWith('/admin');
   const isAdminEndpoint =
     url.startsWith('/api/admin') ||
     url.startsWith('/api/v1/exams') ||
     url.startsWith('/api/v1/inspector') ||
     url.startsWith('/api/exam-code');
-
-  const adminToken =
-    localStorage.getItem('admin_token') ||
-    sessionStorage.getItem('admin_token') ||
-    localStorage.getItem('inspector_token') ||
-    localStorage.getItem('faculty_token');
-  const studentToken = localStorage.getItem('student_token') || sessionStorage.getItem('student_token');
-  const sessionToken = localStorage.getItem('session_token') || sessionStorage.getItem('session_token');
 
   if ((isAdminEndpoint || isAdminPath) && adminToken) {
     config.headers.Authorization = `Bearer ${adminToken}`;

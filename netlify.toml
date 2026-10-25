@@ -12,7 +12,7 @@
   from = "/api/*"
   to = "https://logicwhilelire-api.onrender.com/api/:splat"
   status = 200
-  force = false
+  force = true
 
 # Ensure missing assets return 404 status code instead of falling back to HTML
 [[redirects]]

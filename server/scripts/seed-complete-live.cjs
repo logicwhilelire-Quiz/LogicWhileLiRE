@@ -20,11 +20,20 @@ async function seedCompleteLive() {
   console.log('════════════════════════════════════════════════════════════════\n');
 
   // 1. Read Excel template
-  const excelPath = 'c:/Users/chara/OneDrive/Desktop/LogicWhileLire/LogicWhileLiRE_Questions_Template.xlsx';
-  const wb = XLSX.readFile(excelPath);
+  const fs = require('fs');
+  const candidatePaths = [
+    path.resolve(__dirname, '../../LogicWhileLiRE_Questions_Template.xlsx'),
+    path.resolve(__dirname, '../../../LogicWhileLiRE_Questions_Template.xlsx'),
+    path.resolve(process.cwd(), 'LogicWhileLiRE_Questions_Template.xlsx'),
+    path.resolve(process.cwd(), '../LogicWhileLiRE_Questions_Template.xlsx'),
+  ];
+  let excelPath = candidatePaths.find(p => fs.existsSync(p));
+  if (!excelPath) throw new Error('LogicWhileLiRE_Questions_Template.xlsx not found');
+  const buf = fs.readFileSync(excelPath);
+  const wb = XLSX.read(buf, { type: 'buffer' });
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const rawQuestions = XLSX.utils.sheet_to_json(sheet);
-  console.log(`[1] Loaded ${rawQuestions.length} questions from Excel template.`);
+  console.log(`[1] Loaded ${rawQuestions.length} questions from Excel template (${excelPath}).`);
 
   const now = new Date();
   const future = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year ahead

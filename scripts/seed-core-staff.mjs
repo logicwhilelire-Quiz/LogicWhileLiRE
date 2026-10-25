@@ -50,6 +50,7 @@ function loadEnv() {
     path.resolve(process.cwd(), '.env'),
     path.resolve(process.cwd(), 'server', '.env'),
     path.resolve(__dirname, '..', '.env'),
+    path.resolve(__dirname, '..', 'server', '.env'),
     path.resolve(__dirname, '..', '..', '.env'),
     path.resolve(__dirname, '..', '..', 'server', '.env'),
   ];
@@ -78,7 +79,10 @@ function loadEnv() {
 loadEnv();
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+const supabaseKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SECRET_KEY ||
+  process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('❌ Error: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment.');

@@ -53,12 +53,22 @@ export default function InstructionsPage() {
     check();
   }, []);
 
-  function handleStart() {
+  async function handleStart() {
     if (!canProceed) return;
     try {
       sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
       sessionStorage.setItem('lw_camera_consented', 'true');
     } catch {}
+
+    // Directly trigger fullscreen mode during user click gesture
+    try {
+      if (document.documentElement && document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch (e) {
+      console.warn('[InstructionsPage] Direct fullscreen request deferred to quiz page:', e);
+    }
+
     navigate(`/quiz/${examCode}`, {
       state: { hallTicket: stored.hallTicket },
     });

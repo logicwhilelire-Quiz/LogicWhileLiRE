@@ -21,7 +21,7 @@ export default function FullscreenEnforcementOverlay({
   const [secondsLeft, setSecondsLeft] = useState(countdownSeconds);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || exitCount === 0) {
       setSecondsLeft(countdownSeconds);
       return;
     }
@@ -39,7 +39,7 @@ export default function FullscreenEnforcementOverlay({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isOpen, countdownSeconds, onTimeoutSubmit]);
+  }, [isOpen, exitCount, countdownSeconds, onTimeoutSubmit]);
 
   if (!isOpen) return null;
 
@@ -111,7 +111,7 @@ export default function FullscreenEnforcementOverlay({
               letterSpacing: '-0.02em',
             }}
           >
-            Fullscreen Mode Required
+            {exitCount === 0 ? 'Full Screen Mandatory' : 'Fullscreen Mode Required'}
           </h2>
 
           <p
@@ -122,14 +122,16 @@ export default function FullscreenEnforcementOverlay({
               marginBottom: 24,
             }}
           >
-            You have exited fullscreen mode. LogicWhileLiRE assessment integrity requires uninterrupted fullscreen throughout your session.
+            {exitCount === 0
+              ? 'LogicWhileLiRE proctored examinations must run in full screen mode. Please click the button below to enter full screen and begin your assessment.'
+              : 'You have exited fullscreen mode. LogicWhileLiRE assessment integrity requires uninterrupted fullscreen throughout your session.'}
           </p>
 
           {/* Exit counter & Strike Box */}
           <div
             style={{
               background: 'rgba(0, 0, 0, 0.35)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
+              border: exitCount === 0 ? '1px solid rgba(43, 127, 255, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 12,
               padding: '16px 20px',
               marginBottom: 24,
@@ -140,26 +142,26 @@ export default function FullscreenEnforcementOverlay({
           >
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94A3B8', fontWeight: 600 }}>
-                Violation Counter
+                {exitCount === 0 ? 'Assessment Security' : 'Violation Counter'}
               </div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: isFinalWarning ? '#EF4444' : '#F59E0B' }}>
-                Exit {exitCount} of {maxExits} {isFinalWarning && '(FINAL)'}
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: exitCount === 0 ? '#60A5FA' : isFinalWarning ? '#EF4444' : '#F59E0B' }}>
+                {exitCount === 0 ? 'Full Screen Required' : `Exit ${exitCount} of ${maxExits} ${isFinalWarning ? '(FINAL)' : ''}`}
               </div>
             </div>
 
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94A3B8', fontWeight: 600 }}>
-                Auto-Submit In
+                {exitCount === 0 ? 'Security Status' : 'Auto-Submit In'}
               </div>
               <div
                 style={{
                   fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
                   fontSize: '1.5rem',
                   fontWeight: 800,
-                  color: secondsLeft <= 3 ? '#EF4444' : '#60A5FA',
+                  color: exitCount === 0 ? '#10B981' : secondsLeft <= 3 ? '#EF4444' : '#60A5FA',
                 }}
               >
-                00:{String(secondsLeft).padStart(2, '0')}
+                {exitCount === 0 ? 'READY' : `00:${String(secondsLeft).padStart(2, '0')}`}
               </div>
             </div>
           </div>
@@ -172,17 +174,19 @@ export default function FullscreenEnforcementOverlay({
               padding: '14px 24px',
               borderRadius: 12,
               border: 'none',
-              background: 'linear-gradient(135deg, #1B5FB5 0%, #0A3F8F 100%)',
+              background: exitCount === 0
+                ? 'linear-gradient(135deg, #2B7FFF 0%, #1B5FB5 100%)'
+                : 'linear-gradient(135deg, #1B5FB5 0%, #0A3F8F 100%)',
               color: '#FFFFFF',
               fontFamily: "var(--font-display, 'Montserrat', sans-serif)",
               fontSize: '1.05rem',
               fontWeight: 700,
               cursor: 'pointer',
-              boxShadow: '0 6px 20px rgba(27, 95, 181, 0.4)',
+              boxShadow: exitCount === 0 ? '0 6px 20px rgba(43, 127, 255, 0.45)' : '0 6px 20px rgba(27, 95, 181, 0.4)',
               transition: 'all 0.2s ease',
             }}
           >
-            ⛶ Return to Fullscreen Immediately
+            {exitCount === 0 ? '🚀 Enter Full Screen & Start Exam' : '⛶ Return to Fullscreen Immediately'}
           </button>
         </motion.div>
       </motion.div>

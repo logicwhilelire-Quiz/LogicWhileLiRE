@@ -101,11 +101,9 @@ export default function InspectorLoginPage() {
 
       if (token) {
         localStorage.setItem('inspector_token', token);
-        localStorage.setItem('admin_token', token);
       }
       if (user) {
         localStorage.setItem('inspector_user', JSON.stringify(user));
-        localStorage.setItem('admin_user', JSON.stringify(user));
       }
 
       // Remember username

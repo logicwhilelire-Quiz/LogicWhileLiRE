@@ -1120,6 +1120,11 @@ export default function QuizPage() {
     document.addEventListener('mozfullscreenchange', handleFullscreenChange)
     document.addEventListener('msfullscreenchange', handleFullscreenChange)
 
+    // Enforce initial fullscreen check when assessment session loads
+    if (!document.fullscreenElement && !hasTerminatedRef.current && !submitting) {
+      setShowFullscreenOverlay(true)
+    }
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('blur', handleWindowBlur)
@@ -2111,7 +2116,63 @@ export default function QuizPage() {
     )
   }
 
-  if (!session || !currentQuestion) return null
+  if (!session || !currentQuestion) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'radial-gradient(ellipse at top, #0A1128 0%, #030712 100%)',
+          color: '#F8FAFC',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+          fontFamily: 'var(--font-sans, "Inter", sans-serif)',
+        }}
+      >
+        <motion.div
+          initial={{ scale: 0.94, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          style={{
+            maxWidth: 540,
+            width: '100%',
+            background: 'rgba(15, 23, 42, 0.92)',
+            border: '1.5px solid rgba(245, 158, 11, 0.4)',
+            borderRadius: 20,
+            padding: '36px 32px',
+            textAlign: 'center',
+            backdropFilter: 'blur(24px)',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.7), 0 0 35px rgba(245, 158, 11, 0.15)',
+          }}
+        >
+          <div style={{ fontSize: '3rem', marginBottom: 12 }}>📝</div>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FBBF24', marginBottom: 10 }}>
+            No Questions Available
+          </h2>
+          <p style={{ color: '#94A3B8', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: 24 }}>
+            This examination has not been populated with questions yet, or questions are currently being loaded.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <button
+              onClick={() => init()}
+              className="btn btn-secondary"
+              style={{ fontWeight: 700, padding: '10px 20px' }}
+            >
+              🔄 Refresh Exam
+            </button>
+            <button
+              onClick={() => navigate('/enter-exam')}
+              className="btn btn-primary"
+              style={{ fontWeight: 700, padding: '10px 20px' }}
+            >
+              Return to Exam Portal →
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   const isCode = currentQuestion.type === 'code'
   const answered = isCode ? !!codeAnswers[currentQuestion.id] : answers[currentQuestion.id] !== undefined

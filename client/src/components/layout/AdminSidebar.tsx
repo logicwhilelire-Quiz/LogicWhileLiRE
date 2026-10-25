@@ -20,12 +20,12 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
       const adminStored = localStorage.getItem('admin_user');
       if (adminStored) {
         const parsed = JSON.parse(adminStored);
-        if (parsed.role) return parsed;
+        if (parsed.role && (parsed.role === 'super_admin' || parsed.role === 'admin')) return parsed;
       }
       const facultyStored = localStorage.getItem('faculty_user');
-      if (facultyStored) return JSON.parse(facultyStored);
+      if (facultyStored && !localStorage.getItem('admin_token')) return JSON.parse(facultyStored);
       const inspectorStored = localStorage.getItem('inspector_user');
-      if (inspectorStored) return JSON.parse(inspectorStored);
+      if (inspectorStored && !localStorage.getItem('admin_token')) return JSON.parse(inspectorStored);
       return { role: 'super_admin', name: 'Super Administrator' };
     } catch {
       return { role: 'super_admin', name: 'Super Administrator' };
@@ -52,16 +52,16 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
     // Data Flow: 1. College -> 2. Branch/Year/Section -> 3. Students -> 4. Exams -> 5. Questions
     { id: 'colleges', label: '1. Colleges & Institutions', path: '/admin/colleges', icon: '🏛️', roles: ['super_admin', 'admin'] },
     { id: 'hierarchy', label: '2. Structure (Branch/Year/Sec)', path: '/admin/hierarchy', icon: '🌳', roles: ['super_admin', 'admin'] },
-    { id: 'students', label: '3. Student Management', path: '/admin/students', icon: '👥', roles: ['super_admin', 'admin'] },
-    { id: 'exams', label: '4. Exam Control', path: '/admin/exams', icon: '⚙️', roles: ['super_admin', 'admin'] },
+    { id: 'students', label: '3. Student Management', path: '/admin/students', icon: '👥', roles: ['super_admin', 'admin', 'faculty'] },
+    { id: 'exams', label: '4. Exam Control', path: '/admin/exams', icon: '⚙️', roles: ['super_admin', 'admin', 'faculty'] },
     { id: 'create', label: 'Create Exam', path: '/admin/create-exam', icon: '➕', roles: ['super_admin', 'admin'] },
     { id: 'exam-codes', label: 'Exam Codes', path: '/admin/exam-codes', icon: '🔑', roles: ['super_admin', 'admin'] },
-    { id: 'questions', label: '5. Question Bank', path: '/admin/questions', icon: '📝', roles: ['super_admin', 'admin'] },
-    { id: 'import', label: 'Import Questions (Excel)', path: '/admin/import', icon: '📥', roles: ['super_admin', 'admin'] },
+    { id: 'questions', label: '5. Question Bank', path: '/admin/questions', icon: '📝', roles: ['super_admin', 'admin', 'faculty'] },
+    { id: 'import', label: 'Import Questions (Excel)', path: '/admin/import', icon: '📥', roles: ['super_admin', 'admin', 'faculty'] },
 
     // Telemetry & Invigilation
     { id: 'inspector', label: 'Inspector Live Console', path: '/admin/inspector', icon: '📡', roles: ['super_admin', 'admin', 'inspector'] },
-    { id: 'monitor', label: 'Live Monitor Console', path: '/admin/monitor', icon: '👁️', roles: ['super_admin', 'admin', 'inspector'] },
+    { id: 'monitor', label: 'Live Monitor Console', path: '/admin/monitor', icon: '👁️', roles: ['super_admin', 'admin', 'inspector', 'faculty'] },
 
     // Results, Analytics & Audits
     { id: 'results', label: 'Results & Reports', path: '/admin/results', icon: '📈', roles: ['super_admin', 'admin', 'inspector', 'faculty'] },
@@ -79,16 +79,24 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
   const handleLogout = () => {
     const wasInspector = isInspector;
     const wasFaculty = isFaculty;
+    if (wasFaculty) {
+      localStorage.removeItem('faculty_token');
+      localStorage.removeItem('faculty_user');
+      sessionStorage.removeItem('faculty_token');
+      navigate('/faculty/login');
+      return;
+    }
+    if (wasInspector) {
+      localStorage.removeItem('inspector_token');
+      localStorage.removeItem('inspector_user');
+      sessionStorage.removeItem('inspector_token');
+      navigate('/inspector/login');
+      return;
+    }
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
-    localStorage.removeItem('inspector_token');
-    localStorage.removeItem('inspector_user');
-    localStorage.removeItem('faculty_token');
-    localStorage.removeItem('faculty_user');
     sessionStorage.removeItem('admin_token');
-    sessionStorage.removeItem('inspector_token');
-    sessionStorage.removeItem('faculty_token');
-    navigate(wasFaculty ? '/faculty/login' : wasInspector ? '/inspector' : '/admin');
+    navigate('/admin/login');
   };
 
   return (

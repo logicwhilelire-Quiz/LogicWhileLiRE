@@ -178,7 +178,7 @@ const handleExamCodeStart = async (req: any, res: any) => {
     }
 
     const studentIdentifier = `${hallTicket}_${effectiveCode}`;
-    const orderedQuestions = questions || [];
+    const orderedQuestions = deterministicShuffle(questions || [], `${studentIdentifier}_questions`);
 
     const formattedQuestions = orderedQuestions.map((q: any) => {
       const studentSeed = `${studentIdentifier}_${q.id}`;

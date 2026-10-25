@@ -101,11 +101,9 @@ export default function FacultyLoginPage() {
 
       if (token) {
         localStorage.setItem('faculty_token', token);
-        localStorage.setItem('admin_token', token);
       }
       if (user) {
         localStorage.setItem('faculty_user', JSON.stringify(user));
-        localStorage.setItem('admin_user', JSON.stringify(user));
       }
 
       // Remember username

@@ -12,7 +12,7 @@
   from = "/api/*"
   to = "https://logicwhilelire-api.onrender.com/api/:splat"
   status = 200
-  force = false
+  force = true
 
 # SPA Fallback: Route all non-asset paths to index.html with 200 status
 # NOTE: Assets (JS/CSS/images) must NOT be caught here — Netlify serves them directly from dist/

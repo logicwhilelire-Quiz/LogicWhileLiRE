@@ -79,16 +79,16 @@ export default function AdminLoginPage() {
 
   function completeAuth(token?: string, user?: any) {
     if (user && (user.role === 'inspector' || user.role === 'college_admin')) {
-      setError('Access Denied: College Inspectors must log in at the Inspector Portal (/inspector).');
+      setError('Access Denied: College Inspectors must log in at the Inspector Portal (/inspector/login).');
+      return;
+    }
+    if (user && user.role === 'faculty') {
+      setError('Access Denied: Faculty members must log in at the Faculty Portal (/faculty/login).');
       return;
     }
     if (token) localStorage.setItem('admin_token', token);
     if (user) {
       localStorage.setItem('admin_user', JSON.stringify(user));
-      if (user.role === 'faculty') {
-        navigate('/admin/exams');
-        return;
-      }
     }
     // Remember username for seamless subsequent logins
     if (form.username.trim()) {
