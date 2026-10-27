@@ -299,6 +299,22 @@ export default function SiteFooter() {
                 <span style={{ fontSize: '1rem', color: '#EAA812' }}>📞</span>
                 <span>+91 9493734553</span>
               </a>
+              <a
+                href="tel:+919985630896"
+                className="footer-link"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  color: 'var(--color-text)',
+                  textDecoration: 'none',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                }}
+              >
+                <span style={{ fontSize: '1rem', color: '#38BDF8' }}>🏢</span>
+                <span>+91 9985630896</span>
+              </a>
               <div
                 style={{
                   padding: '8px 12px',
@@ -316,10 +332,75 @@ export default function SiteFooter() {
           </div>
         </div>
 
+        {/* LogicWhile Regional Offices Grid */}
+        <div
+          style={{
+            maxWidth: 1320,
+            margin: '28px auto 0',
+            padding: '24px 24px 0',
+            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: 18,
+          }}
+        >
+          {/* Registered Office */}
+          <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '16px 20px', borderRadius: 12, border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            <div style={{ color: '#EAA812', fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+              🏛️ Registered Office
+            </div>
+            <div style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem', lineHeight: 1.6 }}>
+              LogicWhile, 9-5/14, First Floor, Keshava Nagar, Boduppal, Medipally, Hyderabad, Telangana — 500092
+            </div>
+            <a href="https://maps.google.com/?q=LogicWhile+9-5/14+Keshava+Nagar+Boduppal+Medipally+Hyderabad+500092" target="_blank" rel="noopener noreferrer" style={{ color: '#38BDF8', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', display: 'inline-block', marginTop: 8 }}>
+              View on map →
+            </a>
+          </div>
+
+          {/* Hyderabad (Head) Office */}
+          <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '16px 20px', borderRadius: 12, border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            <div style={{ color: '#38BDF8', fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+              🏢 Hyderabad (Head) Office
+            </div>
+            <div style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem', lineHeight: 1.6 }}>
+              LogicWhile, HIG 80, First Floor, Beside MRO Office, I-Phase KPHB Colony, Hyderabad, Telangana — 500072
+            </div>
+            <a href="https://maps.google.com/?q=LogicWhile+HIG+80+KPHB+Colony+Hyderabad+500072" target="_blank" rel="noopener noreferrer" style={{ color: '#38BDF8', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', display: 'inline-block', marginTop: 8 }}>
+              View on map →
+            </a>
+          </div>
+
+          {/* Vijayawada Office */}
+          <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '16px 20px', borderRadius: 12, border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            <div style={{ color: '#34D399', fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+              🏛️ Vijayawada Office
+            </div>
+            <div style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem', lineHeight: 1.6 }}>
+              LogicWhile, 61-312, 2nd Floor, Beside HDFC, Balaji Nagar, KrishnaLanka, Vijayawada, Andhra Pradesh — 520013
+            </div>
+            <a href="https://maps.google.com/?q=LogicWhile+KrishnaLanka+Vijayawada+520013" target="_blank" rel="noopener noreferrer" style={{ color: '#38BDF8', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', display: 'inline-block', marginTop: 8 }}>
+              View on map →
+            </a>
+          </div>
+
+          {/* Get in Touch Quick Box */}
+          <div style={{ background: 'rgba(234, 168, 18, 0.04)', padding: '16px 20px', borderRadius: 12, border: '1px solid rgba(234, 168, 18, 0.2)' }}>
+            <div style={{ color: '#EAA812', fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+              📞 Get In Touch
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.82rem', color: 'var(--color-text)' }}>
+              <div><strong style={{ color: '#EAA812' }}>+91 9493734553</strong> (Helpline)</div>
+              <div><strong style={{ color: '#94A3B8' }}>+91 9985630896</strong> (Corporate)</div>
+              <div style={{ color: '#38BDF8', marginTop: 2 }}>logicwhilelire@gmail.com</div>
+              <div style={{ color: '#94A3B8' }}>support@logicwhile.com</div>
+            </div>
+          </div>
+        </div>
+
         {/* Bottom Bar */}
         <div className="footer-bottom" style={{ borderColor: 'var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, padding: '20px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: '0.86rem' }}>
-            <span>© 2026 LogicWhile LiRE. All rights reserved. • Developed by <strong style={{ color: '#EAA812', fontWeight: 700 }}>R. Charan Sai Krishna</strong></span>
+            <span>© 2026 LiRE — Live Rank Engine (LogicWhile). All rights reserved. • Developed by <strong style={{ color: '#EAA812', fontWeight: 700 }}>R. Charan Sai Krishna</strong></span>
             <span style={{ color: 'var(--color-border, #334155)' }}>•</span>
             <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none', fontWeight: 600 }}>
               logicwhilelire@gmail.com
@@ -525,7 +606,7 @@ export default function SiteFooter() {
                     {activeDocTab === 'overview' && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <p style={{ margin: 0 }}>
-                          <strong>LogicWhileLiRE</strong> (<em>Live Rank Engine</em>) is an enterprise-grade autonomous examination platform engineered for collegiate hackathons, semester evaluations, and large-scale recruitment drives.
+                          <strong>LiRE</strong> (<em>Live Rank Engine</em> by LogicWhile) is an enterprise-grade autonomous examination platform engineered for collegiate hackathons, semester evaluations, and large-scale recruitment drives.
                         </p>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                           <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 10, padding: 14 }}>

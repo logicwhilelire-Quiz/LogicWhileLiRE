@@ -253,7 +253,7 @@ export default function LandingPage() {
               fontFamily: "'Rajdhani',sans-serif", color: '#FFFFFF',
             }}
           >
-            LogicWhile{' '}
+            LiRE —{' '}
             <span style={{
               background: 'linear-gradient(135deg,#EAA812 0%,#F59E0B 40%,#FBBF24 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
@@ -489,15 +489,214 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── LOGICWHILE SERVICES & INSTITUTIONAL OFFICES ── */}
+      <section style={{ position: 'relative', zIndex: 1, padding: '20px 24px 60px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: 44 }}>
+            <span style={{
+              display: 'inline-block', background: 'rgba(234,168,18,0.12)', color: '#EAA812',
+              border: '1px solid rgba(234,168,18,0.3)', padding: '5px 16px', borderRadius: 20,
+              fontSize: '0.73rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14,
+            }}>LogicWhile Ecosystem &amp; Institutional Network</span>
+            <h2 style={{
+              fontSize: 'clamp(1.8rem,3.5vw,2.5rem)', fontWeight: 900, margin: '0 0 10px',
+              color: '#FFFFFF', fontFamily: "'Rajdhani',sans-serif", letterSpacing: '-0.02em',
+            }}>Institutional Services &amp; Campus Offices</h2>
+            <p style={{ color: '#94A3B8', fontSize: '0.92rem', margin: '0 auto', maxWidth: 680 }}>
+              Pioneering coding knowledge through standardized academic training, corporate recruitment assessments, and multi-branch infrastructure.
+            </p>
+          </motion.div>
+
+          {/* Services Grid (Matching logicwhile.com) */}
+          <div style={{ marginBottom: 40 }}>
+            <div style={{ fontSize: '0.78rem', color: '#EAA812', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>⚡</span> Specialized Training &amp; Assessment Tracks
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
+              {[
+                { icon: '🎓', title: 'Academic Training', desc: 'Core engineering & foundational coding mastery' },
+                { icon: '💼', title: 'CRT (Campus Recruitment)', desc: 'Recruitment training with live proctored simulations' },
+                { icon: '🚀', title: 'Internships', desc: 'Hands-on production projects & industrial mentorship' },
+                { icon: '💡', title: 'SoC (Skill-oriented)', desc: 'Advanced skill courses for competitive career roles' },
+                { icon: '🛠️', title: 'Projects', desc: 'Real-world architectures, cloud scaling & deployment' },
+                { icon: '👥', title: 'Workshops', desc: 'Intensive bootcamps, hackathons & code reviews' },
+              ].map((svc, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: 'rgba(15, 23, 42, 0.7)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: 14,
+                    padding: '18px 16px',
+                    backdropFilter: 'blur(12px)',
+                    transition: 'all 0.25s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#38BDF8';
+                    e.currentTarget.style.transform = 'translateY(-3px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                    e.currentTarget.style.transform = '';
+                  }}
+                >
+                  <span style={{ fontSize: '1.6rem', display: 'block', marginBottom: 10 }}>{svc.icon}</span>
+                  <div style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.96rem', marginBottom: 4, fontFamily: "'Rajdhani',sans-serif" }}>{svc.title}</div>
+                  <div style={{ fontSize: '0.76rem', color: '#94A3B8', lineHeight: 1.5 }}>{svc.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 3 Regional Institutional Offices */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 18 }}>
+            {/* 1. Registered Office */}
+            <div
+              style={{
+                background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(7, 14, 33, 0.9))',
+                border: '1.5px solid rgba(234, 168, 18, 0.3)',
+                borderRadius: 16,
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 14,
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#EAA812', background: 'rgba(234,168,18,0.12)', border: '1px solid rgba(234,168,18,0.3)', padding: '3px 10px', borderRadius: 20, textTransform: 'uppercase' }}>
+                    Registered Office
+                  </span>
+                  <span style={{ fontSize: '1.2rem' }}>🏛️</span>
+                </div>
+                <h4 style={{ margin: '0 0 10px', color: '#FFFFFF', fontSize: '1.1rem', fontFamily: "'Rajdhani',sans-serif" }}>
+                  LogicWhile — Hyderabad East
+                </h4>
+                <p style={{ margin: 0, color: '#94A3B8', fontSize: '0.84rem', lineHeight: 1.6 }}>
+                  LogicWhile, 9-5/14, First Floor, Keshava Nagar, Boduppal, Medipally, Hyderabad, Telangana — 500092
+                </p>
+              </div>
+              <a
+                href="https://maps.google.com/?q=LogicWhile+9-5/14+Keshava+Nagar+Boduppal+Medipally+Hyderabad+500092"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: '#38BDF8',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                }}
+              >
+                <span>📍</span> View on Google Maps →
+              </a>
+            </div>
+
+            {/* 2. Hyderabad Head Office */}
+            <div
+              style={{
+                background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(7, 14, 33, 0.9))',
+                border: '1.5px solid rgba(56, 189, 248, 0.3)',
+                borderRadius: 16,
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 14,
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#38BDF8', background: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.3)', padding: '3px 10px', borderRadius: 20, textTransform: 'uppercase' }}>
+                    Hyderabad (Head) Office
+                  </span>
+                  <span style={{ fontSize: '1.2rem' }}>🏢</span>
+                </div>
+                <h4 style={{ margin: '0 0 10px', color: '#FFFFFF', fontSize: '1.1rem', fontFamily: "'Rajdhani',sans-serif" }}>
+                  LogicWhile — KPHB Colony
+                </h4>
+                <p style={{ margin: 0, color: '#94A3B8', fontSize: '0.84rem', lineHeight: 1.6 }}>
+                  LogicWhile, HIG 80, First Floor, Beside MRO Office, I-Phase KPHB Colony, Hyderabad, Telangana — 500072
+                </p>
+              </div>
+              <a
+                href="https://maps.google.com/?q=LogicWhile+HIG+80+KPHB+Colony+Hyderabad+500072"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: '#38BDF8',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                }}
+              >
+                <span>📍</span> View on Google Maps →
+              </a>
+            </div>
+
+            {/* 3. Vijayawada Office */}
+            <div
+              style={{
+                background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(7, 14, 33, 0.9))',
+                border: '1.5px solid rgba(16, 185, 129, 0.3)',
+                borderRadius: 16,
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 14,
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#34D399', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', padding: '3px 10px', borderRadius: 20, textTransform: 'uppercase' }}>
+                    Vijayawada Office
+                  </span>
+                  <span style={{ fontSize: '1.2rem' }}>🏛️</span>
+                </div>
+                <h4 style={{ margin: '0 0 10px', color: '#FFFFFF', fontSize: '1.1rem', fontFamily: "'Rajdhani',sans-serif" }}>
+                  LogicWhile — Andhra Pradesh
+                </h4>
+                <p style={{ margin: 0, color: '#94A3B8', fontSize: '0.84rem', lineHeight: 1.6 }}>
+                  LogicWhile, 61-312, 2nd Floor, Beside HDFC, Balaji Nagar, KrishnaLanka, Vijayawada, Andhra Pradesh — 520013
+                </p>
+              </div>
+              <a
+                href="https://maps.google.com/?q=LogicWhile+KrishnaLanka+Vijayawada+520013"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: '#38BDF8',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                }}
+              >
+                <span>📍</span> View on Google Maps →
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── INSTITUTIONAL CONTACT & HELPDESK ── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '0 24px 70px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div style={{
-            background: 'linear-gradient(135deg, rgba(0, 33, 71, 0.75) 0%, rgba(11, 19, 43, 0.85) 100%)',
-            border: '1.5px solid rgba(234, 168, 18, 0.35)',
+            background: 'linear-gradient(135deg, rgba(0, 33, 71, 0.85) 0%, rgba(11, 19, 43, 0.95) 100%)',
+            border: '1.5px solid rgba(234, 168, 18, 0.4)',
             borderRadius: 20,
             padding: '36px 40px',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(234,168,18,0.1)',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(234,168,18,0.15)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -506,52 +705,88 @@ export default function LandingPage() {
           }}>
             <div>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(234,168,18,0.15)', border: '1px solid #EAA812', borderRadius: 20, padding: '4px 12px', fontSize: '0.72rem', fontWeight: 800, color: '#EAA812', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
-                <span>📞</span> Institutional Support &amp; Examination Desk
+                <span>📞</span> LiRE Institutional Support &amp; Examination Enclave
               </div>
               <h3 style={{ fontSize: '1.6rem', fontWeight: 800, margin: '0 0 8px', color: '#FFFFFF', fontFamily: "'Rajdhani',sans-serif" }}>
-                Need Immediate Examination or Technical Assistance?
+                Need Immediate Examination or Institutional Support?
               </h3>
-              <p style={{ margin: 0, color: '#94A3B8', fontSize: '0.92rem', maxWidth: 560, lineHeight: 1.6 }}>
-                Direct support for candidates, institutions, and proctors. Created &amp; engineered by <strong style={{ color: '#EAA812' }}>R. Charan Sai Krishna</strong>.
+              <p style={{ margin: 0, color: '#94A3B8', fontSize: '0.92rem', maxWidth: 580, lineHeight: 1.6 }}>
+                Direct support for candidates, institutions, and proctors. Continuous 24/7 technical assistance and synchronous telemetry.
               </p>
             </div>
 
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <a
                 href="mailto:logicwhilelire@gmail.com"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 10,
-                  padding: '14px 24px',
+                  gap: 8,
+                  padding: '12px 20px',
                   borderRadius: 12,
                   background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
                   color: '#FFFFFF',
                   fontWeight: 800,
-                  fontSize: '0.92rem',
+                  fontSize: '0.88rem',
                   textDecoration: 'none',
-                  boxShadow: '0 4px 20px rgba(2,132,199,0.4)',
+                  boxShadow: '0 4px 18px rgba(2,132,199,0.4)',
                 }}
               >
                 <span>✉️</span> logicwhilelire@gmail.com
+              </a>
+              <a
+                href="mailto:logicwhile@gmail.com"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '12px 20px',
+                  borderRadius: 12,
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: '#F8FAFC',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  textDecoration: 'none',
+                }}
+              >
+                <span>✉️</span> logicwhile@gmail.com
               </a>
               <a
                 href="tel:+919493734553"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 10,
-                  padding: '14px 24px',
+                  gap: 8,
+                  padding: '12px 20px',
                   borderRadius: 12,
                   background: 'linear-gradient(135deg, #EAA812 0%, #D97706 100%)',
                   color: '#002147',
                   fontWeight: 800,
-                  fontSize: '0.92rem',
+                  fontSize: '0.88rem',
                   textDecoration: 'none',
-                  boxShadow: '0 4px 20px rgba(234,168,18,0.4)',
+                  boxShadow: '0 4px 18px rgba(234,168,18,0.4)',
                 }}
               >
                 <span>📞</span> +91 9493734553
+              </a>
+              <a
+                href="tel:+919985630896"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '12px 20px',
+                  borderRadius: 12,
+                  background: 'rgba(234,168,18,0.15)',
+                  border: '1px solid #EAA812',
+                  color: '#EAA812',
+                  fontWeight: 800,
+                  fontSize: '0.88rem',
+                  textDecoration: 'none',
+                }}
+              >
+                <span>🏢</span> +91 9985630896
               </a>
             </div>
           </div>

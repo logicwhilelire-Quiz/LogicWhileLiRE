@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import ErrorBoundary from './components/ErrorBoundary';
 import PageLoader from './components/PageLoader';
+import FloatingActionWidget from './components/FloatingActionWidget';
 
 // Resilient lazy loader: automatically purges stale cache and reloads on deployment chunk hash changes
 function lazyWithRetry<T extends React.ComponentType<any>>(
@@ -242,6 +243,7 @@ export default function App() {
           <Suspense fallback={<PageLoader />}>
             <AnimatedRoutes />
           </Suspense>
+          <FloatingActionWidget />
         </BrowserRouter>
       </MotionConfig>
     </ErrorBoundary>

@@ -208,8 +208,8 @@ export default function BrandLogo({
                 ELEVATING CODING KNOWLEDGE
               </span>
               <span style={{ color: '#FF7A00', fontSize: '0.7rem' }}>✦</span>
-              <span style={{ fontSize: '0.68rem', color: isDark ? '#94A3B8' : '#64748B', fontFamily: 'monospace' }}>
-                Li: Live • R: Real • E: Engine
+              <span style={{ fontSize: '0.7rem', color: isDark ? '#94A3B8' : '#64748B', fontWeight: 700 }}>
+                LiRE — Live Rank Engine
               </span>
             </div>
           )}
@@ -317,18 +317,18 @@ export default function BrandLogo({
         {/* Sub-Brand & Tagline: Render both highlighted lines matching official brand specification */}
         {effectiveShowTagline && (
           <div style={{ display: 'flex', flexDirection: 'column', marginTop: 2, gap: 1 }}>
-            {/* Sub-Brand Definition: • Li: Live • R: Real • E: Engine */}
+            {/* Sub-Brand Definition: LiRE — Live Rank Engine */}
             <div
               style={{
-                fontFamily: "var(--font-mono, 'JetBrains Mono', 'Fira Code', monospace)",
+                fontFamily: "var(--font-display, 'Space Grotesk', system-ui, sans-serif)",
                 fontSize: size === 'xs' ? 8 : size === 'sm' ? 10 : dims.subSize,
-                fontWeight: 700,
+                fontWeight: 800,
                 color: '#38BDF8',
                 letterSpacing: '0.04em',
                 whiteSpace: 'nowrap',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 5,
+                gap: 6,
                 textShadow: isDark ? '0 0 8px rgba(56, 189, 248, 0.5)' : 'none',
               }}
             >
@@ -338,15 +338,11 @@ export default function BrandLogo({
                   width: size === 'sm' ? 5 : 6,
                   height: size === 'sm' ? 5 : 6,
                   borderRadius: '50%',
-                  background: '#38BDF8',
-                  boxShadow: '0 0 8px #38BDF8',
+                  background: '#10B981',
+                  boxShadow: '0 0 8px #10B981',
                 }}
               />
-              <span style={{ color: '#38BDF8', fontWeight: 800 }}>Li: Live</span>
-              <span style={{ color: '#94A3B8' }}>•</span>
-              <span style={{ color: '#38BDF8', fontWeight: 800 }}>R: Real</span>
-              <span style={{ color: '#94A3B8' }}>•</span>
-              <span style={{ color: '#38BDF8', fontWeight: 800 }}>E: Engine</span>
+              <span style={{ color: '#38BDF8', fontWeight: 800 }}>LiRE — Live Rank Engine</span>
             </div>
 
             {/* Tagline: Elevating Coding Knowledge */}

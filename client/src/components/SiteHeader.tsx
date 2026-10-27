@@ -117,14 +117,14 @@ export default function SiteHeader() {
               }}
             />
             <span style={{ color: '#EAA812', letterSpacing: '0.04em', fontWeight: 800 }}>
-              LOGICWHILE LiRE
+              LiRE — LIVE RANK ENGINE
             </span>
             <span style={{ color: '#475569' }}>•</span>
             <span style={{ color: '#F1F5F9', fontWeight: 700, letterSpacing: '0.02em' }}>
-              R. CHARAN SAI KRISHNA
+              ELEVATING CODING KNOWLEDGE
             </span>
             <span style={{ color: '#475569' }}>•</span>
-            <span style={{ color: '#38BDF8', fontWeight: 700 }}>AUTONOMOUS ASSESSMENT ENGINE</span>
+            <span style={{ color: '#38BDF8', fontWeight: 700 }}>AUTONOMOUS ASSESSMENT CLUSTER</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: '11px', flexWrap: 'wrap' }}>
@@ -357,7 +357,7 @@ export default function SiteHeader() {
                 }}
               >
                 <div style={{ color: '#EAA812', fontWeight: 700 }}>
-                  Architect: R. Charan Sai Krishna
+                  LiRE — Live Rank Engine Helpline
                 </div>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none', fontWeight: 600 }}>

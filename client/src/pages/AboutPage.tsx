@@ -46,7 +46,7 @@ export default function AboutPage() {
                 marginBottom: 16,
               }}
             >
-              The Story of LogicWhileLiRE
+              The Story of LiRE — Live Rank Engine
             </h1>
 
             <p
@@ -120,7 +120,7 @@ export default function AboutPage() {
                   R. Charan Sai Krishna
                 </h2>
                 <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
-                  Founder, Creator & Lead Architect of the LogicWhileLiRE Autonomous Examination Engine.
+                  Founder, Creator &amp; Lead Architect of LiRE — Live Rank Engine (LogicWhile).
                 </p>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
                   <a
