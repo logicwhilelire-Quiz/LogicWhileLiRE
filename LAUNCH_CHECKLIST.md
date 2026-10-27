@@ -188,9 +188,18 @@ Configure in **Netlify Dashboard → Site Settings → Environment Variables**. 
 ## 4. Database & RLS Setup
 
 ### Step 1: Run Migrations
-Execute in **Supabase Dashboard → SQL Editor** in order:
-1. `supabase/migrations/20261003000000_production_schema.sql`
-2. `supabase/migrations/20261004000000_hierarchy_roster_and_rls.sql`
+Execute in **Supabase Dashboard → SQL Editor** (or via `npx supabase db push`):
+
+**Option A (Recommended 1-Click):**
+Paste and execute `supabase/schema_full.sql` in the Supabase SQL Editor.
+
+**Option B (Sequential Migrations):**
+Execute the 5 migrations in order from `supabase/migrations/`:
+1. `20261003000000_core_schema.sql`
+2. `20261004000000_hierarchy_roster_email_queue.sql`
+3. `20261004000001_enable_rls_and_policies.sql`
+4. `20261011000000_mail_logs.sql`
+5. `20261011000001_staff_login_linking.sql`
 
 ### Step 2: Confirm RLS
 ```sql

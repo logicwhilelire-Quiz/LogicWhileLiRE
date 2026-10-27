@@ -67,3 +67,4 @@ server/load-test.js
 server/src/scripts/testEmail.ts
 server/data/
 *.jsonl
+supabase/.temp/
