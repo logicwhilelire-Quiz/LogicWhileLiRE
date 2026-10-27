@@ -1334,7 +1334,7 @@ export async function exportPdfReport(req: Request, res: Response): Promise<void
   });
 
   doc.moveDown(1.5);
-  doc.fontSize(8).font('Helvetica').fillColor('#64748b').text('LogicWhileLiRE Autonomous Assessment Engine • Developed by R. Charan Sai • © 2026 R. Charan Sai. All rights reserved.', { align: 'center' });
+  doc.fontSize(8).font('Helvetica').fillColor('#64748b').text('LogicWhileLiRE Autonomous Assessment Engine • Architect & Lead Engineer: R. Charan Sai Krishna • Support: logicwhilelire@gmail.com (+91 9493734553) • © 2026 LogicWhile LiRE. All rights reserved.', { align: 'center' });
 
   if (req.admin) {
     recordAuditLog(req.admin, 'EXPORT_REPORT_PDF', 'exams', String(examId), { title: exam?.title, count: results?.length || 0 }, req).catch(() => {});

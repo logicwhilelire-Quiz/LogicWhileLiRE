@@ -222,6 +222,23 @@ export default function ResetPasswordPage() {
               </form>
             )}
           </div>
+
+          <div
+            style={{
+              textAlign: 'center',
+              marginTop: 20,
+              fontSize: '0.78rem',
+              color: 'var(--color-text-muted, #94a3b8)',
+              lineHeight: 1.6,
+            }}
+          >
+            <div>LogicWhile LiRE • Architect &amp; Lead Engineer: <strong style={{ color: '#EAA812' }}>R. Charan Sai Krishna</strong></div>
+            <div style={{ marginTop: 4 }}>
+              Institutional Support: <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none' }}>logicwhilelire@gmail.com</a>
+              {' '}&bull;{' '}
+              Helpline: <a href="tel:+919493734553" style={{ color: '#EAA812', textDecoration: 'none' }}>+91 9493734553</a>
+            </div>
+          </div>
         </div>
       </div>
     </AnimatedPage>

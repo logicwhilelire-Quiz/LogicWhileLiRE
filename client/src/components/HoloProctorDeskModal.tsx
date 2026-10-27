@@ -459,10 +459,12 @@ export default function HoloProctorDeskModal({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 8,
             }}
           >
-            <div style={{ fontSize: '0.7rem', color: '#64748B' }}>
-              LogicWhileLiRE Enterprise Enclave v4.0
+            <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>
+              Enclave v4.0 • Architect: <strong style={{ color: '#EAA812' }}>R. Charan Sai Krishna</strong> • Emergency: <a href="tel:+919493734553" style={{ color: '#38BDF8', textDecoration: 'none' }}>+91 9493734553</a> | <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none' }}>logicwhilelire@gmail.com</a>
             </div>
             <button
               onClick={onClose}

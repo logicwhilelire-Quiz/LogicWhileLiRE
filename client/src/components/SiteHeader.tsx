@@ -127,13 +127,17 @@ export default function SiteHeader() {
             <span style={{ color: '#38BDF8', fontWeight: 700 }}>AUTONOMOUS ASSESSMENT ENGINE</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: '11px' }}>
-            <span>
-              STATUS: <strong style={{ color: '#10B981' }}>SYSTEM OPERATIONAL</strong>
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: '11px', flexWrap: 'wrap' }}>
+            <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 700 }}>
+              <span>✉️</span> <span>logicwhilelire@gmail.com</span>
+            </a>
+            <span style={{ color: '#475569' }}>|</span>
+            <a href="tel:+919493734553" style={{ color: '#EAA812', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 700 }}>
+              <span>📞</span> <span>+91 9493734553</span>
+            </a>
             <span style={{ color: '#475569' }}>|</span>
             <span>
-              CLOCK: <strong style={{ color: '#EAA812' }}>SERVER-AUTHORITATIVE</strong>
+              STATUS: <strong style={{ color: '#10B981' }}>OPERATIONAL</strong>
             </span>
           </div>
         </div>
@@ -340,6 +344,30 @@ export default function SiteHeader() {
                   </div>
                 </Link>
               ))}
+
+              <div
+                style={{
+                  marginTop: 8,
+                  paddingTop: 12,
+                  borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                  fontSize: '0.8rem',
+                }}
+              >
+                <div style={{ color: '#EAA812', fontWeight: 700 }}>
+                  Architect: R. Charan Sai Krishna
+                </div>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none', fontWeight: 600 }}>
+                    ✉️ logicwhilelire@gmail.com
+                  </a>
+                  <a href="tel:+919493734553" style={{ color: '#EAA812', textDecoration: 'none', fontWeight: 600 }}>
+                    📞 +91 9493734553
+                  </a>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

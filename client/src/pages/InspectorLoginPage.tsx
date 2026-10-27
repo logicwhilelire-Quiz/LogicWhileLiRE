@@ -412,7 +412,7 @@ export default function InspectorLoginPage() {
 
           <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.78rem', color: '#64748B', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
             <div>
-              LogicWhile LiRE • Developed by <strong style={{ color: '#EAA812', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
+              LogicWhile LiRE • Architect &amp; Lead Engineer: <strong style={{ color: '#EAA812', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
             </div>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: '0.74rem' }}>
               <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none', fontWeight: 600 }}>

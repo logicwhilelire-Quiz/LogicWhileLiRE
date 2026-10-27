@@ -417,12 +417,27 @@ export default function InstructionsPage() {
           <div
             style={{
               textAlign: 'center',
-              fontSize: '0.74rem',
+              fontSize: '0.78rem',
               color: 'var(--color-text-faint, #64748b)',
               paddingBottom: 24,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+              alignItems: 'center',
             }}
           >
-            LogicWhileLiRE • "Logic. While. LiRE." • © 2026 LogicWhile LiRE. All rights reserved.
+            <div>
+              LogicWhileLiRE • "Logic. While. LiRE." • Architect &amp; Lead Engineer: <strong style={{ color: '#EAA812' }}>R. Charan Sai Krishna</strong>
+            </div>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: '0.74rem' }}>
+              <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none' }}>
+                ✉️ logicwhilelire@gmail.com
+              </a>
+              <span style={{ color: '#334155' }}>•</span>
+              <a href="tel:+919493734553" style={{ color: '#EAA812', textDecoration: 'none' }}>
+                📞 Helpline: +91 9493734553
+              </a>
+            </div>
           </div>
         </motion.div>
       </div>

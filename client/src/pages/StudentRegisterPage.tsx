@@ -100,8 +100,9 @@ export default function StudentRegisterPage() {
             </button>
           </div>
 
-          <div style={{ marginTop: 24, fontSize: '0.76rem', color: '#475569' }}>
-            LogicWhileLiRE · Institutional Roster Governance Policy
+          <div style={{ marginTop: 24, fontSize: '0.76rem', color: '#64748b', lineHeight: 1.5 }}>
+            <div>LogicWhileLiRE · Institutional Roster Governance Policy</div>
+            <div>Architect: <strong style={{ color: '#EAA812' }}>R. Charan Sai Krishna</strong> · Support: <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none' }}>logicwhilelire@gmail.com</a> | <a href="tel:+919493734553" style={{ color: '#EAA812', textDecoration: 'none' }}>+91 9493734553</a></div>
           </div>
         </div>
       </div>

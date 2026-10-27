@@ -203,8 +203,14 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
           <span>🚪</span>
           <span>Logout Portal</span>
         </button>
-        <div style={{ fontSize: '0.68rem', color: 'var(--color-text-faint, #64748b)', textAlign: 'center', marginTop: 12, lineHeight: 1.4 }}>
-          LogicWhileLiRE • <em>"Logic. While. LiRE."</em><br />Autonomous Assessment Engine
+        <div style={{ fontSize: '0.68rem', color: 'var(--color-text-faint, #64748b)', textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
+          <div>LogicWhileLiRE • <em>"Logic. While. LiRE."</em></div>
+          <div>Architect: <strong style={{ color: '#EAA812' }}>R. Charan Sai Krishna</strong></div>
+          <div style={{ marginTop: 4, display: 'flex', justifyContent: 'center', gap: 8 }}>
+            <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none' }}>✉️ Support</a>
+            <span>•</span>
+            <a href="tel:+919493734553" style={{ color: '#EAA812', textDecoration: 'none' }}>📞 9493734553</a>
+          </div>
         </div>
       </div>
     </aside>

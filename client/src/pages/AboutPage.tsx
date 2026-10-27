@@ -106,7 +106,7 @@ export default function AboutPage() {
                     color: '#EAA812',
                   }}
                 >
-                  Architect & Engineer
+                  Founder, Lead Architect & Engineer
                 </span>
                 <h2
                   style={{
@@ -117,10 +117,10 @@ export default function AboutPage() {
                     margin: '4px 0',
                   }}
                 >
-                  R. Charan Sai
+                  R. Charan Sai Krishna
                 </h2>
                 <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
-                  Creator & Lead Developer of the LogicWhileLiRE Autonomous Examination Engine.
+                  Founder, Creator & Lead Architect of the LogicWhileLiRE Autonomous Examination Engine.
                 </p>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
                   <a

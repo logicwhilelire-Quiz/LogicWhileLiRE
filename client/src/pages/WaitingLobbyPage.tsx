@@ -806,6 +806,17 @@ export default function WaitingLobbyPage() {
           </Link>
         </div>
 
+        <div style={{ marginTop: 14, fontSize: '0.76rem', color: '#64748B', display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+          <div>
+            LogicWhileLiRE Assessment Enclave • Architect &amp; Lead Engineer: <strong style={{ color: '#EAA812' }}>R. Charan Sai Krishna</strong>
+          </div>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: '0.74rem' }}>
+            <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none' }}>✉️ logicwhilelire@gmail.com</a>
+            <span>•</span>
+            <a href="tel:+919493734553" style={{ color: '#EAA812', textDecoration: 'none' }}>📞 Helpline: +91 9493734553</a>
+          </div>
+        </div>
+
         <HoloProctorDeskModal
           isOpen={showProctorDesk}
           onClose={() => setShowProctorDesk(false)}

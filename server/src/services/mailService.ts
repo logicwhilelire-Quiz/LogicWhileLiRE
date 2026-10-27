@@ -387,6 +387,7 @@ export function getSharedEmailLayout(options: {
             <td style="padding:24px 32px; background-color:#070d1e; border-top:1px solid rgba(255,255,255,0.07); text-align:center;">
               <p style="margin:0 0 8px; font-size:13px; color:#cbd5e1;">
                 Institutional Support & Compliance: <a href="mailto:${supportEmail}" style="color:#38bdf8; font-weight:600; text-decoration:none;">${supportEmail}</a>
+                &bull; Helpline: <a href="tel:+919493734553" style="color:#38bdf8; font-weight:600; text-decoration:none;">+91 9493734553</a>
               </p>
               <p style="margin:0 0 6px; font-size:12px; color:#94a3b8;">
                 Automated transmission dispatched from the <strong>LogicWhile LiRE</strong> Assessment Engine.
@@ -395,7 +396,7 @@ export function getSharedEmailLayout(options: {
                 <a href="${FRONTEND_URL}" style="color:#64748b; text-decoration:none;">https://logicwhilelire.com</a> • Institutional Career Growth & Proctoring Ecosystem
               </p>
               <p style="margin:0; font-size:11px; color:#475569;">
-                Developed by R. Charan Sai • © ${year} LogicWhile LiRE. All rights reserved.
+                Architect &amp; Lead Engineer: <strong style="color:#EAA812;">R. Charan Sai Krishna</strong> • © ${year} LogicWhile LiRE. All rights reserved.
               </p>
             </td>
           </tr>

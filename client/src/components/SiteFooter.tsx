@@ -798,8 +798,14 @@ export default function SiteFooter() {
                   alignItems: 'center',
                 }}
               >
-                <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                  Press <kbd style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: 4, color: '#94a3b8' }}>ESC</kbd> to exit
+                <div style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span>Architect: <strong style={{ color: '#EAA812' }}>R. Charan Sai Krishna</strong></span>
+                  <span>•</span>
+                  <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none' }}>logicwhilelire@gmail.com</a>
+                  <span>•</span>
+                  <a href="tel:+919493734553" style={{ color: '#EAA812', textDecoration: 'none' }}>+91 9493734553</a>
+                  <span>•</span>
+                  <span style={{ color: '#64748b' }}>ESC to exit</span>
                 </div>
                 <button
                   type="button"

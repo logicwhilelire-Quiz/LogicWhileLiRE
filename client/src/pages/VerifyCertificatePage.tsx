@@ -79,6 +79,36 @@ export default function VerifyCertificatePage() {
             For assessment verification, please contact your institution administrator directly.
           </p>
 
+          {/* Institutional Verification Desk */}
+          <div
+            style={{
+              margin: '0 auto 28px',
+              padding: '16px 20px',
+              background: 'rgba(234, 168, 18, 0.08)',
+              border: '1px solid rgba(234, 168, 18, 0.25)',
+              borderRadius: 12,
+              textAlign: 'center',
+              fontSize: '0.86rem',
+              color: '#CBD5E1',
+            }}
+          >
+            <div style={{ fontWeight: 700, color: '#EAA812', marginBottom: 4 }}>
+              Direct Institutional Verification Desk
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#94A3B8', marginBottom: 10 }}>
+              Architect &amp; Lead Engineer: <strong style={{ color: '#F8FAFC' }}>R. Charan Sai Krishna</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
+              <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none', fontWeight: 600 }}>
+                ✉️ logicwhilelire@gmail.com
+              </a>
+              <span style={{ color: '#475569' }}>•</span>
+              <a href="tel:+919493734553" style={{ color: '#EAA812', textDecoration: 'none', fontWeight: 600 }}>
+                📞 +91 9493734553
+              </a>
+            </div>
+          </div>
+
           {/* Actions */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
             <Link

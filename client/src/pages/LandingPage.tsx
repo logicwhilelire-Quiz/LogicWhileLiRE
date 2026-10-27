@@ -489,6 +489,75 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── INSTITUTIONAL CONTACT & HELPDESK ── */}
+      <section style={{ position: 'relative', zIndex: 1, padding: '0 24px 70px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(0, 33, 71, 0.75) 0%, rgba(11, 19, 43, 0.85) 100%)',
+            border: '1.5px solid rgba(234, 168, 18, 0.35)',
+            borderRadius: 20,
+            padding: '36px 40px',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(234,168,18,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 28,
+          }}>
+            <div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(234,168,18,0.15)', border: '1px solid #EAA812', borderRadius: 20, padding: '4px 12px', fontSize: '0.72rem', fontWeight: 800, color: '#EAA812', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
+                <span>📞</span> Institutional Support &amp; Examination Desk
+              </div>
+              <h3 style={{ fontSize: '1.6rem', fontWeight: 800, margin: '0 0 8px', color: '#FFFFFF', fontFamily: "'Rajdhani',sans-serif" }}>
+                Need Immediate Examination or Technical Assistance?
+              </h3>
+              <p style={{ margin: 0, color: '#94A3B8', fontSize: '0.92rem', maxWidth: 560, lineHeight: 1.6 }}>
+                Direct support for candidates, institutions, and proctors. Created &amp; engineered by <strong style={{ color: '#EAA812' }}>R. Charan Sai Krishna</strong>.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+              <a
+                href="mailto:logicwhilelire@gmail.com"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '14px 24px',
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
+                  color: '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: '0.92rem',
+                  textDecoration: 'none',
+                  boxShadow: '0 4px 20px rgba(2,132,199,0.4)',
+                }}
+              >
+                <span>✉️</span> logicwhilelire@gmail.com
+              </a>
+              <a
+                href="tel:+919493734553"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '14px 24px',
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg, #EAA812 0%, #D97706 100%)',
+                  color: '#002147',
+                  fontWeight: 800,
+                  fontSize: '0.92rem',
+                  textDecoration: 'none',
+                  boxShadow: '0 4px 20px rgba(234,168,18,0.4)',
+                }}
+              >
+                <span>📞</span> +91 9493734553
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <SiteFooter />
     </div>
   );

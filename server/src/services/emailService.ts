@@ -490,7 +490,7 @@ export function wrapBrandTemplate(title: string, innerHtml: string): string {
                 LogicWhileLiRE — Logic. While. LiRE. | Career Growth & Assessment Platform
               </p>
               <p style="margin:0; font-size:11px; color:#475569;">
-                Developed by R. Charan Sai • © 2026 R. Charan Sai. All rights reserved.
+                Architect &amp; Lead Engineer: <strong style="color:#EAA812;">R. Charan Sai Krishna</strong> • © 2026 LogicWhile LiRE. All rights reserved.
               </p>
             </td>
           </tr>

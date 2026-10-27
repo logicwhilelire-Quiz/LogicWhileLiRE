@@ -4,6 +4,7 @@ import axios from 'axios';
 import { getStudentDashboard, authLogout } from '../lib/api';
 import { API_BASE_URL } from '../lib/config';
 import BrandLogo from '../components/BrandLogo';
+import SiteFooter from '../components/SiteFooter';
 import AnimatedPage from '../components/AnimatedPage';
 import SectorRadar3D, { type SectorScore } from '../components/3d/SectorRadar3D';
 
@@ -347,7 +348,37 @@ export default function StudentDashboardPage() {
               </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <a
+                href="mailto:logicwhilelire@gmail.com"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: '0.76rem',
+                  color: '#38BDF8',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                }}
+                title="Institutional Support Desk"
+              >
+                <span>✉️</span> <span>Support</span>
+              </a>
+              <a
+                href="tel:+919493734553"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: '0.76rem',
+                  color: '#EAA812',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                }}
+                title="Direct Helpline"
+              >
+                <span>📞</span> <span>9493734553</span>
+              </a>
               {/* Active Session Badge */}
               <div
                 style={{
@@ -1126,6 +1157,7 @@ export default function StudentDashboardPage() {
             )}
           </section>
         </main>
+        <SiteFooter />
       </div>
     </AnimatedPage>
   );

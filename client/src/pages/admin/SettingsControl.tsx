@@ -140,7 +140,7 @@ export default function SettingsControl() {
       otpSubject: 'LogicWhile LiRE Verification Code',
       otpBody: 'Your LogicWhile LiRE verification code is: {{OTP}}\n\nThis one-time passcode is valid for 10 minutes. Please do not share this code with anyone.',
       loginSubject: 'LogicWhile LiRE - Candidate Portal Credentials',
-      loginBody: 'Dear {{NAME}},\n\nYour institutional candidate account for LogicWhile LiRE has been authorized.\n\nHall Ticket: {{HALL_TICKET}}\nTemporary Password: {{PASSWORD}}\nExam Portal URL: {{PORTAL_URL}}\n\nPlease sign in and verify your section details before your exam slot.',
+      loginBody: 'Dear {{NAME}},\n\nYour institutional candidate account for LogicWhile LiRE has been authorized.\n\nHall Ticket: {{HALL_TICKET}}\nTemporary Password: {{PASSWORD}}\nExam Portal URL: {{PORTAL_URL}}\n\nPlease sign in and verify your section details before your exam slot.\n\nInstitutional Support: logicwhilelire@gmail.com | Helpline: +91 9493734553\nArchitect & Lead Engineer: R. Charan Sai Krishna',
     };
   });
 
@@ -175,10 +175,10 @@ export default function SettingsControl() {
 
   // Audit Logs
   const [auditLogs] = useState([
-    { id: 'aud-1', admin: 'R. Charan Sai', action: 'UPDATE_BRANDING', target: 'Branding: LogicWhileLiRE', time: '2026-10-04 11:25:12' },
-    { id: 'aud-2', admin: 'R. Charan Sai', action: 'PORTAL_RULES_SYNC', target: 'Enforce Student Login to Enter Exam', time: '2026-10-04 11:32:00' },
-    { id: 'aud-3', admin: 'R. Charan Sai', action: 'SECTOR_MATRIX_ADJUST', target: '5 Sectors: 20% Uniform Distribution', time: '2026-10-04 11:38:45' },
-    { id: 'aud-4', admin: 'R. Charan Sai', action: 'PROCTOR_POLICY_UPDATE', target: 'Anti-Tab Switch Limit = 3', time: '2026-10-04 11:42:10' },
+    { id: 'aud-1', admin: 'R. Charan Sai Krishna', action: 'UPDATE_BRANDING', target: 'Branding: LogicWhileLiRE', time: '2026-10-04 11:25:12' },
+    { id: 'aud-2', admin: 'R. Charan Sai Krishna', action: 'PORTAL_RULES_SYNC', target: 'Enforce Student Login to Enter Exam', time: '2026-10-04 11:32:00' },
+    { id: 'aud-3', admin: 'R. Charan Sai Krishna', action: 'SECTOR_MATRIX_ADJUST', target: '5 Sectors: 20% Uniform Distribution', time: '2026-10-04 11:38:45' },
+    { id: 'aud-4', admin: 'R. Charan Sai Krishna', action: 'PROCTOR_POLICY_UPDATE', target: 'Anti-Tab Switch Limit = 3', time: '2026-10-04 11:42:10' },
   ]);
 
   const handleSave = (e: React.FormEvent) => {

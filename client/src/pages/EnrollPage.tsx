@@ -148,6 +148,11 @@ export default function EnrollPage() {
         <p className="text-center text-muted text-sm mt-2">
           By enrolling, you agree to follow the exam rules and conduct guidelines.
         </p>
+
+        <div style={{ marginTop: 14, textAlign: 'center', fontSize: '0.76rem', color: '#64748B', lineHeight: 1.5 }}>
+          <div>LogicWhileLiRE • Architect &amp; Lead Engineer: <strong style={{ color: '#EAA812' }}>R. Charan Sai Krishna</strong></div>
+          <div>Assistance: <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none' }}>logicwhilelire@gmail.com</a> | <a href="tel:+919493734553" style={{ color: '#EAA812', textDecoration: 'none' }}>+91 9493734553</a></div>
+        </div>
       </div>
     </div>
     </AnimatedPage>

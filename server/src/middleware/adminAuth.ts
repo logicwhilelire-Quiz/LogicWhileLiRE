@@ -61,7 +61,7 @@ export function adminAuth(req: Request, res: Response, next: NextFunction): void
           sub: 'admin@logicwhilelire.com',
           role: 'super_admin',
           staff_id: 'st000000-0000-0000-0000-000000000001',
-          name: 'R. Charan Sai (Super Admin)',
+          name: 'R. Charan Sai Krishna (Super Admin)',
           college_id: null,
           permissions: ['*'],
         };

@@ -169,6 +169,11 @@ export default function OTPVerifyPage() {
         <p className="text-center text-muted text-xs mt-2">
           🔒 This code expires in 10 minutes for security.
         </p>
+
+        <div style={{ marginTop: 16, textAlign: 'center', fontSize: '0.76rem', color: '#64748B', lineHeight: 1.5 }}>
+          <div>LogicWhileLiRE • Architect: <strong style={{ color: '#EAA812' }}>R. Charan Sai Krishna</strong></div>
+          <div>Support: <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none' }}>logicwhilelire@gmail.com</a> | <a href="tel:+919493734553" style={{ color: '#EAA812', textDecoration: 'none' }}>+91 9493734553</a></div>
+        </div>
       </div>
     </div>
     </AnimatedPage>
