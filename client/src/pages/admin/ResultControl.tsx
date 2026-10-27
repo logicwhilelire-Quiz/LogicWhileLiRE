@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AnimatedPage from '../../components/AnimatedPage';
 import AdminSidebar from '../../components/layout/AdminSidebar';
@@ -41,6 +42,7 @@ interface ExamStats {
 }
 
 export default function ResultControl() {
+  const navigate = useNavigate();
   const [selectedExam, setSelectedExam] = useState<string>('GR-LOGICWHILE-285G9G');
   const [exams, setExams] = useState<ExamOption[]>([]);
   const [results, setResults] = useState<ResultItem[]>([]);
@@ -60,7 +62,13 @@ export default function ResultControl() {
   const [actionMsg, setActionMsg] = useState('');
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('admin_token') || localStorage.getItem('inspector_token');
+    const token =
+      localStorage.getItem('admin_token') ||
+      sessionStorage.getItem('admin_token') ||
+      localStorage.getItem('faculty_token') ||
+      sessionStorage.getItem('faculty_token') ||
+      localStorage.getItem('inspector_token') ||
+      sessionStorage.getItem('inspector_token');
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
@@ -98,8 +106,19 @@ export default function ResultControl() {
   }, [selectedExam]);
 
   useEffect(() => {
+    const hasToken =
+      localStorage.getItem('admin_token') ||
+      sessionStorage.getItem('admin_token') ||
+      localStorage.getItem('faculty_token') ||
+      sessionStorage.getItem('faculty_token') ||
+      localStorage.getItem('inspector_token') ||
+      sessionStorage.getItem('inspector_token');
+    if (!hasToken) {
+      navigate('/admin', { replace: true });
+      return;
+    }
     fetchResults();
-  }, []);
+  }, [fetchResults, navigate]);
 
   const handleExamChange = (newCode: string) => {
     setSelectedExam(newCode);

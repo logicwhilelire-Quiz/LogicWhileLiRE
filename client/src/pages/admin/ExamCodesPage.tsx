@@ -103,7 +103,14 @@ export default function ExamCodesPage() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    if (!adminToken) {
+      navigate('/admin', { replace: true });
+      return;
+    }
+    load();
+  }, [navigate]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();

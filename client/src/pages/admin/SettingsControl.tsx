@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AnimatedPage from '../../components/AnimatedPage';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import {
@@ -18,6 +19,7 @@ interface SectorSetting {
 }
 
 export default function SettingsControl() {
+  const navigate = useNavigate();
   const [savedMsg, setSavedMsg] = useState('');
   const [backupLoading, setBackupLoading] = useState(false);
   const [backupMsg, setBackupMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -34,8 +36,13 @@ export default function SettingsControl() {
   };
 
   useEffect(() => {
+    const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    if (!adminToken) {
+      navigate('/admin', { replace: true });
+      return;
+    }
     fetchBackupHistory();
-  }, []);
+  }, [navigate]);
 
   const handleBackupNow = async () => {
     setBackupLoading(true);

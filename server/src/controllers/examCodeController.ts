@@ -767,7 +767,7 @@ export async function createExamCode(req: Request, res: Response): Promise<void>
   }
 
   // Generate QR data URL for the exam entry link
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const clientOrigin = (process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',')[0].trim().replace(/\/+$/, '');
   const entryUrl = `${clientOrigin}/enter-exam?code=${examCode}`;
   const qrDataUrl = await QRCode.toDataURL(entryUrl, { width: 300, margin: 2 });
 
@@ -987,7 +987,7 @@ export async function getExamCodeQR(req: Request, res: Response): Promise<void> 
   const { data: ec } = await supabase.from('exam_codes').select('exam_code').eq('id', id).single();
   if (!ec) { res.status(404).json({ success: false, error: 'Exam code not found' }); return; }
 
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const clientOrigin = (process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',')[0].trim().replace(/\/+$/, '');
   const entryUrl = `${clientOrigin}/enter-exam?code=${ec.exam_code}`;
   const qrBuffer = await QRCode.toBuffer(entryUrl, { type: 'png', width: 300 });
   res.set('Content-Type', 'image/png');

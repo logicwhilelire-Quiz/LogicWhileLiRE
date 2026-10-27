@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   getHierarchyOverview,
   listAcademicYears,
@@ -36,11 +36,13 @@ import AdminSidebar from '../../components/layout/AdminSidebar';
 import BrandLogo from '../../components/BrandLogo';
 
 export default function HierarchyManagementPage() {
+  const navigate = useNavigate();
   const currentUser = (() => {
     try {
-      return JSON.parse(localStorage.getItem('admin_user') || '{"role":"super_admin"}');
+      const stored = localStorage.getItem('admin_user') || sessionStorage.getItem('admin_user');
+      return stored ? JSON.parse(stored) : { role: 'guest' };
     } catch {
-      return { role: 'super_admin' };
+      return { role: 'guest' };
     }
   })();
 
@@ -105,8 +107,13 @@ export default function HierarchyManagementPage() {
 
   // Initial Load
   useEffect(() => {
+    const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    if (!adminToken) {
+      navigate('/admin', { replace: true });
+      return;
+    }
     loadHierarchy();
-  }, []);
+  }, [navigate]);
 
   async function loadHierarchy() {
     setLoading(true);

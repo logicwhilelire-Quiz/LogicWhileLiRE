@@ -121,7 +121,7 @@ export default function InstructorConsolePage() {
   useEffect(() => {
     async function loadInspectorData() {
       if (!adminToken) {
-        navigate('/admin/login', { replace: true });
+        navigate('/inspector/login', { replace: true });
         return;
       }
 
@@ -195,9 +195,9 @@ export default function InstructorConsolePage() {
         }
       } catch (err: any) {
         if (err?.response?.status === 401 || err?.response?.status === 403) {
-          localStorage.removeItem('admin_token');
-          localStorage.removeItem('admin_user');
-          navigate('/admin/login', { replace: true });
+          localStorage.removeItem('inspector_token');
+          localStorage.removeItem('inspector_user');
+          navigate('/inspector/login', { replace: true });
           return;
         }
         console.warn("[InspectorConsole] Dashboard data error:", err?.message);

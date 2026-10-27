@@ -85,6 +85,15 @@ export default function AdminMonitorPage() {
 
   /* ── Initial Mount: Load Colleges & Active Exam Codes ── */
   useEffect(() => {
+    const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    const facultyToken = localStorage.getItem('faculty_token') || sessionStorage.getItem('faculty_token');
+    const inspectorToken = localStorage.getItem('inspector_token') || sessionStorage.getItem('inspector_token');
+
+    if (!adminToken && !facultyToken && !inspectorToken) {
+      navigate('/admin');
+      return;
+    }
+
     axios.get(`${BASE_URL}/api/colleges`)
       .then(res => {
         if (res.data?.colleges) setColleges(res.data.colleges)
@@ -100,7 +109,7 @@ export default function AdminMonitorPage() {
         setAvailableExamCodes(Array.from(new Set(data.map((d: any) => d.exam_code || d.code).filter(Boolean))))
       }
     })
-  }, [])
+  }, [navigate])
 
   /* ── Mark student idle after 30s of no activity ── */
   const resetIdleTimer = useCallback((candidateId: string) => {

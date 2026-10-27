@@ -336,7 +336,7 @@ router.post('/send-invitation', adminAuth, async (req: Request, res: Response) =
       return res.status(400).json({ success: false, error: 'email, hallTicket, and examCode are required' });
     }
 
-    const clientBase = (process.env.CLIENT_ORIGIN || process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/+$/, '');
+    const clientBase = (process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || process.env.CLIENT_URL || 'http://localhost:5173').split(',')[0].trim().replace(/\/+$/, '');
     const appUrl = accessUrl || `${clientBase}/enter-exam`;
 
     await sendExamInvitationEmail(
@@ -458,7 +458,7 @@ router.post('/test-email', adminAuth, async (req: Request, res: Response) => {
       await sendOtpEmail(recipient, name, code, examTitle);
       subject = `🔐 Your Verification Code: ${code} — ${examTitle}`;
     } else if (type === 'invitation') {
-      const clientBase = (process.env.CLIENT_ORIGIN || process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/+$/, '');
+      const clientBase = (process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || process.env.CLIENT_URL || 'http://localhost:5173').split(',')[0].trim().replace(/\/+$/, '');
       await sendExamInvitationEmail(
         recipient,
         name,

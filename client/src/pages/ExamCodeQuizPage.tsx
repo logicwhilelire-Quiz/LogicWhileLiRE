@@ -1342,7 +1342,7 @@ export default function QuizPage() {
       window.removeEventListener('storage', checkAdminState)
       bc?.close()
     }
-  }, [examCode, isTerminated, submitting, handleSubmit])
+  }, [examCode, isTerminated, submitting, handleSubmit, init, isInWaitingList])
 
   // ── Dual-Layer Continuous Answer Auto-Save Vault ──
   useEffect(() => {
@@ -1617,19 +1617,21 @@ export default function QuizPage() {
   }
 
   // ── Bind Action Refs for zero-latency keyboard shortcut execution ──
-  handleAnswerRef.current = handleAnswer
-  handleClearAnswerRef.current = handleClearAnswer
-  toggleFlagRef.current = toggleFlag
-  handleNextQuestionRef.current = () => {
-    if (session && currentQ < session.questions.length - 1) {
-      setCurrentQ(q => q + 1)
+  useEffect(() => {
+    handleAnswerRef.current = handleAnswer
+    handleClearAnswerRef.current = handleClearAnswer
+    toggleFlagRef.current = toggleFlag
+    handleNextQuestionRef.current = () => {
+      if (session && currentQ < session.questions.length - 1) {
+        setCurrentQ(q => q + 1)
+      }
     }
-  }
-  handlePrevQuestionRef.current = () => {
-    if (currentQ > 0) {
-      setCurrentQ(q => q - 1)
+    handlePrevQuestionRef.current = () => {
+      if (currentQ > 0) {
+        setCurrentQ(q => q - 1)
+      }
     }
-  }
+  })
 
   const getSectorForQuestion = (q: ExamQuestion | undefined, idx: number) => {
     const raw = `${q?.section || ''} ${q?.topic || ''}`.toLowerCase()

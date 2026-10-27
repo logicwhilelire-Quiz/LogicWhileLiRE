@@ -132,10 +132,17 @@ export default function StudentDashboardPage() {
   const [sectorViewMode, setSectorViewMode] = useState<'galaxy' | 'matrix'>('galaxy');
 
   useEffect(() => {
+    const studentToken = localStorage.getItem('student_token') || sessionStorage.getItem('student_token');
+    const stored = localStorage.getItem('student_user');
+
+    if (!studentToken && !stored) {
+      navigate('/login');
+      return;
+    }
+
     // Read cached student from localStorage first for zero-latency instant rendering
     let localCandidate: StudentProfile | null = null;
     try {
-      const stored = localStorage.getItem('student_user');
       if (stored) {
         localCandidate = JSON.parse(stored);
         setStudent(localCandidate);
@@ -170,6 +177,12 @@ export default function StudentDashboardPage() {
           setRank(res.data.rank || null);
         }
       } catch (err: any) {
+        if (err?.response?.status === 401) {
+          localStorage.removeItem('student_token');
+          localStorage.removeItem('student_user');
+          navigate('/login');
+          return;
+        }
         setUpcomingExams([]);
         setPastResults([]);
         setRank(null);
@@ -179,7 +192,7 @@ export default function StudentDashboardPage() {
     }
 
     loadDashboard();
-  }, []);
+  }, [navigate]);
 
   async function handleLogout() {
     try {

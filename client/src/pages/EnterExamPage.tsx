@@ -43,9 +43,21 @@ interface FormState {
 export default function EnterExamPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [form, setForm] = useState<FormState>({
-    examCode: (searchParams.get('code') || searchParams.get('examCode') || '').toUpperCase(),
-    hallTicket: searchParams.get('hallTicket') || searchParams.get('rollNumber') || '',
+  const [form, setForm] = useState<FormState>(() => {
+    const codeFromUrl = (searchParams.get('code') || searchParams.get('examCode') || '').toUpperCase()
+    const hallFromUrl = searchParams.get('hallTicket') || searchParams.get('rollNumber') || ''
+    let userHall = ''
+    try {
+      const userStr = typeof window !== 'undefined' ? localStorage.getItem('student_user') : null
+      if (userStr) {
+        const u = JSON.parse(userStr)
+        userHall = u.roll_number || u.hall_ticket || ''
+      }
+    } catch {}
+    return {
+      examCode: codeFromUrl,
+      hallTicket: hallFromUrl || userHall,
+    }
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -54,21 +66,19 @@ export default function EnterExamPage() {
   const [showHelp, setShowHelp] = useState(false)
 
   useEffect(() => {
-    try {
-      const codeFromUrl = (searchParams.get('code') || searchParams.get('examCode') || '').toUpperCase()
-      const hallFromUrl = searchParams.get('hallTicket') || searchParams.get('rollNumber') || ''
-      const userStr = localStorage.getItem('student_user')
-      let userHall = ''
-      if (userStr) {
-        const u = JSON.parse(userStr)
-        userHall = u.roll_number || u.hall_ticket || ''
-      }
-
-      setForm(prev => ({
-        examCode: codeFromUrl || prev.examCode,
-        hallTicket: hallFromUrl || prev.hallTicket || userHall,
-      }))
-    } catch {}
+    const codeFromUrl = (searchParams.get('code') || searchParams.get('examCode') || '').toUpperCase()
+    const hallFromUrl = searchParams.get('hallTicket') || searchParams.get('rollNumber') || ''
+    if (codeFromUrl || hallFromUrl) {
+      setForm(prev => {
+        if ((!codeFromUrl || prev.examCode === codeFromUrl) && (!hallFromUrl || prev.hallTicket === hallFromUrl)) {
+          return prev
+        }
+        return {
+          examCode: codeFromUrl || prev.examCode,
+          hallTicket: hallFromUrl || prev.hallTicket,
+        }
+      })
+    }
   }, [searchParams])
 
   const handleChange = (field: keyof FormState, value: string) => {

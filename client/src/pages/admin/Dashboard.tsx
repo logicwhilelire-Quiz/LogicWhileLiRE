@@ -55,16 +55,25 @@ export default function Dashboard() {
   const [resultsCount, setResultsCount] = useState<number>(0);
 
   useEffect(() => {
-    try {
-      const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
-      const userStr = localStorage.getItem('admin_user');
+    const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    const facultyToken = localStorage.getItem('faculty_token') || sessionStorage.getItem('faculty_token');
+    const inspectorToken = localStorage.getItem('inspector_token') || sessionStorage.getItem('inspector_token');
 
-      // Only redirect if there is explicitly NO admin session and a faculty token exists
-      if (!adminToken && localStorage.getItem('faculty_token')) {
+    if (!adminToken) {
+      if (facultyToken) {
         navigate('/admin/exams', { replace: true });
         return;
       }
+      if (inspectorToken) {
+        navigate('/admin/inspector', { replace: true });
+        return;
+      }
+      navigate('/admin', { replace: true });
+      return;
+    }
 
+    try {
+      const userStr = localStorage.getItem('admin_user');
       if (userStr) {
         const u = JSON.parse(userStr);
         if (u.role === 'inspector' || u.role === 'college_admin') {

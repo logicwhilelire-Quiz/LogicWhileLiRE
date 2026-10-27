@@ -207,6 +207,8 @@ function AnimatedRoutes() {
         <Route path="/admin/staff" element={<StaffManagementPage />} />
         <Route path="/admin/create-exam" element={<CreateExamPage />} />
         <Route path="/admin/import" element={<ImportQuestionsPage />} />
+        <Route path="/admin/questions/import" element={<ImportQuestionsPage />} />
+        <Route path="/admin/question-import" element={<ImportQuestionsPage />} />
         <Route path="/admin/sessions" element={<SessionsPage />} />
         <Route path="/admin/reports" element={<ReportsPage />} />
         <Route path="/admin/analytics" element={<AnalyticsPage />} />

@@ -92,6 +92,12 @@ export default function StudentLoginPage() {
     };
     localStorage.setItem('student_token', `token-admin-roster-${student.id}`);
     localStorage.setItem('student_user', JSON.stringify(studentUser));
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
+    localStorage.removeItem('faculty_token');
+    localStorage.removeItem('faculty_user');
+    localStorage.removeItem('inspector_token');
+    localStorage.removeItem('inspector_user');
     navigate(redirectTarget);
   }
 
@@ -105,6 +111,12 @@ export default function StudentLoginPage() {
       const res = await studentLogin({ login: loginQuery, password: form.password });
       if (res.data?.token) localStorage.setItem('student_token', res.data.token);
       if (res.data?.student) localStorage.setItem('student_user', JSON.stringify(res.data.student));
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_user');
+      localStorage.removeItem('faculty_token');
+      localStorage.removeItem('faculty_user');
+      localStorage.removeItem('inspector_token');
+      localStorage.removeItem('inspector_user');
       navigate(redirectTarget);
       return;
     } catch (err: any) {

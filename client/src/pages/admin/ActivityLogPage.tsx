@@ -33,21 +33,27 @@ export default function ActivityLogPage() {
 
   const currentUser = (() => {
     try {
-      return JSON.parse(localStorage.getItem('admin_user') || '{"role":"super_admin"}');
+      const stored = localStorage.getItem('admin_user') || sessionStorage.getItem('admin_user');
+      return stored ? JSON.parse(stored) : { role: 'guest' };
     } catch {
-      return { role: 'super_admin' };
+      return { role: 'guest' };
     }
   })();
 
   const isSuperAdmin = currentUser.role === 'super_admin' || currentUser.role === 'admin';
 
   useEffect(() => {
+    const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    if (!adminToken) {
+      navigate('/admin', { replace: true });
+      return;
+    }
     if (!isSuperAdmin) {
       setLoading(false);
       return;
     }
     fetchLogs();
-  }, [roleFilter, actionFilter, dateFilter, isSuperAdmin]);
+  }, [roleFilter, actionFilter, dateFilter, isSuperAdmin, navigate]);
 
   async function fetchLogs() {
     setLoading(true);

@@ -38,9 +38,18 @@ export default function ExamControl() {
 
   const currentUser = (() => {
     try {
-      return JSON.parse(localStorage.getItem('admin_user') || sessionStorage.getItem('admin_user') || '{"role":"super_admin"}');
+      const facultyToken = localStorage.getItem('faculty_token') || sessionStorage.getItem('faculty_token');
+      const facultyStored = localStorage.getItem('faculty_user');
+      if (facultyToken && facultyStored) {
+        return JSON.parse(facultyStored);
+      }
+      const adminStored = localStorage.getItem('admin_user') || sessionStorage.getItem('admin_user');
+      if (adminStored) {
+        return JSON.parse(adminStored);
+      }
+      return { role: 'guest' };
     } catch {
-      return { role: 'super_admin' };
+      return { role: 'guest' };
     }
   })();
   const isSuperAdmin = currentUser.role === 'super_admin' || currentUser.role === 'admin';
@@ -188,6 +197,19 @@ export default function ExamControl() {
   };
 
   useEffect(() => {
+    const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    const facultyToken = localStorage.getItem('faculty_token') || sessionStorage.getItem('faculty_token');
+    const inspectorToken = localStorage.getItem('inspector_token') || sessionStorage.getItem('inspector_token');
+
+    if (!adminToken && !facultyToken) {
+      if (inspectorToken) {
+        navigate('/admin/inspector', { replace: true });
+        return;
+      }
+      navigate('/admin', { replace: true });
+      return;
+    }
+
     try {
       const u = JSON.parse(localStorage.getItem('admin_user') || '{}');
       if (u.role === 'inspector' || u.role === 'college_admin') {

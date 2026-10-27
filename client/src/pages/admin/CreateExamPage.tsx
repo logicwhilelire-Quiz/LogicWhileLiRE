@@ -1088,6 +1088,10 @@ export default function CreateExamPage() {
   useEffect(() => {
     async function loadData() {
       const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token') || ''
+      if (!token) {
+        navigate('/admin');
+        return;
+      }
       try {
         const colRes = await axios.get(`${BASE}/api/colleges`)
         if (colRes.data?.colleges && colRes.data.colleges.length > 0) {

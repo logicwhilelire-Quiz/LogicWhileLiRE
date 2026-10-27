@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedPage from '../../components/AnimatedPage';
 import ParticleField from '../../components/3d/ParticleField';
@@ -19,6 +20,7 @@ const TEMPLATE_OPTIONS = [
 ];
 
 export default function MailLogsPage() {
+  const navigate = useNavigate();
   const [logs, setLogs] = useState<MailLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [resendingId, setResendingId] = useState<string | null>(null);
@@ -63,8 +65,13 @@ export default function MailLogsPage() {
   }, [page, filterStatus, filterTemplate, search]);
 
   useEffect(() => {
+    const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    if (!adminToken) {
+      navigate('/admin', { replace: true });
+      return;
+    }
     fetchLogs();
-  }, [fetchLogs]);
+  }, [fetchLogs, navigate]);
 
   const handleResend = async (logId: string) => {
     setResendingId(logId);

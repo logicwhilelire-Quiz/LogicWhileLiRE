@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import AnimatedPage from '../../components/AnimatedPage';
@@ -61,6 +62,7 @@ interface StudentRosterItem {
 }
 
 export default function StudentControl() {
+  const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState('');
   const [branchFilter, setBranchFilter] = useState('ALL');
@@ -176,11 +178,27 @@ export default function StudentControl() {
     setTimeout(() => setUploadMsg(''), 5000);
   };
 
+  const getStaffToken = () =>
+    localStorage.getItem('admin_token') ||
+    sessionStorage.getItem('admin_token') ||
+    localStorage.getItem('faculty_token') ||
+    sessionStorage.getItem('faculty_token') ||
+    '';
+
   const currentUser = (() => {
     try {
-      return JSON.parse(localStorage.getItem('admin_user') || sessionStorage.getItem('admin_user') || '{"role":"super_admin"}');
+      const facultyToken = localStorage.getItem('faculty_token') || sessionStorage.getItem('faculty_token');
+      const facultyStored = localStorage.getItem('faculty_user');
+      if (facultyToken && facultyStored) {
+        return JSON.parse(facultyStored);
+      }
+      const adminStored = localStorage.getItem('admin_user') || sessionStorage.getItem('admin_user');
+      if (adminStored) {
+        return JSON.parse(adminStored);
+      }
+      return { role: 'guest' };
     } catch {
-      return { role: 'super_admin' };
+      return { role: 'guest' };
     }
   })();
   const isSuperAdmin = currentUser.role === 'super_admin' || currentUser.role === 'admin';
@@ -234,8 +252,12 @@ export default function StudentControl() {
 
   // Load real colleges and students on mount
   useEffect(() => {
-    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const token = getStaffToken();
+    if (!token) {
+      navigate('/admin', { replace: true });
+      return;
+    }
+    const headers = { Authorization: `Bearer ${token}` };
 
     // 1. Fetch Colleges
     axios
@@ -329,7 +351,7 @@ export default function StudentControl() {
 
   const handleBulkVerifySelected = async () => {
     if (selectedStudentIds.size === 0) return;
-    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    const token = getStaffToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     setBulkLoading(true);
     try {
@@ -357,7 +379,7 @@ export default function StudentControl() {
   const handleBulkVerifySection = async () => {
     const currentSec = sectionFilter === 'ALL' ? 'A' : sectionFilter;
     if (!confirm(`Mark ALL students in section "${currentSec}" as email-verified? This creates an audit log entry so imported students are not locked out.`)) return;
-    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    const token = getStaffToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     setBulkLoading(true);
     try {
@@ -386,7 +408,7 @@ export default function StudentControl() {
   };
 
   const handleToggleBlock = async (id: string) => {
-    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    const token = getStaffToken();
     const student = students.find((s) => s.id === id);
     if (!student) return;
 
@@ -494,7 +516,7 @@ export default function StudentControl() {
       });
 
       // Also dispatch to backend API to persist to Supabase & trigger server email queue
-      const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+      const token = getStaffToken();
       const formData = new FormData();
       formData.append('file', file);
       try {
@@ -609,7 +631,7 @@ export default function StudentControl() {
       candidate_gate_pass: generateGatePass('GP-CAND', 'CAND'),
     });
 
-    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    const token = getStaffToken();
     try {
       await axios.post(
         `${API_BASE_URL}/api/admin/students`,
@@ -634,7 +656,7 @@ export default function StudentControl() {
   };
 
   const handleVerifyEmail = async (student: StudentRosterItem) => {
-    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    const token = getStaffToken();
     try {
       await axios.patch(
         `${API_BASE_URL}/api/admin/students/${student.id}`,

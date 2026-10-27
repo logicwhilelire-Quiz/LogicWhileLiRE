@@ -186,7 +186,7 @@ export async function registerCandidate(req: Request, res: Response): Promise<vo
   }
 
   // 6. Send verification email with OTP and direct activation link
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const clientOrigin = (process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',')[0].trim().replace(/\/+$/, '');
   const verifyLink = `${clientOrigin}/verify-email?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`;
   try {
     await sendStudentVerificationEmail(normalizedEmail, fullName, otp, verifyLink);

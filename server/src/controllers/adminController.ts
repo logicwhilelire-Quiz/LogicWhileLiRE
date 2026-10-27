@@ -985,7 +985,7 @@ export async function activateExam(req: Request, res: Response): Promise<void> {
  */
 export async function getEnrollmentQR(req: Request, res: Response): Promise<void> {
   const { examId } = req.params;
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const clientOrigin = (process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',')[0].trim().replace(/\/+$/, '');
   const enrollUrl = `${clientOrigin}/enroll/${examId}`;
 
   try {

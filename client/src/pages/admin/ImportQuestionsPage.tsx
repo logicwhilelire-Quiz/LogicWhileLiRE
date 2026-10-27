@@ -55,6 +55,14 @@ export default function ImportQuestionsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    const facultyToken = localStorage.getItem('faculty_token') || sessionStorage.getItem('faculty_token');
+
+    if (!adminToken && !facultyToken) {
+      navigate('/admin');
+      return;
+    }
+
     listExams(1, 50)
       .then((res) => {
         if (res.data?.exams) {
@@ -65,7 +73,7 @@ export default function ImportQuestionsPage() {
         }
       })
       .catch(() => {});
-  }, [defaultExamId]);
+  }, [defaultExamId, navigate]);
 
   function handleFile(f: File) {
     if (!f.name.endsWith('.xlsx') && !f.name.endsWith('.csv')) {

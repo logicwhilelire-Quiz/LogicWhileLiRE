@@ -29,9 +29,10 @@ export default function AdminDashboardPage() {
 
   const currentUser = (() => {
     try {
-      return JSON.parse(localStorage.getItem('admin_user') || '{"role":"super_admin"}');
+      const stored = localStorage.getItem('admin_user') || sessionStorage.getItem('admin_user');
+      return stored ? JSON.parse(stored) : { role: 'guest' };
     } catch {
-      return { role: 'super_admin' };
+      return { role: 'guest' };
     }
   })();
   const isSuperAdmin = currentUser.role === 'super_admin';
@@ -45,8 +46,13 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
+    const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    if (!adminToken) {
+      navigate('/admin', { replace: true });
+      return;
+    }
     loadExams();
-  }, []);
+  }, [navigate]);
 
   async function handleToggle(exam: Exam) {
     await activateExam(exam.id, !exam.is_active);

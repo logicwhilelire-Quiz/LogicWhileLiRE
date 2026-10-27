@@ -114,6 +114,12 @@ export default function AnalyticsPage() {
 
   // Load exam list on mount
   useEffect(() => {
+    const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    if (!adminToken) {
+      navigate('/admin');
+      return;
+    }
+
     listExams()
       .then((r) => {
         const examList: Exam[] = r.data.exams;
@@ -126,7 +132,7 @@ export default function AnalyticsPage() {
         }
       })
       .catch(() => navigate('/admin'));
-  }, [routeExamId]);
+  }, [routeExamId, navigate]);
 
   // Sync selected exam from URL if param changes
   useEffect(() => {

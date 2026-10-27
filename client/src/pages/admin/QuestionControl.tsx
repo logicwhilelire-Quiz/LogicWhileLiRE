@@ -138,8 +138,17 @@ export default function QuestionControl() {
   };
 
   useEffect(() => {
+    const hasToken =
+      localStorage.getItem('admin_token') ||
+      sessionStorage.getItem('admin_token') ||
+      localStorage.getItem('faculty_token') ||
+      sessionStorage.getItem('faculty_token');
+    if (!hasToken) {
+      navigate('/admin', { replace: true });
+      return;
+    }
     loadQuestions();
-  }, [filterCollege, filterType, filterDifficulty, topicFilter, search]);
+  }, [filterCollege, filterType, filterDifficulty, topicFilter, search, navigate]);
 
   const handleOpenCreateModal = () => {
     setEditingQuestion(null);
@@ -313,7 +322,7 @@ export default function QuestionControl() {
 
             <div style={{ display: 'flex', gap: 12 }}>
               <button
-                onClick={() => navigate('/admin/questions/import')}
+                onClick={() => navigate('/admin/import')}
                 className="btn btn-secondary"
                 style={{ padding: '10px 18px', fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
               >

@@ -86,7 +86,23 @@ export default function AdminLoginPage() {
       setError('Access Denied: Faculty members must log in at the Faculty Portal (/faculty/login).');
       return;
     }
-    if (token) localStorage.setItem('admin_token', token);
+    if (token) {
+      localStorage.removeItem('faculty_token');
+      localStorage.removeItem('faculty_user');
+      sessionStorage.removeItem('faculty_token');
+      sessionStorage.removeItem('faculty_user');
+      localStorage.removeItem('inspector_token');
+      localStorage.removeItem('inspector_user');
+      sessionStorage.removeItem('inspector_token');
+      sessionStorage.removeItem('inspector_user');
+      localStorage.removeItem('student_token');
+      localStorage.removeItem('student_user');
+      sessionStorage.removeItem('student_token');
+      sessionStorage.removeItem('student_user');
+      localStorage.removeItem('logicwhilelire_attempt');
+      localStorage.removeItem('candidate_gate_pass');
+      localStorage.setItem('admin_token', token);
+    }
     if (user) {
       localStorage.setItem('admin_user', JSON.stringify(user));
     }

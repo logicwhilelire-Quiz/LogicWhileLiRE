@@ -100,6 +100,20 @@ export default function InspectorLoginPage() {
       }
 
       if (token) {
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_user');
+        sessionStorage.removeItem('admin_token');
+        sessionStorage.removeItem('admin_user');
+        localStorage.removeItem('faculty_token');
+        localStorage.removeItem('faculty_user');
+        sessionStorage.removeItem('faculty_token');
+        sessionStorage.removeItem('faculty_user');
+        localStorage.removeItem('student_token');
+        localStorage.removeItem('student_user');
+        sessionStorage.removeItem('student_token');
+        sessionStorage.removeItem('student_user');
+        localStorage.removeItem('logicwhilelire_attempt');
+        localStorage.removeItem('candidate_gate_pass');
         localStorage.setItem('inspector_token', token);
       }
       if (user) {

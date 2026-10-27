@@ -17,22 +17,29 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
         const inspectorStored = localStorage.getItem('inspector_user');
         if (inspectorStored) return JSON.parse(inspectorStored);
       }
+      const facultyToken = localStorage.getItem('faculty_token') || sessionStorage.getItem('faculty_token');
+      const facultyStored = localStorage.getItem('faculty_user');
+      if (facultyToken && facultyStored) {
+        return JSON.parse(facultyStored);
+      }
+      const inspectorToken = localStorage.getItem('inspector_token') || sessionStorage.getItem('inspector_token');
+      const inspectorStored = localStorage.getItem('inspector_user');
+      if (inspectorToken && inspectorStored) {
+        return JSON.parse(inspectorStored);
+      }
       const adminStored = localStorage.getItem('admin_user');
-      if (adminStored) {
+      const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+      if (adminToken && adminStored) {
         const parsed = JSON.parse(adminStored);
         if (parsed.role && (parsed.role === 'super_admin' || parsed.role === 'admin')) return parsed;
       }
-      const facultyStored = localStorage.getItem('faculty_user');
-      if (facultyStored && !localStorage.getItem('admin_token')) return JSON.parse(facultyStored);
-      const inspectorStored = localStorage.getItem('inspector_user');
-      if (inspectorStored && !localStorage.getItem('admin_token')) return JSON.parse(inspectorStored);
-      return { role: 'super_admin', name: 'Super Administrator' };
+      return { role: 'guest', name: 'Guest' };
     } catch {
-      return { role: 'super_admin', name: 'Super Administrator' };
+      return { role: 'guest', name: 'Guest' };
     }
   })();
 
-  const role = currentUser.role || 'super_admin';
+  const role = currentUser.role || 'guest';
   const isSuperAdmin = role === 'super_admin' || role === 'admin';
   const isInspector = role === 'inspector' || role === 'college_admin';
   const isFaculty = role === 'faculty';
@@ -43,7 +50,7 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
     ? `College Inspector (${currentUser.college_name || 'Active Institution'})`
     : isFaculty
     ? `Faculty Member (${currentUser.name || 'Trainer'})`
-    : 'Authenticated Staff';
+    : 'Guest';
 
   const allNavItems = [
     // 0. Dashboard

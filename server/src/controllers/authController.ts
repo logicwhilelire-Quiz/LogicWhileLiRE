@@ -248,7 +248,7 @@ export async function studentRegister(req: Request, res: Response): Promise<void
   }
 
   // 7. Dispatch verification email with OTP and direct activation link
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const clientOrigin = (process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',')[0].trim().replace(/\/+$/, '');
   const verifyLink = `${clientOrigin}/verify-email?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
   try {
@@ -471,7 +471,7 @@ export async function resendRegistrationOtp(req: Request, res: Response): Promis
     })
     .eq('id', student.id);
 
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const clientOrigin = (process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',')[0].trim().replace(/\/+$/, '');
   const verifyLink = `${clientOrigin}/verify-email?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
   try {
@@ -1133,7 +1133,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
   }
 
   // 4. Construct reset link
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const clientOrigin = (process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',')[0].trim().replace(/\/+$/, '');
   const resetLink = `${clientOrigin}/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
 
   // 5. Send branded email via mailService

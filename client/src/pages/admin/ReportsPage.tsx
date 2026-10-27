@@ -10,8 +10,16 @@ export default function ReportsPage() {
   const [selectedExamId, setSelectedExamId] = useState('');
 
   useEffect(() => {
-    listExams().then((r) => setExams(r.data.exams));
-  }, []);
+    const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    const facultyToken = localStorage.getItem('faculty_token') || sessionStorage.getItem('faculty_token');
+    const inspectorToken = localStorage.getItem('inspector_token') || sessionStorage.getItem('inspector_token');
+
+    if (!adminToken && !facultyToken && !inspectorToken) {
+      navigate('/admin');
+      return;
+    }
+    listExams().then((r) => setExams(r.data.exams)).catch(() => navigate('/admin'));
+  }, [navigate]);
 
   return (
     <AnimatedPage>

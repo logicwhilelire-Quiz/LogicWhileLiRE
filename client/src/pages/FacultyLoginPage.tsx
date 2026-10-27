@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import axios from 'axios';
 import { adminLogin } from '../lib/api';
 import { API_BASE_URL } from '../lib/config';
@@ -100,6 +100,20 @@ export default function FacultyLoginPage() {
       }
 
       if (token) {
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_user');
+        sessionStorage.removeItem('admin_token');
+        sessionStorage.removeItem('admin_user');
+        localStorage.removeItem('inspector_token');
+        localStorage.removeItem('inspector_user');
+        sessionStorage.removeItem('inspector_token');
+        sessionStorage.removeItem('inspector_user');
+        localStorage.removeItem('student_token');
+        localStorage.removeItem('student_user');
+        sessionStorage.removeItem('student_token');
+        sessionStorage.removeItem('student_user');
+        localStorage.removeItem('logicwhilelire_attempt');
+        localStorage.removeItem('candidate_gate_pass');
         localStorage.setItem('faculty_token', token);
       }
       if (user) {

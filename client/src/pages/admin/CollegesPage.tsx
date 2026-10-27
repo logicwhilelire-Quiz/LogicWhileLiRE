@@ -232,7 +232,14 @@ export default function CollegesPage() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    if (!adminToken) {
+      navigate('/admin', { replace: true });
+      return;
+    }
+    load();
+  }, [navigate]);
 
   function openAdd() {
     setEditCollege(null);

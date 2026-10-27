@@ -29,7 +29,11 @@ export const API_BASE_URL: string = resolvedApiUrl.replace(/\/+$/, '');
 export const SOCKET_URL: string = resolvedSocketUrl.replace(/\/+$/, '');
 
 export const SUPABASE_URL: string = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://xhutjekdbyccscselzdy.supabase.co';
-export const SUPABASE_ANON_KEY: string = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 'sb_publishable_dNAfXpoQ-y4EAPF3RCh4dw_LnpRLEcw';
+export const SUPABASE_PUBLISHABLE_KEY: string =
+  (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  (import.meta as any).env?.VITE_SUPABASE_ANON_KEY ||
+  'sb_publishable_dNAfXpoQ-y4EAPF3RCh4dw_LnpRLEcw';
+export const SUPABASE_ANON_KEY: string = SUPABASE_PUBLISHABLE_KEY;
 
 import axios from 'axios';
 
@@ -38,9 +42,15 @@ axios.defaults.withCredentials = true;
 // 60-second timeout ensures Render free-tier cold starts (~25-35s) complete cleanly without premature timeout aborts
 axios.defaults.timeout = 60000;
 
-// Request interceptor to automatically attach admin and session tokens from storage if present
+// Request interceptor to automatically attach admin, faculty, inspector, and student tokens
 axios.interceptors.request.use((reqConfig) => {
-  const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+  const adminToken =
+    localStorage.getItem('admin_token') ||
+    sessionStorage.getItem('admin_token') ||
+    localStorage.getItem('faculty_token') ||
+    sessionStorage.getItem('faculty_token') ||
+    localStorage.getItem('inspector_token') ||
+    sessionStorage.getItem('inspector_token');
   const studentToken = localStorage.getItem('student_token') || sessionStorage.getItem('student_token');
   const sessionToken = localStorage.getItem('session_token') || sessionStorage.getItem('session_token');
 

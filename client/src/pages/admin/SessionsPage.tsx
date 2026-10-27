@@ -73,8 +73,13 @@ export default function SessionsPage() {
   const [isBulkEnrollOpen, setIsBulkEnrollOpen] = useState(false);
 
   useEffect(() => {
-    listExams().then((r) => setExams(r.data.exams));
-  }, []);
+    const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    if (!adminToken) {
+      navigate('/admin');
+      return;
+    }
+    listExams().then((r) => setExams(r.data.exams)).catch(() => navigate('/admin'));
+  }, [navigate]);
 
   const refreshSessions = () => {
     if (!selectedExamId) return;
