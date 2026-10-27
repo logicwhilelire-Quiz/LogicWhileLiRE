@@ -35,6 +35,9 @@ export const SUPABASE_PUBLISHABLE_KEY: string =
   'sb_publishable_dNAfXpoQ-y4EAPF3RCh4dw_LnpRLEcw';
 export const SUPABASE_ANON_KEY: string = SUPABASE_PUBLISHABLE_KEY;
 
+export const SUPPORT_EMAIL = 'logicwhilelire@gmail.com';
+export const SUPPORT_PHONE = '+91 9493734553';
+
 import axios from 'axios';
 
 // Ensure all client axios requests support cross-origin credentials (HttpOnly cookies)

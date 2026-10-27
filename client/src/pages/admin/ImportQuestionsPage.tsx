@@ -157,6 +157,7 @@ export default function ImportQuestionsPage() {
 
   function handleDownloadCsvTemplate() {
     const csvContent =
+      '\uFEFF' +
       'Type,Question,Option A,Option B,Option C,Option D,Correct Answer,Marks,Penalty,Section,Topic,Difficulty\n' +
       '"MCQ","Which of the following is an essential precondition for Binary Search to work correctly?","The array elements must be unique","The array must be sorted in ascending or descending order","The array size must be a power of 2","The array must contain only positive integers","B",1,0,"Searching Algorithms","Linear Search & Binary Search","Easy"\n' +
       '"Coding","What is the output of the following Python code?\n\narr = [1, 3, 5, 7, 9]\nlow, high = 0, len(arr) - 1\ntarget = 7\nwhile low <= high:\n    mid = (low + high) // 2\n    if arr[mid] == target:\n        print(mid)\n        break\n    elif arr[mid] < target:\n        low = mid + 1\n    else:\n        high = mid - 1","2","3","4","-1","B",1,0,"Searching Algorithms","Linear Search & Binary Search","Medium"\n';
@@ -174,7 +175,7 @@ export default function ImportQuestionsPage() {
 
   async function handleValidate() {
     if (!file) {
-      setGeneralError('Please select or drop an Excel (.xlsx) file first.');
+      setGeneralError('Please select or drop an Excel (.xlsx) or CSV (.csv) file first.');
       return;
     }
     setValidating(true);

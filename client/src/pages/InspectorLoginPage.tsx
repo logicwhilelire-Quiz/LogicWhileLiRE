@@ -410,8 +410,19 @@ export default function InspectorLoginPage() {
             </div>
           </motion.div>
 
-          <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.75rem', color: '#64748B' }}>
-            LogicWhile LiRE • Developed by <strong style={{ color: '#EAA812', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
+          <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.78rem', color: '#64748B', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+            <div>
+              LogicWhile LiRE • Developed by <strong style={{ color: '#EAA812', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
+            </div>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: '0.74rem' }}>
+              <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none', fontWeight: 600 }}>
+                ✉️ logicwhilelire@gmail.com
+              </a>
+              <span style={{ color: '#334155' }}>•</span>
+              <a href="tel:+919493734553" style={{ color: '#EAA812', textDecoration: 'none', fontWeight: 600 }}>
+                📞 +91 9493734553
+              </a>
+            </div>
           </div>
         </motion.div>
       </div>

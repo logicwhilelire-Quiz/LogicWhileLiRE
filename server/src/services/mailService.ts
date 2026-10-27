@@ -15,7 +15,9 @@ export const MAIL_FROM_NOREPLY =
 export const MAIL_REPLY_TO =
   process.env.MAIL_REPLY_TO ||
   process.env.SUPPORT_EMAIL ||
-  'admin@logicwhilelire.com';
+  'logicwhilelire@gmail.com';
+
+export const SUPPORT_PHONE = process.env.ADMIN_PHONE || '+91 9493734553';
 
 export const FRONTEND_URL = (() => {
   const v = process.env.FRONTEND_URL || process.env.CLIENT_URL || process.env.CLIENT_ORIGIN;
@@ -25,14 +27,14 @@ export const FRONTEND_URL = (() => {
 
 export const HOSTED_LOGO_URL = `${FRONTEND_URL}/logo.png`;
 
-export const ADMIN_MAIL_ADDRESS = process.env.ADMIN_ALERT_EMAIL || 'admin@logicwhilelire.com';
-export const INSPECTOR_MAIL_ADDRESS = process.env.INSPECTOR_MAIL_ADDRESS || 'inspector@logicwhilelire.com';
+export const ADMIN_MAIL_ADDRESS = process.env.ADMIN_ALERT_EMAIL || 'logicwhilelire@gmail.com';
+export const INSPECTOR_MAIL_ADDRESS = process.env.INSPECTOR_MAIL_ADDRESS || 'logicwhilelire@gmail.com';
 
-export const OTP_MAIL_FROM = process.env.OTP_FROM_EMAIL || 'LogicWhile LiRE Security <admin@logicwhilelire.com>';
-export const OTP_MAIL_REPLY_TO = process.env.OTP_REPLY_TO || 'admin@logicwhilelire.com';
+export const OTP_MAIL_FROM = process.env.OTP_FROM_EMAIL || 'LogicWhile LiRE Security <logicwhilelire@gmail.com>';
+export const OTP_MAIL_REPLY_TO = process.env.OTP_REPLY_TO || 'logicwhilelire@gmail.com';
 
-export const LOGIN_ID_MAIL_FROM = process.env.LOGIN_ID_FROM_EMAIL || 'LogicWhile LiRE <admin@logicwhilelire.com>';
-export const LOGIN_ID_MAIL_REPLY_TO = process.env.LOGIN_ID_REPLY_TO || 'admin@logicwhilelire.com';
+export const LOGIN_ID_MAIL_FROM = process.env.LOGIN_ID_FROM_EMAIL || 'LogicWhile LiRE <logicwhilelire@gmail.com>';
+export const LOGIN_ID_MAIL_REPLY_TO = process.env.LOGIN_ID_REPLY_TO || 'logicwhilelire@gmail.com';
 
 // ============================================================================
 // TYPES & INTERFACES

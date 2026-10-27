@@ -104,7 +104,7 @@ export default function ForgotPasswordPage() {
                     id="forgot-email-input"
                     className="form-input"
                     type="email"
-                    placeholder="student@example.com or admin@logicwhilelire.com"
+                    placeholder="student@example.com or logicwhilelire@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     autoComplete="email"

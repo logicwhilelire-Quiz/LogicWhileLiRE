@@ -216,8 +216,10 @@ export function runProductionBootGuard(): void {
   if (!env.CLIENT_ORIGIN) env.CLIENT_ORIGIN = 'https://logicwhilelire.com';
   if (!env.FRONTEND_URL) env.FRONTEND_URL = env.CLIENT_ORIGIN || 'https://logicwhilelire.com';
   if (!env.EMAIL_FROM) env.EMAIL_FROM = `noreply@${env.MAIL_DOMAIN}`;
-  if (!env.SUPPORT_EMAIL) env.SUPPORT_EMAIL = `support@${env.MAIL_DOMAIN}`;
-  if (!env.ADMIN_EMAIL) env.ADMIN_EMAIL = `admin@${env.MAIL_DOMAIN}`;
+  if (!env.SUPPORT_EMAIL) env.SUPPORT_EMAIL = 'logicwhilelire@gmail.com';
+  if (!env.ADMIN_EMAIL) env.ADMIN_EMAIL = 'logicwhilelire@gmail.com';
+  if (!env.ADMIN_ALERT_EMAIL) env.ADMIN_ALERT_EMAIL = 'logicwhilelire@gmail.com';
+  if (!env.ADMIN_PHONE) env.ADMIN_PHONE = '+919493734553';
   if (!env.SUPABASE_SERVICE_ROLE_KEY && env.SUPABASE_SECRET_KEY) {
     env.SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SECRET_KEY;
   }

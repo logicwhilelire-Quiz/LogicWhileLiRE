@@ -245,12 +245,89 @@ export default function SiteFooter() {
               </button>
             </div>
           </div>
+
+          {/* Support & Helpline Column */}
+          <div>
+            <div
+              className="footer-col-title"
+              style={{
+                color: '#EAA812',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: '0.92rem',
+                marginBottom: 12,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              Support &amp; Helpline
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <a
+                href="mailto:logicwhilelire@gmail.com"
+                className="footer-link"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  color: 'var(--color-text)',
+                  textDecoration: 'none',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  wordBreak: 'break-all',
+                }}
+              >
+                <span style={{ fontSize: '1rem', color: '#38BDF8' }}>✉️</span>
+                <span>logicwhilelire@gmail.com</span>
+              </a>
+              <a
+                href="tel:+919493734553"
+                className="footer-link"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  color: 'var(--color-text)',
+                  textDecoration: 'none',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                }}
+              >
+                <span style={{ fontSize: '1rem', color: '#EAA812' }}>📞</span>
+                <span>+91 9493734553</span>
+              </a>
+              <div
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  background: 'rgba(56, 189, 248, 0.08)',
+                  border: '1px solid rgba(56, 189, 248, 0.2)',
+                  fontSize: '0.78rem',
+                  color: 'var(--color-text-muted)',
+                  lineHeight: 1.4,
+                }}
+              >
+                Direct Examination Control &amp; Candidate Verification Helpline
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="footer-bottom" style={{ borderColor: 'var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: '20px 24px' }}>
+        <div className="footer-bottom" style={{ borderColor: 'var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, padding: '20px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: '0.86rem' }}>
             <span>© 2026 LogicWhile LiRE. All rights reserved. • Developed by <strong style={{ color: '#EAA812', fontWeight: 700 }}>R. Charan Sai Krishna</strong></span>
+            <span style={{ color: 'var(--color-border, #334155)' }}>•</span>
+            <a href="mailto:logicwhilelire@gmail.com" style={{ color: '#38BDF8', textDecoration: 'none', fontWeight: 600 }}>
+              logicwhilelire@gmail.com
+            </a>
+            <span style={{ color: 'var(--color-border, #334155)' }}>•</span>
+            <a href="tel:+919493734553" style={{ color: '#EAA812', textDecoration: 'none', fontWeight: 600 }}>
+              +91 9493734553
+            </a>
           </div>
           <span style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
             <button

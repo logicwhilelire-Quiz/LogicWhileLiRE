@@ -18,9 +18,11 @@ export const EMAIL_FROM: string = (() => {
 
 export const EMAIL_FROM_NAME: string = process.env.EMAIL_FROM_NAME || 'LogicWhileLiRE';
 
-export const SUPPORT_EMAIL: string = process.env.SUPPORT_EMAIL || `support@${MAIL_DOMAIN}`;
+export const SUPPORT_EMAIL: string = process.env.SUPPORT_EMAIL || 'logicwhilelire@gmail.com';
 
-export const ADMIN_EMAIL: string = process.env.ADMIN_EMAIL || process.env.ADMIN_ALERT_EMAIL || `admin@${MAIL_DOMAIN}`;
+export const ADMIN_EMAIL: string = process.env.ADMIN_EMAIL || process.env.ADMIN_ALERT_EMAIL || 'logicwhilelire@gmail.com';
+
+export const SUPPORT_PHONE: string = process.env.ADMIN_PHONE || '+91 9493734553';
 
 export const FRONTEND_URL: string = (() => {
   const v = process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || (IS_PROD ? 'https://logicwhilelire.com' : 'http://localhost:5173');
@@ -479,6 +481,7 @@ export function wrapBrandTemplate(title: string, innerHtml: string): string {
             <td style="padding:22px 32px; background-color:#080e1f; border-top:1px solid rgba(255,255,255,0.06); text-align:center;">
               <p style="margin:0 0 8px; font-size:13px; color:#cbd5e1;">
                 Need help? Academic & Technical Support: <a href="mailto:${supportEmail}" style="color:#38bdf8; font-weight:600; text-decoration:none;">${supportEmail}</a>
+                &bull; Helpline: <a href="tel:+919493734553" style="color:#38bdf8; font-weight:600; text-decoration:none;">+91 9493734553</a>
               </p>
               <p style="margin:0 0 6px; font-size:12px; color:#94a3b8;">
                 Automated transmission from <strong>LogicWhileLiRE</strong> Enterprise Assessment Engine.

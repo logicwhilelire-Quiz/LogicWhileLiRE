@@ -137,7 +137,7 @@ export async function bootstrapSuperAdmin(): Promise<void> {
 
   try {
     // 1. Prompt for Email
-    const emailInput = await askText(rl, 'Enter Super Admin Email', 'admin@logicwhilelire.com');
+    const emailInput = await askText(rl, 'Enter Super Admin Email', 'logicwhilelire@gmail.com');
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(emailInput)) {
       console.error('\n❌ Error: Invalid email address format.');

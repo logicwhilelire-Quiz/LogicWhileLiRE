@@ -122,6 +122,44 @@ export default function AboutPage() {
                 <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
                   Creator & Lead Developer of the LogicWhileLiRE Autonomous Examination Engine.
                 </p>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
+                  <a
+                    href="mailto:logicwhilelire@gmail.com"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '6px 12px',
+                      borderRadius: 8,
+                      background: 'rgba(56, 189, 248, 0.1)',
+                      border: '1px solid rgba(56, 189, 248, 0.3)',
+                      color: '#38BDF8',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <span>✉️</span> logicwhilelire@gmail.com
+                  </a>
+                  <a
+                    href="tel:+919493734553"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '6px 12px',
+                      borderRadius: 8,
+                      background: 'rgba(234, 168, 18, 0.1)',
+                      border: '1px solid rgba(234, 168, 18, 0.3)',
+                      color: '#EAA812',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <span>📞</span> +91 9493734553
+                  </a>
+                </div>
               </div>
             </div>
 

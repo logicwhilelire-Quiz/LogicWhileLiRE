@@ -50,7 +50,7 @@ services:
       - key: ADMIN_PASSWORD_HASH
         sync: false
       - key: INITIAL_ADMIN_EMAIL
-        sync: false
+        value: logicwhilelire@gmail.com
       - key: RESEND_API_KEY
         sync: false # Primary email transport — Resend HTTPS API key
       - key: EMAIL_DAILY_CAP
@@ -76,13 +76,15 @@ services:
       - key: OTP_FROM_EMAIL
         sync: false
       - key: ADMIN_ALERT_EMAIL
-        sync: false # Destination for proctoring violations & critical alerts
+        value: logicwhilelire@gmail.com
       - key: ADMIN_EMAIL
-        sync: false # Admin email for proctoring monitor notifications
+        value: logicwhilelire@gmail.com
       - key: SUPPORT_EMAIL
-        sync: false # Support contact email displayed in email footers
+        value: logicwhilelire@gmail.com
       - key: INSPECTOR_ALERT_EMAIL
-        sync: false # Email for proctoring inspector alerts
+        value: logicwhilelire@gmail.com
+      - key: ADMIN_PHONE
+        value: "+919493734553"
       - key: STUDENT_JWT_EXPIRY
         value: "4h"
       - key: BACKUP_DIR
@@ -150,7 +152,7 @@ services:
       - key: ADMIN_USERNAME
         sync: false
       - key: INITIAL_ADMIN_EMAIL
-        sync: false
+        value: logicwhilelire@gmail.com
       - key: ADMIN_PASSWORD_HASH
         sync: false
       - key: RESEND_API_KEY
@@ -174,13 +176,15 @@ services:
       - key: OTP_FROM_EMAIL
         sync: false
       - key: ADMIN_ALERT_EMAIL
-        sync: false
+        value: logicwhilelire@gmail.com
       - key: ADMIN_EMAIL
-        sync: false
+        value: logicwhilelire@gmail.com
       - key: SUPPORT_EMAIL
-        sync: false
+        value: logicwhilelire@gmail.com
       - key: INSPECTOR_ALERT_EMAIL
-        sync: false
+        value: logicwhilelire@gmail.com
+      - key: ADMIN_PHONE
+        value: "+919493734553"
       - key: STUDENT_JWT_EXPIRY
         value: "4h"
       - key: BACKUP_DIR
