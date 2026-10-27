@@ -5,6 +5,9 @@
   "main": "index.js",
   "author": "R. Charan Sai Krishna",
   "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24.22.1"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",

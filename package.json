@@ -3,6 +3,9 @@
   "version": "4.0.0",
   "description": "LogicWhile LiRE — Elevating Coding Knowledge • Monorepo Root",
   "private": true,
+  "engines": {
+    "node": ">=24.22.1"
+  },
   "scripts": {
     "build": "cd client && npm install && npm run build",
     "buildVite": "cd client && npm install && npm run build",
