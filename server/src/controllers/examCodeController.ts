@@ -1886,12 +1886,38 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
   // Clear leaderboard cache for fresh rank computation
   try {
     leaderboardCache.delete(code);
+    leaderboardCache.delete(effectiveCode);
   } catch {}
 
   // Trigger throttled room telemetry (<= 1 update per second per room)
   try {
     const { scheduleThrottledRoomUpdate } = await import('../services/socketService');
     scheduleThrottledRoomUpdate(code);
+  } catch {}
+
+  // Compute exact real-time rank and total candidates for this exam code
+  let realTimeRank = 1;
+  let totalCandidatesCount = 1;
+  try {
+    const { data: rankedAttempts } = await supabase
+      .from('exam_code_attempts')
+      .select('id, hall_ticket_no, score, time_taken_seconds, wrong_count, created_at')
+      .eq('exam_code', effectiveCode)
+      .in('status', ['completed', 'submitted', 'auto_submitted', 'auto_submitted_expired'])
+      .order('score', { ascending: false })
+      .order('time_taken_seconds', { ascending: true })
+      .order('wrong_count', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    if (rankedAttempts && rankedAttempts.length > 0) {
+      totalCandidatesCount = rankedAttempts.length;
+      const foundIdx = rankedAttempts.findIndex(
+        (a: any) => a.id === attempt.id || String(a.hall_ticket_no).toUpperCase().trim() === canonicalCandidate
+      );
+      if (foundIdx !== -1) {
+        realTimeRank = foundIdx + 1;
+      }
+    }
   } catch {}
 
   res.json({
@@ -1902,6 +1928,9 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
       correct_count: correctCount,
       wrong_count: wrongCount,
       percentage: maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0,
+      rank: realTimeRank,
+      total_candidates: totalCandidatesCount,
+      totalCandidates: totalCandidatesCount,
       topic_breakdown: topicBreakdown,
       status: finalStatus,
       expired_grace: isGraceExpired,
@@ -2401,9 +2430,11 @@ export async function getExamCodeLeaderboard(req: Request, res: Response): Promi
     .from('exam_code_attempts')
     .select('hall_ticket_no, student_name, score, max_score, correct_count, wrong_count, time_taken_seconds, topic_breakdown, status, created_at')
     .eq('exam_code', cacheKey)
-    .in('status', ['completed', 'submitted'])
+    .in('status', ['completed', 'submitted', 'auto_submitted', 'auto_submitted_expired'])
     .order('score', { ascending: false })
-    .order('time_taken_seconds', { ascending: true });
+    .order('time_taken_seconds', { ascending: true })
+    .order('wrong_count', { ascending: true })
+    .order('created_at', { ascending: true });
 
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
 

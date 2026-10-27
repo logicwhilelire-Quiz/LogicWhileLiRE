@@ -64,6 +64,7 @@ interface LeaderboardEntry {
   score: number
   department?: string
   hall_ticket?: string
+  hall_ticket_no?: string
 }
 
 function useAnimatedCounter(target: number, durationMs: number = 1400): number {
@@ -147,6 +148,8 @@ export default function ResultECPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(!incomingResult && !storedResult)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+  const [expandedSolutions, setExpandedSolutions] = useState<Record<string, boolean>>({})
+  const [copySuccessId, setCopySuccessId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!result && examCode) {
@@ -190,22 +193,51 @@ export default function ResultECPage() {
     })
   }
 
-  const activeResult = result || {
-    score: 0,
-    totalMarks: 0,
-    percentage: 0,
-    rank: 0,
-    totalCandidates: 0,
-    timeTaken: 0,
-    correctAnswers: 0,
-    wrongAnswers: 0,
-    unanswered: 0,
-    topicBreakdown: {},
+  const candidateHt = String(
+    hallTicket ||
+    rawState?.hallTicket ||
+    (result as any)?.hallTicket ||
+    (result as any)?.hall_ticket_no ||
+    (result as any)?.hall_ticket ||
+    (examCode ? localStorage.getItem(`hallTicket_${examCode}`) : '') ||
+    ''
+  ).toUpperCase().trim()
+
+  const activeResult: any = {
+    score: result?.score ?? (result as any)?.mcq_score ?? 0,
+    totalMarks: result?.totalMarks ?? (result as any)?.max_score ?? (result as any)?.total_marks ?? 100,
+    percentage: result?.percentage ?? 0,
+    rank: result?.rank ?? (result as any)?.realTimeRank ?? 0,
+    totalCandidates: result?.totalCandidates ?? (result as any)?.total_candidates ?? 0,
+    timeTaken: result?.timeTaken ?? (result as any)?.time_taken_seconds ?? (result as any)?.time_taken ?? 0,
+    correctAnswers: result?.correctAnswers ?? (result as any)?.correct_count ?? (result as any)?.correct_answers ?? 0,
+    wrongAnswers: result?.wrongAnswers ?? (result as any)?.wrong_count ?? (result as any)?.wrong_answers ?? 0,
+    unanswered: result?.unanswered ?? 0,
+    topicBreakdown: result?.topicBreakdown ?? (result as any)?.topic_breakdown ?? {},
+    ...result,
   }
 
+  // Dynamic live ranking calculation:
+  // 1. From activeResult.rank if calculated by server
+  // 2. From real-time leaderboard lookup matching student's hall ticket
+  // 3. Fallback to rank 1 (no mock defaults)
+  const dynamicRankFromLeaderboard = (() => {
+    if (!leaderboard || leaderboard.length === 0 || !candidateHt) return null
+    const idx = leaderboard.findIndex((e: any) => {
+      const entryHt = String(e.hall_ticket || e.hall_ticket_no || '').toUpperCase().trim()
+      return entryHt === candidateHt
+    })
+    return idx !== -1 ? idx + 1 : null
+  })()
+
+  const rankTarget = activeResult.rank || dynamicRankFromLeaderboard || 1
+  const totalCandidates = Math.max(
+    activeResult.totalCandidates || activeResult.total_candidates || 0,
+    leaderboard?.length || 0,
+    rankTarget,
+    1
+  )
   const pct = activeResult.percentage ?? 0
-  const rankTarget = activeResult.rank || 3
-  const totalCandidates = activeResult.totalCandidates || 148
   const scoreColor = pct >= 80 ? '#10B981' : pct >= 60 ? '#F59E0B' : '#EF4444'
 
   const resolvedCodeAnswers: Record<string, string> =
@@ -223,6 +255,19 @@ export default function ResultECPage() {
     activeResult.coding_questions ||
     activeResult.codingQuestions ||
     []
+
+  const resolvedAllQuestions: any[] = (() => {
+    if (rawState?.allQuestions && Array.isArray(rawState.allQuestions) && rawState.allQuestions.length > 0) {
+      return rawState.allQuestions
+    }
+    try {
+      if (examCode) {
+        const stored = localStorage.getItem(`logicwhilelire_questions_${examCode}`) || sessionStorage.getItem(`logicwhilelire_questions_${examCode}`)
+        if (stored) return JSON.parse(stored)
+      }
+    } catch {}
+    return []
+  })()
 
   const hasCodingQuestions = Boolean(
     activeResult.has_coding_questions ||
@@ -319,7 +364,7 @@ export default function ResultECPage() {
     );
   }
 
-  const TOPICS = activeResult.topicBreakdown || {
+  const TOPICS: Record<string, number> = (activeResult.topicBreakdown as Record<string, number>) || {
     'Quantitative Aptitude': 86,
     'Logical Reasoning': 92,
     'Core Computer Science': 78,
@@ -554,63 +599,118 @@ export default function ResultECPage() {
                             background: 'rgba(255, 255, 255, 0.02)',
                             border: '1px solid var(--color-border)',
                             display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            gap: 12,
+                            flexDirection: 'column',
+                            gap: 10,
                           }}
                         >
-                          <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{
+                                fontWeight: 700,
+                                fontSize: '0.85rem',
+                                color: 'var(--color-text)',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}>
+                                {cq.title || cq.text || `Coding Problem ${idx + 1}`}
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)', marginTop: 2 }}>
+                                Weight: {cq.marks ?? 10} marks • Subjective Grade
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              {isAttempted ? (
+                                <span style={{
+                                  padding: '4px 10px',
+                                  borderRadius: 6,
+                                  background: 'rgba(16, 185, 129, 0.15)',
+                                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                                  color: '#10B981',
+                                  fontSize: '0.74rem',
+                                  fontWeight: 700,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                  whiteSpace: 'nowrap',
+                                }}>
+                                  <span>✓</span>
+                                  <span>Accepted & Saved</span>
+                                </span>
+                              ) : (
+                                <span style={{
+                                  padding: '4px 10px',
+                                  borderRadius: 6,
+                                  background: 'rgba(100, 116, 139, 0.15)',
+                                  border: '1px solid rgba(100, 116, 139, 0.35)',
+                                  color: '#94A3B8',
+                                  fontSize: '0.74rem',
+                                  fontWeight: 700,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                  whiteSpace: 'nowrap',
+                                }}>
+                                  <span>⚪</span>
+                                  <span>Not attempted</span>
+                                </span>
+                              )}
+                              {isAttempted && codeVal && (
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedSolutions(prev => ({ ...prev, [cq.id]: !prev[cq.id] }))}
+                                  style={{
+                                    background: 'rgba(56, 189, 248, 0.12)',
+                                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                                    color: '#38BDF8',
+                                    borderRadius: 6,
+                                    padding: '4px 9px',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {expandedSolutions[cq.id] ? 'Hide Code ▲' : 'View Code ▼'}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {expandedSolutions[cq.id] && isAttempted && codeVal && (
                             <div style={{
-                              fontWeight: 700,
-                              fontSize: '0.85rem',
-                              color: 'var(--color-text)',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
+                              background: '#070C18',
+                              border: '1px solid rgba(255, 255, 255, 0.08)',
+                              borderRadius: 8,
+                              padding: '10px 14px',
+                              fontFamily: 'var(--font-mono, monospace)',
                             }}>
-                              {cq.title || cq.text || `Coding Problem ${idx + 1}`}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, fontSize: '0.7rem', color: '#94A3B8' }}>
+                                <span>ACCEPTED SOLUTION ({codeVal.split('\n').length} lines · {codeVal.length} chars)</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(codeVal)
+                                    setCopySuccessId(cq.id)
+                                    setTimeout(() => setCopySuccessId(null), 2000)
+                                  }}
+                                  style={{
+                                    background: copySuccessId === cq.id ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.08)',
+                                    border: 'none',
+                                    borderRadius: 4,
+                                    color: copySuccessId === cq.id ? '#10B981' : '#CBD5E1',
+                                    padding: '2px 8px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.7rem',
+                                  }}
+                                >
+                                  {copySuccessId === cq.id ? '✓ Copied' : '📋 Copy'}
+                                </button>
+                              </div>
+                              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#86EFAC', fontSize: '0.78rem', lineHeight: 1.5, maxHeight: 180, overflowY: 'auto' }}>
+                                {codeVal}
+                              </pre>
                             </div>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)', marginTop: 2 }}>
-                              Weight: {cq.marks ?? 10} marks • Subjective Grade
-                            </div>
-                          </div>
-                          <div>
-                            {isAttempted ? (
-                              <span style={{
-                                padding: '4px 10px',
-                                borderRadius: 6,
-                                background: 'rgba(56, 189, 248, 0.15)',
-                                border: '1px solid rgba(56, 189, 248, 0.35)',
-                                color: '#38BDF8',
-                                fontSize: '0.74rem',
-                                fontWeight: 700,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 5,
-                                whiteSpace: 'nowrap',
-                              }}>
-                                <span>📝</span>
-                                <span>Submitted, pending manual review</span>
-                              </span>
-                            ) : (
-                              <span style={{
-                                padding: '4px 10px',
-                                borderRadius: 6,
-                                background: 'rgba(100, 116, 139, 0.15)',
-                                border: '1px solid rgba(100, 116, 139, 0.35)',
-                                color: '#94A3B8',
-                                fontSize: '0.74rem',
-                                fontWeight: 700,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 5,
-                                whiteSpace: 'nowrap',
-                              }}>
-                                <span>⚪</span>
-                                <span>Not attempted</span>
-                              </span>
-                            )}
-                          </div>
+                          )}
                         </div>
                       )
                     })}
@@ -797,32 +897,35 @@ export default function ResultECPage() {
 
             {/* Topic breakdown bars */}
             <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {Object.entries(TOPICS).map(([topic, score]) => (
-                <div key={topic}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: '0.82rem' }}>
-                    <span style={{ color: 'var(--color-text-muted)' }}>{topic}</span>
-                    <span style={{ fontWeight: 700, color: score >= 75 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444' }}>
-                      {score}%
-                    </span>
+              {Object.entries(TOPICS).map(([topic, rawScore]) => {
+                const score = Number(rawScore || 0)
+                return (
+                  <div key={topic}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: '0.82rem' }}>
+                      <span style={{ color: 'var(--color-text-muted)' }}>{topic}</span>
+                      <span style={{ fontWeight: 700, color: score >= 75 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444' }}>
+                        {score}%
+                      </span>
+                    </div>
+                    <div className="progress-bar-wrap">
+                      <motion.div
+                        className="progress-bar-fill"
+                        initial={{ width: 0 }}
+                        whileInView={{ width: `${score}%` }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                        style={{
+                          background: score >= 75
+                            ? '#10B981'
+                            : score >= 50
+                              ? '#F59E0B'
+                              : '#EF4444',
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="progress-bar-wrap">
-                    <motion.div
-                      className="progress-bar-fill"
-                      initial={{ width: 0 }}
-                      whileInView={{ width: `${score}%` }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                      style={{
-                        background: score >= 75
-                          ? '#10B981'
-                          : score >= 50
-                            ? '#F59E0B'
-                            : '#EF4444',
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 
@@ -928,13 +1031,14 @@ export default function ResultECPage() {
           </div>
         </div>
 
-        {/* ─── LEADERBOARD PODIUM (Solid Surface) ─── */}
-        {leaderboard.length >= 3 && (
+        {/* ─── LEADERBOARD PODIUM & LIVE COHORT STANDINGS ─── */}
+        {leaderboard.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            style={{ marginBottom: 48 }}
           >
             <div style={{
               background: 'var(--color-surface)',
@@ -943,36 +1047,45 @@ export default function ResultECPage() {
               padding: 24,
               boxShadow: '0 1px 4px rgba(0,0,0,0.06)'
             }}>
-              <LeaderboardPodium entries={leaderboard.slice(0, 3)} examName={examCode ?? ''} />
+              {leaderboard.length >= 3 && (
+                <LeaderboardPodium entries={leaderboard.slice(0, 3)} examName={examCode ?? ''} />
+              )}
 
               {/* Full leaderboard table */}
-              {leaderboard.length > 3 && (
-                <div style={{ marginTop: 24 }}>
-                  <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Full Rankings
+              <div style={{ marginTop: leaderboard.length >= 3 ? 24 : 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
+                    Live Examination Rankings ({leaderboard.length} candidates)
                   </h4>
-                  <table className="leaderboard-table">
-                    <thead>
-                      <tr>
-                        <th>Rank</th>
-                        <th>Hall Ticket</th>
-                        <th>Department</th>
-                        <th>Score</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {leaderboard.slice(0, 20).map(entry => (
-                        <tr key={entry.rank} style={{ background: entry.hall_ticket === hallTicket ? 'rgba(37,99,235,0.06)' : undefined }}>
+                  <span style={{ fontSize: '0.75rem', color: '#2563EB', fontWeight: 700 }}>
+                    Your Real-Time Rank: #{animatedRank}
+                  </span>
+                </div>
+                <table className="leaderboard-table">
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Hall Ticket</th>
+                      <th>Department</th>
+                      <th>Score</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboard.slice(0, 30).map((entry, eIdx) => {
+                      const entryRank = entry.rank || eIdx + 1
+                      const isMe = String(entry.hall_ticket || entry.hall_ticket_no || '').toUpperCase().trim() === candidateHt
+                      return (
+                        <tr key={entryRank} style={{ background: isMe ? 'rgba(37,99,235,0.08)' : undefined }}>
                           <td>
-                            <div className={`rank-badge ${['rank-1','rank-2','rank-3'][entry.rank - 1] || 'rank-other'}`}>
-                              {entry.rank <= 3 ? ['🥇','🥈','🥉'][entry.rank - 1] : entry.rank}
+                            <div className={`rank-badge ${['rank-1','rank-2','rank-3'][entryRank - 1] || 'rank-other'}`}>
+                              {entryRank <= 3 ? ['🥇','🥈','🥉'][entryRank - 1] : entryRank}
                             </div>
                           </td>
                           <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
                             {entry.hall_ticket || entry.name}
-                            {entry.hall_ticket === hallTicket && (
-                              <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 999, background: 'rgba(37,99,235,0.12)', color: 'var(--color-primary)', fontSize: '0.7rem', fontWeight: 700 }}>
-                                YOU
+                            {isMe && (
+                              <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 999, background: 'rgba(37,99,235,0.18)', color: 'var(--color-primary)', fontSize: '0.7rem', fontWeight: 800 }}>
+                                YOU (RANK #{entryRank})
                               </span>
                             )}
                           </td>
@@ -981,11 +1094,206 @@ export default function ResultECPage() {
                             {entry.score}%
                           </td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ─── COMPREHENSIVE QUESTIONS & ACCEPTED ANSWERS AUDIT ─── */}
+        {resolvedAllQuestions.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            style={{ marginBottom: 48 }}
+          >
+            <div style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: 24,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
+                <div>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
+                    Questions & Accepted Answers Manifest
+                  </h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--color-text-faint)' }}>
+                    Authoritative audit log of questions presented, candidate selections, and server-accepted responses.
+                  </p>
                 </div>
-              )}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <span style={{
+                    padding: '4px 12px',
+                    borderRadius: 999,
+                    background: 'rgba(16, 185, 129, 0.12)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    color: '#10B981',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                  }}>
+                    {resolvedAllQuestions.filter(q => q.isAnswered).length} / {resolvedAllQuestions.length} Questions Accepted
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {resolvedAllQuestions.map((q, idx) => {
+                  const optLetters = ['A', 'B', 'C', 'D']
+                  const isCodeQ = q.type === 'code'
+                  const codeAns = resolvedCodeAnswers[q.id] || (isCodeQ ? q.candidateAnswer : '') || ''
+                  const isAns = isCodeQ ? Boolean(codeAns && codeAns.trim().length > 0) : (q.candidateAnswer !== null && q.candidateAnswer !== undefined)
+
+                  return (
+                    <div
+                      key={q.id || idx}
+                      style={{
+                        padding: '16px',
+                        borderRadius: 10,
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        border: '1px solid var(--color-border)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 10 }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: 4,
+                            background: 'rgba(37, 99, 235, 0.15)',
+                            color: '#60A5FA',
+                            fontWeight: 800,
+                            fontSize: '0.72rem',
+                          }}>
+                            Q{idx + 1}
+                          </span>
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: 4,
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            color: 'var(--color-text-muted)',
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                          }}>
+                            {q.topic || 'General'}
+                          </span>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)' }}>
+                            {q.marks || 1} mark{(q.marks || 1) > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div>
+                          {isAns ? (
+                            <span style={{
+                              padding: '3px 10px',
+                              borderRadius: 999,
+                              background: 'rgba(16, 185, 129, 0.15)',
+                              border: '1px solid rgba(16, 185, 129, 0.35)',
+                              color: '#10B981',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                            }}>
+                              ✓ Accepted & Saved
+                            </span>
+                          ) : (
+                            <span style={{
+                              padding: '3px 10px',
+                              borderRadius: 999,
+                              background: 'rgba(100, 116, 139, 0.15)',
+                              border: '1px solid rgba(100, 116, 139, 0.35)',
+                              color: '#94A3B8',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                            }}>
+                              Not Attempted
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text)', marginBottom: 12, lineHeight: 1.5 }}>
+                        {q.text}
+                      </div>
+
+                      {/* Answer details */}
+                      {isCodeQ ? (
+                        <div>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38BDF8', marginBottom: 6 }}>
+                            Candidate's Accepted Code Solution:
+                          </div>
+                          {codeAns ? (
+                            <pre style={{
+                              margin: 0,
+                              background: '#070C18',
+                              border: '1px solid rgba(255, 255, 255, 0.08)',
+                              borderRadius: 8,
+                              padding: '10px 14px',
+                              fontSize: '0.78rem',
+                              fontFamily: 'var(--font-mono, monospace)',
+                              color: '#86EFAC',
+                              whiteSpace: 'pre-wrap',
+                              wordBreak: 'break-all',
+                              maxHeight: 180,
+                              overflowY: 'auto',
+                            }}>
+                              {codeAns}
+                            </pre>
+                          ) : (
+                            <div style={{ color: 'var(--color-text-faint)', fontSize: '0.78rem', fontStyle: 'italic' }}>
+                              No code answer submitted for this problem.
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 6 }}>
+                            {(q.options || []).map((opt: string, optI: number) => {
+                              const isSelected = q.candidateAnswer === optI || String(q.candidateAnswer).toUpperCase() === optLetters[optI]
+                              return (
+                                <div
+                                  key={optI}
+                                  style={{
+                                    padding: '8px 12px',
+                                    borderRadius: 6,
+                                    background: isSelected ? 'rgba(37, 99, 235, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                                    border: isSelected ? '1px solid #2563EB' : '1px solid var(--color-border)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    fontSize: '0.8rem',
+                                  }}
+                                >
+                                  <span style={{
+                                    fontWeight: 800,
+                                    color: isSelected ? '#60A5FA' : 'var(--color-text-faint)',
+                                  }}>
+                                    {optLetters[optI]}.
+                                  </span>
+                                  <span style={{
+                                    color: isSelected ? '#FFFFFF' : 'var(--color-text-muted)',
+                                    fontWeight: isSelected ? 700 : 400,
+                                  }}>
+                                    {opt}
+                                  </span>
+                                  {isSelected && (
+                                    <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#60A5FA', fontWeight: 800 }}>
+                                      (Your Selection)
+                                    </span>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </motion.div>
         )}

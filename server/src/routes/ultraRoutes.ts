@@ -881,15 +881,32 @@ router.get('/exam-code/:code/result', async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
     const { hallTicket } = req.query;
+    const cleanHt = String(hallTicket || '').toUpperCase().trim();
+    const cleanCode = String(code || '').toUpperCase().trim();
 
-    const { data: attempt } = await supabase
+    let attempt: any = null;
+    const { data: attemptA } = await supabase
       .from('exam_code_attempts')
       .select('*')
-      .eq('exam_code', code)
-      .eq('hall_ticket', hallTicket as string)
+      .eq('exam_code', cleanCode)
+      .eq('hall_ticket_no', cleanHt)
       .order('submitted_at', { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    if (attemptA) {
+      attempt = attemptA;
+    } else {
+      const { data: attemptB } = await supabase
+        .from('exam_code_attempts')
+        .select('*')
+        .eq('exam_code', cleanCode)
+        .eq('hall_ticket', cleanHt)
+        .order('submitted_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      attempt = attemptB;
+    }
 
     if (!attempt) {
       return res.status(404).json({
@@ -898,11 +915,37 @@ router.get('/exam-code/:code/result', async (req: Request, res: Response) => {
       });
     }
 
+    // Dynamic real-time rank & total candidate calculation
+    let rank = 1;
+    let totalCandidates = 1;
+    try {
+      const { data: rankedAttempts } = await supabase
+        .from('exam_code_attempts')
+        .select('id, hall_ticket_no, hall_ticket, score, time_taken_seconds, wrong_count, created_at')
+        .eq('exam_code', cleanCode)
+        .in('status', ['completed', 'submitted', 'auto_submitted', 'auto_submitted_expired'])
+        .order('score', { ascending: false })
+        .order('time_taken_seconds', { ascending: true })
+        .order('wrong_count', { ascending: true })
+        .order('created_at', { ascending: true });
+
+      if (rankedAttempts && rankedAttempts.length > 0) {
+        totalCandidates = rankedAttempts.length;
+        const foundIdx = rankedAttempts.findIndex((a: any) =>
+          a.id === attempt.id ||
+          String(a.hall_ticket_no || a.hall_ticket || '').toUpperCase().trim() === cleanHt
+        );
+        if (foundIdx !== -1) {
+          rank = foundIdx + 1;
+        }
+      }
+    } catch {}
+
     // Inspect questions to identify coding vs MCQ questions
     const { data: qList } = await supabase
       .from('questions_ec')
       .select('id, question, marks, topic, option_a, option_b, question_type')
-      .eq('exam_code', String(code).toUpperCase());
+      .eq('exam_code', cleanCode);
 
     const codingQList: Array<{ id: string; title: string; marks: number; submitted: boolean }> = [];
     let mcqMaxMarks = 0;
@@ -938,18 +981,25 @@ router.get('/exam-code/:code/result', async (req: Request, res: Response) => {
         termination_reason: attempt.termination_reason || (isTerminated ? 'Proctoring security violation' : null),
         score: isTerminated ? 0 : (attempt.score || 0),
         totalMarks: attempt.total_marks || attempt.max_score || 100,
+        max_score: attempt.max_score || attempt.total_marks || 100,
         percentage: isTerminated ? 0 : (attempt.percentage || 0),
         correctAnswers: attempt.correct_answers || attempt.correct_count || 0,
+        correct_count: attempt.correct_count || attempt.correct_answers || 0,
         wrongAnswers: attempt.wrong_answers || attempt.wrong_count || 0,
+        wrong_count: attempt.wrong_count || attempt.wrong_answers || 0,
         unanswered: attempt.unanswered || 0,
         timeTaken: attempt.time_taken || attempt.time_taken_seconds || 0,
-        qrToken: attempt.qr_token || `token_${code}_${attempt.hall_ticket}`,
+        time_taken_seconds: attempt.time_taken_seconds || attempt.time_taken || 0,
+        qrToken: attempt.qr_token || `token_${cleanCode}_${attempt.hall_ticket_no || attempt.hall_ticket}`,
         code_answers: codeAns,
         mcq_score: isTerminated ? 0 : mcqScore,
         mcq_max_score: mcqMaxMarks > 0 ? mcqMaxMarks : (attempt.total_marks || attempt.max_score || 100),
         mcq_percentage: isTerminated ? 0 : mcqPercentage,
         coding_questions: codingQList,
         has_coding_questions: hasCoding,
+        rank,
+        totalCandidates,
+        total_candidates: totalCandidates,
       },
     });
   } catch (err) {

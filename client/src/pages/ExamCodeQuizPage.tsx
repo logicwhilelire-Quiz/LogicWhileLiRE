@@ -646,12 +646,32 @@ export default function QuizPage() {
         submitted: Boolean(codeAnswers[q.id] && codeAnswers[q.id].trim().length > 0),
       }))
 
+    const allQuestionsState = (session?.questions || []).map((q, idx) => ({
+      id: q.id,
+      index: idx + 1,
+      text: q.text,
+      type: q.type,
+      topic: q.topic || q.section || 'General',
+      marks: q.marks || 1,
+      options: q.options || [],
+      candidateAnswer: q.type === 'code' ? (codeAnswers[q.id] || '') : (answers[q.id] !== undefined ? answers[q.id] : null),
+      isAnswered: q.type === 'code' ? Boolean(codeAnswers[q.id] && codeAnswers[q.id].trim().length > 0) : answers[q.id] !== undefined,
+    }))
+
+    if (examCode) {
+      try {
+        localStorage.setItem(`logicwhilelire_questions_${examCode}`, JSON.stringify(allQuestionsState))
+        sessionStorage.setItem(`logicwhilelire_questions_${examCode}`, JSON.stringify(allQuestionsState))
+      } catch {}
+    }
+
     navigate(`/result-ec/${examCode}`, {
       state: {
         result: resultData,
         hallTicket,
         codeAnswers,
         codingQuestions: codingQState,
+        allQuestions: allQuestionsState,
       },
       replace: true,
     })
@@ -2887,20 +2907,22 @@ export default function QuizPage() {
             <ExamCodeEditor
               value={codeAnswers[currentQuestion.id] || ''}
               onChange={handleCodeAnswer}
+              onAcceptAnswer={handleCodeAnswer}
+              isAccepted={Boolean(codeAnswers[currentQuestion.id] && codeAnswers[currentQuestion.id].trim().length > 0)}
               height={440}
               questionId={String(currentQuestion.id)}
               testCases={currentQuestion.test_cases || []}
               onRunComplete={result => {
                 setRunResult({ output: result.output, error: result.stderr })
-                if (result.passed && result.passed > 0) {
-                  // Mark as answered
-                  handleCodeAnswer(codeAnswers[currentQuestion.id] || '')
+                const curCode = codeAnswers[currentQuestion.id] || ''
+                if (curCode.trim()) {
+                  handleCodeAnswer(curCode)
                 }
               }}
             />
 
             {/* Navigation for coding mode */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
               <button
                 className="btn btn-secondary"
                 disabled={currentQ === 0}
@@ -2908,7 +2930,36 @@ export default function QuizPage() {
               >
                 ← Previous
               </button>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => {
+                    const curCode = codeAnswers[currentQuestion.id] || ''
+                    if (curCode.trim()) {
+                      handleCodeAnswer(curCode)
+                    }
+                  }}
+                  disabled={!codeAnswers[currentQuestion.id]?.trim()}
+                  style={{
+                    background: Boolean(codeAnswers[currentQuestion.id]?.trim())
+                      ? 'rgba(16, 185, 129, 0.18)'
+                      : 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid #10B981',
+                    color: Boolean(codeAnswers[currentQuestion.id]?.trim()) ? '#10B981' : '#64748B',
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '8px 14px',
+                    borderRadius: 8,
+                    cursor: codeAnswers[currentQuestion.id]?.trim() ? 'pointer' : 'not-allowed',
+                  }}
+                  title="Accept and save code answer"
+                >
+                  <span>✓</span>
+                  <span>{Boolean(codeAnswers[currentQuestion.id]?.trim()) ? 'Solution Accepted ✓' : 'Accept Solution'}</span>
+                </button>
                 <button
                   className={`btn ${isFlagged ? 'btn-warning' : 'btn-ghost'}`}
                   style={{ color: isFlagged ? '#F59E0B' : undefined }}

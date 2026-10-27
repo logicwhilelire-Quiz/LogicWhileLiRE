@@ -82,6 +82,8 @@ interface ExamCodeEditorProps {
   testCases?: Array<{ id: string; input_text: string; is_hidden: boolean; marks?: number }>
   onRunComplete?: (result: RunResult) => void
   showRunButton?: boolean
+  onAcceptAnswer?: (code: string) => void
+  isAccepted?: boolean
 }
 
 /**
@@ -99,6 +101,8 @@ export default function ExamCodeEditor({
   testCases = [],
   onRunComplete,
   showRunButton = true,
+  onAcceptAnswer,
+  isAccepted = false,
 }: ExamCodeEditorProps) {
   const [selectedLang, setSelectedLang] = useState(initialLang)
   const [lineCount, setLineCount] = useState(value.split('\n').length || 1)
@@ -107,6 +111,7 @@ export default function ExamCodeEditor({
   const [running, setRunning] = useState(false)
   const [outputVisible, setOutputVisible] = useState(false)
   const [pasteBlockedNotice, setPasteBlockedNotice] = useState(false)
+  const [justAccepted, setJustAccepted] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const lineNumRef = useRef<HTMLDivElement>(null)
 
@@ -202,15 +207,21 @@ export default function ExamCodeEditor({
       }
       setRunResult(result)
       onRunComplete?.(result)
+      if (value.trim()) {
+        onAcceptAnswer?.(value)
+      }
     } catch (err) {
       const msg = axios.isAxiosError(err) ? err.response?.data?.error || err.message : 'Execution failed'
       const result: RunResult = { output: '', stderr: msg, hasError: true, verdict: 'Error' }
       setRunResult(result)
       onRunComplete?.(result)
+      if (value.trim()) {
+        onChange?.(value)
+      }
     } finally {
       setRunning(false)
     }
-  }, [value, selectedLang, testCases, questionId, running, onRunComplete])
+  }, [value, selectedLang, testCases, questionId, running, onRunComplete, onAcceptAnswer, onChange])
 
   // ─── Language accent colour ─────────────────────────────────────────────────
   const accentColor = useMemo(() => {
@@ -430,20 +441,55 @@ export default function ExamCodeEditor({
             background: `linear-gradient(90deg, ${accentColor}10, rgba(0,0,0,0.3))`,
           }}
         >
-          <button
-            className="btn btn-success btn-sm"
-            onClick={handleRun}
-            disabled={running || !value.trim()}
-            style={{ minWidth: 110 }}
-          >
-            {running ? (
-              <>
-                <span className="btn-spinner" style={{ width: 12, height: 12, borderWidth: 1.5 }} /> Running...
-              </>
-            ) : (
-              '▶ Run Code'
-            )}
-          </button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              className="btn btn-success btn-sm"
+              onClick={handleRun}
+              disabled={running || !value.trim()}
+              style={{ minWidth: 110 }}
+            >
+              {running ? (
+                <>
+                  <span className="btn-spinner" style={{ width: 12, height: 12, borderWidth: 1.5 }} /> Running...
+                </>
+              ) : (
+                '▶ Run Code'
+              )}
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => {
+                if (value.trim()) {
+                  onAcceptAnswer?.(value)
+                  setJustAccepted(true)
+                  setTimeout(() => setJustAccepted(false), 3000)
+                }
+              }}
+              disabled={!value.trim()}
+              style={{
+                background: isAccepted || justAccepted
+                  ? 'rgba(16, 185, 129, 0.22)'
+                  : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                border: '1px solid #10B981',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 12px',
+                borderRadius: 6,
+                cursor: value.trim() ? 'pointer' : 'not-allowed',
+                opacity: value.trim() ? 1 : 0.6,
+                transition: 'all 0.2s ease',
+              }}
+              title="Accept and securely save this solution as your answer"
+            >
+              <span>✓</span>
+              <span>{isAccepted || justAccepted ? 'Answer Accepted ✓' : 'Accept Solution'}</span>
+            </button>
+          </div>
 
           {testCases.length > 0 && (
             <span style={{ fontSize: '0.75rem', color: 'var(--color-text-faint, #64748B)' }}>
@@ -488,7 +534,7 @@ export default function ExamCodeEditor({
                 padding: '12px 16px',
                 fontFamily: 'var(--font-mono, monospace)',
                 fontSize: '0.82rem',
-                maxHeight: 240,
+                maxHeight: 280,
                 overflowY: 'auto',
               }}
             >
@@ -500,16 +546,33 @@ export default function ExamCodeEditor({
                   marginBottom: 10,
                 }}
               >
-                <span
-                  style={{
-                    fontSize: '0.7rem',
-                    color: 'var(--color-text-faint, #64748B)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                  }}
-                >
-                  Execution Output
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      color: 'var(--color-text-faint, #64748B)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                    }}
+                  >
+                    Execution Output
+                  </span>
+                  {(isAccepted || justAccepted) && (
+                    <span
+                      style={{
+                        padding: '2px 8px',
+                        borderRadius: 4,
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        border: '1px solid rgba(16, 185, 129, 0.35)',
+                        color: '#10B981',
+                        fontSize: '0.68rem',
+                        fontWeight: 700,
+                      }}
+                    >
+                      ✓ Answer Accepted & Saved
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={() => {
                     setOutputVisible(false)
@@ -585,6 +648,60 @@ export default function ExamCodeEditor({
                   {runResult.stderr || runResult.output || '(no output)'}
                 </pre>
               )}
+
+              {/* Accept & Save Answer Action Bar in Output */}
+              <div
+                style={{
+                  marginTop: 12,
+                  paddingTop: 10,
+                  borderTop: '1px solid rgba(255,255,255,0.08)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 10,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem' }}>
+                  <span style={{ fontSize: '0.9rem' }}>{isAccepted || justAccepted ? '✅' : '⚡'}</span>
+                  <span style={{ color: isAccepted || justAccepted ? '#10B981' : '#94A3B8', fontWeight: 600 }}>
+                    {isAccepted || justAccepted
+                      ? 'Answer accepted & securely saved into examination attempt'
+                      : 'Output generated. Click Accept to submit this solution.'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (value.trim()) {
+                      onAcceptAnswer?.(value)
+                      setJustAccepted(true)
+                      setTimeout(() => setJustAccepted(false), 3000)
+                    }
+                  }}
+                  disabled={!value.trim()}
+                  style={{
+                    background: isAccepted || justAccepted
+                      ? 'rgba(16, 185, 129, 0.22)'
+                      : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                    border: '1px solid #10B981',
+                    color: '#FFFFFF',
+                    borderRadius: 6,
+                    padding: '6px 14px',
+                    fontSize: '0.76rem',
+                    fontWeight: 700,
+                    cursor: value.trim() ? 'pointer' : 'not-allowed',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    boxShadow: isAccepted ? 'none' : '0 2px 10px rgba(16, 185, 129, 0.3)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <span>✓</span>
+                  <span>{isAccepted || justAccepted ? 'Solution Accepted ✓' : 'Accept & Save Solution'}</span>
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
