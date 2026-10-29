@@ -302,7 +302,7 @@ export default function QuizPage() {
           questions: randomizedQuestions,
           proctoringMode,
           endTimeMs: computedEndTimeMs,
-          violationThreshold: Number(exam?.max_violations) || Number(exam?.violation_threshold) || 2,
+          violationThreshold: Number(exam?.max_violations) || Number(exam?.violation_threshold) || 5,
         })
 
         setTimeLeft(initialTimeLeft)
@@ -899,7 +899,7 @@ export default function QuizPage() {
     } catch { /* non-blocking */ }
 
     const isSevere = metadata?.isSevere === true
-    const maxStrikes = session?.violationThreshold || 2
+    const maxStrikes = session?.violationThreshold || 5
 
     if (count < maxStrikes && !isSevere) {
       // VIOLATION WARNING: Show reminder to the student
@@ -928,8 +928,8 @@ export default function QuizPage() {
       if (document.hidden) {
         logViolation(
           'tab_switch',
-          'Tab switch or window sliding detected during examination — zero-tolerance security lockdown triggered',
-          { isSevere: true }
+          'Tab switch or window sliding detected during examination — please return to the exam window immediately',
+          { isSevere: false }
         )
       }
     }
@@ -938,8 +938,8 @@ export default function QuizPage() {
     const handleWindowBlur = () => {
       logViolation(
         'window_blur',
-        'Exam window lost focus (switched applications or desktop window) — zero-tolerance focus policy',
-        { isSevere: true }
+        'Exam window lost focus (switched applications or desktop window) — please keep focus on the examination',
+        { isSevere: false }
       )
     }
 

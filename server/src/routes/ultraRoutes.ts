@@ -1275,6 +1275,36 @@ router.post(
       `Duration=${durationSeconds}s, end_time=${endTimeIso}`
     );
 
+    // ── Auto-dispatch Exam Started Reminder Emails to all Enrolled Students ──
+    if (!alreadyStarted) {
+      (async () => {
+        try {
+          const { sendExamStartedReminderEmail } = await import('../services/emailService');
+          let query = supabase.from('students').select('email, full_name, roll_number, hall_ticket_no, name');
+          if (examData.college_id) {
+            query = query.eq('college_id', examData.college_id);
+          }
+          const { data: students } = await query;
+          if (students && students.length > 0) {
+            console.log(`[AutoReminderEmail] Dispatching start reminders to ${students.length} enrolled candidates for ${code}...`);
+            for (const s of students) {
+              if (s.email) {
+                sendExamStartedReminderEmail({
+                  toEmail: s.email,
+                  recipientName: s.full_name || s.name || 'Candidate',
+                  hallTicket: s.hall_ticket_no || s.roll_number || '',
+                  examCode: code,
+                  examTitle: (examData as any)?.exam_name || code,
+                }).catch(e => console.warn(`[AutoReminderEmail] Warning for ${s.email}:`, e?.message));
+              }
+            }
+          }
+        } catch (emailErr: any) {
+          console.warn('[AutoReminderEmail] Exception during dispatch:', emailErr?.message);
+        }
+      })();
+    }
+
     return res.json({
       success: true,
       already_started: alreadyStarted,
