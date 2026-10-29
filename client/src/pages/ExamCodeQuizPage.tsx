@@ -21,7 +21,6 @@ import {
   clearAnswerBuffer,
 } from '../lib/offlineAnswerStore'
 import AntiLeakWatermark from '../components/AntiLeakWatermark'
-import HoloScratchpadModal from '../components/HoloScratchpadModal'
 import HoloProctorDeskModal, { type ProctorCommsMessage } from '../components/HoloProctorDeskModal'
 import { soundFx } from '../lib/synthAudio'
 
@@ -169,7 +168,6 @@ export default function QuizPage() {
   const [submitNetworkErrorNotice, setSubmitNetworkErrorNotice] = useState('')
   const [timeExtensionNotice, setTimeExtensionNotice] = useState('')
   const [securityBlockNotice, setSecurityBlockNotice] = useState('')
-  const [showScratchpad, setShowScratchpad] = useState(false)
   const [showProctorDesk, setShowProctorDesk] = useState(false)
   const [proctorCommsLog, setProctorCommsLog] = useState<ProctorCommsMessage[]>([])
   const [unreadCommsCount, setUnreadCommsCount] = useState(0)
@@ -2358,29 +2356,8 @@ export default function QuizPage() {
             </div>
           )}
 
-          {/* Scratchpad & Sound Controls */}
+          {/* Help & Proctor Desk Controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button
-              type="button"
-              onClick={() => setShowScratchpad(true)}
-              style={{
-                background: 'rgba(56, 189, 248, 0.12)',
-                border: '1px solid rgba(56, 189, 248, 0.35)',
-                color: '#38BDF8',
-                borderRadius: 8,
-                padding: '6px 12px',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-              title="Open In-Exam Secure Scratchpad & Calculation Canvas"
-            >
-              <span>📝</span>
-              <span>Scratchpad</span>
-            </button>
             <button
               type="button"
               onClick={() => {
@@ -3537,12 +3514,6 @@ export default function QuizPage() {
         examCode={examCode}
       />
 
-      {/* ─── IN-EXAM SECURE SCRATCHPAD MODAL ─── */}
-      <HoloScratchpadModal
-        isOpen={showScratchpad}
-        onClose={() => setShowScratchpad(false)}
-        examCode={examCode || 'EXAM'}
-      />
 
       {/* ─── INVIGILATOR DESK & AI SENTINEL MODAL ─── */}
       <HoloProctorDeskModal

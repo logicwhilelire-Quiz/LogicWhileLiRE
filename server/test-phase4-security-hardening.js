@@ -22,7 +22,7 @@ const bcrypt = require('bcrypt');
 require('dotenv').config();
 process.env.ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'test_admin_jwt_secret_key_32chars_long';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret_key_32chars_long';
-process.env.ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'LiREAdmin@2026!';
+process.env.ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Test#HardenedMockPass2026!';
 process.env.DEMO_MODE = 'true';
 
 const { isStrongPassword, strongPasswordSchema } = require('./dist/middleware/validate');

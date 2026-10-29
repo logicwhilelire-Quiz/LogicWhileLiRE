@@ -48,7 +48,7 @@ async function runEndToEnd() {
     // 2. Super Admin Login
     const adminLoginRes = await req('POST', `${BASE}/api/admin/login`, {
       username: process.env.ADMIN_USERNAME || 'admin',
-      password: process.env.ADMIN_PASSWORD || 'LiREAdmin@2026!',
+      password: process.env.ADMIN_PASSWORD || process.env.INITIAL_ADMIN_PASSWORD || '',
     });
     const adminToken = adminLoginRes.data?.token;
     if (adminLoginRes.status === 200 && adminToken) {
@@ -60,7 +60,7 @@ async function runEndToEnd() {
     // 3. Inspector Login
     const inspectorLoginRes = await req('POST', `${BASE}/api/admin/login`, {
       username: process.env.INSPECTOR_USERNAME || 'inspector',
-      password: process.env.INSPECTOR_PASSWORD || 'LiREInspector@2026!',
+      password: process.env.INSPECTOR_PASSWORD || process.env.INITIAL_INSPECTOR_PASSWORD || '',
     });
     const inspectorToken = inspectorLoginRes.data?.token;
     if (inspectorLoginRes.status === 200 && inspectorToken) {

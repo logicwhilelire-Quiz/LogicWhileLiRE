@@ -62,7 +62,7 @@ const store: MockTableData = {
       username: 'inspector',
       email: 'inspector@logicwhilelire.com',
       phone: '+919999999998',
-      password_hash: bcrypt.hashSync(process.env.INSPECTOR_PASSWORD || 'LiREInspector@2026!', 10),
+      password_hash: process.env.INSPECTOR_PASSWORD ? bcrypt.hashSync(process.env.INSPECTOR_PASSWORD, 10) : '$2b$10$wK1FfB0bC1x6p1X.8tU7/eG8uG8gK9.z7r8l5k4j3h2g1f0e9d8c7',
       role: 'inspector',
       college_id: 1,
       failed_attempts: 0,

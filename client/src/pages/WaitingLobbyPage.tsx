@@ -51,6 +51,7 @@ export default function WaitingLobbyPage() {
   const location = useLocation();
 
   const [candidate, setCandidate] = useState<CandidateProfile | null>(null);
+  const [isVerified, setIsVerified] = useState(false);
   const [connected, setConnected] = useState(false);
   const [latency, setLatency] = useState<number | null>(null);
   const [lobbyMeta, setLobbyMeta] = useState<LobbyMeta>({ enrolled: 0, connected: 0, pending: 0 });
@@ -171,13 +172,21 @@ export default function WaitingLobbyPage() {
 
   useEffect(() => {
     const stateCandidate = (location.state as any)?.candidate;
+    let resolvedCandidate: CandidateProfile | null = null;
+
     if (stateCandidate) {
-      setCandidate(stateCandidate);
+      resolvedCandidate = stateCandidate;
+    } else if ((location.state as any)?.hallTicket) {
+      const ht = (location.state as any).hallTicket;
+      const name = (location.state as any).studentName || ht;
+      resolvedCandidate = { roll_number: ht, hall_ticket: ht, name } as any;
+      try { localStorage.setItem('student_user', JSON.stringify(resolvedCandidate)); } catch {}
     } else {
       const stored = localStorage.getItem("student_user");
       if (stored) {
-        try { setCandidate(JSON.parse(stored)); } catch { /* ignore */ }
-      } else {
+        try { resolvedCandidate = JSON.parse(stored); } catch {}
+      }
+      if (!resolvedCandidate) {
         const attemptRaw = localStorage.getItem('logicwhilelire_attempt') || localStorage.getItem('lw_attempt');
         let parsedRoll = '';
         let parsedName = '';
@@ -189,15 +198,20 @@ export default function WaitingLobbyPage() {
           } catch {}
         }
         if (parsedRoll) {
-          setCandidate({
+          resolvedCandidate = {
             name: parsedName,
             roll_number: parsedRoll,
-          });
+          };
         } else {
           navigate(`/enter-exam?code=${encodeURIComponent(contestId)}`, { replace: true });
           return;
         }
       }
+    }
+
+    setCandidate(resolvedCandidate);
+    if ((resolvedCandidate as any)?.is_verified) {
+      setIsVerified(true);
     }
 
     getAssessmentSystemCheck().catch(() => {});
@@ -211,16 +225,26 @@ export default function WaitingLobbyPage() {
     });
     socketRef.current = socket;
 
+    const myRoll = resolvedCandidate?.roll_number || (resolvedCandidate as any)?.hall_ticket || 'STUDENT';
+    const myName = resolvedCandidate?.name || resolvedCandidate?.first_name || 'Student Candidate';
+
     socket.on("connect", () => {
       setConnected(true);
       addEvent(`Socket connected (${socket.id?.slice(0, 8) || "?"}...)`, "success");
       socket.emit("lobby:join", {
         examCode: contestId,
-        hallTicket: candidate?.roll_number || (candidate as any)?.hall_ticket || candidate?.email || 'STUDENT',
-        studentName: candidate?.name || candidate?.first_name || 'Student Candidate',
-        section: candidate?.section || 'General',
+        hallTicket: myRoll,
+        studentName: myName,
+        section: resolvedCandidate?.section || 'General',
       });
       addEvent(`Joined lobby room: lobby:${contestId.toUpperCase()}`, "info");
+    });
+
+    socket.on("candidate:verified", (data: { hallTicket?: string; is_verified?: boolean }) => {
+      if (!data?.hallTicket || (myRoll && myRoll.toUpperCase() === data.hallTicket.toUpperCase())) {
+        setIsVerified(true);
+        addEvent("✅ Identity verified and admitted by College Inspector!", "success");
+      }
     });
 
     socket.on("disconnect", () => {
@@ -301,6 +325,15 @@ export default function WaitingLobbyPage() {
   }, [examStarted, startPayload, contestId, candidate, location.state, navigate]);
 
   const handleManualStart = () => {
+    if (!examStarted) {
+      alert("The Administrator has not started this examination yet. Please wait in the lobby for synchronized launch.");
+      return;
+    }
+    if (!isVerified) {
+      alert("Candidate profile pending verification by Inspector. Please wait for the inspector to verify your identity in the waiting queue.");
+      return;
+    }
+
     const examCode = startPayload?.exam_id || contestId;
     const hallTicket = candidate?.roll_number || (location.state as any)?.hallTicket || "";
     try {
@@ -537,16 +570,16 @@ export default function WaitingLobbyPage() {
                 </div>
                 <div
                   style={{
-                    background: "rgba(16,185,129,0.15)",
-                    color: "#34D399",
-                    border: "1px solid rgba(16,185,129,0.35)",
+                    background: isVerified ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)",
+                    color: isVerified ? "#34D399" : "#FBBF24",
+                    border: `1px solid ${isVerified ? "rgba(16,185,129,0.35)" : "rgba(245,158,11,0.35)"}`,
                     padding: "3px 8px",
                     borderRadius: 4,
                     fontSize: "0.72rem",
                     fontWeight: 800,
                   }}
                 >
-                  VERIFIED CLAIM ✔
+                  {isVerified ? "INSPECTOR VERIFIED ✔" : "AWAITING INSPECTOR VERIFICATION ⏳"}
                 </div>
               </div>
 
@@ -570,23 +603,31 @@ export default function WaitingLobbyPage() {
               <button
                 id="start-assessment-now-btn"
                 onClick={handleManualStart}
+                disabled={!examStarted || !isVerified}
                 style={{
                   width: "100%",
-                  background: examStarted ? "#EAA812" : "linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)",
-                  boxShadow: examStarted ? "0 4px 16px rgba(234,168,18,0.4)" : "0 4px 16px rgba(234,88,12,0.4)",
+                  background: (examStarted && isVerified)
+                    ? "linear-gradient(135deg, #10B981 0%, #059669 100%)"
+                    : "rgba(255,255,255,0.08)",
+                  opacity: (examStarted && isVerified) ? 1 : 0.65,
+                  boxShadow: (examStarted && isVerified) ? "0 4px 16px rgba(16,185,129,0.4)" : "none",
                   fontSize: "0.92rem",
                   fontWeight: 800,
                   letterSpacing: "0.04em",
                   textTransform: "uppercase",
                   padding: "14px 18px",
                   borderRadius: 8,
-                  cursor: "pointer",
+                  cursor: (examStarted && isVerified) ? "pointer" : "not-allowed",
                   color: "#FFFFFF",
                   border: "none",
                   transition: "all 0.25s ease",
                 }}
               >
-                {examStarted ? "ENTER LIVE ASSESSMENT NOW →" : "🚀 ENTER & BEGIN ASSESSMENT NOW →"}
+                {examStarted && isVerified
+                  ? "ENTER LIVE ASSESSMENT NOW →"
+                  : !isVerified
+                  ? "⏳ AWAITING INSPECTOR VERIFICATION"
+                  : "⏳ WAITING FOR ADMIN TO START"}
               </button>
 
               <button

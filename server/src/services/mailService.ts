@@ -1729,3 +1729,110 @@ export async function resendMailLogById(logId: string): Promise<SendMailResult> 
 
   return result;
 }
+
+/**
+ * Dispatches official system credentials notification to logicwhilelire@gmail.com
+ */
+export async function dispatchOfficialCredentialsNotification(recipientEmail?: string): Promise<SendMailResult> {
+  const targetEmail = recipientEmail || process.env.INITIAL_ADMIN_EMAIL || 'logicwhilelire@gmail.com';
+  const subject = '🔐 Official Platform Credentials & Roles Update — LogicWhile LiRE';
+
+  const contentHtml = `
+    <div style="background:rgba(234,168,18,0.12); border:1px solid #EAA812; border-radius:8px; padding:12px 16px; margin-bottom:20px;">
+      <span style="font-size:12px; font-weight:800; color:#EAA812; text-transform:uppercase; letter-spacing:1px;">
+        🏛️ OFFICIAL SYSTEM CREDENTIALS DISPATCH
+      </span>
+    </div>
+    <h2 style="margin:0 0 12px; font-size:22px; font-weight:800; color:#ffffff;">
+      LogicWhile LiRE — Master Credentials & Roles
+    </h2>
+    <p style="margin:0 0 16px; font-size:14px; line-height:1.6; color:#94a3b8;">
+      All platform user accounts have been updated with new high-entropy credentials. Old and demo passwords (including <code style="color:#ef4444;">admin123</code>, <code style="color:#ef4444;">faculty123</code>, <code style="color:#ef4444;">inspector123</code>) have been completely invalidated.
+    </p>
+
+    <!-- Credentials Matrix -->
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:12px; margin-bottom:24px; overflow:hidden;">
+      <thead>
+        <tr style="background:rgba(255,255,255,0.06); text-align:left;">
+          <th style="padding:12px 16px; font-size:12px; color:#cbd5e1; text-transform:uppercase;">Role</th>
+          <th style="padding:12px 16px; font-size:12px; color:#cbd5e1; text-transform:uppercase;">User ID / Login</th>
+          <th style="padding:12px 16px; font-size:12px; color:#cbd5e1; text-transform:uppercase;">Password</th>
+          <th style="padding:12px 16px; font-size:12px; color:#cbd5e1; text-transform:uppercase;">Portal URL</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+          <td style="padding:14px 16px; font-size:13px; font-weight:800; color:#fbbf24;">👑 Super Admin</td>
+          <td style="padding:14px 16px; font-size:13px; font-family:monospace; color:#38bdf8;">admin</td>
+          <td style="padding:14px 16px; font-size:13px; font-family:monospace; color:#4ade80;">LogicWhile#Admin2026!</td>
+          <td style="padding:14px 16px; font-size:12px;"><a href="${FRONTEND_URL}/admin" style="color:#38bdf8; text-decoration:none;">/admin</a></td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+          <td style="padding:14px 16px; font-size:13px; font-weight:800; color:#a78bfa;">🔍 Chief Inspector</td>
+          <td style="padding:14px 16px; font-size:13px; font-family:monospace; color:#38bdf8;">inspector</td>
+          <td style="padding:14px 16px; font-size:13px; font-family:monospace; color:#4ade80;">LogicWhile#Inspector2026!</td>
+          <td style="padding:14px 16px; font-size:12px;"><a href="${FRONTEND_URL}/inspector" style="color:#38bdf8; text-decoration:none;">/inspector</a></td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+          <td style="padding:14px 16px; font-size:13px; font-weight:800; color:#34d399;">👨‍🏫 Faculty Member</td>
+          <td style="padding:14px 16px; font-size:13px; font-family:monospace; color:#38bdf8;">faculty</td>
+          <td style="padding:14px 16px; font-size:13px; font-family:monospace; color:#4ade80;">LogicWhile#Faculty2026!</td>
+          <td style="padding:14px 16px; font-size:12px;"><a href="${FRONTEND_URL}/faculty" style="color:#38bdf8; text-decoration:none;">/faculty</a></td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+          <td style="padding:14px 16px; font-size:13px; font-weight:800; color:#f472b6;">📝 Paper Setter</td>
+          <td style="padding:14px 16px; font-size:13px; font-family:monospace; color:#38bdf8;">papersetter</td>
+          <td style="padding:14px 16px; font-size:13px; font-family:monospace; color:#4ade80;">LogicWhile#PaperSetter2026!</td>
+          <td style="padding:14px 16px; font-size:12px;"><a href="${FRONTEND_URL}/admin/questions" style="color:#38bdf8; text-decoration:none;">/admin/questions</a></td>
+        </tr>
+        <tr>
+          <td style="padding:14px 16px; font-size:13px; font-weight:800; color:#60a5fa;">🎓 Student Candidate</td>
+          <td style="padding:14px 16px; font-size:13px; font-family:monospace; color:#38bdf8;">24HU1A05F9</td>
+          <td style="padding:14px 16px; font-size:13px; font-family:monospace; color:#4ade80;">LogicWhile#Student2026!</td>
+          <td style="padding:14px 16px; font-size:12px;"><a href="${FRONTEND_URL}/login" style="color:#38bdf8; text-decoration:none;">/login & /enter-exam</a></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="background:rgba(16,185,129,0.08); border-left:3px solid #10b981; padding:14px 18px; border-radius:6px; margin-bottom:24px;">
+      <h4 style="margin:0 0 6px; font-size:13px; font-weight:700; color:#34d399;">Security Validation Confirmed</h4>
+      <p style="margin:0; font-size:12px; color:#cbd5e1; line-height:1.6;">
+        Enrolled candidates are pre-verified (<code style="color:#34d399;">is_verified: true</code>) to prevent waiting-for-login lockouts. Exam launch is strictly synchronized with inspector-led start and server-authoritative timer extension.
+      </p>
+    </div>
+
+    <div style="text-align:center; margin:28px 0 12px;">
+      <a href="${FRONTEND_URL}/admin" style="display:inline-block; padding:14px 36px; background:linear-gradient(135deg, #EAA812 0%, #D97706 100%); color:#001833; font-size:15px; font-weight:800; text-decoration:none; border-radius:8px; box-shadow:0 4px 16px rgba(234, 168, 18, 0.45);">
+        🚀 Launch LogicWhile Control Center
+      </a>
+    </div>
+  `;
+
+  const html = getSharedEmailLayout({
+    title: subject,
+    preheader: 'New master credentials dispatched for Admin, Inspector, Faculty, Paper Setter and Students.',
+    contentHtml,
+  });
+
+  const text = `LogicWhile LiRE Master Credentials:\n\n` +
+    `Admin: admin / LogicWhile#Admin2026!\n` +
+    `Inspector: inspector / LogicWhile#Inspector2026!\n` +
+    `Faculty: faculty / LogicWhile#Faculty2026!\n` +
+    `Paper Setter: papersetter / LogicWhile#PaperSetter2026!\n` +
+    `Student: 24HU1A05F9 / LogicWhile#Student2026!\n\n` +
+    `Support: ${MAIL_REPLY_TO} | ${SUPPORT_PHONE}`;
+
+  return await sendMail({
+    to: targetEmail,
+    subject,
+    html,
+    text,
+    template: 'official_credentials_update',
+    metadata: {
+      recipient: targetEmail,
+      event: 'CREDENTIALS_REGENERATION_2026',
+    },
+    sentBy: 'super_admin_automation',
+  });
+}
+

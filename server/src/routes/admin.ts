@@ -110,6 +110,7 @@ import {
   getGoogleDriveStatusHandler,
   inspectorStartExam,
   inspectorEndExam,
+  inspectorVerifyCandidate,
   getInspectorDashboardData,
   bulkVerifyStudents,
   allowExamReentry,
@@ -459,9 +460,10 @@ router.get('/backup/download', requireRole('super_admin'), auditLog('DOWNLOAD_SY
 router.get('/backup/history', requireRole('super_admin'), getBackupHistory);
 router.get('/backup/drive-status', requireRole('super_admin'), getGoogleDriveStatusHandler);
 
-// ——— Inspector Exam Controls & Dashboard (inspector only lands on live leaderboard & waiting queue; starts/ends exams) ———
+// ——— Inspector Exam Controls & Dashboard (Inspector monitors & verifies candidates; Admin ALONE starts exams) ———
 router.get('/inspector/dashboard-data', requireRole('super_admin', 'inspector', 'college_admin'), getInspectorDashboardData);
-router.post('/exams/:id/start', requireRole('super_admin', 'inspector'), auditLog('START_EXAM', 'exams'), inspectorStartExam);
+router.post('/inspector/verify-candidate', requireRole('super_admin', 'inspector'), auditLog('VERIFY_CANDIDATE', 'students'), inspectorVerifyCandidate);
+router.post('/exams/:id/start', requireRole('super_admin'), auditLog('START_EXAM', 'exams'), inspectorStartExam);
 router.post('/exams/:id/end', requireRole('super_admin', 'inspector'), auditLog('END_EXAM', 'exams'), inspectorEndExam);
 
 // ——— Platform & Engine Settings (super_admin only; Inspector completely blocked) ———

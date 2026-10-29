@@ -78,6 +78,20 @@ router.post('/exam-code/:code/validate', enterExamRateLimit, (req, res) => {
   };
   return verifyExamEntry(req, res);
 });
+router.post('/exam-code/:code/enter', enterExamRateLimit, (req, res) => {
+  req.body = {
+    examCode: req.params.code,
+    hallTicket: req.body?.hallTicket || req.query.hallTicket,
+  };
+  return verifyExamEntry(req, res);
+});
+router.get('/exam-code/:code/enter', enterExamRateLimit, (req, res) => {
+  req.body = {
+    examCode: req.params.code,
+    hallTicket: req.query.hallTicket || req.body?.hallTicket,
+  };
+  return verifyExamEntry(req, res);
+});
 
 // Start session endpoint: returns exam + questions
 const handleExamCodeStart = async (req: any, res: any) => {
@@ -151,8 +165,8 @@ const handleExamCodeStart = async (req: any, res: any) => {
       if (!startedState) {
         return res.status(403).json({
           success: false,
-          error: 'The inspector has not started this examination yet. Please wait in the waiting lobby.',
-          code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
+          error: 'The Administrator has not started this examination yet. Please wait in the waiting lobby.',
+          code: 'EXAM_NOT_STARTED_BY_ADMIN',
           waiting_list: true,
           exam_name: exam.exam_name || exam.name || code,
           duration_minutes: exam.duration_minutes || 60,

@@ -1194,9 +1194,10 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
   if (studentRecord && studentRecord.is_verified === false) {
     res.status(403).json({
       success: false,
-      error: 'Your student email is not verified. Please verify your email before starting this examination.',
-      code: 'EMAIL_NOT_VERIFIED',
+      error: 'Candidate has not been verified by the Inspector yet. Please wait in the waiting lobby for inspector verification.',
+      code: 'CANDIDATE_NOT_VERIFIED_BY_INSPECTOR',
       email: studentRecord.email,
+      requires_verification: true,
     });
     return;
   }
@@ -1218,8 +1219,8 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
     if (!startedState) {
       res.status(403).json({
         success: false,
-        error: 'The inspector has not started this examination yet. Please wait in the waiting lobby.',
-        code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
+        error: 'The Administrator has not started this examination yet. Please wait in the waiting lobby.',
+        code: 'EXAM_NOT_STARTED_BY_ADMIN',
       });
       return;
     }
@@ -1708,7 +1709,7 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
   const studentIdentifier = `${canonicalCandidate}_${effectiveCode}`;
 
   for (const q of questions) {
-    const isCodingQ = q.question_type === 'code' || (!q.option_a && !q.option_b && (String(q.topic || '').toLowerCase().includes('algorithm') || String(q.topic || '').toLowerCase().includes('code')));
+    const isCodingQ = q.question_type === 'code' || q.question_type === 'coding' || (!q.option_a && !q.option_b && (String(q.topic || '').toLowerCase().includes('algorithm') || String(q.topic || '').toLowerCase().includes('code')));
     const qMarks = Number(q.marks || 1);
     maxScore += qMarks;
     const topic = q.topic || 'General';
@@ -1940,6 +1941,7 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
       mcq_percentage: mcqMaxScore > 0 ? Math.round((mcqScore / mcqMaxScore) * 100) : (maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0),
       coding_questions: codingQuestionsList,
       has_coding_questions: codingQuestionsList.length > 0,
+      coding_status: codingQuestionsList.length > 0 ? 'pending_review' : 'none',
     },
   });
 }

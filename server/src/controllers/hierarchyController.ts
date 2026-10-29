@@ -28,7 +28,12 @@ import {
 } from '../utils/totp';
 import { recordAuditLog } from '../middleware/auditLog';
 import { isStrongPassword } from '../middleware/validate';
-import { broadcastExamStarted, resetExamStartedState, stopLeaderboardStream } from '../services/socketService';
+import {
+  broadcastExamStarted,
+  resetExamStartedState,
+  stopLeaderboardStream,
+  broadcastCandidateVerified,
+} from '../services/socketService';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DATA MODEL HIERARCHY: College -> Academic Year -> Cohort -> Section -> Batch
@@ -950,6 +955,44 @@ export async function bulkImportStudents(req: Request, res: Response): Promise<v
     if (!rows || rows.length === 0) {
       res.status(400).json({ success: false, error: 'File or rows list is empty or contains no valid rows' });
       return;
+    }
+
+    // If wipe_previous, wipe_batch, or wipe_category is requested, require confirmation and take auto-backup first
+    if (req.body.wipe_previous || req.body.wipe_batch || req.body.wipe_category || req.body.wipe === true) {
+      if (req.body.confirm_purge !== true) {
+        res.status(400).json({
+          success: false,
+          error: 'Purging prior student records requires explicit confirmation. Please provide confirm_purge: true.',
+          requires_confirmation: true,
+        });
+        return;
+      }
+
+      // Automatically capture safety backup before data wipe
+      try {
+        const safetyBackup = await executeSystemBackup({
+          trigger: 'admin',
+          createZip: true,
+        });
+        console.log(`[Enrollment] Pre-purge safety backup created: ${safetyBackup.backupId}`);
+      } catch (backupErr: any) {
+        console.warn('[Enrollment] Warning: Pre-purge safety backup failed:', backupErr?.message);
+      }
+
+      try {
+        let delQuery = supabase.from('students').delete();
+        if (defaultBatchId) {
+          delQuery = delQuery.eq('batch_id', String(defaultBatchId));
+        } else if (defaultSectionId) {
+          delQuery = delQuery.eq('section_id', String(defaultSectionId));
+        } else if (defaultCollegeId) {
+          delQuery = delQuery.eq('college_id', String(defaultCollegeId));
+        }
+        await delQuery;
+        console.log(`[Enrollment] Prior batch/category data wiped for batch=${defaultBatchId}, sec=${defaultSectionId}, col=${defaultCollegeId}`);
+      } catch (wipeErr: any) {
+        console.warn('[Enrollment] Warning: Failed to wipe prior batch data:', wipeErr?.message);
+      }
     }
 
     const importedStudents = [];
@@ -2098,6 +2141,16 @@ export async function inspectorStartExam(req: Request, res: Response): Promise<v
   const id = String(req.params.id || '');
   const admin = req.admin;
 
+  // Strict RBAC: Administrator ALONE controls examination launch
+  if (admin?.role !== 'super_admin') {
+    res.status(403).json({
+      success: false,
+      error: 'Only the Administrator can start examinations. Inspectors monitor and verify candidates in the lobby.',
+      code: 'ADMIN_ONLY_START',
+    });
+    return;
+  }
+
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   const isNumeric = /^\d+$/.test(id);
 
@@ -2135,28 +2188,26 @@ export async function inspectorStartExam(req: Request, res: Response): Promise<v
     return;
   }
 
-  // Check college scope for inspector
-  if (admin?.role === 'inspector' || admin?.role === 'college_admin') {
-    if (admin.college_id && exam.college_id && String(exam.college_id) !== String(admin.college_id)) {
-      res.status(403).json({
-        success: false,
-        error: 'Forbidden: You can only start exams for your own college',
-        code: 'CROSS_COLLEGE_FORBIDDEN',
-      });
-      return;
-    }
+  const now = new Date();
+  const durationSeconds = (exam.duration_minutes || exam.duration || 60) * 60;
+  const endTime = new Date(now.getTime() + durationSeconds * 1000).toISOString();
+  const updatePayload: Record<string, any> = {
+    is_active: true,
+    is_launched: true,
+    start_time: now.toISOString(),
+    end_time: endTime,
+  };
+  if (table === 'exams') {
+    updatePayload.started_at = now.toISOString();
   }
-
-  const now = new Date().toISOString();
   const { data: updated } = await supabase
     .from(table)
-    .update({ is_active: true, start_time: now, started_at: now })
+    .update(updatePayload)
     .eq('id', exam.id)
     .select()
     .single();
 
   const examCode = exam.exam_code || exam.code || id;
-  const durationSeconds = (exam.duration_minutes || exam.duration || 60) * 60;
   broadcastExamStarted({
     examCode,
     durationSeconds,
@@ -2165,7 +2216,7 @@ export async function inspectorStartExam(req: Request, res: Response): Promise<v
 
   res.json({
     success: true,
-    message: `Exam "${exam.title}" has been started by inspector. Candidates may now enter.`,
+    message: `Exam "${exam.title}" has been started by Administrator. Candidates may now enter.`,
     exam: updated || exam,
   });
 }
@@ -2227,8 +2278,65 @@ export async function inspectorEndExam(req: Request, res: Response): Promise<voi
 
   res.json({
     success: true,
-    message: `Exam "${exam.title}" has been concluded by inspector.`,
+    message: `Exam "${exam.title}" has been concluded by Administrator/Inspector.`,
     exam: updated || exam,
+  });
+}
+
+/**
+ * POST /api/admin/inspector/verify-candidate
+ * Allows Inspector/Admin to verify and admit candidates waiting in the exam lobby
+ */
+export async function inspectorVerifyCandidate(req: Request, res: Response): Promise<void> {
+  const { hallTicket, examCode, verifyAll } = req.body;
+
+  if (verifyAll) {
+    const { data: updated, error } = await supabase
+      .from('students')
+      .update({ is_verified: true, updated_at: new Date().toISOString() })
+      .neq('id', '00000000-0000-0000-0000-000000000000')
+      .select('id, roll_number, name');
+
+    if (error) {
+      res.status(500).json({ success: false, error: error.message });
+      return;
+    }
+
+    // Broadcast verification event to socket rooms
+    broadcastCandidateVerified(undefined, examCode);
+
+    res.json({
+      success: true,
+      message: `All candidates (${updated?.length || 0}) in waiting lobby have been verified and admitted by Inspector.`,
+      verified_count: updated?.length || 0,
+    });
+    return;
+  }
+
+  if (!hallTicket) {
+    res.status(400).json({ success: false, error: 'hallTicket is required' });
+    return;
+  }
+
+  const { data: student, error } = await supabase
+    .from('students')
+    .update({ is_verified: true, updated_at: new Date().toISOString() })
+    .or(`hall_ticket.eq.${hallTicket},roll_number.eq.${hallTicket}`)
+    .select('id, roll_number, name, email, is_verified')
+    .maybeSingle();
+
+  if (error || !student) {
+    res.status(404).json({ success: false, error: 'Candidate not found for verification' });
+    return;
+  }
+
+  // Broadcast verification event to candidate
+  broadcastCandidateVerified(student.roll_number || hallTicket, examCode);
+
+  res.json({
+    success: true,
+    message: `Candidate ${student.name || student.roll_number} verified and admitted to exam lobby by Inspector.`,
+    student,
   });
 }
 

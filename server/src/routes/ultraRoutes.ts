@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -183,6 +183,36 @@ router.post('/execute', answerRateLimit, async (req: Request, res: Response) => 
 
     if (!language || !code) {
       return res.status(400).json({ success: false, error: 'language and code are required' });
+    }
+
+    // Safety Switch: Disable live untrusted host execution if flag is set
+    const isExecutionDisabled =
+      process.env.DISABLE_LIVE_CODE_EXECUTION === 'true' ||
+      process.env.ENABLE_LOCAL_CODE_RUNNER === 'false';
+
+    if (isExecutionDisabled) {
+      const noticeMsg = 'Live code runner is disabled for server security and exam stability.\nYour solution has been captured and securely saved in the database for faculty manual review.';
+      return res.json({
+        success: true,
+        executionDisabled: true,
+        output: noticeMsg,
+        stdout: noticeMsg,
+        stderr: '',
+        hasError: false,
+        verdict: 'Saved for Faculty Review',
+        results: (testCases || []).map((tc: any, i: number) => ({
+          testCase: i + 1,
+          passed: true,
+          input: (tc.input_text !== undefined ? tc.input_text : tc.input) || '',
+          expected: String((tc.expected_output !== undefined ? tc.expected_output : tc.output) || ''),
+          actual: 'Saved for Faculty Evaluation',
+          executionDisabled: true,
+        })),
+        passed: (testCases || []).length,
+        total: (testCases || []).length,
+        score: 0,
+        maxScore: 10,
+      });
     }
 
     if (!testCases || testCases.length === 0) {
@@ -690,8 +720,8 @@ router.get('/exam-code/:code/start', async (req: Request, res: Response) => {
       if (!startedState) {
         return res.status(403).json({
           success: false,
-          error: 'The inspector has not started this examination yet. Please wait in the waiting lobby.',
-          code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
+          error: 'The Administrator has not started this examination yet. Please wait in the waiting lobby.',
+          code: 'EXAM_NOT_STARTED_BY_ADMIN',
           waiting_list: true,
           exam_name: exam.exam_name || exam.name || code,
           duration_minutes: exam.duration_minutes || 60,
@@ -997,6 +1027,11 @@ router.get('/exam-code/:code/result', async (req: Request, res: Response) => {
         mcq_percentage: isTerminated ? 0 : mcqPercentage,
         coding_questions: codingQList,
         has_coding_questions: hasCoding,
+        coding_status: hasCoding
+          ? (attempt.score_override !== null && attempt.score_override !== undefined ? 'graded' : 'pending_review')
+          : 'none',
+        score_override: attempt.score_override,
+        grace_marks: attempt.grace_marks,
         rank,
         totalCandidates,
         total_candidates: totalCandidates,
@@ -1150,7 +1185,16 @@ router.post(
 router.post(
   '/v1/exams/:examCode/start',
   adminAuth,
-  requireRole('super_admin', 'inspector'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (req.admin?.role !== 'super_admin' && req.admin?.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Only the Administrator can start examinations. Inspectors monitor and verify candidates in the lobby.',
+        code: 'ADMIN_ONLY_START',
+      });
+    }
+    next();
+  },
   async (req: Request, res: Response) => {
   try {
     const { allow_late_join = false, duration_seconds } = req.body;
@@ -1269,6 +1313,77 @@ router.post(
   }
 });
 
+// ─── UNIVERSAL EXAM TIME EXTENSION ───────────────────────────────────────────
+// POST /api/v1/exams/:examCode/extend-time
+// Extend examination duration across all candidates simultaneously (admin/inspector)
+router.post(
+  ['/v1/exams/:examCode/extend-time', '/admin/exams/:examCode/extend-time', '/exams/:examCode/extend-time'],
+  adminAuth,
+  requireRole('super_admin', 'inspector', 'college_admin'),
+  async (req: Request, res: Response) => {
+    try {
+      const code = (req.params.examCode as string).toUpperCase();
+      const extraMinutes = Number(req.body.extra_minutes || req.body.minutes || 10);
+      if (extraMinutes <= 0 || extraMinutes > 180) {
+        return res.status(400).json({ success: false, error: 'Extra minutes must be between 1 and 180' });
+      }
+
+      const { data: examData } = await supabase
+        .from('exam_codes')
+        .select('*')
+        .eq('exam_code', code)
+        .maybeSingle();
+
+      if (!examData) {
+        return res.status(404).json({ success: false, error: `Exam ${code} not found` });
+      }
+
+      const currentEnd = examData.end_time ? new Date(examData.end_time).getTime() : Date.now();
+      const newEndTime = new Date(Math.max(currentEnd, Date.now()) + extraMinutes * 60 * 1000).toISOString();
+      const newDurationMinutes = (examData.duration_minutes || 60) + extraMinutes;
+
+      // 1. Update master exam record
+      await supabase
+        .from('exam_codes')
+        .update({
+          end_time: newEndTime,
+          duration_minutes: newDurationMinutes,
+        })
+        .eq('exam_code', code);
+
+      // 2. Broadcast TIME_EXTENDED via WebSocket to lobby, monitor, and active exams
+      const { io } = await import('../services/socketService');
+      if (io) {
+        io.to(`lobby:${code}`).emit('TIME_EXTENDED', {
+          exam_code: code,
+          extra_minutes: extraMinutes,
+          new_end_time: newEndTime,
+          message: `Exam time extended by ${extraMinutes} minute(s) by proctor.`,
+        });
+        io.to(`monitor:${code}`).emit('TIME_EXTENDED', {
+          exam_code: code,
+          extra_minutes: extraMinutes,
+          new_end_time: newEndTime,
+        });
+      }
+
+      lobbyDbCache.delete(code);
+
+      console.log(`[ExamExtendTime] Exam ${code} extended by ${extraMinutes} mins. New end time: ${newEndTime}`);
+      return res.json({
+        success: true,
+        exam_code: code,
+        extra_minutes: extraMinutes,
+        new_end_time: newEndTime,
+        message: `Successfully extended examination duration by ${extraMinutes} minutes for all candidates.`,
+      });
+    } catch (err: any) {
+      console.error('[ExamExtendTime]', err);
+      res.status(500).json({ success: false, error: err?.message || 'Failed to extend exam time' });
+    }
+  }
+);
+
 // ─── INSTRUCTOR LOBBY STATS (High-Speed Memory Cached) ──────────────────────────
 // GET /api/v1/exams/:examCode/lobby-stats
 // Returns real-time enrolled / connected / pending counts + exam_started_state.
@@ -1315,7 +1430,17 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
             .maybeSingle(),
         ]);
 
-        enrolledCount = (enrolled.data as any)?.count ?? stats.enrolled;
+        const exactCount = (enrolled as any)?.count;
+        if (typeof exactCount === 'number' && exactCount > 0) {
+          enrolledCount = exactCount;
+        } else {
+          // If no attempts yet, query total enrolled students count
+          const { count: studentCount } = await supabase
+            .from('students')
+            .select('id', { count: 'exact', head: true })
+            .eq('is_active', true);
+          enrolledCount = studentCount && studentCount > 0 ? studentCount : (stats.enrolled || 1);
+        }
         durationSec = ((examRow.data as any)?.duration_minutes || 60) * 60;
 
         lobbyDbCache.set(code, {

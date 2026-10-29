@@ -106,7 +106,7 @@ async function runTests() {
 
     const inspectorLoginRes = await request('POST', '/api/admin/login', {
       username: process.env.INSPECTOR_USERNAME || 'inspector',
-      password: process.env.INSPECTOR_PASSWORD || 'LiREInspector@2026!',
+      password: process.env.INSPECTOR_PASSWORD || '',
     });
 
     assert.strictEqual(inspectorLoginRes.status, 200, 'Inspector login should succeed with 200');

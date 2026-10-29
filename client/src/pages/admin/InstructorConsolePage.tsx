@@ -41,6 +41,7 @@ interface WaitingStudent {
   section?: string;
   joined_at?: string;
   status?: string;
+  is_verified?: boolean;
 }
 
 interface RankEntry {
@@ -343,6 +344,42 @@ export default function InstructorConsolePage() {
       addLog(`❌ START ERROR: ${msg}`);
     } finally {
       setStarting(false);
+    }
+  };
+
+  const [verifying, setVerifying] = useState(false);
+
+  // Handle Inspector Candidate Verification
+  const handleVerifyCandidate = async (hallTicket?: string) => {
+    setVerifying(true);
+    try {
+      const res = await axios.post(
+        `${BASE}/api/admin/inspector/verify-candidate`,
+        {
+          hallTicket,
+          verifyAll: !hallTicket,
+          examCode: currentCode,
+        },
+        {
+          headers: { Authorization: `Bearer ${adminToken}` },
+        }
+      );
+      if (res.data?.success) {
+        addLog(res.data.message || 'Candidate(s) verified by Inspector.');
+        setWaitingStudents((prev) =>
+          prev.map((s) => {
+            if (!hallTicket || (s.hall_ticket_no || '').toUpperCase() === hallTicket.toUpperCase()) {
+              return { ...s, is_verified: true };
+            }
+            return s;
+          })
+        );
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.message || 'Verification failed';
+      addLog(`❌ VERIFICATION ERROR: ${msg}`);
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -667,29 +704,26 @@ export default function InstructorConsolePage() {
                   </button>
                 </div>
               ) : (
-                <button
-                  id="inspector-start-exam-btn"
-                  onClick={() => setConfirmOpen(true)}
-                  disabled={starting || !selectedExamCode || examList.length === 0}
+                <div
                   style={{
                     width: "100%",
-                    padding: "10px 16px",
+                    padding: "10px 14px",
                     borderRadius: 8,
-                    background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
-                    color: "#FFFFFF",
+                    background: "rgba(245,158,11,0.15)",
+                    border: "1px solid rgba(245,158,11,0.35)",
+                    color: "#FBBF24",
                     fontWeight: 800,
-                    fontSize: "0.9rem",
-                    border: "none",
-                    cursor: "pointer",
-                    boxShadow: "0 4px 16px rgba(37,99,235,0.4)",
+                    fontSize: "0.82rem",
+                    textAlign: "center",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: 8,
+                    gap: 6,
                   }}
                 >
-                  {starting ? "Starting..." : "🚀 Start Exam"}
-                </button>
+                  <span>⏳</span>
+                  <span>Waiting for Admin to Start</span>
+                </div>
               )}
             </div>
           </div>
@@ -959,7 +993,32 @@ export default function InstructorConsolePage() {
                         <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#F59E0B" }}>
                           ⏳ Waiting Queue ({filteredQueue.length})
                         </div>
-                        <span style={{ fontSize: "0.72rem", color: "#94A3B8" }}>Present in Lobby</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          {filteredQueue.length > 0 && (
+                            <button
+                              id="inspector-verify-all-btn"
+                              onClick={() => handleVerifyCandidate()}
+                              disabled={verifying}
+                              style={{
+                                background: "rgba(16,185,129,0.18)",
+                                border: "1px solid rgba(16,185,129,0.4)",
+                                color: "#34D399",
+                                padding: "4px 12px",
+                                borderRadius: 6,
+                                fontSize: "0.75rem",
+                                fontWeight: 800,
+                                cursor: verifying ? "not-allowed" : "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                              }}
+                            >
+                              <span>🛡️</span>
+                              <span>{verifying ? "Admitting..." : "Verify & Admit All"}</span>
+                            </button>
+                          )}
+                          <span style={{ fontSize: "0.72rem", color: "#94A3B8" }}>Present in Lobby</span>
+                        </div>
                       </div>
 
                       {filteredQueue.length === 0 ? (
@@ -980,7 +1039,8 @@ export default function InstructorConsolePage() {
                                 <th style={{ padding: "10px 14px", textAlign: "left" }}>College</th>
                                 <th style={{ padding: "10px 14px", textAlign: "left" }}>Section</th>
                                 <th style={{ padding: "10px 14px", textAlign: "center" }}>📷 Cam Presence</th>
-                                <th style={{ padding: "10px 14px", textAlign: "right" }}>Lobby Status</th>
+                                <th style={{ padding: "10px 14px", textAlign: "center" }}>Lobby Status</th>
+                                <th style={{ padding: "10px 14px", textAlign: "right" }}>Verification Action</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1006,10 +1066,34 @@ export default function InstructorConsolePage() {
                                       Active (30 FPS)
                                     </span>
                                   </td>
-                                  <td style={{ padding: "10px 14px", textAlign: "right" }}>
+                                  <td style={{ padding: "10px 14px", textAlign: "center" }}>
                                     <span style={{ color: "#10B981", fontWeight: 700, fontSize: "0.72rem", background: "rgba(16,185,129,0.15)", padding: "2px 7px", borderRadius: 4 }}>
-                                      ● Ready to Start
+                                      ● In Lobby
                                     </span>
+                                  </td>
+                                  <td style={{ padding: "10px 14px", textAlign: "right" }}>
+                                    {s.is_verified ? (
+                                      <span style={{ color: "#34D399", fontWeight: 700, fontSize: "0.72rem", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", padding: "3px 8px", borderRadius: 4 }}>
+                                        ✓ Admitted
+                                      </span>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleVerifyCandidate(s.hall_ticket_no)}
+                                        disabled={verifying}
+                                        style={{
+                                          background: "#0284C7",
+                                          border: "none",
+                                          color: "#FFFFFF",
+                                          padding: "4px 10px",
+                                          borderRadius: 5,
+                                          fontSize: "0.72rem",
+                                          fontWeight: 700,
+                                          cursor: verifying ? "not-allowed" : "pointer",
+                                        }}
+                                      >
+                                        🛡️ Verify & Admit
+                                      </button>
+                                    )}
                                   </td>
                                 </tr>
                               ))}

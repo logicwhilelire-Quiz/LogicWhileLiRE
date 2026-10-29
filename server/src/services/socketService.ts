@@ -564,3 +564,18 @@ export function broadcastViolationToMonitor(examCode: string, payload: any): voi
   io.to(`monitor:${code}`).emit('violation:new', payload);
   scheduleThrottledRoomUpdate(code);
 }
+
+export function broadcastCandidateVerified(hallTicket?: string, examCode?: string): void {
+  if (!io) return;
+  const payload = {
+    hallTicket: hallTicket ? hallTicket.toUpperCase() : null,
+    examCode: examCode ? examCode.toUpperCase() : null,
+    is_verified: true,
+    timestamp: Date.now(),
+  };
+  if (examCode) {
+    io.to(`lobby:${examCode.toUpperCase()}`).emit('candidate:verified', payload);
+  }
+  io.emit('candidate:verified', payload);
+}
+

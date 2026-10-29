@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { enrollParticipant, verifyEnrollmentOtp } from '../controllers/enrollmentController';
+import { enrollParticipant, verifyEnrollmentOtp, resendEnrollmentOtp } from '../controllers/enrollmentController';
 import { enrollRateLimit, otpRateLimit } from '../middleware/rateLimiter';
 import { validateBody, validateParams, enrollSchema, verifyOtpSchema, ExamIdParam } from '../middleware/validate';
 
@@ -27,6 +27,17 @@ router.post(
   validateParams(ExamIdParam),
   validateBody(verifyOtpSchema),
   verifyEnrollmentOtp
+);
+
+/**
+ * POST /api/enroll/:examId/resend-otp
+ * Resend a new OTP to the participant's email
+ */
+router.post(
+  '/:examId/resend-otp',
+  otpRateLimit,
+  validateParams(ExamIdParam),
+  resendEnrollmentOtp
 );
 
 export default router;

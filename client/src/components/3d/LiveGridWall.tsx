@@ -514,7 +514,7 @@ export default function LiveGridWall({
                     color: cfg.color,
                     marginTop: 3,
                   }}>
-                    {student.score !== undefined ? `${student.score}%` : cfg.label.slice(0, 3)}
+                    {student.score !== undefined ? `${student.score}%` : cfg.label}
                   </div>
                 </motion.div>
               )

@@ -694,40 +694,6 @@ export default function ExamQuestionCard({
                     -{question.penalty} Neg
                   </span>
                 )}
-
-                {question.difficulty && (
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '3px 9px',
-                      borderRadius: 999,
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                      background:
-                        question.difficulty.toLowerCase() === 'easy'
-                          ? 'rgba(52, 211, 153, 0.14)'
-                          : question.difficulty.toLowerCase() === 'hard'
-                          ? 'rgba(239, 68, 68, 0.14)'
-                          : 'rgba(245, 158, 11, 0.14)',
-                      border:
-                        question.difficulty.toLowerCase() === 'easy'
-                          ? '1px solid rgba(52, 211, 153, 0.35)'
-                          : question.difficulty.toLowerCase() === 'hard'
-                          ? '1px solid rgba(239, 68, 68, 0.35)'
-                          : '1px solid rgba(245, 158, 11, 0.35)',
-                      color:
-                        question.difficulty.toLowerCase() === 'easy'
-                          ? '#34D399'
-                          : question.difficulty.toLowerCase() === 'hard'
-                          ? '#F87171'
-                          : '#F59E0B',
-                    }}
-                  >
-                    {question.difficulty.toUpperCase()}
-                  </span>
-                )}
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

@@ -129,6 +129,9 @@ function AnimatedRoutes() {
         <Route path="/instructions/:examCode" element={<InstructionsPage />} />
         <Route path="/quiz/:examCode" element={<ExamCodeQuizPage />} />
         <Route path="/result-ec/:examCode" element={<ResultECPage />} />
+        <Route path="/result-ec" element={<ResultECPage />} />
+        <Route path="/results-ec/:examCode" element={<ResultECPage />} />
+        <Route path="/results-ec" element={<ResultECPage />} />
         <Route path="/leaderboard-ec/:examCode" element={<LeaderboardECPage />} />
         <Route path="/leaderboard/:examCode" element={<LeaderboardECPage />} />
 

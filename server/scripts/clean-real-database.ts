@@ -13,14 +13,16 @@ async function cleanDatabase() {
   const adminPassword =
     process.env.ADMIN_INITIAL_PASSWORD ||
     process.env.INITIAL_ADMIN_PASSWORD ||
-    process.env.ADMIN_PASSWORD ||
-    'LiREAdmin@2026!';
+    process.env.ADMIN_PASSWORD;
 
   const inspectorPassword =
     process.env.INSPECTOR_INITIAL_PASSWORD ||
     process.env.INITIAL_INSPECTOR_PASSWORD ||
-    process.env.INSPECTOR_PASSWORD ||
-    'LiREInspector@2026!';
+    process.env.INSPECTOR_PASSWORD;
+
+  if (!adminPassword || !inspectorPassword) {
+    throw new Error('ADMIN_PASSWORD and INSPECTOR_PASSWORD must be configured in .env');
+  }
 
   // 1. Delete dependent student attempt & session records
   console.log('1. Cleaning all candidate attempts, telemetry, results & logs...');

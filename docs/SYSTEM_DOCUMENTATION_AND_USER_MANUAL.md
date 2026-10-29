@@ -87,17 +87,17 @@ graph TD
 
 Below is the verified production authentication matrix for all authorized roles.
 
-| Role | Portal URL | Username / Identifier | Password | Access Scope |
+| Role | Portal URL | Username / Identifier | Password / Authentication Policy | Access Scope |
 | :--- | :--- | :--- | :--- | :--- |
-| **Super Admin** | [`/admin/login`](https://logicwhilelire.com/admin/login) | `admin` | `LiREAdmin@2026!` | Global master controller: colleges, branches, years, sections, batches, exams, question banks, backups, and staff. |
-| **Faculty / Trainer** | [`/faculty/login`](https://logicwhilelire.com/faculty/login) | `faculty` | `faculty123` | Section-scoped gateway: view allocated student rosters, verify candidates, review syllabus papers and coding submissions. |
-| **Inspector / Proctor** | [`/inspector/login`](https://logicwhilelire.com/inspector/login) | `inspector` | `LiREInspector@2026!` | Examination lobby controller: dispatch synchronized live start, monitor real-time candidate video/tab violations. |
-| **Student / Candidate** | [`/login`](https://logicwhilelire.com/login) | Institutional Roll / Hall Ticket (e.g. `2201A0501`) | Candidate Password | Single-tab locked candidate testing dashboard and exam execution interface. |
-| **Candidate Gate** | [`/register`](https://logicwhilelire.com/register) | New Student Self-Registration | Custom Password | Self-enrollment portal dynamically linked to admin-approved colleges, branches, and sections. |
+| **Super Admin** | [`/admin/login`](https://logicwhilelire.com/admin/login) | `admin` | Set via server `.env` (`ADMIN_PASSWORD`) / Mandatory reset on first login | Global master controller: colleges, branches, years, sections, batches, exams, question banks, backups, and staff. |
+| **Faculty / Trainer** | [`/faculty/login`](https://logicwhilelire.com/faculty/login) | Assigned by Admin | Set on staff creation (`FACULTY_PASSWORD`) / One-time credential link | Section-scoped gateway: view allocated student rosters, verify candidates, review syllabus papers and coding submissions. |
+| **Inspector / Proctor** | [`/inspector/login`](https://logicwhilelire.com/inspector/login) | `inspector` | Set via server `.env` (`INSPECTOR_PASSWORD`) / Mandatory reset on first login | Examination lobby supervisor: monitor candidate arrivals, verify lobby queue identity, and invigilate real-time telemetry. |
+| **Student / Candidate** | [`/login`](https://logicwhilelire.com/login) | Institutional Roll / Hall Ticket (e.g. `2201A0501`) | Candidate Password / 2FA OTP | Single-tab locked candidate testing dashboard and exam execution interface. |
+| **Candidate Gate** | [`/register`](https://logicwhilelire.com/register) | New Student Self-Registration | Custom Password (>=8 chars, complexity verified) | Self-enrollment portal dynamically linked to admin-approved colleges, branches, and sections. |
 | **Practice Arena** | [`/practice`](https://logicwhilelire.com/practice) | Open Access | None | 5-Sector skill evaluation practice arena. |
 
 > [!IMPORTANT]
-> Change the default seed passwords upon initial institutional deployment. Passwords can be updated directly from the Admin Settings Control panel or via the Supabase staff table.
+> All administrative and staff passwords must be configured securely via server environment variables (`.env`). Plaintext passwords are never stored in the database or committed to version control.
 
 ---
 
@@ -107,7 +107,7 @@ The **Super Admin Portal** (`https://logicwhilelire.com/admin/login`) is the uni
 
 ### 4.1 Logging In
 1. Navigate to [https://logicwhilelire.com/admin/login](https://logicwhilelire.com/admin/login).
-2. Enter username: `admin` and password: `LiREAdmin@2026!`.
+2. Enter username: `admin` and your provisioned administrator password.
 3. If 2FA is enabled, enter your 6-digit Google Authenticator / TOTP code.
 4. Click **Sign In as Administrator**.
 
@@ -116,7 +116,7 @@ Before publishing exams, verify the institutional hierarchy is populated:
 1. **Colleges:** Navigate to **Colleges** → Click **Add College** (e.g., *VR Siddhartha Engineering College*, Code: `VRSEC`).
 2. **Academic Years:** In **Hierarchy Management**, establish the active academic year (e.g., `2026-2027`).
 3. **Cohorts (Year of Study):** Create cohorts for B.Tech years (1st, 2nd, 3rd, 4th Year / Passout Year `2028`).
-4. **Branches & Sections:** Add department branches (`CSE`, `CSM`, `CSD`, `IT`, `ECE`) and sections (`A`, `B`, `C`).
+4. **Branches & Sections:** Add department branches (`CSE`, `IT`, `CSM`, `CSD`, `AIDS`, `ECE`) and sections (`A`, `B`, `C`).
 
 ### 4.3 Question Bank Management & Excel Bulk Upload
 LogicWhile LiRE supports both individual question creation and bulk Excel importing:
@@ -136,6 +136,7 @@ LogicWhile LiRE supports both individual question creation and bulk Excel import
    - Maximum tab switch warnings before auto-termination: (Default: `2`).
    - WebCam face verification: `Active`.
 5. Click **Publish Exam**.
+6. When candidates are verified in the waiting lobby by the Inspector, Super Admin clicks **🚀 START EXAMINATION NOW** to trigger synchronized broadcast across all student devices.
 
 ### 4.5 System Backups and Audit Logs
 1. Navigate to **Settings** → **System Backup**.
@@ -151,7 +152,7 @@ The **Faculty Portal** (`https://logicwhilelire.com/faculty/login`) allows depar
 
 ### 5.1 Authentication
 1. Navigate to [https://logicwhilelire.com/faculty/login](https://logicwhilelire.com/faculty/login).
-2. Enter credentials: `faculty` / `faculty123`.
+2. Enter your assigned username and password.
 3. Click **Sign In as Faculty**.
 
 ### 5.2 Section-Scoped Responsibilities
@@ -163,23 +164,26 @@ The **Faculty Portal** (`https://logicwhilelire.com/faculty/login`) allows depar
 
 ## 6. Chapter 3: Inspector & Proctor Invigilation Manual
 
-The **Inspector Command Console** (`https://logicwhilelire.com/inspector/login`) controls synchronized examination launches and real-time cheating prevention.
+The **Inspector Command Console** (`https://logicwhilelire.com/inspector/login`) monitors candidate arrival and verifies identities in the synchronized waiting lobby.
 
 ### 6.1 Authentication
 1. Navigate to [https://logicwhilelire.com/inspector/login](https://logicwhilelire.com/inspector/login).
-2. Enter credentials: `inspector` / `LiREInspector@2026!`.
+2. Enter credentials: `inspector` and your provisioned inspector password.
 3. Click **Sign In as Inspector**.
 
-### 6.2 Managing the Synchronized Waiting Lobby
+### 6.2 Monitoring Arrivals & Verifying Candidates in Waiting Lobby
 1. Select the live examination code.
 2. Monitor the **Real-Time Lobby Telemetry Dashboard**:
-   - **Enrolled Candidates:** Total candidates eligible.
-   - **Connected WebSocket Clients:** Candidates currently sitting inside the waiting lobby.
+   - **Enrolled Candidates:** Total candidates registered in the roster.
+   - **Connected WebSocket Clients:** Candidates currently waiting in the lobby.
    - **Connection Latency:** Real-time socket ping in milliseconds.
-3. When the scheduled exam hour arrives and all candidates are seated:
-   - Click the prominent **🚀 START EXAMINATION NOW** button.
+3. Inspect student arrivals in the **Waiting Queue**:
+   - Verify candidate photo/hall ticket against the authoritative college roster.
+   - Click **Verify Candidate** (or **Verify All Candidates**).
+   - Candidate's waiting screen immediately reflects **INSPECTOR VERIFIED ✔**.
+4. Once all students are seated and verified, notify Super Admin to dispatch the live start command. When Super Admin triggers the start:
    - The server broadcasts the `EXAM_STARTED` event across the room namespace.
-   - Every connected student's waiting screen simultaneously transitions into the live examination environment.
+   - Every verified student's screen simultaneously transitions into the live examination environment.
 
 ### 6.3 Live Proctoring & Violation Response
 1. The **Holo-Proctor Desk** displays real-time candidate cards:

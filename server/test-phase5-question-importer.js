@@ -59,7 +59,7 @@ async function runTests() {
       },
       body: JSON.stringify({
         username: process.env.ADMIN_USERNAME || 'admin',
-        password: process.env.ADMIN_PASSWORD || process.env.INITIAL_ADMIN_PASSWORD || 'LiREAdmin@2026!',
+        password: process.env.ADMIN_PASSWORD || process.env.INITIAL_ADMIN_PASSWORD || '',
       }),
     });
 

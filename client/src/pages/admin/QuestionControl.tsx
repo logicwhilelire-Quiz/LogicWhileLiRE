@@ -33,7 +33,9 @@ interface QuestionItem {
   correct_answer?: string;
   marks: number;
   penalty?: number;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
+  difficulty?: string;
+  department?: string;
+  starter_code?: string;
   topic: string;
   sector?: string;
   section?: string;
@@ -60,10 +62,10 @@ export default function QuestionControl() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Filter States
+  // Filter States: College -> Department (CSE) -> Question Type
   const [filterCollege, setFilterCollege] = useState<string>('all');
+  const [filterDepartment, setFilterDepartment] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
-  const [filterDifficulty, setFilterDifficulty] = useState<string>('all');
   const [topicFilter, setTopicFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
 
@@ -82,6 +84,8 @@ export default function QuestionControl() {
   const [form, setForm] = useState({
     question: '',
     question_type: 'mcq' as 'mcq' | 'coding' | 'aptitude' | 'diagram',
+    department: 'CSE',
+    starter_code: '# Write your code here\ndef solution():\n    pass\n',
     option_a: '',
     option_b: '',
     option_c: '',
@@ -89,7 +93,6 @@ export default function QuestionControl() {
     correct_option: 'a',
     marks: 2,
     penalty: 0,
-    difficulty: 'Medium' as 'Easy' | 'Medium' | 'Hard',
     topic: 'Core Computer Science',
     sector: SECTOR_OPTIONS[0],
     diagram_url: '',
@@ -118,13 +121,16 @@ export default function QuestionControl() {
     listQuestionBank({
       college_id: filterCollege !== 'all' ? filterCollege : undefined,
       question_type: filterType !== 'all' ? filterType : undefined,
-      difficulty: filterDifficulty !== 'all' ? filterDifficulty : undefined,
       topic: topicFilter !== 'all' ? topicFilter : undefined,
       search: search.trim() ? search.trim() : undefined,
     })
       .then((res) => {
         if (res.data?.questions && Array.isArray(res.data.questions)) {
-          setQuestions(res.data.questions);
+          let list = res.data.questions;
+          if (filterDepartment !== 'all') {
+            list = list.filter((q: any) => !q.department || q.department.toUpperCase() === filterDepartment.toUpperCase());
+          }
+          setQuestions(list);
         } else {
           setQuestions([]);
         }
@@ -148,13 +154,15 @@ export default function QuestionControl() {
       return;
     }
     loadQuestions();
-  }, [filterCollege, filterType, filterDifficulty, topicFilter, search, navigate]);
+  }, [filterCollege, filterDepartment, filterType, topicFilter, search, navigate]);
 
   const handleOpenCreateModal = () => {
     setEditingQuestion(null);
     setForm({
       question: '',
       question_type: 'mcq',
+      department: 'CSE',
+      starter_code: '# Write your code here\ndef solution():\n    pass\n',
       option_a: '',
       option_b: '',
       option_c: '',
@@ -162,7 +170,6 @@ export default function QuestionControl() {
       correct_option: 'a',
       marks: 2,
       penalty: 0,
-      difficulty: 'Medium',
       topic: 'Algorithms & Core CS',
       sector: SECTOR_OPTIONS[0],
       diagram_url: '',
@@ -195,6 +202,8 @@ export default function QuestionControl() {
     setForm({
       question: q.question,
       question_type: (rawType as any) || 'mcq',
+      department: q.department || 'CSE',
+      starter_code: q.starter_code || '# Write your code here\ndef solution():\n    pass\n',
       option_a: q.option_a || q.options?.a || '',
       option_b: q.option_b || q.options?.b || '',
       option_c: q.option_c || q.options?.c || '',
@@ -202,7 +211,6 @@ export default function QuestionControl() {
       correct_option: (q.correct_option || q.correct_answer || 'a').toLowerCase(),
       marks: Number(q.marks || 2),
       penalty: Number(q.penalty || 0),
-      difficulty: q.difficulty || 'Medium',
       topic: q.topic || 'General',
       sector: q.sector || SECTOR_OPTIONS[0],
       diagram_url: q.diagram_url || '',
@@ -221,9 +229,10 @@ export default function QuestionControl() {
       question: form.question,
       question_text: form.question,
       question_type: form.question_type,
+      department: form.department || 'CSE',
+      starter_code: form.starter_code,
       marks: Number(form.marks),
       penalty: Number(form.penalty),
-      difficulty: form.difficulty,
       topic: form.topic,
       sector: form.sector,
       exam_code: form.exam_code || 'CS2026',
@@ -247,6 +256,7 @@ export default function QuestionControl() {
         payload.diagram_url = form.diagram_url;
       }
     } else if (form.question_type === 'coding') {
+      payload.starter_code = form.starter_code;
       payload.test_cases = form.test_cases.filter(
         (tc) => tc.expected_output && tc.expected_output.trim() !== ''
       );
@@ -398,21 +408,24 @@ export default function QuestionControl() {
                 </select>
               </div>
 
-              {/* Difficulty Filter */}
+              {/* Department Filter: Flow is College -> Department (CSE) -> Question Type */}
               <div>
                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>
-                  Difficulty Tier
+                  Department / Branch
                 </label>
                 <select
                   className="form-input"
-                  value={filterDifficulty}
-                  onChange={(e) => setFilterDifficulty(e.target.value)}
+                  value={filterDepartment}
+                  onChange={(e) => setFilterDepartment(e.target.value)}
                   style={{ width: '100%', fontSize: '0.84rem' }}
                 >
-                  <option value="all">All Difficulties</option>
-                  <option value="Easy">Easy</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Hard">Hard</option>
+                  <option value="all">All Departments (Common)</option>
+                  <option value="CSE">CSE (Computer Science)</option>
+                  <option value="ECE">ECE (Electronics &amp; Comm)</option>
+                  <option value="IT">IT (Information Tech)</option>
+                  <option value="MECH">MECH (Mechanical)</option>
+                  <option value="CIVIL">CIVIL (Civil Eng)</option>
+                  <option value="EEE">EEE (Electrical)</option>
                 </select>
               </div>
 
@@ -504,13 +517,13 @@ export default function QuestionControl() {
                   No Questions Found
                 </div>
                 <p style={{ color: '#94A3B8', fontSize: '0.85rem', margin: '4px 0 16px' }}>
-                  No questions match your current combination of College, Type, Topic, and Difficulty filters.
+                  No questions match your current combination of College, Department, Type, Topic, and Search filters.
                 </p>
                 <button
                   onClick={() => {
                     setFilterCollege('all');
                     setFilterType('all');
-                    setFilterDifficulty('all');
+                    setFilterDepartment('all');
                     setTopicFilter('all');
                     setSearch('');
                   }}
@@ -578,28 +591,19 @@ export default function QuestionControl() {
                               : '🔘 MCQ'}
                           </span>
 
-                          {/* Difficulty Badge */}
+                          {/* Department Badge */}
                           <span
                             style={{
                               padding: '2px 8px',
                               borderRadius: 4,
                               fontSize: '0.7rem',
                               fontWeight: 700,
-                              background:
-                                q.difficulty === 'Easy'
-                                  ? 'rgba(34, 197, 94, 0.15)'
-                                  : q.difficulty === 'Hard'
-                                  ? 'rgba(239, 68, 68, 0.15)'
-                                  : 'rgba(245, 158, 11, 0.15)',
-                              color:
-                                q.difficulty === 'Easy'
-                                  ? '#4ADE80'
-                                  : q.difficulty === 'Hard'
-                                  ? '#F87171'
-                                  : '#FBBF24',
+                              background: 'rgba(56, 189, 248, 0.15)',
+                              color: '#38BDF8',
+                              border: '1px solid rgba(56, 189, 248, 0.3)',
                             }}
                           >
-                            {q.difficulty}
+                            🏛️ {q.department || 'CSE'}
                           </span>
 
                           {/* Marks & Penalty */}
@@ -830,7 +834,7 @@ export default function QuestionControl() {
                       Type: {(viewingQuestion.question_type === 'code' ? 'Coding' : viewingQuestion.question_type).toUpperCase()}
                     </span>
                     <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ADE80', padding: '3px 8px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 700 }}>
-                      Difficulty: {viewingQuestion.difficulty}
+                      Dept: {viewingQuestion.department || 'CSE (Common)'}
                     </span>
                     <span style={{ background: 'rgba(255, 194, 0, 0.15)', color: '#FFC200', padding: '3px 8px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 700 }}>
                       Marks: +{viewingQuestion.marks} | Pen: -{viewingQuestion.penalty || 0}
@@ -1043,6 +1047,30 @@ export default function QuestionControl() {
                     </>
                   ) : (
                     <div>
+                      {/* Starter Code Editor for Coding Challenges */}
+                      <div style={{ marginBottom: 14 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <label className="form-label" style={{ margin: 0, color: '#38BDF8', fontWeight: 700 }}>
+                            💻 Starter Code Template (Editable for Students)
+                          </label>
+                          <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Python / C / Java syntax scaffold</span>
+                        </div>
+                        <textarea
+                          className="form-input font-mono"
+                          rows={6}
+                          style={{
+                            background: '#040814',
+                            color: '#38BDF8',
+                            fontSize: '0.82rem',
+                            lineHeight: 1.5,
+                            border: '1px solid rgba(56, 189, 248, 0.3)',
+                          }}
+                          value={form.starter_code}
+                          onChange={(e) => setForm({ ...form, starter_code: e.target.value })}
+                          placeholder="# Starter code template for candidate&#10;def solution():&#10;    pass"
+                        />
+                      </div>
+
                       <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#38BDF8', marginBottom: 8 }}>
                         Test Cases (Public &amp; Hidden Boundary Suites)
                       </div>
@@ -1108,11 +1136,15 @@ export default function QuestionControl() {
                       <input className="form-input" type="number" step="0.25" min="0" value={form.penalty} onChange={(e) => setForm({ ...form, penalty: Number(e.target.value) })} />
                     </div>
                     <div>
-                      <label className="form-label">Difficulty</label>
-                      <select className="form-input" value={form.difficulty} onChange={(e) => setForm({ ...form, difficulty: e.target.value as any })}>
-                        <option value="Easy">Easy</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Hard">Hard</option>
+                      <label className="form-label">Department / Branch</label>
+                      <select className="form-input" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
+                        <option value="CSE">CSE</option>
+                        <option value="ECE">ECE</option>
+                        <option value="IT">IT</option>
+                        <option value="MECH">MECH</option>
+                        <option value="CIVIL">CIVIL</option>
+                        <option value="EEE">EEE</option>
+                        <option value="Common">Common</option>
                       </select>
                     </div>
                   </div>

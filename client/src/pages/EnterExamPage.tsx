@@ -174,14 +174,14 @@ export default function EnterExamPage() {
 
       if (errStatus === 404) {
         setError(respData?.error || 'Exam code not found. Please verify the code assigned to your college/batch.')
-      } else if (code === 'EXAM_NOT_STARTED_BY_INSPECTOR') {
-        setError('This assessment has not been started by the proctor yet. Please wait or join the waiting lobby.')
+      } else if (code === 'EXAM_NOT_STARTED_BY_ADMIN' || code === 'EXAM_NOT_STARTED_BY_INSPECTOR') {
+        setError('This examination has not been started by the Administrator yet. Please wait in the waiting lobby.')
       } else if (code === 'EXAM_NOT_STARTED') {
         setError(respData?.error || 'The examination window has not opened yet. Please check the scheduled start time.')
       } else if (code === 'EXAM_EXPIRED') {
         setError('The examination window for this code has concluded.')
-      } else if (code === 'EMAIL_NOT_VERIFIED') {
-        setError('Your student profile email is pending verification. Please verify your account first.')
+      } else if (code === 'CANDIDATE_NOT_VERIFIED_BY_INSPECTOR' || code === 'EMAIL_NOT_VERIFIED') {
+        setError('Candidate profile pending verification by Inspector. Please wait in the waiting lobby for verification.')
       } else if (err?.code === 'ERR_NETWORK' || !err?.response) {
         setError('Assessment gateway is currently unreachable. Please check your internet connection.')
       } else {
@@ -454,7 +454,7 @@ export default function EnterExamPage() {
                         <span style={{ flexShrink: 0, fontSize: '1rem' }}>⚠️</span>
                         <span style={{ lineHeight: 1.4 }}>{error}</span>
                       </div>
-                      {errorCode === 'EXAM_NOT_STARTED_BY_INSPECTOR' && (
+                      {(errorCode === 'EXAM_NOT_STARTED_BY_ADMIN' || errorCode === 'EXAM_NOT_STARTED_BY_INSPECTOR' || errorCode === 'CANDIDATE_NOT_VERIFIED_BY_INSPECTOR' || errorCode === 'EMAIL_NOT_VERIFIED') && (
                         <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid rgba(239,68,68,0.25)', display: 'flex', justifyContent: 'flex-end' }}>
                           <button
                             type="button"
@@ -470,7 +470,7 @@ export default function EnterExamPage() {
                               cursor: 'pointer',
                             }}
                           >
-                            Enter Waiting Lobby Instead →
+                            Enter Waiting Lobby →
                           </button>
                         </div>
                       )}

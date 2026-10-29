@@ -14,7 +14,7 @@ export function getAdminJwtSecret(): string {
   return secret;
 }
 
-export type StaffRole = 'super_admin' | 'faculty' | 'college_admin' | 'inspector' | 'admin';
+export type StaffRole = 'super_admin' | 'faculty' | 'college_admin' | 'inspector' | 'admin' | 'paper_setter';
 
 export interface AdminJWTPayload {
   sub: string;  // admin username or staff email
@@ -126,7 +126,8 @@ export function adminAuth(req: Request, res: Response, next: NextFunction): void
       payload.role !== 'super_admin' &&
       payload.role !== 'faculty' &&
       payload.role !== 'college_admin' &&
-      payload.role !== 'inspector'
+      payload.role !== 'inspector' &&
+      payload.role !== 'paper_setter'
     ) {
       res.status(403).json({ success: false, error: 'Insufficient privileges' });
       return;

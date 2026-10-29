@@ -53,17 +53,19 @@ export const VALID_SECTIONS = ['A', 'B', 'C', 'D', 'E'] as const;
 export type SectionType = (typeof VALID_SECTIONS)[number];
 
 export const BRANCH_CODES: BranchInfo[] = [
-  { code: 'CSM', label: 'CSM (AI & Machine Learning)' },
   { code: 'CSE', label: 'CSE (Computer Science & Engineering)' },
+  { code: 'IT', label: 'IT (Information Technology)' },
+  { code: 'CSM', label: 'CSM (AI & Machine Learning)' },
   { code: 'CSD', label: 'CSD (Data Science)' },
   { code: 'CSC', label: 'CSC (Cyber Security)' },
-  { code: 'INF', label: 'INF / IT (Information Technology)' },
-  { code: 'AID', label: 'AID (Artificial Intelligence & Data Science)' },
+  { code: 'AIDS', label: 'AIDS (Artificial Intelligence & Data Science)' },
   { code: 'CSBS', label: 'CSBS (Computer Science & Business Systems)' },
   { code: 'ECE', label: 'ECE (Electronics & Communication Engineering)' },
   { code: 'EEE', label: 'EEE (Electrical & Electronics Engineering)' },
   { code: 'MECH', label: 'MECH (Mechanical Engineering)' },
   { code: 'CIVIL', label: 'CIVIL (Civil Engineering)' },
+  { code: 'INF', label: 'INF (Information Technology)' },
+  { code: 'AID', label: 'AID (AI & Data Science)' },
   { code: 'OTHER', label: 'Other Engineering Specialization' },
 ];
 

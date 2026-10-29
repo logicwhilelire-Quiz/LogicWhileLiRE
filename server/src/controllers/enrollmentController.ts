@@ -211,3 +211,63 @@ export async function verifyEnrollmentOtp(req: Request, res: Response): Promise<
     token: rawToken,
   });
 }
+
+/**
+ * POST /api/enroll/:examId/resend-otp
+ * Resend a new OTP to participant's email if not yet verified
+ */
+export async function resendEnrollmentOtp(req: Request, res: Response): Promise<void> {
+  const examId = String(req.params.examId || '');
+  const { participant_id } = req.body;
+
+  if (!participant_id) {
+    res.status(400).json({ success: false, error: 'participant_id is required' });
+    return;
+  }
+
+  const { data: participant, error } = await supabase
+    .from('participants')
+    .select('id, name, email, exam_id, otp_verified')
+    .eq('id', participant_id)
+    .eq('exam_id', examId)
+    .single();
+
+  if (error || !participant) {
+    res.status(404).json({ success: false, error: 'Participant not found' });
+    return;
+  }
+
+  if (participant.otp_verified) {
+    res.status(409).json({ success: false, error: 'Already verified. Please start your exam.' });
+    return;
+  }
+
+  const { data: exam } = await supabase
+    .from('exams')
+    .select('id, title')
+    .eq('id', examId)
+    .single();
+
+  const otp = generateOtp();
+  const otpHash = await hashOtp(otp);
+  const expiresAt = otpExpiresAt();
+
+  await supabase
+    .from('participants')
+    .update({ otp_hash: otpHash, otp_expires_at: expiresAt.toISOString() })
+    .eq('id', participant_id);
+
+  try {
+    await sendOtpEmail(participant.email, participant.name, otp, exam?.title || 'Examination', examId);
+  } catch (emailErr) {
+    console.error('[Enrollment] Failed to resend OTP email:', emailErr);
+    res.status(500).json({ success: false, error: 'Failed to send OTP email. Please try again.' });
+    return;
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'A fresh 6-digit OTP code has been sent to your email address.',
+  });
+}
+

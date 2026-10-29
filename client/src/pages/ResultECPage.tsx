@@ -150,6 +150,7 @@ export default function ResultECPage() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [expandedSolutions, setExpandedSolutions] = useState<Record<string, boolean>>({})
   const [copySuccessId, setCopySuccessId] = useState<string | null>(null)
+  const [questionFilterTab, setQuestionFilterTab] = useState<'all' | 'correct' | 'wrong' | 'skipped' | 'coding'>('all')
 
   useEffect(() => {
     if (!result && examCode) {
@@ -291,6 +292,32 @@ export default function ResultECPage() {
   const mcqScoreColor = effectiveMcqPct >= 80 ? '#10B981' : effectiveMcqPct >= 50 ? '#F59E0B' : '#EF4444'
   const mcqPassed = effectiveMcqPct >= 40
 
+  // Coding evaluation state: Check if faculty has graded subjective coding questions
+  const isCodingGraded = Boolean(
+    (activeResult.score_override !== undefined && activeResult.score_override !== null) ||
+    activeResult.coding_score !== undefined ||
+    activeResult.coding_status === 'graded' ||
+    activeResult.coding_evaluated === true
+  )
+
+  const codingMarksAwarded = isCodingGraded
+    ? (activeResult.coding_score !== undefined
+        ? Number(activeResult.coding_score)
+        : Math.max(0, Number(activeResult.score_override ?? 0) - effectiveMcqScore))
+    : 0
+
+  const compositeFinalScore = isCodingGraded
+    ? (activeResult.score_override !== undefined && activeResult.score_override !== null
+        ? Number(activeResult.score_override)
+        : effectiveMcqScore + codingMarksAwarded)
+    : effectiveMcqScore
+
+  const compositeMaxMarks = activeResult.totalMarks || activeResult.max_score || (effectiveMcqMaxMarks + codingMarksTotal)
+  const compositePct = compositeMaxMarks > 0 ? Math.round((compositeFinalScore / compositeMaxMarks) * 1000) / 10 : 0
+  const animatedCompositeScore = useAnimatedCounter(compositeFinalScore, 1200)
+  const animatedCompositePct = useAnimatedCounter(compositePct, 1400)
+  const compositeScoreColor = compositePct >= 75 ? '#10B981' : compositePct >= 50 ? '#F59E0B' : '#EF4444'
+
   const isTerminated = Boolean(
     activeResult.is_terminated ||
     activeResult.status === 'terminated_cheating' ||
@@ -300,7 +327,7 @@ export default function ResultECPage() {
     rawState?.isTerminated
   )
 
-  const passed = isTerminated ? false : (hasCodingQuestions ? mcqPassed : pct >= 60)
+  const passed = isTerminated ? false : (hasCodingQuestions ? (isCodingGraded ? compositePct >= 50 : mcqPassed) : pct >= 60)
 
   const animatedPct = useAnimatedCounter(pct, 1400)
   const animatedScore = useAnimatedCounter(activeResult.score ?? 0, 1200)
@@ -476,6 +503,138 @@ export default function ResultECPage() {
               </p>
             </div>
 
+            {/* ─── COMPOSITE STATUS & PENDING REVIEW BANNER ─── */}
+            {!isCodingGraded ? (
+              <div style={{
+                marginBottom: 24,
+                padding: '18px 22px',
+                borderRadius: 'var(--radius-lg)',
+                background: 'rgba(245, 158, 11, 0.08)',
+                border: '1.5px solid rgba(245, 158, 11, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 18,
+                flexWrap: 'wrap',
+                boxShadow: '0 4px 18px rgba(245, 158, 11, 0.08)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 260, flex: 1 }}>
+                  <div style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 10,
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.4rem',
+                    flexShrink: 0,
+                  }}>
+                    ⏳
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.96rem', color: '#F59E0B', letterSpacing: '0.02em' }}>
+                        PROVISIONAL STANDING: CODING EVALUATION IN PROGRESS
+                      </span>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: 999,
+                        background: 'rgba(245, 158, 11, 0.2)',
+                        border: '1px solid rgba(245, 158, 11, 0.45)',
+                        color: '#F59E0B',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}>
+                        Coding: pending review
+                      </span>
+                    </div>
+                    <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+                      Instant objective grading is complete (Score: <strong style={{ color: mcqScoreColor }}>{Math.round(animatedMcqScore)}</strong> / {effectiveMcqMaxMarks} marks).
+                      Your coding submission has been preserved in the assessment vault. Final composite score out of {compositeMaxMarks} marks will be published after instructor review.
+                    </p>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', minWidth: 140 }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)', textTransform: 'uppercase', fontWeight: 700 }}>
+                    Auto-Graded (MCQ)
+                  </div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 800, color: mcqScoreColor, lineHeight: 1.2 }}>
+                    {Math.round(animatedMcqScore)} <span style={{ fontSize: '0.88rem', color: 'var(--color-text-faint)' }}>/ {effectiveMcqMaxMarks}</span>
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: '#F59E0B', fontWeight: 600, marginTop: 2 }}>
+                    Coding: pending review
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                marginBottom: 24,
+                padding: '18px 22px',
+                borderRadius: 'var(--radius-lg)',
+                background: 'rgba(16, 185, 129, 0.08)',
+                border: '1.5px solid rgba(16, 185, 129, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 18,
+                flexWrap: 'wrap',
+                boxShadow: '0 4px 18px rgba(16, 185, 129, 0.08)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 260, flex: 1 }}>
+                  <div style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 10,
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.4rem',
+                    flexShrink: 0,
+                  }}>
+                    🎖️
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.96rem', color: '#10B981', letterSpacing: '0.02em' }}>
+                        FINAL COMPOSITE SCORE CERTIFIED
+                      </span>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: 999,
+                        background: 'rgba(16, 185, 129, 0.2)',
+                        border: '1px solid rgba(16, 185, 129, 0.45)',
+                        color: '#10B981',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}>
+                        ✓ Faculty Graded
+                      </span>
+                    </div>
+                    <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+                      Full evaluation verified: Objective MCQs ({Math.round(animatedMcqScore)} / {effectiveMcqMaxMarks}) + Faculty Coding ({codingMarksAwarded} / {codingMarksTotal}).
+                    </p>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', minWidth: 140 }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)', textTransform: 'uppercase', fontWeight: 700 }}>
+                    Composite Final Score
+                  </div>
+                  <div style={{ fontSize: '1.7rem', fontWeight: 800, color: compositeScoreColor, lineHeight: 1.2 }}>
+                    {Math.round(animatedCompositeScore)} <span style={{ fontSize: '0.88rem', color: 'var(--color-text-faint)' }}>/ {compositeMaxMarks}</span>
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: '#10B981', fontWeight: 600, marginTop: 2 }}>
+                    {animatedCompositePct.toFixed(1)}% Overall
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
               {/* PART 1: Auto-graded (MCQ) */}
               <div style={{
@@ -570,20 +729,51 @@ export default function ResultECPage() {
                     <span style={{
                       padding: '3px 10px',
                       borderRadius: 4,
-                      background: 'rgba(56, 189, 248, 0.15)',
-                      border: '1px solid rgba(56, 189, 248, 0.35)',
-                      color: '#38BDF8',
+                      background: isCodingGraded ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                      border: `1px solid ${isCodingGraded ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`,
+                      color: isCodingGraded ? '#10B981' : '#F59E0B',
                       fontSize: '0.74rem',
                       fontWeight: 800,
                       textTransform: 'uppercase',
                       letterSpacing: '0.06em',
                     }}>
-                      Coding Questions
+                      {isCodingGraded ? 'Coding: Graded' : 'Coding: pending review'}
                     </span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-faint)' }}>
-                      Faculty Manual Review
+                    <span style={{ fontSize: '0.75rem', color: isCodingGraded ? '#10B981' : '#F59E0B', fontWeight: 600 }}>
+                      {isCodingGraded ? '✓ Faculty Graded' : 'Faculty Manual Review'}
                     </span>
                   </div>
+
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, margin: '14px 0 6px' }}>
+                    <span style={{
+                      fontFamily: 'var(--font-display)',
+                      fontSize: 'clamp(2.4rem, 4vw, 3.2rem)',
+                      fontWeight: 800,
+                      color: isCodingGraded ? compositeScoreColor : '#F59E0B',
+                      lineHeight: 1,
+                    }}>
+                      {isCodingGraded ? `${codingMarksAwarded}/${codingMarksTotal}` : 'Pending'}
+                    </span>
+                  </div>
+
+                  <div style={{
+                    fontSize: '1.05rem',
+                    color: 'var(--color-text)',
+                    fontWeight: 700,
+                    marginBottom: 8,
+                  }}>
+                    {isCodingGraded ? (
+                      <>Faculty Coding Score: <strong style={{ color: '#10B981' }}>{codingMarksAwarded}</strong> / {codingMarksTotal} marks</>
+                    ) : (
+                      <>Coding Challenge: <strong style={{ color: '#F59E0B' }}>Pending Review</strong> ({codingMarksTotal} marks allocated)</>
+                    )}
+                  </div>
+
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+                    {isCodingGraded
+                      ? `Instructor subjective review finalized. Final score has been recorded.`
+                      : `Candidate code solutions are securely stored. Instructor panel reviews and assigns marks manually.`}
+                  </p>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, margin: '14px 0' }}>
                     {resolvedCodingQuestions.map((cq, idx) => {
@@ -621,22 +811,41 @@ export default function ResultECPage() {
                             </div>
                             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                               {isAttempted ? (
-                                <span style={{
-                                  padding: '4px 10px',
-                                  borderRadius: 6,
-                                  background: 'rgba(16, 185, 129, 0.15)',
-                                  border: '1px solid rgba(16, 185, 129, 0.35)',
-                                  color: '#10B981',
-                                  fontSize: '0.74rem',
-                                  fontWeight: 700,
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 5,
-                                  whiteSpace: 'nowrap',
-                                }}>
-                                  <span>✓</span>
-                                  <span>Accepted & Saved</span>
-                                </span>
+                                isCodingGraded ? (
+                                  <span style={{
+                                    padding: '4px 10px',
+                                    borderRadius: 6,
+                                    background: 'rgba(16, 185, 129, 0.15)',
+                                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                                    color: '#10B981',
+                                    fontSize: '0.74rem',
+                                    fontWeight: 700,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 5,
+                                    whiteSpace: 'nowrap',
+                                  }}>
+                                    <span>✓</span>
+                                    <span>Graded: {cq.marks ?? 10} marks</span>
+                                  </span>
+                                ) : (
+                                  <span style={{
+                                    padding: '4px 10px',
+                                    borderRadius: 6,
+                                    background: 'rgba(245, 158, 11, 0.15)',
+                                    border: '1px solid rgba(245, 158, 11, 0.4)',
+                                    color: '#F59E0B',
+                                    fontSize: '0.74rem',
+                                    fontWeight: 700,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 5,
+                                    whiteSpace: 'nowrap',
+                                  }}>
+                                    <span>⏳</span>
+                                    <span>Coding: pending review</span>
+                                  </span>
+                                )
                               ) : (
                                 <span style={{
                                   padding: '4px 10px',
@@ -720,11 +929,19 @@ export default function ResultECPage() {
                 <div style={{
                   paddingTop: 14,
                   borderTop: '1px solid var(--color-border)',
-                  fontSize: '0.75rem',
-                  color: 'var(--color-text-faint)',
-                  fontStyle: 'italic',
+                  fontSize: '0.78rem',
+                  color: isCodingGraded ? '#34D399' : '#F59E0B',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
                 }}>
-                  * No automated score is computed for coding challenges. Marks will be assigned following instructor evaluation.
+                  <span>{isCodingGraded ? '✓' : '⏳'}</span>
+                  <span>
+                    {isCodingGraded
+                      ? `Faculty review completed. ${codingMarksAwarded} of ${codingMarksTotal} marks awarded for coding challenge.`
+                      : 'Coding: pending review — Marks will be assigned following instructor review. Final composite score will update automatically once graded.'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1119,181 +1336,322 @@ export default function ResultECPage() {
               padding: 24,
               boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
-                <div>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
-                    Questions & Accepted Answers Manifest
-                  </h3>
-                  <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--color-text-faint)' }}>
-                    Authoritative audit log of questions presented, candidate selections, and server-accepted responses.
-                  </p>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <span style={{
-                    padding: '4px 12px',
-                    borderRadius: 999,
-                    background: 'rgba(16, 185, 129, 0.12)',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                    color: '#10B981',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                  }}>
-                    {resolvedAllQuestions.filter(q => q.isAnswered).length} / {resolvedAllQuestions.length} Questions Accepted
-                  </span>
-                </div>
-              </div>
+              {(() => {
+                const optLetters = ['A', 'B', 'C', 'D'];
+                
+                // Categorize questions
+                const analyzedQuestions = resolvedAllQuestions.map((q, idx) => {
+                  const isCodeQ = q.type === 'code' || q.question_type === 'code' || q.question_type === 'coding';
+                  const codeAns = resolvedCodeAnswers[q.id] || (isCodeQ ? q.candidateAnswer : '') || '';
+                  const isAns = isCodeQ
+                    ? Boolean(codeAns && codeAns.trim().length > 0)
+                    : (q.candidateAnswer !== null && q.candidateAnswer !== undefined && q.candidateAnswer !== '');
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {resolvedAllQuestions.map((q, idx) => {
-                  const optLetters = ['A', 'B', 'C', 'D']
-                  const isCodeQ = q.type === 'code'
-                  const codeAns = resolvedCodeAnswers[q.id] || (isCodeQ ? q.candidateAnswer : '') || ''
-                  const isAns = isCodeQ ? Boolean(codeAns && codeAns.trim().length > 0) : (q.candidateAnswer !== null && q.candidateAnswer !== undefined)
+                  let isCorrect = false;
+                  let isWrong = false;
+                  const candStr = String(q.candidateAnswer ?? '').trim().toUpperCase();
+                  const corrStr = String(q.correctAnswer ?? q.correct_option ?? q.correct_answer ?? '').trim().toUpperCase();
 
-                  return (
-                    <div
-                      key={q.id || idx}
-                      style={{
-                        padding: '16px',
-                        borderRadius: 10,
-                        background: 'rgba(255, 255, 255, 0.02)',
-                        border: '1px solid var(--color-border)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 10 }}>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                          <span style={{
-                            padding: '2px 8px',
-                            borderRadius: 4,
-                            background: 'rgba(37, 99, 235, 0.15)',
-                            color: '#60A5FA',
-                            fontWeight: 800,
-                            fontSize: '0.72rem',
-                          }}>
-                            Q{idx + 1}
-                          </span>
-                          <span style={{
-                            padding: '2px 8px',
-                            borderRadius: 4,
-                            background: 'rgba(255, 255, 255, 0.05)',
-                            color: 'var(--color-text-muted)',
-                            fontSize: '0.72rem',
-                            fontWeight: 600,
-                          }}>
-                            {q.topic || 'General'}
-                          </span>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)' }}>
-                            {q.marks || 1} mark{(q.marks || 1) > 1 ? 's' : ''}
-                          </span>
-                        </div>
-                        <div>
-                          {isAns ? (
-                            <span style={{
-                              padding: '3px 10px',
-                              borderRadius: 999,
-                              background: 'rgba(16, 185, 129, 0.15)',
-                              border: '1px solid rgba(16, 185, 129, 0.35)',
-                              color: '#10B981',
-                              fontSize: '0.72rem',
-                              fontWeight: 700,
-                            }}>
-                              ✓ Accepted & Saved
-                            </span>
-                          ) : (
-                            <span style={{
-                              padding: '3px 10px',
-                              borderRadius: 999,
-                              background: 'rgba(100, 116, 139, 0.15)',
-                              border: '1px solid rgba(100, 116, 139, 0.35)',
-                              color: '#94A3B8',
-                              fontSize: '0.72rem',
-                              fontWeight: 700,
-                            }}>
-                              Not Attempted
-                            </span>
-                          )}
-                        </div>
+                  if (q.isCorrect !== undefined) {
+                    isCorrect = Boolean(q.isCorrect);
+                    isWrong = isAns && !isCorrect;
+                  } else if (isCodeQ) {
+                    isCorrect = isAns;
+                    isWrong = false;
+                  } else if (isAns) {
+                    if (corrStr) {
+                      if (candStr === corrStr || (!isNaN(Number(candStr)) && optLetters[Number(candStr)] === corrStr)) {
+                        isCorrect = true;
+                      } else {
+                        isWrong = true;
+                      }
+                    } else {
+                      isCorrect = true;
+                    }
+                  }
+
+                  return {
+                    ...q,
+                    index: idx,
+                    isCodeQ,
+                    codeAns,
+                    isAns,
+                    isCorrect,
+                    isWrong,
+                    isSkipped: !isAns,
+                    correctAnswerKey: corrStr,
+                  };
+                });
+
+                const correctCount = analyzedQuestions.filter(q => q.isCorrect).length;
+                const wrongCount = analyzedQuestions.filter(q => q.isWrong).length;
+                const skippedCount = analyzedQuestions.filter(q => q.isSkipped).length;
+                const codingCount = analyzedQuestions.filter(q => q.isCodeQ).length;
+
+                const filteredQuestions = analyzedQuestions.filter(q => {
+                  if (questionFilterTab === 'correct') return q.isCorrect;
+                  if (questionFilterTab === 'wrong') return q.isWrong;
+                  if (questionFilterTab === 'skipped') return q.isSkipped;
+                  if (questionFilterTab === 'coding') return q.isCodeQ;
+                  return true;
+                });
+
+                return (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
+                      <div>
+                        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
+                          Questions & Answer Verification
+                        </h3>
+                        <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--color-text-faint)' }}>
+                          Separate evaluation of correct and wrong responses with exact marks and server-verified answer keys.
+                        </p>
                       </div>
 
-                      <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text)', marginBottom: 12, lineHeight: 1.5 }}>
-                        {q.text}
-                      </div>
-
-                      {/* Answer details */}
-                      {isCodeQ ? (
-                        <div>
-                          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38BDF8', marginBottom: 6 }}>
-                            Candidate's Accepted Code Solution:
-                          </div>
-                          {codeAns ? (
-                            <pre style={{
-                              margin: 0,
-                              background: '#070C18',
-                              border: '1px solid rgba(255, 255, 255, 0.08)',
+                      {/* Filter Tabs */}
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {[
+                          { id: 'all', label: `All (${analyzedQuestions.length})`, color: '#60A5FA' },
+                          { id: 'correct', label: `✅ Correct (${correctCount})`, color: '#10B981' },
+                          { id: 'wrong', label: `❌ Wrong (${wrongCount})`, color: '#EF4444' },
+                          { id: 'skipped', label: `⚪ Skipped (${skippedCount})`, color: '#94A3B8' },
+                          ...(codingCount > 0 ? [{ id: 'coding', label: `💻 Coding (${codingCount})`, color: '#A78BFA' }] : []),
+                        ].map(tab => (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setQuestionFilterTab(tab.id as any)}
+                            style={{
+                              padding: '5px 12px',
                               borderRadius: 8,
-                              padding: '10px 14px',
-                              fontSize: '0.78rem',
-                              fontFamily: 'var(--font-mono, monospace)',
-                              color: '#86EFAC',
-                              whiteSpace: 'pre-wrap',
-                              wordBreak: 'break-all',
-                              maxHeight: 180,
-                              overflowY: 'auto',
-                            }}>
-                              {codeAns}
-                            </pre>
-                          ) : (
-                            <div style={{ color: 'var(--color-text-faint)', fontSize: '0.78rem', fontStyle: 'italic' }}>
-                              No code answer submitted for this problem.
-                            </div>
-                          )}
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              border: questionFilterTab === tab.id ? `1.5px solid ${tab.color}` : '1px solid var(--color-border)',
+                              background: questionFilterTab === tab.id ? `${tab.color}22` : 'rgba(255, 255, 255, 0.03)',
+                              color: questionFilterTab === tab.id ? tab.color : 'var(--color-text-muted)',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      {filteredQuestions.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--color-text-faint)', fontSize: '0.85rem' }}>
+                          No questions found in this category.
                         </div>
                       ) : (
-                        <div>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 6 }}>
-                            {(q.options || []).map((opt: string, optI: number) => {
-                              const isSelected = q.candidateAnswer === optI || String(q.candidateAnswer).toUpperCase() === optLetters[optI]
-                              return (
-                                <div
-                                  key={optI}
-                                  style={{
-                                    padding: '8px 12px',
-                                    borderRadius: 6,
-                                    background: isSelected ? 'rgba(37, 99, 235, 0.15)' : 'rgba(255, 255, 255, 0.02)',
-                                    border: isSelected ? '1px solid #2563EB' : '1px solid var(--color-border)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 8,
-                                    fontSize: '0.8rem',
-                                  }}
-                                >
+                        filteredQuestions.map((q) => {
+                          return (
+                            <div
+                              key={q.id || q.index}
+                              style={{
+                                padding: '18px 20px',
+                                borderRadius: 10,
+                                background: q.isCorrect
+                                  ? 'rgba(16, 185, 129, 0.04)'
+                                  : q.isWrong
+                                  ? 'rgba(239, 68, 68, 0.04)'
+                                  : 'rgba(255, 255, 255, 0.02)',
+                                border: `1px solid ${
+                                  q.isCorrect
+                                    ? 'rgba(16, 185, 129, 0.3)'
+                                    : q.isWrong
+                                    ? 'rgba(239, 68, 68, 0.3)'
+                                    : 'var(--color-border)'
+                                }`,
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+                                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                                   <span style={{
+                                    padding: '2px 8px',
+                                    borderRadius: 4,
+                                    background: 'rgba(37, 99, 235, 0.15)',
+                                    color: '#60A5FA',
                                     fontWeight: 800,
-                                    color: isSelected ? '#60A5FA' : 'var(--color-text-faint)',
+                                    fontSize: '0.72rem',
                                   }}>
-                                    {optLetters[optI]}.
+                                    Q{q.index + 1}
                                   </span>
                                   <span style={{
-                                    color: isSelected ? '#FFFFFF' : 'var(--color-text-muted)',
-                                    fontWeight: isSelected ? 700 : 400,
+                                    padding: '2px 8px',
+                                    borderRadius: 4,
+                                    background: 'rgba(255, 255, 255, 0.05)',
+                                    color: 'var(--color-text-muted)',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 600,
                                   }}>
-                                    {opt}
+                                    {q.topic || 'General'}
                                   </span>
-                                  {isSelected && (
-                                    <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#60A5FA', fontWeight: 800 }}>
-                                      (Your Selection)
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)' }}>
+                                    Weight: {q.marks || 1} mark{(q.marks || 1) > 1 ? 's' : ''}
+                                  </span>
+                                </div>
+
+                                <div>
+                                  {q.isCorrect ? (
+                                    <span style={{
+                                      padding: '3px 10px',
+                                      borderRadius: 999,
+                                      background: 'rgba(16, 185, 129, 0.15)',
+                                      border: '1px solid rgba(16, 185, 129, 0.4)',
+                                      color: '#10B981',
+                                      fontSize: '0.72rem',
+                                      fontWeight: 800,
+                                    }}>
+                                      ✓ Correct (+{q.marks || 1})
+                                    </span>
+                                  ) : q.isWrong ? (
+                                    <span style={{
+                                      padding: '3px 10px',
+                                      borderRadius: 999,
+                                      background: 'rgba(239, 68, 68, 0.15)',
+                                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                                      color: '#EF4444',
+                                      fontSize: '0.72rem',
+                                      fontWeight: 800,
+                                    }}>
+                                      ✗ Incorrect ({q.penalty ? `-${q.penalty}` : '0'})
+                                    </span>
+                                  ) : (
+                                    <span style={{
+                                      padding: '3px 10px',
+                                      borderRadius: 999,
+                                      background: 'rgba(100, 116, 139, 0.15)',
+                                      border: '1px solid rgba(100, 116, 139, 0.35)',
+                                      color: '#94A3B8',
+                                      fontSize: '0.72rem',
+                                      fontWeight: 700,
+                                    }}>
+                                      ⚪ Skipped
                                     </span>
                                   )}
                                 </div>
-                              )
-                            })}
-                          </div>
-                        </div>
+                              </div>
+
+                              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text)', marginBottom: 14, lineHeight: 1.5 }}>
+                                {q.text || q.question}
+                              </div>
+
+                              {/* Coding Answer */}
+                              {q.isCodeQ ? (
+                                <div>
+                                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38BDF8', marginBottom: 6 }}>
+                                    Candidate's Code Submission:
+                                  </div>
+                                  {q.codeAns ? (
+                                    <pre style={{
+                                      margin: 0,
+                                      background: '#070C18',
+                                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                                      borderRadius: 8,
+                                      padding: '12px 14px',
+                                      fontSize: '0.78rem',
+                                      fontFamily: 'var(--font-mono, monospace)',
+                                      color: '#86EFAC',
+                                      whiteSpace: 'pre-wrap',
+                                      wordBreak: 'break-all',
+                                      maxHeight: 180,
+                                      overflowY: 'auto',
+                                    }}>
+                                      {q.codeAns}
+                                    </pre>
+                                  ) : (
+                                    <div style={{ color: 'var(--color-text-faint)', fontSize: '0.78rem', fontStyle: 'italic' }}>
+                                      No code solution submitted.
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                /* MCQ Options with Correct vs Wrong styling */
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 8 }}>
+                                  {(q.options || []).map((opt: string, optI: number) => {
+                                    const optLetter = optLetters[optI];
+                                    const isUserPick =
+                                      q.candidateAnswer === optI ||
+                                      String(q.candidateAnswer).trim().toUpperCase() === optLetter;
+                                    const isCorrectOpt =
+                                      q.correctAnswerKey === optLetter ||
+                                      q.correctAnswerKey === String(optI) ||
+                                      (q.correctAnswer && String(q.correctAnswer).trim().toLowerCase() === String(opt).trim().toLowerCase());
+
+                                    let bg = 'rgba(255, 255, 255, 0.02)';
+                                    let border = 'var(--color-border)';
+                                    let textColor = 'var(--color-text-muted)';
+                                    let badgeLabel = null;
+                                    let badgeColor = null;
+
+                                    if (isCorrectOpt) {
+                                      bg = 'rgba(16, 185, 129, 0.16)';
+                                      border = 'rgba(16, 185, 129, 0.5)';
+                                      textColor = '#A7F3D0';
+                                      badgeLabel = '✓ Correct Answer';
+                                      badgeColor = '#10B981';
+                                    }
+                                    if (isUserPick && !isCorrectOpt) {
+                                      bg = 'rgba(239, 68, 68, 0.16)';
+                                      border = 'rgba(239, 68, 68, 0.5)';
+                                      textColor = '#FCA5A5';
+                                      badgeLabel = '✗ Your Selection (Wrong)';
+                                      badgeColor = '#EF4444';
+                                    } else if (isUserPick && isCorrectOpt) {
+                                      badgeLabel = '✓ Your Selection (Correct)';
+                                    }
+
+                                    return (
+                                      <div
+                                        key={optI}
+                                        style={{
+                                          padding: '10px 14px',
+                                          borderRadius: 8,
+                                          background: bg,
+                                          border: `1px solid ${border}`,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'space-between',
+                                          gap: 8,
+                                          fontSize: '0.82rem',
+                                        }}
+                                      >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                                          <span style={{ fontWeight: 800, color: isUserPick ? badgeColor || '#60A5FA' : 'var(--color-text-faint)' }}>
+                                            {optLetter}.
+                                          </span>
+                                          <span style={{ color: textColor, fontWeight: isUserPick || isCorrectOpt ? 600 : 400 }}>
+                                            {opt}
+                                          </span>
+                                        </div>
+                                        {badgeLabel && (
+                                          <span style={{
+                                            fontSize: '0.68rem',
+                                            fontWeight: 800,
+                                            color: badgeColor || '#10B981',
+                                            whiteSpace: 'nowrap',
+                                            padding: '2px 6px',
+                                            borderRadius: 4,
+                                            background: 'rgba(0,0,0,0.25)',
+                                          }}>
+                                            {badgeLabel}
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
                       )}
                     </div>
-                  )
-                })}
-              </div>
+                  </>
+                );
+              })()}
             </div>
           </motion.div>
         )}

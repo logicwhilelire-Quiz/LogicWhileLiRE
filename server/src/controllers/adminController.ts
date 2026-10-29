@@ -202,6 +202,15 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     normalizedUser === 'inspector' ||
     normalizedUser === 'inspector@logicwhilelire.com';
 
+  const isBootstrapPaperSetter =
+    normalizedUser === (process.env.PAPERSETTER_USERNAME || 'papersetter') ||
+    normalizedUser === 'papersetter' ||
+    normalizedUser === 'papersetter@logicwhilelire.com' ||
+    normalizedUser === 'paper_setter';
+
+  // SECURITY HARDENED: Plaintext password fallback completely removed.
+  // Authentication strictly accepts verified bcrypt password hashes only.
+
   if (isBootstrapAdmin) {
     const { data: existingAdmin } = await supabase
       .from('staff')
@@ -226,12 +235,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     if (adminHash) {
       passwordValid = await bcrypt.compare(password, adminHash);
     }
-    if (!passwordValid && process.env.ADMIN_PASSWORD && password === process.env.ADMIN_PASSWORD) {
-      passwordValid = true;
-    }
-    if (!passwordValid && (password === 'admin123' || password === 'LiREAdmin@2026!')) {
-      passwordValid = true;
-    }
+    // Plaintext fallback removed: strictly require bcrypt match against adminHash
     if (!passwordValid) {
       handleFailedAttempt();
       return;
@@ -263,12 +267,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     if (facHash) {
       passwordValid = await bcrypt.compare(password, facHash);
     }
-    if (!passwordValid && process.env.FACULTY_PASSWORD && password === process.env.FACULTY_PASSWORD) {
-      passwordValid = true;
-    }
-    if (!passwordValid && (password === 'faculty123' || password === 'LiREAdmin@2026!' || password === 'admin123' || password === 'password123')) {
-      passwordValid = true;
-    }
+    // Plaintext fallback removed: strictly require bcrypt match against facHash
     if (!passwordValid) {
       handleFailedAttempt();
       return;
@@ -300,12 +299,39 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     if (inspHash) {
       passwordValid = await bcrypt.compare(password, inspHash);
     }
-    if (!passwordValid && process.env.INSPECTOR_PASSWORD && password === process.env.INSPECTOR_PASSWORD) {
-      passwordValid = true;
+    // Plaintext fallback removed: strictly require bcrypt match against inspHash
+    if (!passwordValid) {
+      handleFailedAttempt();
+      return;
     }
-    if (!passwordValid && (password === 'inspector123' || password === 'LiREInspector@2026!' || password === 'LiREAdmin@2026!' || password === 'admin123')) {
-      passwordValid = true;
+  } else if (isBootstrapPaperSetter) {
+    const { data: existingPaperSetter } = await supabase
+      .from('staff')
+      .select('*')
+      .or('role.eq.paper_setter,username.eq.papersetter,email.eq.papersetter@logicwhilelire.com')
+      .maybeSingle();
+
+    if (existingPaperSetter) {
+      staffRecord = existingPaperSetter;
+    } else {
+      staffRecord = {
+        id: '00000000-0000-0000-0000-000000000005',
+        name: 'LogicWhile Paper Setter',
+        username: 'papersetter',
+        email: 'papersetter@logicwhilelire.com',
+        role: 'paper_setter',
+        college_id: 1,
+        is_active: true,
+        permissions: ['manage_questions', 'set_papers', 'view_question_bank'],
+      };
     }
+
+    const psHash = existingPaperSetter?.password_hash;
+    let passwordValid = false;
+    if (psHash) {
+      passwordValid = await bcrypt.compare(password, psHash);
+    }
+    // Plaintext fallback removed: strictly require bcrypt match against psHash
     if (!passwordValid) {
       handleFailedAttempt();
       return;
@@ -440,12 +466,10 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const isInspectorSeedMatch = staff.role === 'inspector' && ((process.env.INSPECTOR_PASSWORD && password === process.env.INSPECTOR_PASSWORD) || password === 'inspector123' || password === 'LiREInspector@2026!');
-    const isFacultySeedMatch = staff.role === 'faculty' && ((process.env.FACULTY_PASSWORD && password === process.env.FACULTY_PASSWORD) || password === 'faculty123' || password === 'LiREAdmin@2026!');
-    const passwordValid =
-      (await bcrypt.compare(password, staff.password_hash)) ||
-      Boolean(isInspectorSeedMatch) ||
-      Boolean(isFacultySeedMatch);
+    // Strictly verify bcrypt hash stored in database
+    const passwordValid = Boolean(
+      staff.password_hash && (await bcrypt.compare(password, staff.password_hash))
+    );
     if (!passwordValid) {
       handleFailedAttempt();
       return;
@@ -713,10 +737,9 @@ export async function requestLoginOtp(req: Request, res: Response): Promise<void
     };
     const adminHash = existingAdmin?.password_hash || process.env.ADMIN_PASSWORD_HASH;
     const isMockOrTest = process.env.NODE_ENV === 'test' || process.env.DEMO_MODE === 'true';
-    const passwordValid =
-      isMockOrTest && (password === 'admin123' || password === 'LiREAdmin@2026!' || password === process.env.ADMIN_PASSWORD)
-        ? true
-        : adminHash && (await bcrypt.compare(password, adminHash));
+    const passwordValid = Boolean(
+      adminHash && (await bcrypt.compare(password, adminHash))
+    );
     if (!passwordValid) {
       res.status(401).json({ success: false, error: 'Invalid credentials' });
       return;
