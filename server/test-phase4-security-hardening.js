@@ -239,7 +239,7 @@ async function runPhase4SecurityTests() {
   const otp2 = generateStaffLoginOtp('admin@example.com');
   const directOtpRes = await request(otpPort, 'POST', '/api/admin/login', {
     username: 'admin@example.com',
-    password: 'admin123',
+    password: process.env.ADMIN_PASSWORD || 'admin123',
     email_otp: otp2,
   });
   assert.strictEqual(directOtpRes.status, 200);

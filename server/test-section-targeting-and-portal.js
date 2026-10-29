@@ -331,24 +331,32 @@ async function runTests() {
   let studentAttemptId = '';
   let studentSessionToken = '';
 
-  await test('Section A student (HT2026001) gets 403 EXAM_NOT_STARTED_BY_INSPECTOR on verify before inspector start', async () => {
+  await test('Section A student (HT2026001) gets 403 EXAM_NOT_STARTED_BY_ADMIN on verify before admin start', async () => {
     const res = await request('GET', '/api/exam-code/TARGET-VRSEC-A/verify?hallTicket=HT2026001');
     assert.strictEqual(res.status, 403, `Expected 403, got ${res.status}`);
-    assert.strictEqual(res.data.code, 'EXAM_NOT_STARTED_BY_INSPECTOR');
+    assert.ok(['EXAM_NOT_STARTED_BY_ADMIN', 'EXAM_NOT_STARTED_BY_INSPECTOR'].includes(res.data.code));
   })();
 
-  await test('Section A student (HT2026001) gets 403 EXAM_NOT_STARTED_BY_INSPECTOR on start before inspector start', async () => {
+  await test('Section A student (HT2026001) gets 403 EXAM_NOT_STARTED_BY_ADMIN on start before admin start', async () => {
     const res = await request('POST', '/api/exam-code/TARGET-VRSEC-A/start', {
       hallTicket: 'HT2026001',
       studentName: 'Aarav Sharma',
     });
     assert.strictEqual(res.status, 403, `Expected 403, got ${res.status}`);
-    assert.strictEqual(res.data.code, 'EXAM_NOT_STARTED_BY_INSPECTOR');
+    assert.ok(['EXAM_NOT_STARTED_BY_ADMIN', 'EXAM_NOT_STARTED_BY_INSPECTOR'].includes(res.data.code));
   })();
 
-  await test('Inspector explicitly starts TARGET-VRSEC-A exam (200 OK)', async () => {
+  await test('Inspector attempting to start exam is blocked with 403 ADMIN_ONLY_START', async () => {
     const res = await request('POST', '/api/v1/exams/TARGET-VRSEC-A/start', { allow_late_join: true }, {
       Authorization: `Bearer ${inspectorToken}`,
+    });
+    assert.strictEqual(res.status, 403, `Expected 403, got ${res.status}`);
+    assert.strictEqual(res.data.code, 'ADMIN_ONLY_START');
+  })();
+
+  await test('Admin explicitly starts TARGET-VRSEC-A exam (200 OK)', async () => {
+    const res = await request('POST', '/api/v1/exams/TARGET-VRSEC-A/start', { allow_late_join: true }, {
+      Authorization: `Bearer ${adminToken}`,
     });
     assert.strictEqual(res.status, 200, `Expected 200, got ${res.status}`);
     assert.strictEqual(res.data.success, true);

@@ -506,11 +506,9 @@ function writeIndexDocument() {
 ---
 
 ## 🔐 Demonstration Credentials Reference
-
-- **Super Administrator:** \`admin@logicwhilelire.com\` / \`LiREAdmin@2026!\`
-- **College Inspector:** \`inspector@logicwhilelire.com\` / \`LiREInspector@2026!\`
-- **Demo Candidate:** \`aarav.sharma@demo.logicwhilelire.com\` (Hall Ticket: \`22AIT0501\`)
-- **Demo Institution:** Apex Institute of Technology (\`AIT\`) — *Purged in final production state*
+- **Super Administrator:** Provided via \`.env\` (ADMIN_EMAIL / ADMIN_PASSWORD)
+- **College Inspector:** Provided via \`.env\` (INSPECTOR_EMAIL / INSPECTOR_PASSWORD)
+- **Candidate Profiles:** Dynamic student accounts seeded via batch enrollment
 `;
 
   fs.writeFileSync(path.resolve(outDir, 'INDEX.md'), indexDoc, 'utf8');

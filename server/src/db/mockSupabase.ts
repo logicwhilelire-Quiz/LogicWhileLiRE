@@ -39,8 +39,9 @@ const store: MockTableData = {
     {
       id: 'e6fa7676-2798-4b3c-b452-37d455bb3585',
       name: 'Super Administrator',
+      username: 'admin',
       email: 'admin@logicwhilelire.com',
-      password_hash: '$2b$12$Y65kU/s0HBji1KPpvVjjh.fXc1.p4T.B35JH3xj82W7Udi6PDGPeu',
+      password_hash: process.env.ADMIN_PASSWORD_HASH || (process.env.ADMIN_PASSWORD ? bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10) : DEMO_PASSWORD_HASH),
       role: 'super_admin',
       college_id: null,
       failed_attempts: 0,

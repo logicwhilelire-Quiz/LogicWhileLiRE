@@ -119,7 +119,7 @@ async function runLifecycle() {
 
   let passed = 0;
   const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-  const adminPassword = process.env.INITIAL_ADMIN_PASSWORD || 'LiREAdmin@2026!';
+  const adminPassword = process.env.ADMIN_PASSWORD || process.env.INITIAL_ADMIN_PASSWORD || '';
 
   // STEP 1: Admin logs in with username + password
   console.log('[Step 1] Admin logging in with USERNAME + PASSWORD ...');

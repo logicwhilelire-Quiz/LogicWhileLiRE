@@ -106,7 +106,7 @@ async function runTests() {
 
     const inspectorLoginRes = await request('POST', '/api/admin/login', {
       username: process.env.INSPECTOR_USERNAME || 'inspector',
-      password: process.env.INSPECTOR_PASSWORD || '',
+      password: process.env.INSPECTOR_PASSWORD || 'LiREInspector@2026!',
     });
 
     assert.strictEqual(inspectorLoginRes.status, 200, 'Inspector login should succeed with 200');
@@ -481,12 +481,22 @@ async function runTests() {
       studentBReceivedStart = payload;
     });
 
-    // Inspector clicks "Start Exam"
-    const startRes = await request(
+    // Security Gate: Inspector attempting to start exam is strictly blocked (403 ADMIN_ONLY_START)
+    const inspStartBlockRes = await request(
       'POST',
       `/api/v1/exams/${testExamCode}/start`,
       { allow_late_join: true },
       { Authorization: `Bearer ${inspectorToken}` }
+    );
+    assert.strictEqual(inspStartBlockRes.status, 403, 'Inspector must receive 403 ADMIN_ONLY_START');
+    assert.strictEqual(inspStartBlockRes.body?.code, 'ADMIN_ONLY_START');
+
+    // Admin pushes to start the exam
+    const startRes = await request(
+      'POST',
+      `/api/v1/exams/${testExamCode}/start`,
+      { allow_late_join: true },
+      { Authorization: `Bearer ${superAdminToken}` }
     );
 
     assert.strictEqual(startRes.status, 200, 'Start exam should return 200');
