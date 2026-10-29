@@ -117,7 +117,8 @@ export function verifyStaffLoginOtp(email: string, candidateOtp: string): { vali
  * Admin & Faculty login with rate limit and 15-minute lockout on 5 consecutive failures
  */
 export async function adminLogin(req: Request, res: Response): Promise<void> {
-  const { username, password } = req.body;
+  try {
+    const { username, password } = req.body;
   const normalizedUser = (username || '').trim();
   const lockoutKey = normalizedUser.toLowerCase();
 
@@ -705,6 +706,13 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       is_2fa_enabled: is2faActive,
     },
   });
+  } catch (err: any) {
+    console.error('[AdminLogin Fatal Error]:', err);
+    res.status(500).json({
+      success: false,
+      error: 'An unexpected authentication error occurred. Please contact system administrator.',
+    });
+  }
 }
 
 /**
