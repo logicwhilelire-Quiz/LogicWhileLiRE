@@ -179,11 +179,11 @@ The key security, exam control, and scoring capabilities verified on the local t
 | **10** | **Results & Coding Review Flag** | **PASS (HISTORICAL TEST / CODE-REVIEWED)** | Verified in earlier test run (10/10 MCQ pts, coding marked 'pending review'); simulated candidates purged; fresh pre-exam run pending. |
 | **11** | **Leaderboard Consistency** | **PASS (HISTORICAL TEST / CODE-REVIEWED)** | Verified in earlier test run (#1 > #2 > #3 rank order); simulated candidates purged; fresh pre-exam run pending. |
 | **12** | **Server Clock & Time Extension** | **PASS (CODE-REVIEWED)** | Admin endpoint `/admin/exams/:examCode/extend-time` extends end time and broadcasts `TIME_EXTENDED` live. |
-| **13** | **Exam Screen Lockdown** | **PASS (CODE-REVIEWED)** | Scratchpad removed, audio/noise detection removed, copy/paste blocked, visibilitychange alerts broadcast live. |
+| **13** | **Exam Screen Lockdown** | **PASS (CODE-REVIEWED)** | Scratchpad & audio/noise removed, copy/paste blocked, 5 progressive warning strikes for tab-switch before auto-terminate. |
 | **14** | **Question Bank Flow** | **PASS (CODE-REVIEWED)** | Flow is College Scope → Department → Question Type; subjects common across sections; no Easy/Med/Hard labels. |
 | **15** | **Coding Questions & Execution Kill-Switch** | **PASS (TESTED)** | `DISABLE_LIVE_CODE_EXECUTION=true` active; code submitted and saved for review without server execution. |
 | **16** | **Home Page UI & Navigation** | **PASS (CODE-REVIEWED)** | Fixed top bar, sequential scroll reveals, prominent LogicWhile logo, links to student, inspector, admin portals. |
-| **17** | **Auto-Reply & Email Templates** | **PASS (TESTED)** | 6 templates operational; live test to verified address `logicwhilelire@gmail.com` delivered (id: `01a1823a-...`). |
+| **17** | **Auto-Reply & Email Templates** | **PASS (TESTED)** | 6 templates operational; auto-reminder email on exam start integrated; live test to verified address delivered (id: `01a1823a-...`). |
 | **18** | **Network Blip Offline Resilience** | **NOT VERIFIED** | Offline caching to IndexedDB & sync queue verified in code; live physical network cutoff not executed in browser. |
 | **19** | **Password .env Names & Rotation Plan** | **PASS (CODE-REVIEWED)** | Plaintext fallbacks removed from login code and compiled cleanly; live login verification with rotated hashes pending server restart. |
 | **20** | **Gitignore & History Audit** | **PASS (TESTED)** | .env, server/backups/, *.zip gitignored; historical commit diffs identified with legacy test seed strings. |
