@@ -1,0 +1,3 @@
+# LogicWhileLiRE — Production API Proxy & SPA Fallback
+/api/*  https://logicwhilelire-api.onrender.com/api/:splat  200!
+/*      /index.html                                          200

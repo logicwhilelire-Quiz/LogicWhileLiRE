@@ -15,10 +15,10 @@ const isLocalhostHost = typeof window !== 'undefined' && (
   window.location.hostname.endsWith('.local')
 );
 
-// In production builds or local proxy mode, resolve API URL cleanly to current origin or default remote URL
+// On localhost, route through local reverse proxy (serve-live.ps1). On remote production, connect directly to Render API with verified CORS.
 const defaultProductionApiUrl = 'https://logicwhilelire-api.onrender.com';
-const resolvedApiUrl = typeof window !== 'undefined' && window.location.origin
-  ? window.location.origin
+const resolvedApiUrl = isLocalhostHost
+  ? (typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'http://localhost:5173')
   : (rawApiUrl || defaultProductionApiUrl);
 
 const resolvedSocketUrl = rawSocketUrl || defaultProductionApiUrl;
