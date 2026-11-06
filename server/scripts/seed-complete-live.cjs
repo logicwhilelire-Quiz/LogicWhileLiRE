@@ -20,7 +20,18 @@ async function seedCompleteLive() {
   console.log('════════════════════════════════════════════════════════════════\n');
 
   // 1. Read Excel template
-  const excelPath = 'c:/Users/chara/OneDrive/Desktop/LogicWhileLire/LogicWhileLiRE_Questions_Template.xlsx';
+  const fs = require('fs');
+  const candidatePaths = [
+    path.resolve(__dirname, '../../LogicWhileLiRE_Questions_Template.xlsx'),
+    path.resolve(__dirname, '../../../LogicWhileLiRE_Questions_Template.xlsx'),
+    path.resolve(process.cwd(), 'LogicWhileLiRE_Questions_Template.xlsx'),
+    path.resolve(process.cwd(), '../LogicWhileLiRE_Questions_Template.xlsx'),
+    'c:/Users/chara/OneDrive/Desktop/LogicWhileLire/LogicWhileLiRE_Questions_Template.xlsx',
+  ];
+  let excelPath = candidatePaths.find((p) => fs.existsSync(p));
+  if (!excelPath) {
+    throw new Error('LogicWhileLiRE_Questions_Template.xlsx template file could not be found.');
+  }
   const wb = XLSX.readFile(excelPath);
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const rawQuestions = XLSX.utils.sheet_to_json(sheet);
@@ -297,6 +308,20 @@ async function seedCompleteLive() {
       exam_code: 'CS2026',
       exam_name: 'LogicWhile LiRE — CS 2026 Qualifier',
       subject: 'Computer Science & Engineering',
+      duration_minutes: 60,
+      total_marks: 100,
+    },
+    {
+      exam_code: 'FSD2026',
+      exam_name: 'Full Stack Development – 2 Qualifier',
+      subject: 'Full Stack Development',
+      duration_minutes: 45,
+      total_marks: 100,
+    },
+    {
+      exam_code: 'RVIT-FSD2-2026',
+      exam_name: 'RVIT Full Stack Development – 2 Lab Assessment',
+      subject: 'Full Stack Development',
       duration_minutes: 60,
       total_marks: 100,
     }

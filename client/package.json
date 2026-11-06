@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "buildVite": "tsc -b && vite build",
     "test:e2e": "node test-playwright-flows.mjs",
     "lint": "oxlint",
     "preview": "vite preview"

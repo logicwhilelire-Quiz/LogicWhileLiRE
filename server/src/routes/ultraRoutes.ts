@@ -320,7 +320,7 @@ router.post('/execute', answerRateLimit, async (req: Request, res: Response) => 
 router.post(
   '/ai/generate-questions',
   adminAuth,
-  requireRole('super_admin', 'inspector', 'faculty'),
+  requireRole('super_admin'),
   async (req: Request, res: Response) => {
   try {
     const { topic = 'Computer Science', count = 5, difficulty = 'medium', type = 'mixed' } = req.body;

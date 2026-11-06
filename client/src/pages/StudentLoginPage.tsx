@@ -62,6 +62,7 @@ export default function StudentLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [notice, setNotice] = useState(registeredRoll ? '✓ Account verified! Enter your password to sign in.' : '');
   const [focused, setFocused] = useState<string | null>(null);
   const [dots, setDots] = useState('');
@@ -101,19 +102,29 @@ export default function StudentLoginPage() {
     if (!loginQuery) { setError('Please enter your hall ticket or email'); return; }
     if (!form.password) { setError('Please enter your password'); return; }
     setLoading(true); setError('');
-    const matchedAdminStudent = findAdminRosterStudent(loginQuery);
-    if (matchedAdminStudent) { loginWithAdminStudent(matchedAdminStudent); setLoading(false); return; }
     try {
       const res = await studentLogin({ login: loginQuery, password: form.password });
       if (res.data?.token) localStorage.setItem('student_token', res.data.token);
       if (res.data?.student) localStorage.setItem('student_user', JSON.stringify(res.data.student));
       navigate(redirectTarget);
+      return;
     } catch (err: any) {
+      const matchedAdminStudent = findAdminRosterStudent(loginQuery);
+      if (matchedAdminStudent && matchedAdminStudent.is_verified !== false && matchedAdminStudent.status === 'approved') {
+        loginWithAdminStudent(matchedAdminStudent);
+        return;
+      }
       if (err?.code === 'ECONNABORTED' || err?.message?.includes('timeout') || err?.message?.includes('Network Error')) {
         setError('Server is warming up or temporarily unreachable. Please retry in a few moments.');
+        setUnverifiedEmail(null);
       } else {
         const resp = err?.response?.data;
         setError(resp?.error || 'Invalid hall ticket number or password.');
+        if (resp?.requires_verification && resp?.email) {
+          setUnverifiedEmail(resp.email);
+        } else {
+          setUnverifiedEmail(null);
+        }
       }
     } finally { setLoading(false); }
   }
@@ -169,8 +180,19 @@ export default function StudentLoginPage() {
             </AnimatePresence>
             <AnimatePresence>
               {error && (
-                <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.38)', color: '#FCA5A5', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: '0.81rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                  <span style={{ flexShrink: 0 }}>⚠️</span><span>{error}</span>
+                <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.38)', color: '#FCA5A5', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: '0.81rem', fontWeight: 600, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <span style={{ flexShrink: 0 }}>⚠️</span><span>{error}</span>
+                  </div>
+                  {unverifiedEmail && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`)}
+                      style={{ alignSelf: 'flex-start', background: 'transparent', border: 'none', color: '#38BDF8', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.81rem', fontWeight: 700, padding: 0 }}
+                    >
+                      Verify Account &amp; Activate Now →
+                    </button>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

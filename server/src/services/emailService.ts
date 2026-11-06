@@ -334,7 +334,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
     try {
       // Priority 1: RESEND API (HTTPS direct)
       if (resendApiKey) {
-        const response = await fetch('https://api.resend.com/emails', {
+        let response = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${resendApiKey}`,
@@ -350,7 +350,29 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
           }),
         });
 
-        const resData = (await response.json().catch(() => ({}))) as any;
+        let resData = (await response.json().catch(() => ({}))) as any;
+
+        // Auto-fallback: If custom domain not yet verified in Resend, retry with verified onboarding@resend.dev
+        if (!response.ok && (response.status === 403 || String(resData?.message || '').toLowerCase().includes('domain') || String(resData?.message || '').toLowerCase().includes('verify'))) {
+          console.warn(`[Resend-API] ⚠️ Custom domain sender rejected (${resData?.message}). Retrying with verified onboarding@resend.dev...`);
+          response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: 'LogicWhile LiRE <onboarding@resend.dev>',
+              to: toList,
+              subject: payload.subject,
+              html: payload.html,
+              text: payload.text,
+              reply_to: payload.replyTo || undefined,
+            }),
+          });
+          resData = (await response.json().catch(() => ({}))) as any;
+        }
+
         if (!response.ok) {
           const errMsg = resData?.message || `Resend API returned status ${response.status}`;
           // On rate-limit or quota error from Resend, try Brevo fallback immediately

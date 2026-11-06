@@ -280,11 +280,11 @@ router.post('/admin/exam-codes/:id/allocate', adminAuth, requireRole('super_admi
 router.post('/admin/exam-codes/:id/lock-paper', adminAuth, requireRole('super_admin'), auditLog('LOCK_PAPER', 'exam_codes'), lockQuestionPaper);
 router.post('/admin/exam-codes/:id/replace-paper', adminAuth, requireRole('super_admin'), auditLog('REPLACE_PAPER', 'exam_codes'), replaceQuestionPaper);
 
-// Question import for exam codes (super_admin or faculty with create_questions permission; inspector forbidden)
+// Question import for exam codes (super_admin only)
 router.post(
   '/admin/exam-codes/:id/import-questions',
   adminAuth,
-  requireFacultyPermission('create_questions'),
+  requireRole('super_admin'),
   auditLog('IMPORT_QUESTIONS', 'exam_codes'),
   upload.single('file'),
   importQuestionsForExamCode

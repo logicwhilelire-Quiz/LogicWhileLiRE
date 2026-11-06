@@ -132,7 +132,7 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
     // Attempt dispatch via Resend API
     try {
       if (resendApiKey) {
-        const res = await fetch('https://api.resend.com/emails', {
+        let res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${resendApiKey}`,
@@ -148,15 +148,55 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
           }),
         });
 
-        const resData = (await res.json().catch(() => ({}))) as any;
-        if (!res.ok) {
-          throw new Error(resData?.message || `Resend API returned status ${res.status}`);
+        let resData = (await res.json().catch(() => ({}))) as any;
+
+        // Auto-fallback: If domain not yet DNS-verified in Resend, retry with onboarding@resend.dev
+        if (!res.ok && (res.status === 403 || String(resData?.message || '').toLowerCase().includes('domain') || String(resData?.message || '').toLowerCase().includes('verify'))) {
+          console.warn(`[MailService:Resend] ⚠️ Custom domain sender rejected (${resData?.message}). Retrying with verified onboarding@resend.dev...`);
+          res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: 'LogicWhile LiRE <onboarding@resend.dev>',
+              to: toList,
+              subject: options.subject,
+              html: options.html,
+              text: options.text || undefined,
+              reply_to: replyToAddress,
+            }),
+          });
+          resData = (await res.json().catch(() => ({}))) as any;
         }
 
-        resendId = resData?.id || `resend_${Date.now()}`;
-        isSuccess = true;
-        dailyEmailQuota.recordSent();
-        console.log(`[MailService:Resend] ✅ Sent [${templateName}] to ${toStr} (ID: ${resendId})`);
+        if (res.ok) {
+          resendId = resData?.id || `resend_${Date.now()}`;
+          isSuccess = true;
+          dailyEmailQuota.recordSent();
+          console.log(`[MailService:Resend] ✅ Sent [${templateName}] to ${toStr} (ID: ${resendId})`);
+        } else {
+          // Fall back to SMTP relay if Resend API failed
+          const smtp = getTransporter() || getBrevoTransporter();
+          if (smtp) {
+            console.log(`[MailService] Engaging SMTP fallback transport...`);
+            const info = await smtp.sendMail({
+              from: senderAddress,
+              to: toStr,
+              subject: options.subject,
+              html: options.html,
+              text: options.text,
+              replyTo: replyToAddress,
+            });
+            resendId = info.messageId || `smtp_${Date.now()}`;
+            isSuccess = true;
+            dailyEmailQuota.recordSent();
+            console.log(`[MailService:SMTP] ✅ Sent [${templateName}] to ${toStr} (ID: ${resendId})`);
+          } else {
+            throw new Error(resData?.message || `Resend API returned status ${res.status}`);
+          }
+        }
       } else {
         // Fallback to SMTP transport (Resend SMTP or Brevo)
         const smtp = getTransporter() || getBrevoTransporter();

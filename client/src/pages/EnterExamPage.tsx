@@ -45,6 +45,7 @@ export default function EnterExamPage() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
   const [shaking, setShaking] = useState(false)
 
   useEffect(() => {
@@ -163,10 +164,14 @@ export default function EnterExamPage() {
         })
         return
       }
-      const msg = err instanceof Error
-        ? err.message
-        : (err as { response?: { data?: ApiError } }).response?.data?.message || 'Entry failed. Please check your credentials.'
+      const resData = (err as any)?.response?.data
+      const msg = resData?.error || resData?.message || (err instanceof Error ? err.message : 'Entry failed. Please check your credentials.')
       setError(msg)
+      if (resData?.code === 'EMAIL_NOT_VERIFIED' && resData?.email) {
+        setUnverifiedEmail(resData.email)
+      } else {
+        setUnverifiedEmail(null)
+      }
       triggerShake()
     } finally {
       setLoading(false)
@@ -243,9 +248,20 @@ export default function EnterExamPage() {
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
-                      style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 10, padding: '11px 14px', color: '#FCA5A5', fontSize: '0.82rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
+                      style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 10, padding: '11px 14px', color: '#FCA5A5', fontSize: '0.82rem', fontWeight: 600, display: 'flex', flexDirection: 'column', gap: 6 }}
                     >
-                      <span style={{ flexShrink: 0 }}>⚠️</span><span>{error}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ flexShrink: 0 }}>⚠️</span><span>{error}</span>
+                      </div>
+                      {unverifiedEmail && (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`)}
+                          style={{ alignSelf: 'flex-start', background: 'transparent', border: 'none', color: '#EAA812', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, padding: 0 }}
+                        >
+                          Verify Account &amp; Activate Now →
+                        </button>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>                {/* Submit Button */}

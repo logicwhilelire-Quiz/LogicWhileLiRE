@@ -893,23 +893,25 @@ export default function QuizPage() {
   useEffect(() => {
     if (!session || isTerminated || submitting) return
 
-    // 1. Detect tab switch / sliding to another tab (Zero tolerance)
+    // 1. Detect tab switch / sliding to another tab (Strike-based enforcement)
     const handleVisibilityChange = () => {
       if (document.hidden) {
         logViolation(
           'tab_switch',
-          'Tab switch or window sliding detected during examination — zero-tolerance security lockdown triggered',
-          { isSevere: true }
+          'Tab switch or window sliding detected during examination',
+          { isSevere: false }
         )
       }
     }
 
     // 2. Detect window blur / sliding away to another app
     const handleWindowBlur = () => {
+      // If document is already hidden, visibilitychange handles it — avoid double penalty
+      if (document.hidden) return
       logViolation(
         'window_blur',
-        'Exam window lost focus (switched applications or desktop window) — zero-tolerance focus policy',
-        { isSevere: true }
+        'Exam window lost focus (switched applications or desktop window)',
+        { isSevere: false }
       )
     }
 
@@ -963,11 +965,10 @@ export default function QuizPage() {
       const target = e.target as HTMLElement | null
       const isInput = target && (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.isContentEditable || target.closest('.monaco-editor'))
 
-      // Detect Escape key — immediately terminate exam (zero-tolerance policy)
+      // Detect Escape key — prevent default and let fullscreen enforcement overlay manage return
       if (e.key === 'Escape' || e.code === 'Escape') {
         e.preventDefault()
         e.stopPropagation()
-        logViolation('escape_key', 'Escape key was pressed during examination — immediate security lockdown triggered', { isSevere: true })
         return
       }
 
@@ -1028,7 +1029,7 @@ export default function QuizPage() {
       }
     }
 
-    // 9. Fullscreen change detection (ESC exit from fullscreen)
+    // 9. Fullscreen change detection (graceful 10s return overlay, 3-strike policy)
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement && !hasTerminatedRef.current && !submitting) {
         const newCount = fullscreenExitCountRef.current + 1
@@ -1036,10 +1037,14 @@ export default function QuizPage() {
         setFullscreenExitCount(newCount)
         exitTimestampRef.current = Date.now()
         setShowFullscreenOverlay(true)
+        const maxExits = 3
+        const isSevereBreach = newCount >= maxExits
         logViolation(
           'fullscreen_exit',
-          `Candidate exited fullscreen mode (exit #${newCount}) — zero-tolerance fullscreen policy triggered exam shutdown`,
-          { exitCount: newCount, isSevere: true }
+          isSevereBreach
+            ? `Candidate exceeded maximum allowed fullscreen exits (${newCount}/${maxExits}). Exam auto-terminated.`
+            : `Candidate exited fullscreen mode (Exit ${newCount} of ${maxExits}). Return to fullscreen within 10 seconds.`,
+          { exitCount: newCount, isSevere: isSevereBreach }
         )
       }
     }

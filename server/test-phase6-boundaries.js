@@ -172,8 +172,8 @@ async function runPhase6BoundaryTests() {
   assert.strictEqual(fCreateQBlocked.status, 403);
   pass(4, 'Faculty without "create_questions" permission is blocked from POST /api/admin/questions (HTTP 403)');
 
-  // 1e. Faculty with create_questions permission can create questions
-  const fCreateQAllowed = await request(port, 'POST', '/api/admin/questions', {
+  // 1e. Faculty is blocked from creating questions (Admin is single controller)
+  const fCreateQAttempt = await request(port, 'POST', '/api/admin/questions', {
     question_text: 'Sample valid question text here?',
     options: ['Option A', 'Option B', 'Option C', 'Option D'],
     correct_answer: 'Option A',
@@ -181,8 +181,20 @@ async function runPhase6BoundaryTests() {
   }, {
     Authorization: `Bearer ${facultyWithPermsToken}`,
   });
-  assert.strictEqual(fCreateQAllowed.status, 201);
-  pass(5, 'Faculty with "create_questions" permission is permitted to create questions (HTTP 201)');
+  assert.strictEqual(fCreateQAttempt.status, 403);
+  pass(5, 'Faculty is strictly blocked from creating questions (Admin is single controller, HTTP 403)');
+
+  // 1f. Super Admin creates question successfully
+  const adminCreateQ = await request(port, 'POST', '/api/admin/questions', {
+    question_text: 'Admin authorized question text?',
+    options: ['Option A', 'Option B', 'Option C', 'Option D'],
+    correct_answer: 'Option A',
+    topic: 'Quantitative Aptitude',
+  }, {
+    Authorization: `Bearer ${superAdminToken}`,
+  });
+  assert.strictEqual(adminCreateQ.status, 201);
+  pass(6, 'Super Admin alone is permitted to create questions (HTTP 201)');
 
   // --- 2. Inspector Boundaries ---
   console.log('\n--- 2. Inspector Access Boundary Enforcement ---');

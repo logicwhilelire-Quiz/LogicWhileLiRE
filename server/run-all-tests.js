@@ -31,6 +31,7 @@ const testFiles = [
   'test-mail-layer.js',
   'test-backup.js',
   'test-section-targeting-and-portal.js',
+  'test-admin-is-only-controller.js',
 ];
 
 console.log('================================================================');

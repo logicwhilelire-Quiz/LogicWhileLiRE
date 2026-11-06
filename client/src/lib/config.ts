@@ -15,14 +15,16 @@ const isLocalhostHost = typeof window !== 'undefined' && (
   window.location.hostname.endsWith('.local')
 );
 
-// In production builds deployed to a remote domain, ensure valid remote URL
+// In production builds or local proxy mode, resolve API URL cleanly to current origin or default remote URL
 const defaultProductionApiUrl = 'https://logicwhilelire-api.onrender.com';
-const resolvedApiUrl = isLocalhostHost
-  ? ((rawApiUrl && (rawApiUrl.includes('localhost') || rawApiUrl.includes('127.0.0.1'))) ? rawApiUrl : 'http://localhost:3001')
+const resolvedApiUrl = typeof window !== 'undefined' && window.location.origin
+  ? window.location.origin
   : (rawApiUrl || defaultProductionApiUrl);
 
+const resolvedSocketUrl = rawSocketUrl || defaultProductionApiUrl;
+
 export const API_BASE_URL: string = resolvedApiUrl.replace(/\/+$/, '');
-export const SOCKET_URL: string = (rawSocketUrl || resolvedApiUrl).replace(/\/+$/, '');
+export const SOCKET_URL: string = resolvedSocketUrl.replace(/\/+$/, '');
 
 export const SUPABASE_URL: string = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://xhutjekdbyccscselzdy.supabase.co';
 export const SUPABASE_ANON_KEY: string = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 'sb_publishable_dNAfXpoQ-y4EAPF3RCh4dw_LnpRLEcw';
