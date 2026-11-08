@@ -4,11 +4,9 @@ const path = require('path');
 const http = require('http');
 
 require('dotenv').config();
+process.env.TEST_MOCK_ONLY = 'true';
+process.env.NODE_ENV = 'test';
 const { isRealSupabase, cleanupTestData } = require('./test-helper');
-if (!isRealSupabase) {
-  process.env.DEMO_MODE = 'true';
-}
-process.env.NODE_ENV = 'development';
 process.env.BACKUP_DIR = path.resolve(__dirname, 'test_backups');
 
 const {
@@ -28,6 +26,59 @@ function pass(num, label) {
 }
 
 async function request(method, path, body, headers = {}) {
+  if (global.__APP__) {
+    return new Promise((resolve) => {
+      const payload = body ? JSON.stringify(body) : '';
+      const socket = new (require('stream').Readable)({ read() {} });
+      socket.remoteAddress = '127.0.0.1';
+      socket.encrypted = false;
+      socket.destroy = () => {};
+
+      const req = new http.IncomingMessage(socket);
+      req.method = method.toUpperCase();
+      req.url = path;
+      const normalizedHeaders = {
+        'content-type': 'application/json',
+        'content-length': String(Buffer.byteLength(payload)),
+        'x-load-test': 'true',
+      };
+      for (const [k, v] of Object.entries(headers)) {
+        normalizedHeaders[k.toLowerCase()] = v;
+      }
+      req.headers = normalizedHeaders;
+      req.connection = socket;
+      req.socket = socket;
+
+      const res = new http.ServerResponse(req);
+      const chunks = [];
+      res.write = (chunk) => {
+        if (chunk) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        return true;
+      };
+      res.end = (chunk) => {
+        if (chunk) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        const rawBuffer = Buffer.concat(chunks);
+        let parsed;
+        try {
+          parsed = JSON.parse(rawBuffer.toString('utf8'));
+        } catch {
+          parsed = rawBuffer.toString('utf8');
+        }
+        resolve({
+          status: res.statusCode,
+          body: parsed,
+          buffer: rawBuffer,
+          headers: res.getHeaders(),
+        });
+        return res;
+      };
+
+      global.__APP__(req, res);
+      if (payload) req.push(payload);
+      req.push(null);
+    });
+  }
+
   return new Promise((resolve, reject) => {
     const dataString = body ? JSON.stringify(body) : '';
     const req = http.request(
@@ -286,6 +337,7 @@ async function run() {
 
     const adminRoutes = require('./dist/routes/admin').default;
     app.use('/api/admin', adminRoutes);
+    global.__APP__ = app;
 
     const testServer = http.createServer(app);
     await new Promise((resolve) => {

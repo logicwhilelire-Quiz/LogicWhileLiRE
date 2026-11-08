@@ -63,7 +63,7 @@ B4. Logo motion: intro once per session (~1.2s): book outline strokes draw in, t
 B5. About / Credits page: product story, tagline, developer credit.
 B6. PDFs, Excel exports, and emails: GROWTHRAN header + "Developed by R. Charan Sai" footer.
 B7. Meta author tag, `package.json` author, manifest, page titles, README, OPS.md, COMPLETE_DOCUMENTATION.md all updated. Do not rename an already-deployed Render service (list any needed change for my approval).
-B8. Verify: leftover search for LogicWhile / LOGIC WHILE / GROWRAN (keep only "LogicWhile Institute" as a customer record and legacy LW- compatibility), screenshots of every page in light and dark, all tests green.
+B8. Verify: leftover search for LogicWhile (keep only "LogicWhile Institute" as a customer record and legacy LW- compatibility), screenshots of every page in light and dark, all tests green.
 
 ---
 

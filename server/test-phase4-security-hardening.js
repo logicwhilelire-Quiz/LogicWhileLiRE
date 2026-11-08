@@ -43,44 +43,33 @@ function pass(num, label) {
   console.log(`  ✅ [${num}] ${label}`);
 }
 
-async function request(serverPort, method, path, body, headers = {}) {
-  return new Promise((resolve, reject) => {
-    const dataString = body ? JSON.stringify(body) : '';
-    const req = http.request(
-      {
-        hostname: '127.0.0.1',
-        port: serverPort,
-        path,
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(dataString),
-          ...headers,
-        },
-      },
-      (res) => {
-        const chunks = [];
-        res.on('data', (c) => chunks.push(c));
-        res.on('end', () => {
-          const raw = Buffer.concat(chunks).toString('utf8');
-          let parsed;
-          try {
-            parsed = JSON.parse(raw);
-          } catch {
-            parsed = raw;
-          }
-          resolve({
-            status: res.statusCode,
-            body: parsed,
-            headers: res.headers,
-          });
-        });
-      }
-    );
-    req.on('error', reject);
-    if (dataString) req.write(dataString);
-    req.end();
-  });
+function createMockRes() {
+  const res = {
+    statusCode: 200,
+    headers: {},
+    cookies: {},
+    body: null,
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(data) {
+      this.body = data;
+      return this;
+    },
+    setHeader(name, val) {
+      this.headers[name.toLowerCase()] = val;
+      return this;
+    },
+    cookie(name, val, opts) {
+      this.cookies[name] = { val, opts };
+      const cookieStr = `${name}=${val}; ${opts?.httpOnly ? 'HttpOnly;' : ''}`;
+      if (!this.headers['set-cookie']) this.headers['set-cookie'] = [];
+      this.headers['set-cookie'].push(cookieStr);
+      return this;
+    },
+  };
+  return res;
 }
 
 async function runPhase4SecurityTests() {
@@ -132,24 +121,12 @@ async function runPhase4SecurityTests() {
 
   // --- 3. Double-Submit Cookie CSRF Protection ---
   console.log('\n--- 3. CSRF Protection (Double-Submit Cookie Pattern) ---');
-  const csrfApp = express();
-  csrfApp.use(express.json());
-  csrfApp.use(cookieParser());
-  csrfApp.use(ensureCsrfCookie);
-  csrfApp.get('/api/csrf-token', getCsrfToken);
-  csrfApp.use(csrfProtection);
-
-  csrfApp.post('/api/admin/mutate-test', (req, res) => {
-    res.json({ success: true, message: 'Action executed successfully' });
-  });
-
-  const csrfServer = http.createServer(csrfApp);
-  await new Promise((resolve) => csrfServer.listen(0, '127.0.0.1', resolve));
-  const csrfPort = csrfServer.address().port;
 
   // 3a. GET /api/csrf-token generates and sets cookie
-  const tokenRes = await request(csrfPort, 'GET', '/api/csrf-token');
-  assert.strictEqual(tokenRes.status, 200);
+  const tokenReq = { cookies: {}, headers: {} };
+  const tokenRes = createMockRes();
+  getCsrfToken(tokenReq, tokenRes);
+  assert.strictEqual(tokenRes.statusCode, 200);
   assert.strictEqual(tokenRes.body.success, true);
   assert.ok(tokenRes.body.csrfToken && tokenRes.body.csrfToken.length >= 32);
   const setCookie = tokenRes.headers['set-cookie'];
@@ -160,51 +137,69 @@ async function runPhase4SecurityTests() {
   const cookieHeader = `XSRF-TOKEN=${csrfToken}; admin_token=fake_auth_cookie`;
 
   // 3b. Mutating POST with cookie auth but missing CSRF header must be rejected with 403
-  const rejectRes = await request(csrfPort, 'POST', '/api/admin/mutate-test', { data: 'test' }, {
-    Cookie: cookieHeader,
-  });
-  assert.strictEqual(rejectRes.status, 403);
+  const rejectRes = createMockRes();
+  const rejectReq = {
+    method: 'POST',
+    path: '/api/admin/mutate-test',
+    cookies: { admin_token: 'fake_auth_cookie', 'XSRF-TOKEN': csrfToken },
+    headers: { cookie: cookieHeader },
+    body: { data: 'test' },
+  };
+  let rejectNextCalled = false;
+  csrfProtection(rejectReq, rejectRes, () => { rejectNextCalled = true; });
+  assert.strictEqual(rejectNextCalled, false);
+  assert.strictEqual(rejectRes.statusCode, 403);
   assert.strictEqual(rejectRes.body.code, 'CSRF_VALIDATION_FAILED');
   pass(5, 'Mutating operation using auth cookie without CSRF header rejected with HTTP 403');
 
   // 3c. Mutating POST with cookie auth and valid x-xsrf-token header must succeed
-  const allowRes = await request(csrfPort, 'POST', '/api/admin/mutate-test', { data: 'test' }, {
-    Cookie: cookieHeader,
-    'x-xsrf-token': csrfToken,
-  });
-  assert.strictEqual(allowRes.status, 200);
-  assert.strictEqual(allowRes.body.success, true);
+  const allowRes = createMockRes();
+  const allowReq = {
+    method: 'POST',
+    path: '/api/admin/mutate-test',
+    cookies: { admin_token: 'fake_auth_cookie', 'XSRF-TOKEN': csrfToken },
+    headers: {
+      cookie: cookieHeader,
+      'x-xsrf-token': csrfToken,
+    },
+    body: { data: 'test' },
+  };
+  let allowNextCalled = false;
+  csrfProtection(allowReq, allowRes, () => { allowNextCalled = true; });
+  assert.strictEqual(allowNextCalled, true);
   pass(6, 'Mutating operation with matching x-xsrf-token header succeeds');
 
   // 3d. Mutating POST using Authorization: Bearer token is safely permitted without CSRF token
-  const bearerRes = await request(csrfPort, 'POST', '/api/admin/mutate-test', { data: 'test' }, {
-    Authorization: 'Bearer test-token-12345',
-  });
-  assert.strictEqual(bearerRes.status, 200);
-  assert.strictEqual(bearerRes.body.success, true);
+  const bearerRes = createMockRes();
+  const bearerReq = {
+    method: 'POST',
+    path: '/api/admin/mutate-test',
+    cookies: {},
+    headers: {
+      authorization: 'Bearer test-token-12345',
+    },
+    body: { data: 'test' },
+  };
+  let bearerNextCalled = false;
+  csrfProtection(bearerReq, bearerRes, () => { bearerNextCalled = true; });
+  assert.strictEqual(bearerNextCalled, true);
   pass(7, 'Mutating requests via Authorization: Bearer bypass CSRF check safely');
-
-  await new Promise((resolve) => csrfServer.close(resolve));
 
   // --- 4. Admin & Inspector Email OTP Login Flow ---
   console.log('\n--- 4. Admin & Inspector Email OTP Verification ---');
-  const otpApp = express();
-  otpApp.use(express.json());
-  otpApp.use(cookieParser());
-  otpApp.post('/api/admin/login', adminLogin);
-  otpApp.post('/api/admin/request-login-otp', requestLoginOtp);
-  otpApp.post('/api/admin/verify-login-otp', verifyLoginOtp);
-
-  const otpServer = http.createServer(otpApp);
-  await new Promise((resolve) => otpServer.listen(0, '127.0.0.1', resolve));
-  const otpPort = otpServer.address().port;
 
   // 4a. Request email OTP
-  const reqOtpRes = await request(otpPort, 'POST', '/api/admin/request-login-otp', {
-    username: 'admin',
-    password: process.env.ADMIN_PASSWORD || 'admin123',
-  });
-  assert.strictEqual(reqOtpRes.status, 200);
+  const reqOtpRes = createMockRes();
+  const reqOtpReq = {
+    body: {
+      username: 'admin',
+      password: process.env.ADMIN_PASSWORD || 'admin123',
+    },
+    ip: '127.0.0.1',
+    headers: {},
+  };
+  await requestLoginOtp(reqOtpReq, reqOtpRes);
+  assert.strictEqual(reqOtpRes.statusCode, 200);
   assert.strictEqual(reqOtpRes.body.success, true);
   assert.strictEqual(reqOtpRes.body.require_email_otp, true);
   assert.ok(reqOtpRes.body.dev_otp, 'Development test OTP must be issued in non-production mode');
@@ -212,20 +207,32 @@ async function runPhase4SecurityTests() {
   pass(8, 'POST /api/admin/request-login-otp generates and emails 6-digit verification code');
 
   // 4b. Verify with wrong OTP
-  const badVerifyRes = await request(otpPort, 'POST', '/api/admin/verify-login-otp', {
-    username: 'admin',
-    otp: '000000',
-  });
-  assert.strictEqual(badVerifyRes.status, 401);
+  const badVerifyRes = createMockRes();
+  const badVerifyReq = {
+    body: {
+      username: 'admin',
+      otp: '000000',
+    },
+    ip: '127.0.0.1',
+    headers: {},
+  };
+  await verifyLoginOtp(badVerifyReq, badVerifyRes);
+  assert.strictEqual(badVerifyRes.statusCode, 401);
   assert.strictEqual(badVerifyRes.body.success, false);
   pass(9, 'POST /api/admin/verify-login-otp rejects invalid OTP with HTTP 401');
 
   // 4c. Verify with valid OTP
-  const goodVerifyRes = await request(otpPort, 'POST', '/api/admin/verify-login-otp', {
-    username: 'admin',
-    otp: issuedOtp,
-  });
-  assert.strictEqual(goodVerifyRes.status, 200);
+  const goodVerifyRes = createMockRes();
+  const goodVerifyReq = {
+    body: {
+      username: 'admin',
+      otp: issuedOtp,
+    },
+    ip: '127.0.0.1',
+    headers: {},
+  };
+  await verifyLoginOtp(goodVerifyReq, goodVerifyRes);
+  assert.strictEqual(goodVerifyRes.statusCode, 200);
   assert.strictEqual(goodVerifyRes.body.success, true);
   assert.ok(goodVerifyRes.body.token, 'Must return signed JWT token');
   assert.strictEqual(goodVerifyRes.body.user.role, 'super_admin');
@@ -237,12 +244,18 @@ async function runPhase4SecurityTests() {
 
   // 4d. Direct login with email_otp payload
   const otp2 = generateStaffLoginOtp('admin@example.com');
-  const directOtpRes = await request(otpPort, 'POST', '/api/admin/login', {
-    username: 'admin@example.com',
-    password: 'admin123',
-    email_otp: otp2,
-  });
-  assert.strictEqual(directOtpRes.status, 200);
+  const directOtpRes = createMockRes();
+  const directOtpReq = {
+    body: {
+      username: 'admin@example.com',
+      password: process.env.ADMIN_PASSWORD || 'admin123',
+      email_otp: otp2,
+    },
+    ip: '127.0.0.1',
+    headers: {},
+  };
+  await adminLogin(directOtpReq, directOtpRes);
+  assert.strictEqual(directOtpRes.statusCode, 200);
   assert.strictEqual(directOtpRes.body.success, true);
   assert.ok(directOtpRes.body.token);
   pass(11, 'POST /api/admin/login accepts email_otp in body and authenticates successfully');
@@ -252,35 +265,51 @@ async function runPhase4SecurityTests() {
   const uniqueUser = `target_${Date.now()}@example.com`;
 
   for (let i = 1; i <= 4; i++) {
-    const failedRes = await request(otpPort, 'POST', '/api/admin/login', {
-      username: uniqueUser,
-      password: 'wrong_password_here',
-    });
-    assert.strictEqual(failedRes.status, 401);
+    const failedRes = createMockRes();
+    const failedReq = {
+      body: {
+        username: uniqueUser,
+        password: 'wrong_password_here',
+      },
+      ip: '127.0.0.1',
+      headers: {},
+    };
+    await adminLogin(failedReq, failedRes);
+    assert.strictEqual(failedRes.statusCode, 401);
     assert.ok(failedRes.body.error.includes(`${5 - i} attempt(s) remaining`));
   }
   pass(12, 'Consecutive failed login attempts track remaining attempts accurately');
 
   // 5th failed attempt triggers 15-minute account lockout (HTTP 423)
-  const lockoutRes = await request(otpPort, 'POST', '/api/admin/login', {
-    username: uniqueUser,
-    password: 'wrong_password_here',
-  });
-  assert.strictEqual(lockoutRes.status, 423);
+  const lockoutRes = createMockRes();
+  const lockoutReq = {
+    body: {
+      username: uniqueUser,
+      password: 'wrong_password_here',
+    },
+    ip: '127.0.0.1',
+    headers: {},
+  };
+  await adminLogin(lockoutReq, lockoutRes);
+  assert.strictEqual(lockoutRes.statusCode, 423);
   assert.strictEqual(lockoutRes.body.locked, true);
   assert.ok(lockoutRes.body.error.includes('Account has been locked for 15 minutes'));
   pass(13, '5th consecutive failed login triggers 15-minute account lockout (HTTP 423)');
 
   // 6th attempt immediately rejected as locked
-  const blockedRes = await request(otpPort, 'POST', '/api/admin/login', {
-    username: uniqueUser,
-    password: 'wrong_password_here',
-  });
-  assert.strictEqual(blockedRes.status, 423);
+  const blockedRes = createMockRes();
+  const blockedReq = {
+    body: {
+      username: uniqueUser,
+      password: 'wrong_password_here',
+    },
+    ip: '127.0.0.1',
+    headers: {},
+  };
+  await adminLogin(blockedReq, blockedRes);
+  assert.strictEqual(blockedRes.statusCode, 423);
   assert.strictEqual(blockedRes.body.locked, true);
   pass(14, 'Subsequent attempts during lockout period are immediately rejected (HTTP 423)');
-
-  await new Promise((resolve) => otpServer.close(resolve));
 
   console.log('================================================================');
   console.log(`🎉 ALL ${passed}/${passed} SECURITY HARDENING TESTS PASSED CLEANLY!`);

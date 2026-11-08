@@ -37,7 +37,7 @@ Candidates authenticate through registered institutional hall ticket and email v
 Every operational dimension of the platform is directly governed from the Admin Portal:
 
 ### 3.1 Academic Hierarchy & Section Allocation (`/admin/colleges`, `/admin/hierarchy`)
-- **Institution Management**: Create, edit, and audit participating colleges (`VRSEC`, `KLU`, `VVIT`, `LOGICWHILE`).
+- **Institution Management**: Create, edit, and audit participating colleges under administrative governance.
 - **Department & Branch Structuring**: Organize departments (Computer Science, Artificial Intelligence, Information Technology, Electronics).
 - **Graduation Batches**: Configure target graduation years (`2026`, `2027`, `2028`, `2029`, `2030`).
 - **Section Subdivision**: Allocate students into distinct academic sections (`CSE-A`, `CSE-B`, `CSM-A`, `IT-A`, `Section A`, `Section B`).

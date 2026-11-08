@@ -843,7 +843,6 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
   - **Table Headers:** `"COLLEGE NAME"`, `"CODE"`, `"CITY"`, `"STATE"`, `"STATUS"`, `"ACTIONS"`.
   - **Colleges Listed:**
     - `Gayatri Vidya Parishad College of Engineering (Autonomous) (GVPCE) • Visakhapatnam`
-    - `Koneru Lakshmaiah Education Foundation (KL University) (KLU) • Vaddeswaram`
     - `Velagapudi Ramakrishna Siddhartha Engineering College (VRSEC) • Vijayawada`
     - `Vignan's Foundation for Science, Technology & Research (VFSTR) • Guntur`
   - **Action Buttons:** `"➕ Add College"`, `"✏️ Edit"`, `"Disable"`, `"🔑 Codes"`.

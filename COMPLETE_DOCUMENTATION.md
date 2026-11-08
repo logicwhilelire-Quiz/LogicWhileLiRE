@@ -391,7 +391,7 @@ In compliance with high-stakes institutional standards and real-world network re
   6. Immediately mounts the persistent red **INTEGRITY VIOLATION LOCKDOWN** screen displaying candidate details, violation reason, and a single exit path back to `/enter-exam`.
 
 ### Multi-Campus Collegiate Governance & Unified Admin Experience
-- **College Seed Database**: Real institutions seeded in Supabase (`VRSEC` - Velagapudi Ramakrishna Siddhartha Engineering College, `KLU` - Koneru Lakshmaiah Education Foundation) with proper codes and domains.
+- **College Management Database**: Institutions configured in Supabase with proper codes and domains under administrative control.
 - **Dynamic Exam Code Derivation**: Creating an exam in `/admin/create-exam` automatically derives institutional prefixes (e.g. `GR-VRSEC-XXXXXX`) matching the selected collegiate institution.
 - **Sidebar & Boundary Harmonization**: All 9 admin control modules use the unified `<AdminSidebar />`, eliminating rogue legacy headers (`ENTERPRISE ADMIN`), ensuring consistent navigation across Exams, Questions, Colleges, Students, Sessions, Reports, Analytics, and Live Monitor.
 - **Native OS Cursor**: Standard hardware mouse pointer active across all candidate and administrative routes.

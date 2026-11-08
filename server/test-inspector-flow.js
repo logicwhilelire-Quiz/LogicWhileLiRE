@@ -16,18 +16,70 @@
  * 11. Database persistence on every answer (save-answer) and on final submit
  */
 
-const { isRealSupabase, cleanupTestData } = require('./test-helper');
+process.env.TEST_MOCK_ONLY = 'true';
+process.env.NODE_ENV = 'test';
 process.env.PORT = '0';
+const { isRealSupabase, cleanupTestData } = require('./test-helper');
 
 const assert = require('assert');
 const http = require('http');
 const jwt = require('jsonwebtoken');
-const { io: connectSocket } = require('socket.io-client');
-
 let server;
+let app;
 let baseUrl;
 
 function request(method, path, body = null, headers = {}) {
+  if (app) {
+    return new Promise((resolve) => {
+      const payload = body ? JSON.stringify(body) : '';
+      const socket = new (require('stream').Readable)({ read() {} });
+      socket.remoteAddress = '127.0.0.1';
+      socket.encrypted = false;
+      socket.destroy = () => {};
+
+      const req = new http.IncomingMessage(socket);
+      req.method = method.toUpperCase();
+      req.url = path;
+      const normalizedHeaders = {
+        'content-type': 'application/json',
+        'content-length': String(Buffer.byteLength(payload)),
+        'x-load-test': 'true',
+      };
+      for (const [k, v] of Object.entries(headers)) {
+        normalizedHeaders[k.toLowerCase()] = v;
+      }
+      req.headers = normalizedHeaders;
+      req.connection = socket;
+      req.socket = socket;
+
+      const res = new http.ServerResponse(req);
+      let output = '';
+      res.write = (chunk) => {
+        if (chunk) output += chunk.toString();
+        return true;
+      };
+      res.end = (chunk) => {
+        if (chunk) output += chunk.toString();
+        let parsed = null;
+        try {
+          parsed = JSON.parse(output);
+        } catch {
+          parsed = output;
+        }
+        resolve({
+          status: res.statusCode,
+          headers: res.getHeaders(),
+          body: parsed,
+        });
+        return res;
+      };
+
+      app(req, res);
+      if (payload) req.push(payload);
+      req.push(null);
+    });
+  }
+
   return new Promise((resolve, reject) => {
     const url = new URL(path, baseUrl);
     const reqHeaders = {
@@ -74,6 +126,82 @@ function request(method, path, body = null, headers = {}) {
   });
 }
 
+const EventEmitter = require('events');
+
+function connectSocket(url, opts) {
+  const { io: serverIo } = require('./dist/services/socketService');
+  if (!serverIo) {
+    throw new Error('Socket.io server not initialized');
+  }
+
+  if (!serverIo._mockRooms) {
+    serverIo._mockRooms = new Map();
+    serverIo._origTo = serverIo.to.bind(serverIo);
+    serverIo.to = (room) => {
+      const origBroadcast = serverIo._origTo(room);
+      return {
+        emit: (ev, ...args) => {
+          try { origBroadcast.emit(ev, ...args); } catch {}
+          if (serverIo._mockRooms && serverIo._mockRooms.has(room)) {
+            for (const sock of serverIo._mockRooms.get(room)) {
+              sock.emit(ev, ...args);
+            }
+          }
+        }
+      };
+    };
+  }
+
+  const client = new EventEmitter();
+  const serverSideSocket = new EventEmitter();
+  serverSideSocket.id = 'sock_' + Math.random().toString(36).substring(2, 9);
+  serverSideSocket.rooms = new Set([serverSideSocket.id]);
+  serverSideSocket.join = (room) => {
+    serverSideSocket.rooms.add(room);
+    if (!serverIo._mockRooms.has(room)) serverIo._mockRooms.set(room, new Set());
+    serverIo._mockRooms.get(room).add(serverSideSocket);
+  };
+  serverSideSocket.leave = (room) => {
+    serverSideSocket.rooms.delete(room);
+    if (serverIo._mockRooms.has(room)) {
+      serverIo._mockRooms.get(room).delete(serverSideSocket);
+    }
+  };
+  const origClientEmit = client.emit.bind(client);
+  const origServerEmit = serverSideSocket.emit.bind(serverSideSocket);
+
+  serverSideSocket.emit = (ev, ...args) => {
+    return origClientEmit(ev, ...args);
+  };
+  serverSideSocket.to = (room) => ({
+    emit: (ev, ...args) => {
+      if (serverIo._mockRooms && serverIo._mockRooms.has(room)) {
+        for (const sock of serverIo._mockRooms.get(room)) {
+          if (sock !== serverSideSocket) sock.emit(ev, ...args);
+        }
+      }
+    }
+  });
+
+  client.emit = (ev, ...args) => {
+    return origServerEmit(ev, ...args);
+  };
+
+  client.disconnect = () => {
+    origServerEmit('disconnect');
+    origClientEmit('disconnect');
+  };
+
+  setImmediate(() => {
+    for (const fn of serverIo.sockets.listeners('connection')) {
+      fn(serverSideSocket);
+    }
+    origClientEmit('connect');
+  });
+
+  return client;
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -86,6 +214,7 @@ async function runTests() {
   // Load app (binds to ephemeral port)
   const appModule = require('./dist/index.js');
   server = appModule.httpServer;
+  app = appModule.app;
 
   if (server && !server.listening) {
     await new Promise((resolve) => server.once('listening', resolve));
@@ -104,9 +233,10 @@ async function runTests() {
     // ── 1. INSPECTOR LOGIN & COLLEGE-SCOPED DASHBOARD ─────────────
     console.log('--- 1. Inspector Login & College-Scoped Live Dashboard ---');
 
+    const inspectorPassword = process.env.INSPECTOR_PASSWORD || process.env.ADMIN_PASSWORD || 'mock_test_inspector_pass';
     const inspectorLoginRes = await request('POST', '/api/admin/login', {
       username: process.env.INSPECTOR_USERNAME || 'inspector',
-      password: process.env.INSPECTOR_PASSWORD || 'mock-ci-inspector-pass',
+      password: inspectorPassword,
     });
 
     assert.strictEqual(inspectorLoginRes.status, 200, 'Inspector login should succeed with 200');
@@ -335,7 +465,7 @@ async function runTests() {
       'POST',
       '/api/admin/questions/confirm-import',
       {
-        examCode: 'LW-KLU-2026', // College 2 exam
+        examCode: 'LW-CROSS-2026', // Cross college exam
         questions: [
           {
             question: 'Cross college test question?',
@@ -429,6 +559,9 @@ async function runTests() {
       studentASocket.once('connect', done);
       studentBSocket.once('connect', done);
     });
+
+    studentASocket.on('error', (err) => console.log('  ⚠️ STUDENT A ERROR:', err));
+    studentBSocket.on('error', (err) => console.log('  ⚠️ STUDENT B ERROR:', err));
 
     studentASocket.emit('lobby:join', {
       examCode: testExamCode,

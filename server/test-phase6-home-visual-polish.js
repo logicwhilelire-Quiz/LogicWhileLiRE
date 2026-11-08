@@ -141,7 +141,7 @@ assert(
 );
 assert(
   landingContent.includes('/brand/logicwhilelire-') || landingContent.includes('<BrandLogo'),
-  '18. LandingPage hero stage card prominently features the official Logic While LiRE emblem'
+  '18. LandingPage hero stage card prominently features the official LogicWhile LiRE emblem'
 );
 
 // 13. ThemeToggle default theme

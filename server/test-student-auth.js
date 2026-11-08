@@ -21,54 +21,64 @@ process.env.PORT = '0';
 
 const assert = require('assert');
 const http = require('http');
+const { Readable } = require('stream');
 
 let server;
-let baseUrl;
+let app;
 
 async function request(method, path, body = null, headers = {}) {
-  return new Promise((resolve, reject) => {
-    const url = new URL(path, baseUrl);
-    const reqHeaders = {
-      'Content-Type': 'application/json',
+  return new Promise((resolve) => {
+    const payload = body ? JSON.stringify(body) : '';
+    const socket = new Readable({ read() {} });
+    socket.remoteAddress = '127.0.0.1';
+    socket.encrypted = false;
+    socket.destroy = () => {};
+
+    const req = new http.IncomingMessage(socket);
+    req.method = method.toUpperCase();
+    req.url = path;
+    const normalizedHeaders = {
+      'content-type': 'application/json',
+      'content-length': String(Buffer.byteLength(payload)),
       'x-load-test': 'true', // bypass rate limiters during automated tests
-      ...headers,
+    };
+    for (const [k, v] of Object.entries(headers)) {
+      normalizedHeaders[k.toLowerCase()] = v;
+    }
+    req.headers = normalizedHeaders;
+    req.connection = socket;
+    req.socket = socket;
+
+    const res = new http.ServerResponse(req);
+    let output = '';
+
+    res.write = function (chunk) {
+      if (chunk) output += chunk.toString();
+      return true;
     };
 
-    const payload = body ? JSON.stringify(body) : null;
-    if (payload) {
-      reqHeaders['Content-Length'] = Buffer.byteLength(payload);
-    }
-
-    const req = http.request(
-      url,
-      {
-        method,
-        headers: reqHeaders,
-      },
-      (res) => {
-        let data = '';
-        res.on('data', (chunk) => (data += chunk));
-        res.on('end', () => {
-          let json = null;
-          try {
-            json = data ? JSON.parse(data) : null;
-          } catch {
-            json = data;
-          }
-          resolve({
-            status: res.statusCode,
-            headers: res.headers,
-            body: json,
-          });
-        });
+    res.end = function (chunk) {
+      if (chunk) output += chunk.toString();
+      let json = null;
+      try {
+        json = JSON.parse(output);
+      } catch {
+        json = output;
       }
-    );
+      resolve({
+        status: res.statusCode,
+        headers: res.getHeaders(),
+        body: json,
+      });
+      return res;
+    };
 
-    req.on('error', reject);
+    app(req, res);
+
     if (payload) {
-      req.write(payload);
+      req.push(payload);
     }
-    req.end();
+    req.push(null);
   });
 }
 
@@ -77,16 +87,10 @@ async function runTests() {
   console.log('🎓 LogicWhileLiRE — STUDENT REGISTRATION & LOGIN TEST SUITE');
   console.log('================================================================\n');
 
-  // Load app (binds to ephemeral port because PORT=0)
+  // Load app
   const appModule = require('./dist/index.js');
   server = appModule.httpServer;
-
-  if (server && !server.listening) {
-    await new Promise((resolve) => server.once('listening', resolve));
-  }
-
-  const port = server.address().port;
-  baseUrl = `http://127.0.0.1:${port}`;
+  app = appModule.app;
 
   try {
     // ── 1. ROSTER ENFORCEMENT ─────────────────────────────────────

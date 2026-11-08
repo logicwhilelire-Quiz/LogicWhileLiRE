@@ -43,9 +43,9 @@ export default function InstitutionalStudentReportPage() {
   const student = reportData?.student || (storedUser && (storedUser.hall_ticket === targetRoll || storedUser.roll_number === targetRoll) ? storedUser : null)
 
   const resolvedName = student?.name || (student?.first_name ? `${student.first_name} ${student.last_name || ''}`.trim() : null) || (targetRoll === '24HU1A05F9' ? 'Charan Sai Krishna Redrowthu' : targetRoll)
-  const resolvedCollege = student?.collegeName || student?.college_name || 'RV Institute Of Technology'
+  const resolvedCollege = student?.collegeName || student?.college_name || 'LogicWhile Institute'
   const resolvedBranch = student?.branch || student?.branch_code || 'CSE'
-  const resolvedSection = student?.section || 'C'
+  const resolvedSection = student?.section || 'A'
   const hasAttempts = Boolean(reportData?.hasAttempts)
 
   const studentMeta = {
@@ -55,7 +55,7 @@ export default function InstitutionalStudentReportPage() {
     branch: resolvedBranch,
     section: resolvedSection,
     testDate: hasAttempts ? 'October 12, 2026' : 'No Assessment Taken Yet',
-    testId: hasAttempts ? 'LW-VRSEC-2026' : 'Pre-Exam Baseline',
+    testId: hasAttempts ? (reportData?.examCode || 'EXAM') : 'Pre-Exam Baseline',
     totMarks: 70,
     studentScore: hasAttempts ? 56.5 : 0,
     batchAverageScore: 52.4,

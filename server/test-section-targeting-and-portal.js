@@ -10,22 +10,149 @@
  * 6. Audit trail verification
  */
 
+process.env.TEST_MOCK_ONLY = 'true';
+process.env.NODE_ENV = 'test';
 require('./test-helper');
 process.env.PORT = '0';
 
 const http = require('http');
 const assert = require('assert');
 const jwt = require('jsonwebtoken');
+const EventEmitter = require('events');
 
 const appModule = require('./dist/index');
 const server = appModule.httpServer;
 const { deriveStudyYear, isStudentEligibleForExam } = require('./dist/utils/academicYear');
 const { supabase } = require('./dist/db/supabase');
-const { io: connectSocket } = require('socket.io-client');
+
+function connectSocket(url, opts) {
+  const { io: serverIo } = require('./dist/services/socketService');
+  if (!serverIo) {
+    throw new Error('Socket.io server not initialized');
+  }
+
+  if (!serverIo._mockRooms) {
+    serverIo._mockRooms = new Map();
+    serverIo._origTo = serverIo.to.bind(serverIo);
+    serverIo.to = (room) => {
+      const origBroadcast = serverIo._origTo(room);
+      return {
+        emit: (ev, ...args) => {
+          try { origBroadcast.emit(ev, ...args); } catch {}
+          if (serverIo._mockRooms && serverIo._mockRooms.has(room)) {
+            for (const sock of serverIo._mockRooms.get(room)) {
+              sock.emit(ev, ...args);
+            }
+          }
+        }
+      };
+    };
+  }
+
+  const client = new EventEmitter();
+  const serverSideSocket = new EventEmitter();
+  serverSideSocket.id = 'sock_' + Math.random().toString(36).substring(2, 9);
+  serverSideSocket.rooms = new Set([serverSideSocket.id]);
+  serverSideSocket.join = (room) => {
+    serverSideSocket.rooms.add(room);
+    if (!serverIo._mockRooms.has(room)) serverIo._mockRooms.set(room, new Set());
+    serverIo._mockRooms.get(room).add(serverSideSocket);
+  };
+  serverSideSocket.leave = (room) => {
+    serverSideSocket.rooms.delete(room);
+    if (serverIo._mockRooms.has(room)) {
+      serverIo._mockRooms.get(room).delete(serverSideSocket);
+    }
+  };
+  const origClientEmit = client.emit.bind(client);
+  const origServerEmit = serverSideSocket.emit.bind(serverSideSocket);
+
+  serverSideSocket.emit = (ev, ...args) => {
+    return origClientEmit(ev, ...args);
+  };
+  serverSideSocket.to = (room) => ({
+    emit: (ev, ...args) => {
+      if (serverIo._mockRooms && serverIo._mockRooms.has(room)) {
+        for (const sock of serverIo._mockRooms.get(room)) {
+          if (sock !== serverSideSocket) sock.emit(ev, ...args);
+        }
+      }
+    }
+  });
+
+  client.emit = (ev, ...args) => {
+    return origServerEmit(ev, ...args);
+  };
+
+  client.disconnect = () => {
+    origServerEmit('disconnect');
+    origClientEmit('disconnect');
+  };
+
+  setImmediate(() => {
+    for (const fn of serverIo.sockets.listeners('connection')) {
+      fn(serverSideSocket);
+    }
+    origClientEmit('connect');
+  });
+
+  return client;
+}
 
 let baseUrl;
 
 function request(method, path, body = null, headers = {}) {
+  if (appModule.app) {
+    return new Promise((resolve) => {
+      const payload = body ? (typeof body === 'string' ? body : JSON.stringify(body)) : '';
+      const socket = new (require('stream').Readable)({ read() {} });
+      socket.remoteAddress = '127.0.0.1';
+      socket.encrypted = false;
+      socket.destroy = () => {};
+
+      const req = new http.IncomingMessage(socket);
+      req.method = method.toUpperCase();
+      req.url = path;
+      const normalizedHeaders = {
+        'content-type': 'application/json',
+        'content-length': String(Buffer.byteLength(payload)),
+        'x-load-test': 'true',
+      };
+      for (const [k, v] of Object.entries(headers)) {
+        normalizedHeaders[k.toLowerCase()] = v;
+      }
+      req.headers = normalizedHeaders;
+      req.connection = socket;
+      req.socket = socket;
+
+      const res = new http.ServerResponse(req);
+      let output = '';
+      res.write = (chunk) => {
+        if (chunk) output += chunk.toString();
+        return true;
+      };
+      res.end = (chunk) => {
+        if (chunk) output += chunk.toString();
+        let parsed = null;
+        try {
+          parsed = JSON.parse(output);
+        } catch {
+          parsed = output;
+        }
+        resolve({
+          status: res.statusCode,
+          headers: res.getHeaders(),
+          data: parsed,
+        });
+        return res;
+      };
+
+      appModule.app(req, res);
+      if (payload) req.push(payload);
+      req.push(null);
+    });
+  }
+
   return new Promise((resolve, reject) => {
     const url = new URL(path, baseUrl);
     const reqHeaders = {

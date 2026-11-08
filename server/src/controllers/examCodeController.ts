@@ -3036,7 +3036,7 @@ export async function confirmImportQuestions(req: Request, res: Response): Promi
           return;
         }
       } else {
-        if (targetCode.includes('KLU') || (facultyCollegeId && !targetCode.includes('VRSEC') && targetCode !== 'DEFAULT')) {
+        if (targetCode.includes('CROSS') || (facultyCollegeId && !targetCode.includes('VRSEC') && targetCode !== 'DEFAULT')) {
           res.status(403).json({
             success: false,
             error: 'Forbidden: You cannot import questions into an exam for another college',

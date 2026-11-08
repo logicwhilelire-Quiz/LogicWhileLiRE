@@ -27,7 +27,7 @@ console.log('  ✅ Validator cleanly accepts GR- exam codes.\n');
 console.log('[3/4] Testing validator continues accepting legacy LW- format...');
 assert.strictEqual(isValidExamCodeFormat('LW-VRSEC-2026'), true, 'Legacy LW-VRSEC-2026 must be valid');
 assert.strictEqual(isValidExamCodeFormat('LW-APCRT-2026'), true, 'Legacy LW-APCRT-2026 must be valid');
-assert.strictEqual(isValidExamCodeFormat('LW-KLU-994422'), true, 'Legacy LW-KLU-994422 must be valid');
+assert.strictEqual(isValidExamCodeFormat('LW-ENG-994422'), true, 'Legacy LW-ENG-994422 must be valid');
 console.log('  ✅ Validator preserves 100% backward compatibility for legacy LW- codes.\n');
 
 // Test 4: Reject malformed codes

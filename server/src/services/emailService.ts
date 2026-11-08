@@ -328,6 +328,12 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
     return false;
   }
 
+  // In test mock mode, short-circuit external network requests cleanly
+  if (process.env.TEST_MOCK_ONLY === 'true') {
+    dailyEmailQuota.recordSent();
+    return true;
+  }
+
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {

@@ -217,24 +217,6 @@ export default function CollegesPage() {
         }
       }
 
-      // Tier 5: Resilient default college baseline (guarantees UI is never empty or displaying failed messages)
-      if (loadedColleges.length === 0 && colleges.length === 0) {
-        loadedColleges = [
-          enhanceCollegeRecord({
-            id: 81,
-            college_name: 'VR Siddhartha Engineering College',
-            college_code: 'VRSEC',
-            city: 'Vijayawada',
-            state: 'Andhra Pradesh',
-            contact_email: 'principal@college.edu',
-            contact_phone: '+91 9999999999',
-            is_active: true,
-            registration_enabled: true,
-            created_at: new Date().toISOString(),
-          })
-        ];
-      }
-
       if (loadedColleges.length > 0) {
         setColleges(loadedColleges);
         if (inspectCollege) {
@@ -1638,7 +1620,7 @@ export default function CollegesPage() {
 
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">College Code *</label>
-                  <input className="form-input font-mono" placeholder="VRSEC" value={form.college_code}
+                  <input className="form-input font-mono" placeholder="e.g. ENG01" value={form.college_code}
                     onChange={e => setForm(p => ({ ...p, college_code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }))}
                     required disabled={!!editCollege}
                     style={{ fontFamily: 'monospace', letterSpacing: '0.08em' }} />
@@ -1651,7 +1633,7 @@ export default function CollegesPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div className="form-group" style={{ margin: 0 }}>
                     <label className="form-label">City</label>
-                    <input className="form-input" placeholder="Vijayawada" value={form.city}
+                    <input className="form-input" placeholder="e.g. Hyderabad" value={form.city}
                       onChange={e => setForm(p => ({ ...p, city: e.target.value }))} />
                   </div>
                   <div className="form-group" style={{ margin: 0 }}>

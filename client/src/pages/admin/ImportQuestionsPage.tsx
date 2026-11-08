@@ -251,7 +251,7 @@ export default function ImportQuestionsPage() {
                     id="import-exam-selector"
                     className="form-input font-mono"
                     type="text"
-                    placeholder="e.g. GR-VRSEC-001 or DEMO123"
+                    placeholder="e.g. FSD2026 or EXAM01"
                     value={examCode}
                     onChange={(e) => setExamCode(e.target.value.toUpperCase())}
                     style={{ flex: 1 }}
