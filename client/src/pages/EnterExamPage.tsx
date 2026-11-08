@@ -6,6 +6,7 @@ import { API_BASE_URL } from '../lib/config'
 import SiteHeader from '../components/SiteHeader'
 import SiteFooter from '../components/SiteFooter'
 import BrandLogo from '../components/BrandLogo'
+import ServerWakeupModal from '../components/ServerWakeupModal'
 
 function ExamEntryBg() {
   return (
@@ -47,6 +48,12 @@ export default function EnterExamPage() {
   const [error, setError] = useState('')
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
   const [shaking, setShaking] = useState(false)
+  const [isWarmingUp, setIsWarmingUp] = useState(false)
+
+  // Proactive warm-up ping on mount
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/health`, { method: 'GET', keepalive: true }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     try {
@@ -164,15 +171,28 @@ export default function EnterExamPage() {
         })
         return
       }
-      const resData = (err as any)?.response?.data
-      const msg = resData?.error || resData?.message || (err instanceof Error ? err.message : 'Entry failed. Please check your credentials.')
-      setError(msg)
-      if (resData?.code === 'EMAIL_NOT_VERIFIED' && resData?.email) {
-        setUnverifiedEmail(resData.email)
-      } else {
+      const isColdStart =
+        (err as any)?.code === 'ECONNABORTED' ||
+        (err as any)?.message?.includes('timeout') ||
+        (err as any)?.message?.includes('Network Error') ||
+        ((err as any)?.response && [502, 503, 504].includes((err as any).response.status))
+
+      if (isColdStart) {
+        setIsWarmingUp(true)
+        setError('')
         setUnverifiedEmail(null)
+      } else {
+        setIsWarmingUp(false)
+        const resData = (err as any)?.response?.data
+        const msg = resData?.error || resData?.message || (err instanceof Error ? err.message : 'Entry failed. Please check your credentials.')
+        setError(msg)
+        if (resData?.code === 'EMAIL_NOT_VERIFIED' && resData?.email) {
+          setUnverifiedEmail(resData.email)
+        } else {
+          setUnverifiedEmail(null)
+        }
+        triggerShake()
       }
-      triggerShake()
     } finally {
       setLoading(false)
     }
@@ -243,7 +263,7 @@ export default function EnterExamPage() {
 
                 {/* Error Banner */}
                 <AnimatePresence>
-                  {error && (
+                  {error && !isWarmingUp && (
                     <motion.div
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -264,7 +284,13 @@ export default function EnterExamPage() {
                       )}
                     </motion.div>
                   )}
-                </AnimatePresence>                {/* Submit Button */}
+                </AnimatePresence>
+
+                <ServerWakeupModal
+                  isOpen={isWarmingUp}
+                  onRetry={() => handleSubmit(new Event('submit') as any)}
+                  onClose={() => setIsWarmingUp(false)}
+                />                {/* Submit Button */}
                 <button
                   type="submit" disabled={loading}
                   style={{ width: '100%', background: loading ? 'rgba(234,168,18,0.5)' : 'linear-gradient(135deg,#EAA812 0%,#F59E0B 100%)', color: loading ? 'rgba(0,33,71,0.6)' : '#002147', border: 'none', borderRadius: 10, padding: '14px 20px', fontSize: '0.98rem', fontWeight: 900, letterSpacing: '0.04em', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : '0 4px 20px rgba(234,168,18,0.45)', marginTop: 4, transition: 'all 0.25s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}

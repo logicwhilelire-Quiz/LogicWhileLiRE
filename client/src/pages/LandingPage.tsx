@@ -361,7 +361,7 @@ export default function LandingPage() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9 }}>
               <FeaturePill icon="⚡" text="Server-Authoritative Timers" />
               <FeaturePill icon="👁️" text="Webcam + Screen Proctoring" />
-              <FeaturePill icon="🎙️" text="Audio Spike Detection" />
+              <FeaturePill icon="🔒" text="Strict Fullscreen Integrity" />
               <FeaturePill icon="📡" text="Offline Answer Buffering" />
               <FeaturePill icon="🏆" text="Real-Time Leaderboard" />
               <FeaturePill icon="🔐" text="Multi-Role RBAC" />
@@ -369,6 +369,158 @@ export default function LandingPage() {
               <FeaturePill icon="🛡️" text="Anti-Cheat Engine" />
               <FeaturePill icon="📊" text="Radar Skill Analytics" />
               <FeaturePill icon="📋" text="Hall Ticket Generation" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ── */}
+      <section style={{ position: 'relative', zIndex: 1, padding: '20px 24px 70px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: 44 }}>
+            <span style={{
+              display: 'inline-block', background: 'rgba(234,168,18,0.12)', color: '#EAA812',
+              border: '1px solid rgba(234,168,18,0.3)', padding: '5px 16px', borderRadius: 20,
+              fontSize: '0.73rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14,
+            }}>Operational Workflow</span>
+            <h2 style={{
+              fontSize: 'clamp(1.8rem,3.5vw,2.5rem)', fontWeight: 900, margin: '0 0 10px',
+              color: '#FFFFFF', fontFamily: "'Rajdhani',sans-serif", letterSpacing: '-0.02em',
+            }}>How LogicWhile LiRE Operates</h2>
+            <p style={{ color: '#64748B', fontSize: '0.92rem', margin: '0 auto', maxWidth: 660 }}>
+              From student verification to synchronized examination kickoff and instant competitive telemetry.
+            </p>
+          </motion.div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 18 }}>
+            <div style={{
+              background: 'rgba(10,16,35,0.7)', border: '1.5px solid rgba(56,189,248,0.25)',
+              borderRadius: 16, padding: '24px 20px', backdropFilter: 'blur(16px)',
+            }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#38BDF8', letterSpacing: '0.08em', marginBottom: 10 }}>STEP 01</div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px', fontFamily: "'Rajdhani',sans-serif" }}>
+                1. Entry &amp; Gate Verification
+              </h3>
+              <p style={{ fontSize: '0.82rem', color: '#94A3B8', lineHeight: 1.6, margin: 0 }}>
+                Candidates sign in strictly using their institutional Hall Ticket Number and targeted Exam Code. Access is restricted to designated batches and departments.
+              </p>
+            </div>
+
+            <div style={{
+              background: 'rgba(10,16,35,0.7)', border: '1.5px solid rgba(234,168,18,0.25)',
+              borderRadius: 16, padding: '24px 20px', backdropFilter: 'blur(16px)',
+            }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#EAA812', letterSpacing: '0.08em', marginBottom: 10 }}>STEP 02</div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px', fontFamily: "'Rajdhani',sans-serif" }}>
+                2. Synchronous Waiting Lobby
+              </h3>
+              <p style={{ fontSize: '0.82rem', color: '#94A3B8', lineHeight: 1.6, margin: 0 }}>
+                Candidates hold in a zero-leak waiting lobby while College Inspectors verify roster presence. Questions remain completely inaccessible until the official kickoff.
+              </p>
+            </div>
+
+            <div style={{
+              background: 'rgba(10,16,35,0.7)', border: '1.5px solid rgba(16,185,129,0.25)',
+              borderRadius: 16, padding: '24px 20px', backdropFilter: 'blur(16px)',
+            }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#10B981', letterSpacing: '0.08em', marginBottom: 10 }}>STEP 03</div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px', fontFamily: "'Rajdhani',sans-serif" }}>
+                3. Unified Server Kickoff
+              </h3>
+              <p style={{ fontSize: '0.82rem', color: '#94A3B8', lineHeight: 1.6, margin: 0 }}>
+                When Inspector initiates the exam, all candidates receive the identical server-authoritative timestamp via WebSocket/Realtime with continuous anti-cheat enforcement.
+              </p>
+            </div>
+
+            <div style={{
+              background: 'rgba(10,16,35,0.7)', border: '1.5px solid rgba(167,139,250,0.25)',
+              borderRadius: 16, padding: '24px 20px', backdropFilter: 'blur(16px)',
+            }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#A78BFA', letterSpacing: '0.08em', marginBottom: 10 }}>STEP 04</div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px', fontFamily: "'Rajdhani',sans-serif" }}>
+                4. Live Rank Engine (LiRE)
+              </h3>
+              <p style={{ fontSize: '0.82rem', color: '#94A3B8', lineHeight: 1.6, margin: 0 }}>
+                Upon auto-submission or final hand-in, responses are graded instantaneously against master keys, calculating sector percentiles, negative marking, and real-time ranks.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── LIVE RANK ENGINE (LiRE) SHOWCASE ── */}
+      <section style={{ position: 'relative', zIndex: 1, padding: '20px 24px 70px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{
+            background: 'linear-gradient(145deg, rgba(15,23,42,0.95), rgba(6,12,30,0.95))',
+            border: '1.5px solid rgba(234,168,18,0.35)',
+            borderRadius: 24, padding: '40px 36px', backdropFilter: 'blur(20px)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(234,168,18,0.1)',
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 32, alignItems: 'center',
+          }}>
+            <div>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                background: 'rgba(234,168,18,0.15)', border: '1px solid rgba(234,168,18,0.4)',
+                borderRadius: 20, padding: '4px 14px', marginBottom: 14,
+                fontSize: '0.75rem', fontWeight: 800, color: '#FBBF24', letterSpacing: '0.06em', textTransform: 'uppercase',
+              }}>
+                Institutional Tagline
+              </div>
+              <h2 style={{
+                fontSize: 'clamp(2rem,4vw,2.8rem)', fontWeight: 900, margin: '0 0 14px',
+                color: '#FFFFFF', fontFamily: "'Rajdhani',sans-serif", letterSpacing: '-0.02em', lineHeight: 1.2,
+              }}>
+                Logic. While. LiRE.
+              </h2>
+              <p style={{ color: '#94A3B8', fontSize: '0.94rem', lineHeight: 1.7, margin: '0 0 24px' }}>
+                The Live Rank Engine (LiRE) benchmarks thousands of simultaneous participants with sub-50ms velocity. Standardized tie-breaking incorporates accuracy percentages, negative marking deductibles, and submission velocity.
+              </p>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#EAA812', fontFamily: "'Rajdhani',sans-serif" }}>100% Deterministic</div>
+                  <div style={{ fontSize: '0.7rem', color: '#64748B', textTransform: 'uppercase' }}>Tie-Breaking Rules</div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#38BDF8', fontFamily: "'Rajdhani',sans-serif" }}>Sub-50ms</div>
+                  <div style={{ fontSize: '0.7rem', color: '#64748B', textTransform: 'uppercase' }}>Leaderboard Sync</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              background: 'rgba(5,10,22,0.85)', border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 16, padding: '24px 20px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 10 }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#EAA812', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Live Rank Telemetry</span>
+                <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981' }} /> ACTIVE
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(234,168,18,0.12)', borderRadius: 8, border: '1px solid rgba(234,168,18,0.3)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontWeight: 800, color: '#EAA812', fontSize: '0.9rem' }}>#1</span>
+                    <span style={{ fontWeight: 700, color: '#FFFFFF', fontSize: '0.85rem' }}>Rank 1 Contender</span>
+                  </div>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#EAA812', fontSize: '0.85rem' }}>98.5% Accuracy</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontWeight: 800, color: '#94A3B8', fontSize: '0.9rem' }}>#2</span>
+                    <span style={{ fontWeight: 600, color: '#E2E8F0', fontSize: '0.85rem' }}>Rank 2 Contender</span>
+                  </div>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#CBD5E1', fontSize: '0.85rem' }}>95.0% Accuracy</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontWeight: 800, color: '#94A3B8', fontSize: '0.9rem' }}>#3</span>
+                    <span style={{ fontWeight: 600, color: '#E2E8F0', fontSize: '0.85rem' }}>Rank 3 Contender</span>
+                  </div>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#CBD5E1', fontSize: '0.85rem' }}>92.5% Accuracy</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -486,6 +638,82 @@ export default function LandingPage() {
               <span>🪐</span> Explore 5-Sector Practice Arena →
             </Link>
           </motion.div>
+        </div>
+      </section>
+
+      {/* ── CONTACT & HYDERABAD CAMPUS ── */}
+      <section style={{ position: 'relative', zIndex: 1, padding: '20px 24px 80px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: 36 }}>
+            <span style={{
+              display: 'inline-block', background: 'rgba(234,168,18,0.12)', color: '#EAA812',
+              border: '1px solid rgba(234,168,18,0.3)', padding: '5px 16px', borderRadius: 20,
+              fontSize: '0.73rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14,
+            }}>Institutional Operations</span>
+            <h2 style={{
+              fontSize: 'clamp(1.7rem,3vw,2.4rem)', fontWeight: 900, margin: '0 0 10px',
+              color: '#FFFFFF', fontFamily: "'Rajdhani',sans-serif", letterSpacing: '-0.02em',
+            }}>Contact &amp; Hyderabad Campus</h2>
+            <p style={{ color: '#64748B', fontSize: '0.91rem', margin: '0 auto', maxWidth: 620 }}>
+              Official administrative headquarters and institutional technical support.
+            </p>
+          </motion.div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 20 }}>
+            <div style={{
+              background: 'rgba(10,16,35,0.7)', border: '1.5px solid rgba(234,168,18,0.25)',
+              borderRadius: 16, padding: '24px 22px', backdropFilter: 'blur(16px)',
+            }}>
+              <div style={{ fontSize: '1.8rem', marginBottom: 12 }}>🏛️</div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px', fontFamily: "'Rajdhani',sans-serif" }}>
+                Hyderabad Campus Headquarters
+              </h3>
+              <p style={{ fontSize: '0.84rem', color: '#94A3B8', lineHeight: 1.6, margin: '0 0 12px' }}>
+                LogicWhile Institute<br />
+                Madhapur, HITEC City, Hyderabad<br />
+                Telangana 500081, India
+              </p>
+              <div style={{ fontSize: '0.78rem', color: '#EAA812', fontWeight: 700 }}>
+                📍 Main Technological Center
+              </div>
+            </div>
+
+            <div style={{
+              background: 'rgba(10,16,35,0.7)', border: '1.5px solid rgba(56,189,248,0.25)',
+              borderRadius: 16, padding: '24px 22px', backdropFilter: 'blur(16px)',
+            }}>
+              <div style={{ fontSize: '1.8rem', marginBottom: 12 }}>✉️</div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px', fontFamily: "'Rajdhani',sans-serif" }}>
+                Administrative &amp; Helpdesk Email
+              </h3>
+              <p style={{ fontSize: '0.84rem', color: '#94A3B8', lineHeight: 1.6, margin: '0 0 12px' }}>
+                Primary: admin@logicwhilelire.com<br />
+                Inspector Desk: inspector@logicwhilelire.com<br />
+                Inquiries: contact@logicwhile.com
+              </p>
+              <div style={{ fontSize: '0.78rem', color: '#38BDF8', fontWeight: 700 }}>
+                ⚡ 24/7 Monitored Dispatch
+              </div>
+            </div>
+
+            <div style={{
+              background: 'rgba(10,16,35,0.7)', border: '1.5px solid rgba(16,185,129,0.25)',
+              borderRadius: 16, padding: '24px 22px', backdropFilter: 'blur(16px)',
+            }}>
+              <div style={{ fontSize: '1.8rem', marginBottom: 12 }}>📞</div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px', fontFamily: "'Rajdhani',sans-serif" }}>
+                Institutional Exam Helpline
+              </h3>
+              <p style={{ fontSize: '0.84rem', color: '#94A3B8', lineHeight: 1.6, margin: '0 0 12px' }}>
+                Helpline: +91 91212 23344<br />
+                Examination Technical Support Desk<br />
+                Operating: Mon–Sat 08:00 – 20:00 IST
+              </p>
+              <div style={{ fontSize: '0.78rem', color: '#10B981', fontWeight: 700 }}>
+                🛡️ Live Invigilation Hotlines
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

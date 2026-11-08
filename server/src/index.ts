@@ -175,13 +175,21 @@ const isDemo =
   !process.env.SUPABASE_URL ||
   (process.env.SUPABASE_URL || '').includes('your-project');
 
-const handleHealthCheck = (_req: express.Request, res: express.Response) => {
-  res.json({
-    status: 'ok',
+const handleHealthCheck = async (_req: express.Request, res: express.Response) => {
+  const dbStatus = await verifyDatabaseConnectivity(3500);
+  const isHealthy = dbStatus.connected || isDemo;
+  res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? 'ok' : 'degraded',
     service: 'LogicWhileLiRE Assessment Engine',
     version: '4.0.0',
     environment: process.env.NODE_ENV || 'development',
     demo_mode: isDemo,
+    database: {
+      connected: dbStatus.connected,
+      latency_ms: dbStatus.latencyMs,
+      error: dbStatus.error || null,
+      mode: isDemo ? 'in_memory_mock' : 'live_supabase',
+    },
     demo_banner: isDemo ? 'Running on in-memory demo data. Connect Supabase to enable production persistence.' : null,
     timestamp: new Date().toISOString(),
   });

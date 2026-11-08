@@ -5,6 +5,7 @@ import axios from 'axios';
 import { adminLogin } from '../../lib/api';
 import { API_BASE_URL } from '../../lib/config';
 import BrandLogo from '../../components/BrandLogo';
+import ServerWakeupModal from '../../components/ServerWakeupModal';
 
 function AdminGridBg() {
   return (
@@ -64,17 +65,29 @@ export default function AdminLoginPage() {
   const [error, setError] = useState('');
   const [isWarmingUp, setIsWarmingUp] = useState(false);
 
-  // Track warm-up elapsed time to give real-time reassuring feedback if cloud server is sleeping
+  // Proactive warm-up ping on mount to awaken Render cloud instance
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/health`, { method: 'GET', keepalive: true }).catch(() => {});
+  }, []);
+
+  // Track warm-up elapsed time and auto-activate friendly wakeup modal if request takes > 4.5s
   useEffect(() => {
     let interval: any;
+    let timer: any;
     if (loading) {
       interval = setInterval(() => {
         setWarmUpSeconds((prev) => prev + 1);
       }, 1000);
+      timer = setTimeout(() => {
+        setIsWarmingUp(true);
+      }, 4500);
     } else {
       setWarmUpSeconds(0);
     }
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timer);
+    };
   }, [loading]);
 
   function completeAuth(token?: string, user?: any) {
@@ -106,7 +119,6 @@ export default function AdminLoginPage() {
 
     setLoading(true);
     setError('');
-    setIsWarmingUp(false);
 
     try {
       const res = await adminLogin({
@@ -119,33 +131,28 @@ export default function AdminLoginPage() {
         setRequireTotp(true);
         setError('');
         setLoading(false);
+        setIsWarmingUp(false);
         return;
       }
 
+      setIsWarmingUp(false);
       completeAuth(res.data?.token, res.data?.user);
     } catch (err: any) {
-      if (err?.code === 'ECONNABORTED' || err?.message?.includes('timeout') || err?.message?.includes('Network Error')) {
-        setError('Cloud server was sleeping and is spinning up. Click "Wake Server & Retry" below to connect.');
+      const isColdStart =
+        err?.code === 'ECONNABORTED' ||
+        err?.message?.includes('timeout') ||
+        err?.message?.includes('Network Error') ||
+        (err?.response && [502, 503, 504].includes(err.response.status));
+
+      if (isColdStart) {
         setIsWarmingUp(true);
+        setError('');
       } else {
+        setIsWarmingUp(false);
         setError(err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Login failed. Invalid admin credentials.');
       }
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleWakeAndRetry() {
-    setError('');
-    setLoading(true);
-    try {
-      // Ping backend health endpoint first to awaken instance
-      await axios.get(`${API_BASE_URL}/api/health`, { timeout: 30000 });
-      // Retry authentication
-      await handleSubmit();
-    } catch (_) {
-      // If ping failed or timed out, attempt login anyway
-      await handleSubmit();
     }
   }
 
@@ -180,7 +187,7 @@ export default function AdminLoginPage() {
           {/* Glass Card */}
           <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.45 }} style={{ background: 'rgba(10,18,40,0.88)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1.5px solid rgba(245,158,11,0.3)', borderRadius: 20, padding: '30px 28px', boxShadow: '0 24px 64px rgba(0,0,0,0.6),0 0 40px rgba(245,158,11,0.1),inset 0 1px 0 rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: 1, background: 'linear-gradient(90deg,transparent,rgba(251,191,36,0.75),transparent)' }} />
-            {error && (
+            {error && !isWarmingUp && (
               <div
                 style={{
                   background: 'rgba(239, 68, 68, 0.12)',
@@ -191,38 +198,21 @@ export default function AdminLoginPage() {
                   fontSize: '0.82rem',
                   marginBottom: 16,
                   fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isWarmingUp ? 8 : 0 }}>
-                  <span>⚠️</span>
-                  <span>{error}</span>
-                </div>
-                {isWarmingUp && (
-                  <button
-                    type="button"
-                    onClick={handleWakeAndRetry}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: 6,
-                      border: '1px solid #F59E0B',
-                      background: 'rgba(245, 158, 11, 0.2)',
-                      color: '#FBBF24',
-                      fontWeight: 700,
-                      fontSize: '0.8rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 6,
-                    }}
-                  >
-                    <span>⚡</span>
-                    <span>Wake Server &amp; Retry Now</span>
-                  </button>
-                )}
+                <span>⚠️</span>
+                <span>{error}</span>
               </div>
             )}
+
+            <ServerWakeupModal
+              isOpen={isWarmingUp}
+              onRetry={handleSubmit}
+              onClose={() => setIsWarmingUp(false)}
+            />
 
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: 16 }}>

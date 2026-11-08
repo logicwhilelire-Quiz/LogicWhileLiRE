@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { studentLogin } from '../lib/api';
+import { API_BASE_URL } from '../lib/config';
 import BrandLogo from '../components/BrandLogo';
+import ServerWakeupModal from '../components/ServerWakeupModal';
 import { findAdminRosterStudent, type AdminRosterStudent } from '../lib/adminRosterStore';
 
 /* ── Animated background ── */
@@ -66,6 +68,23 @@ export default function StudentLoginPage() {
   const [notice, setNotice] = useState(registeredRoll ? '✓ Account verified! Enter your password to sign in.' : '');
   const [focused, setFocused] = useState<string | null>(null);
   const [dots, setDots] = useState('');
+  const [isWarmingUp, setIsWarmingUp] = useState(false);
+
+  // Proactive warm-up ping on mount
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/health`, { method: 'GET', keepalive: true }).catch(() => {});
+  }, []);
+
+  // Track warm-up elapsed time and auto-activate wakeup modal if taking > 4.5s
+  useEffect(() => {
+    let timer: any;
+    if (loading) {
+      timer = setTimeout(() => {
+        setIsWarmingUp(true);
+      }, 4500);
+    }
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   useEffect(() => {
     if (!loading) { setDots(''); return; }
@@ -96,8 +115,8 @@ export default function StudentLoginPage() {
     navigate(redirectTarget);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     const loginQuery = form.login.trim();
     if (!loginQuery) { setError('Please enter your hall ticket or email'); return; }
     if (!form.password) { setError('Please enter your password'); return; }
@@ -106,18 +125,28 @@ export default function StudentLoginPage() {
       const res = await studentLogin({ login: loginQuery, password: form.password });
       if (res.data?.token) localStorage.setItem('student_token', res.data.token);
       if (res.data?.student) localStorage.setItem('student_user', JSON.stringify(res.data.student));
+      setIsWarmingUp(false);
       navigate(redirectTarget);
       return;
     } catch (err: any) {
       const matchedAdminStudent = findAdminRosterStudent(loginQuery);
       if (matchedAdminStudent && matchedAdminStudent.is_verified !== false && matchedAdminStudent.status === 'approved') {
+        setIsWarmingUp(false);
         loginWithAdminStudent(matchedAdminStudent);
         return;
       }
-      if (err?.code === 'ECONNABORTED' || err?.message?.includes('timeout') || err?.message?.includes('Network Error')) {
-        setError('Server is warming up or temporarily unreachable. Please retry in a few moments.');
+      const isColdStart =
+        err?.code === 'ECONNABORTED' ||
+        err?.message?.includes('timeout') ||
+        err?.message?.includes('Network Error') ||
+        (err?.response && [502, 503, 504].includes(err.response.status));
+
+      if (isColdStart) {
+        setIsWarmingUp(true);
+        setError('');
         setUnverifiedEmail(null);
       } else {
+        setIsWarmingUp(false);
         const resp = err?.response?.data;
         setError(resp?.error || 'Invalid hall ticket number or password.');
         if (resp?.requires_verification && resp?.email) {
@@ -179,7 +208,7 @@ export default function StudentLoginPage() {
               )}
             </AnimatePresence>
             <AnimatePresence>
-              {error && (
+              {error && !isWarmingUp && (
                 <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.38)', color: '#FCA5A5', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: '0.81rem', fontWeight: 600, display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                     <span style={{ flexShrink: 0 }}>⚠️</span><span>{error}</span>
@@ -196,6 +225,12 @@ export default function StudentLoginPage() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            <ServerWakeupModal
+              isOpen={isWarmingUp}
+              onRetry={handleSubmit}
+              onClose={() => setIsWarmingUp(false)}
+            />
 
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: 18 }}>

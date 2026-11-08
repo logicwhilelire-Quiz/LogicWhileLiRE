@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 import PDFDocument from 'pdfkit';
 const archiver = require('archiver');
 import { supabase } from '../db/supabase';
+import { systemAlertAgent } from './systemAlertService';
 import {
   BACKUP_DIR,
   sanitizeRecord,
@@ -370,6 +371,10 @@ export async function executeGoogleDriveBackup(options: {
       console.error('[GoogleDrive] Sync failed:', err.message);
       driveStatus = 'failed';
       backupError = `Google Drive upload failed: ${err.message}`;
+      systemAlertAgent.recordFailedBackup({
+        backupType: 'GoogleDrive Cloud Sync',
+        error: err,
+      }).catch(() => {});
     }
   }
 

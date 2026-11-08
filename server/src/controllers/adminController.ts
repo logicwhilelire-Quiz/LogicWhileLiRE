@@ -229,9 +229,6 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     if (!passwordValid && process.env.ADMIN_PASSWORD && password === process.env.ADMIN_PASSWORD) {
       passwordValid = true;
     }
-    if (!passwordValid && (password === 'admin123' || password === 'LiREAdmin@2026!')) {
-      passwordValid = true;
-    }
     if (!passwordValid) {
       handleFailedAttempt();
       return;
@@ -266,9 +263,6 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     if (!passwordValid && process.env.FACULTY_PASSWORD && password === process.env.FACULTY_PASSWORD) {
       passwordValid = true;
     }
-    if (!passwordValid && (password === 'faculty123' || password === 'LiREAdmin@2026!' || password === 'admin123' || password === 'password123')) {
-      passwordValid = true;
-    }
     if (!passwordValid) {
       handleFailedAttempt();
       return;
@@ -301,9 +295,6 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       passwordValid = await bcrypt.compare(password, inspHash);
     }
     if (!passwordValid && process.env.INSPECTOR_PASSWORD && password === process.env.INSPECTOR_PASSWORD) {
-      passwordValid = true;
-    }
-    if (!passwordValid && (password === 'inspector123' || password === 'LiREInspector@2026!' || password === 'LiREAdmin@2026!' || password === 'admin123')) {
       passwordValid = true;
     }
     if (!passwordValid) {
@@ -440,13 +431,14 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const isInspectorSeedMatch = staff.role === 'inspector' && ((process.env.INSPECTOR_PASSWORD && password === process.env.INSPECTOR_PASSWORD) || password === 'inspector123' || password === 'LiREInspector@2026!');
-    const isFacultySeedMatch = staff.role === 'faculty' && ((process.env.FACULTY_PASSWORD && password === process.env.FACULTY_PASSWORD) || password === 'faculty123' || password === 'LiREAdmin@2026!');
+    const isInspectorSeedMatch = staff.role === 'inspector' && process.env.INSPECTOR_PASSWORD && password === process.env.INSPECTOR_PASSWORD;
+    const isFacultySeedMatch = staff.role === 'faculty' && process.env.FACULTY_PASSWORD && password === process.env.FACULTY_PASSWORD;
+    const isPaperSetterSeedMatch = staff.role === 'paper_setter' && process.env.PAPER_SETTER_PASSWORD && password === process.env.PAPER_SETTER_PASSWORD;
     const passwordValid =
-      (process.env.DEMO_MODE === 'true' && (password === 'admin123' || password === 'password123')) ||
-      (await bcrypt.compare(password, staff.password_hash)) ||
+      Boolean(staff.password_hash && (await bcrypt.compare(password, staff.password_hash))) ||
       Boolean(isInspectorSeedMatch) ||
-      Boolean(isFacultySeedMatch);
+      Boolean(isFacultySeedMatch) ||
+      Boolean(isPaperSetterSeedMatch);
     if (!passwordValid) {
       handleFailedAttempt();
       return;
@@ -715,9 +707,8 @@ export async function requestLoginOtp(req: Request, res: Response): Promise<void
     const adminHash = existingAdmin?.password_hash || process.env.ADMIN_PASSWORD_HASH;
     const isMockOrTest = process.env.NODE_ENV === 'test' || process.env.DEMO_MODE === 'true';
     const passwordValid =
-      isMockOrTest && (password === 'admin123' || password === 'LiREAdmin@2026!' || password === process.env.ADMIN_PASSWORD)
-        ? true
-        : adminHash && (await bcrypt.compare(password, adminHash));
+      Boolean(adminHash && (await bcrypt.compare(password, adminHash))) ||
+      Boolean(isMockOrTest && process.env.ADMIN_PASSWORD && password === process.env.ADMIN_PASSWORD);
     if (!passwordValid) {
       res.status(401).json({ success: false, error: 'Invalid credentials' });
       return;
@@ -729,9 +720,7 @@ export async function requestLoginOtp(req: Request, res: Response): Promise<void
       res.status(401).json({ success: false, error: 'Invalid credentials' });
       return;
     }
-    const passwordValid =
-      (process.env.DEMO_MODE === 'true' && (password === 'admin123' || password === 'password123')) ||
-      (await bcrypt.compare(password, staff.password_hash));
+    const passwordValid = await bcrypt.compare(password, staff.password_hash);
     if (!passwordValid) {
       res.status(401).json({ success: false, error: 'Invalid credentials' });
       return;

@@ -13,7 +13,6 @@ import BrandLogo from '../components/BrandLogo'
 import LogicWhileLiRELoader from '../components/LogicWhileLiRELoader'
 import FullscreenEnforcementOverlay from '../components/exam/FullscreenEnforcementOverlay'
 import ScreenShareWarningOverlay from '../components/exam/ScreenShareWarningOverlay'
-import { useAudioProctor } from '../hooks/useAudioProctor'
 import {
   bufferAnswer,
   getPendingAnswers,
@@ -22,7 +21,6 @@ import {
   clearAnswerBuffer,
 } from '../lib/offlineAnswerStore'
 import AntiLeakWatermark from '../components/AntiLeakWatermark'
-import HoloScratchpadModal from '../components/HoloScratchpadModal'
 import HoloProctorDeskModal, { type ProctorCommsMessage } from '../components/HoloProctorDeskModal'
 import { soundFx } from '../lib/synthAudio'
 
@@ -151,7 +149,6 @@ export default function QuizPage() {
   const [submitNetworkErrorNotice, setSubmitNetworkErrorNotice] = useState('')
   const [timeExtensionNotice, setTimeExtensionNotice] = useState('')
   const [securityBlockNotice, setSecurityBlockNotice] = useState('')
-  const [showScratchpad, setShowScratchpad] = useState(false)
   const [showProctorDesk, setShowProctorDesk] = useState(false)
   const [proctorCommsLog, setProctorCommsLog] = useState<ProctorCommsMessage[]>([])
   const [unreadCommsCount, setUnreadCommsCount] = useState(0)
@@ -302,6 +299,14 @@ export default function QuizPage() {
               for (const [qid, val] of Object.entries(resumeData.partial_answers)) {
                 restoredAnswers[qid] = val as string
               }
+            }
+            if (typeof resumeData?.violation_count === 'number' && resumeData.violation_count > 0) {
+              violationRef.current = resumeData.violation_count
+              setViolationCount(resumeData.violation_count)
+            }
+            if (typeof resumeData?.fullscreen_exits === 'number' && resumeData.fullscreen_exits > 0) {
+              fullscreenExitCountRef.current = resumeData.fullscreen_exits
+              setFullscreenExitCount(resumeData.fullscreen_exits)
             }
           } catch {}
 
@@ -1439,26 +1444,6 @@ export default function QuizPage() {
     }
   }, [screenShareActive, examCode, hallTicket])
 
-  /* ── 1.3 Audio Proctoring ── */
-  const [showAudioWarning, setShowAudioWarning] = useState(false)
-  const [lastAudioSpikeDb, setLastAudioSpikeDb] = useState(0)
-
-  const handleAudioSpike = useCallback((peakDb: number) => {
-    setLastAudioSpikeDb(peakDb)
-    logViolation('audio_spike', `Audio spike detected: ${peakDb} dB`, {
-      peak_db: peakDb,
-    })
-    setShowAudioWarning(true)
-    setTimeout(() => setShowAudioWarning(false), 3500)
-  }, [logViolation])
-
-  const { isListening: isAudioListening } = useAudioProctor({
-    enabled: consentGiven && !submitting,
-    thresholdDb: -24,
-    cooldownMs: 8000,
-    onAudioSpike: handleAudioSpike,
-  })
-
   /* ── Helpers ── */
   const currentQuestion = session?.questions[currentQ]
   const answeredCount = Object.keys(answers).length + Object.keys(codeAnswers).length
@@ -2064,29 +2049,8 @@ export default function QuizPage() {
             </div>
           )}
 
-          {/* Scratchpad & Sound Controls */}
+          {/* Invigilator Desk & Sound Controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button
-              type="button"
-              onClick={() => setShowScratchpad(true)}
-              style={{
-                background: 'rgba(56, 189, 248, 0.12)',
-                border: '1px solid rgba(56, 189, 248, 0.35)',
-                color: '#38BDF8',
-                borderRadius: 8,
-                padding: '6px 12px',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-              title="Open In-Exam Secure Scratchpad & Calculation Canvas"
-            >
-              <span>📝</span>
-              <span>Scratchpad</span>
-            </button>
             <button
               type="button"
               onClick={() => {
@@ -2202,26 +2166,6 @@ export default function QuizPage() {
                 <span>{screenShareActive ? '🖥️ Screen Live' : '⚠️ Screen Off'}</span>
               </div>
             )}
-            {isAudioListening && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '6px 12px',
-                  borderRadius: 999,
-                  fontSize: '0.74rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.04em',
-                  background: 'rgba(59, 130, 246, 0.15)',
-                  border: '1px solid rgba(59, 130, 246, 0.35)',
-                  color: '#60A5FA',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <span>🎙️ Mic Guard</span>
-              </div>
-            )}
             {isOffline ? (
               <div
                 style={{
@@ -2303,28 +2247,6 @@ export default function QuizPage() {
             }}
           >
             {faceStatus === 'multiple' ? '🚨 Multiple faces detected!' : '⚠️ Face not visible!'}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ─── AUDIO SPIKE ALERT ─── */}
-      <AnimatePresence>
-        {showAudioWarning && (
-          <motion.div
-            initial={{ opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 24 }}
-            style={{
-              position: 'fixed', top: 168, right: 24, zIndex: 200,
-              background: 'rgba(234, 88, 12, 0.95)',
-              backdropFilter: 'blur(8px)',
-              borderRadius: 'var(--radius-md)', padding: '10px 16px',
-              fontSize: '0.85rem', fontWeight: 600, color: '#fff',
-              boxShadow: '0 0 20px rgba(234, 88, 12, 0.4)',
-              display: 'flex', alignItems: 'center', gap: 8,
-            }}
-          >
-            <span>🎙️ Audio spike detected ({lastAudioSpikeDb} dB)! Please maintain silence.</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -3101,13 +3023,6 @@ export default function QuizPage() {
         hallTicket={hallTicket}
         candidateName={session?.candidateId}
         examCode={examCode}
-      />
-
-      {/* ─── IN-EXAM SECURE SCRATCHPAD MODAL ─── */}
-      <HoloScratchpadModal
-        isOpen={showScratchpad}
-        onClose={() => setShowScratchpad(false)}
-        examCode={examCode || 'EXAM'}
       />
 
       {/* ─── INVIGILATOR DESK & AI SENTINEL MODAL ─── */}

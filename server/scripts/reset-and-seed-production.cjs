@@ -42,24 +42,39 @@ async function resetAndSeed() {
 
   console.log('   ✓ All demographic, student, exam, and staff tables wiped clean.');
 
-  // 2. Prepare Admin, Inspector & Faculty credentials from environment
+  // 2. Prepare Admin, Inspector & Faculty credentials strictly from environment
   const adminUsername = (process.env.ADMIN_USERNAME || 'admin').trim();
-  const adminPassword = process.env.ADMIN_PASSWORD || 'LiREAdmin@2026!';
+  const adminPassword = process.env.ADMIN_PASSWORD || process.env.INITIAL_ADMIN_PASSWORD;
   const adminEmail = (process.env.ADMIN_EMAIL || 'admin@logicwhilelire.com').trim().toLowerCase();
   const adminPhone = (process.env.ADMIN_PHONE || '+919999999999').trim();
+  if (!adminPassword && !process.env.ADMIN_PASSWORD_HASH) {
+    throw new Error('[FATAL] ADMIN_PASSWORD or ADMIN_PASSWORD_HASH environment variable is strictly required');
+  }
   const adminHash = process.env.ADMIN_PASSWORD_HASH || await bcrypt.hash(adminPassword, 12);
 
   const inspectorUsername = (process.env.INSPECTOR_USERNAME || 'inspector').trim();
-  const inspectorPassword = process.env.INSPECTOR_PASSWORD || 'LiREInspector@2026!';
+  const inspectorPassword = process.env.INSPECTOR_PASSWORD || process.env.INITIAL_INSPECTOR_PASSWORD;
   const inspectorEmail = (process.env.INSPECTOR_EMAIL || 'inspector@logicwhilelire.com').trim().toLowerCase();
   const inspectorPhone = (process.env.INSPECTOR_PHONE || '+919999999998').trim();
+  if (!inspectorPassword && !process.env.INSPECTOR_PASSWORD_HASH) {
+    throw new Error('[FATAL] INSPECTOR_PASSWORD or INSPECTOR_PASSWORD_HASH environment variable is strictly required');
+  }
   const inspectorHash = process.env.INSPECTOR_PASSWORD_HASH || await bcrypt.hash(inspectorPassword, 12);
 
   const facultyUsername = (process.env.FACULTY_USERNAME || 'faculty').trim();
-  const facultyPassword = process.env.FACULTY_PASSWORD || 'LiREFaculty@2026!';
+  const facultyPassword = process.env.FACULTY_PASSWORD || process.env.INITIAL_FACULTY_PASSWORD;
   const facultyEmail = (process.env.FACULTY_EMAIL || 'faculty@logicwhilelire.com').trim().toLowerCase();
   const facultyPhone = (process.env.FACULTY_PHONE || '+919999999997').trim();
+  if (!facultyPassword && !process.env.FACULTY_PASSWORD_HASH) {
+    throw new Error('[FATAL] FACULTY_PASSWORD or FACULTY_PASSWORD_HASH environment variable is strictly required');
+  }
   const facultyHash = process.env.FACULTY_PASSWORD_HASH || await bcrypt.hash(facultyPassword, 12);
+
+  const paperSetterUsername = (process.env.PAPER_SETTER_USERNAME || 'papersetter').trim();
+  const paperSetterPassword = process.env.PAPER_SETTER_PASSWORD || process.env.INITIAL_PAPER_SETTER_PASSWORD;
+  const paperSetterEmail = (process.env.PAPER_SETTER_EMAIL || 'papersetter@logicwhilelire.com').trim().toLowerCase();
+  const paperSetterPhone = (process.env.PAPER_SETTER_PHONE || '+919999999996').trim();
+  const paperSetterHash = process.env.PAPER_SETTER_PASSWORD_HASH || (paperSetterPassword ? await bcrypt.hash(paperSetterPassword, 12) : facultyHash);
 
   console.log('\n2. Seeding Admin, Inspector, and Faculty accounts from environment...');
 

@@ -10,7 +10,7 @@ import { ADMIN_EMAIL, sendSystemAlertAdminEmail } from './emailService';
 
 export interface SystemAlert {
   id: string;
-  type: 'AUTH_FAILURE' | 'SYSTEM_CRASH' | 'SECURITY_BREACH' | 'DATABASE_ERROR' | 'UNCAUGHT_EXCEPTION';
+  type: 'AUTH_FAILURE' | 'SYSTEM_CRASH' | 'SECURITY_BREACH' | 'DATABASE_ERROR' | 'UNCAUGHT_EXCEPTION' | 'FAILED_MAIL' | 'FAILED_BACKUP' | 'SUSPICIOUS_ACTIVITY';
   severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
   message: string;
   details?: Record<string, any>;
@@ -85,6 +85,78 @@ export class SystemAlertingAgent {
   }
 
   /**
+   * Record and dispatch a failed outbound email
+   */
+  public async recordFailedMail(params: {
+    to: string;
+    template: string;
+    error: any;
+  }): Promise<SystemAlert> {
+    const errMsg = params.error?.message || String(params.error);
+    const alert: SystemAlert = {
+      id: uuidv4(),
+      type: 'FAILED_MAIL',
+      severity: 'HIGH',
+      message: `Outbound email failed to ${params.to} (template: ${params.template}): ${errMsg}`,
+      details: {
+        to: params.to,
+        template: params.template,
+        error: errMsg,
+      },
+      userEmail: params.to,
+      timestamp: new Date().toISOString(),
+      dispatchedToEmail: false,
+    };
+    return this.processAlert(alert);
+  }
+
+  /**
+   * Record and dispatch a failed backup operation
+   */
+  public async recordFailedBackup(params: {
+    backupType: string;
+    error: any;
+  }): Promise<SystemAlert> {
+    const errMsg = params.error?.message || String(params.error);
+    const alert: SystemAlert = {
+      id: uuidv4(),
+      type: 'FAILED_BACKUP',
+      severity: 'HIGH',
+      message: `System backup failed (${params.backupType}): ${errMsg}`,
+      details: {
+        backupType: params.backupType,
+        error: errMsg,
+      },
+      timestamp: new Date().toISOString(),
+      dispatchedToEmail: false,
+    };
+    return this.processAlert(alert);
+  }
+
+  /**
+   * Record and dispatch suspicious proctoring or security activity
+   */
+  public async recordSuspiciousActivity(params: {
+    activity: string;
+    details: Record<string, any>;
+    ip?: string;
+    userId?: string;
+  }): Promise<SystemAlert> {
+    const alert: SystemAlert = {
+      id: uuidv4(),
+      type: 'SUSPICIOUS_ACTIVITY',
+      severity: 'HIGH',
+      message: `Suspicious activity detected: ${params.activity}`,
+      details: params.details,
+      ip: params.ip,
+      userId: params.userId,
+      timestamp: new Date().toISOString(),
+      dispatchedToEmail: false,
+    };
+    return this.processAlert(alert);
+  }
+
+  /**
    * Record and dispatch an unhandled system crash or 500 server error
    */
   public async recordSystemCrash(params: {
@@ -117,6 +189,78 @@ export class SystemAlertingAgent {
       dispatchedToEmail: false,
     };
 
+    return this.processAlert(alert);
+  }
+
+  /**
+   * Record and dispatch a failed outbound email
+   */
+  public async recordFailedMail(params: {
+    to: string;
+    template: string;
+    error: any;
+  }): Promise<SystemAlert> {
+    const errMsg = params.error?.message || String(params.error);
+    const alert: SystemAlert = {
+      id: uuidv4(),
+      type: 'FAILED_MAIL',
+      severity: 'HIGH',
+      message: `Outbound email failed to ${params.to} (template: ${params.template}): ${errMsg}`,
+      details: {
+        to: params.to,
+        template: params.template,
+        error: errMsg,
+      },
+      userEmail: params.to,
+      timestamp: new Date().toISOString(),
+      dispatchedToEmail: false,
+    };
+    return this.processAlert(alert);
+  }
+
+  /**
+   * Record and dispatch a failed backup operation
+   */
+  public async recordFailedBackup(params: {
+    backupType: string;
+    error: any;
+  }): Promise<SystemAlert> {
+    const errMsg = params.error?.message || String(params.error);
+    const alert: SystemAlert = {
+      id: uuidv4(),
+      type: 'FAILED_BACKUP',
+      severity: 'HIGH',
+      message: `System backup failed (${params.backupType}): ${errMsg}`,
+      details: {
+        backupType: params.backupType,
+        error: errMsg,
+      },
+      timestamp: new Date().toISOString(),
+      dispatchedToEmail: false,
+    };
+    return this.processAlert(alert);
+  }
+
+  /**
+   * Record and dispatch suspicious proctoring or security activity
+   */
+  public async recordSuspiciousActivity(params: {
+    activity: string;
+    details: Record<string, any>;
+    ip?: string;
+    userId?: string;
+  }): Promise<SystemAlert> {
+    const alert: SystemAlert = {
+      id: uuidv4(),
+      type: 'SUSPICIOUS_ACTIVITY',
+      severity: 'HIGH',
+      message: `Suspicious activity detected: ${params.activity}`,
+      details: params.details,
+      ip: params.ip,
+      userId: params.userId,
+      timestamp: new Date().toISOString(),
+      dispatchedToEmail: false,
+    };
     return this.processAlert(alert);
   }
 

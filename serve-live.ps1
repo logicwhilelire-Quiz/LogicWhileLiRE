@@ -1,4 +1,4 @@
-param(
+﻿param(
     [int]$Port = 5173,
     [string]$DistPath = "$PSScriptRoot\client\dist",
     [string]$RemoteApiUrl = "https://logicwhilelire-api.onrender.com"
@@ -135,7 +135,7 @@ try {
                     $response.OutputStream.Write($errMsg, 0, $errMsg.Length)
                 }
             } finally {
-                $response.OutputStream.Close()
+                try { $response.OutputStream.Close() } catch {}
             }
             continue
         }
@@ -164,7 +164,7 @@ try {
         } catch {
             $response.StatusCode = 500
         } finally {
-            $response.OutputStream.Close()
+            try { $response.OutputStream.Close() } catch {}
         }
     }
 } finally {

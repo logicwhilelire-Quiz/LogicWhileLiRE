@@ -89,9 +89,9 @@ Below is the verified production authentication matrix for all authorized roles.
 
 | Role | Portal URL | Username / Identifier | Password | Access Scope |
 | :--- | :--- | :--- | :--- | :--- |
-| **Super Admin** | [`/admin/login`](https://logicwhilelire.com/admin/login) | `admin` | `LiREAdmin@2026!` | Global master controller: colleges, branches, years, sections, batches, exams, question banks, backups, and staff. |
-| **Faculty / Trainer** | [`/faculty/login`](https://logicwhilelire.com/faculty/login) | `faculty` | `faculty123` | Section-scoped gateway: view allocated student rosters, verify candidates, review syllabus papers and coding submissions. |
-| **Inspector / Proctor** | [`/inspector/login`](https://logicwhilelire.com/inspector/login) | `inspector` | `LiREInspector@2026!` | Examination lobby controller: dispatch synchronized live start, monitor real-time candidate video/tab violations. |
+| **Super Admin** | [`/admin/login`](https://logicwhilelire.com/admin/login) | `admin` | Set via env var `ADMIN_PASSWORD` | Global master controller: colleges, branches, years, sections, batches, exams, question banks, backups, and staff. |
+| **Faculty / Trainer** | [`/faculty/login`](https://logicwhilelire.com/faculty/login) | `faculty` | Set via env var `FACULTY_PASSWORD` | Section-scoped gateway: view allocated student rosters, verify candidates, review syllabus papers and coding submissions. |
+| **Inspector / Proctor** | [`/inspector/login`](https://logicwhilelire.com/inspector/login) | `inspector` | Set via env var `INSPECTOR_PASSWORD` | Examination lobby controller: dispatch synchronized live start, monitor real-time candidate video/tab violations. |
 | **Student / Candidate** | [`/login`](https://logicwhilelire.com/login) | Institutional Roll / Hall Ticket (e.g. `2201A0501`) | Candidate Password | Single-tab locked candidate testing dashboard and exam execution interface. |
 | **Candidate Gate** | [`/register`](https://logicwhilelire.com/register) | New Student Self-Registration | Custom Password | Self-enrollment portal dynamically linked to admin-approved colleges, branches, and sections. |
 | **Practice Arena** | [`/practice`](https://logicwhilelire.com/practice) | Open Access | None | 5-Sector skill evaluation practice arena. |
@@ -107,7 +107,7 @@ The **Super Admin Portal** (`https://logicwhilelire.com/admin/login`) is the uni
 
 ### 4.1 Logging In
 1. Navigate to [https://logicwhilelire.com/admin/login](https://logicwhilelire.com/admin/login).
-2. Enter username: `admin` and password: `LiREAdmin@2026!`.
+2. Enter username: `admin` and password (as configured in environment variable `ADMIN_PASSWORD`).
 3. If 2FA is enabled, enter your 6-digit Google Authenticator / TOTP code.
 4. Click **Sign In as Administrator**.
 
@@ -167,7 +167,7 @@ The **Inspector Command Console** (`https://logicwhilelire.com/inspector/login`)
 
 ### 6.1 Authentication
 1. Navigate to [https://logicwhilelire.com/inspector/login](https://logicwhilelire.com/inspector/login).
-2. Enter credentials: `inspector` / `LiREInspector@2026!`.
+2. Enter credentials: username `inspector` and password (as configured in environment variable `INSPECTOR_PASSWORD`).
 3. Click **Sign In as Inspector**.
 
 ### 6.2 Managing the Synchronized Waiting Lobby

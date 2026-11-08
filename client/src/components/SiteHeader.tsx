@@ -51,19 +51,18 @@ export default function SiteHeader() {
 
   const isLoggedIn = !!studentUser;
 
-  // Clean, Uncluttered Institutional Navigation Links
-  // Institutional Navigation Links for all key roles: Student, Faculty, Inspector, Admin
+  // Clean, Uncluttered Institutional Navigation Links: Student Portal, Admin, Control / Staff Login
   const navLinks = isLoggedIn
     ? [
         { label: 'Home', to: '/' },
-        { label: 'Student Gate', to: '/student/dashboard' },
-        { label: 'Inspector', to: '/inspector' },
+        { label: 'Student Portal', to: '/student/dashboard' },
+        { label: 'Control / Staff Login', to: '/inspector' },
         { label: 'Admin', to: '/admin' },
       ]
     : [
         { label: 'Home', to: '/' },
-        { label: 'Student / Candidate Gate', to: '/login' },
-        { label: 'Inspector', to: '/inspector' },
+        { label: 'Student Portal', to: '/login' },
+        { label: 'Control / Staff Login', to: '/inspector' },
         { label: 'Admin', to: '/admin' },
       ];
 
@@ -194,45 +193,6 @@ export default function SiteHeader() {
                 </div>
               </Link>
             ))}
-
-            {/* Fast-Track Exam Entry CTA */}
-            <Link
-              to="/enter-exam"
-              id="header-enter-exam-cta"
-              style={{
-                textDecoration: 'none',
-                marginLeft: 4,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  background: 'linear-gradient(135deg, #EAA812 0%, #F59E0B 100%)',
-                  color: '#001A38',
-                  fontWeight: 800,
-                  fontSize: '13px',
-                  padding: '7px 14px',
-                  borderRadius: 8,
-                  boxShadow: '0 2px 12px rgba(234, 168, 18, 0.35)',
-                  letterSpacing: '0.02em',
-                  transition: 'all 0.18s ease',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 4px 18px rgba(234, 168, 18, 0.55)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = '';
-                  e.currentTarget.style.boxShadow = '0 2px 12px rgba(234, 168, 18, 0.35)';
-                }}
-              >
-                <span>⚡</span>
-                <span>Enter Exam</span>
-              </div>
-            </Link>
 
             {/* Logged in state: student indicator + Logout */}
             {isLoggedIn && (

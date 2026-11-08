@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import { supabase } from '../db/supabase';
 import { getTransporter, getBrevoTransporter, dailyEmailQuota } from './emailService';
+import { systemAlertAgent } from './systemAlertService';
 
 // ============================================================================
 // CONFIGURATION & ENVIRONMENT
@@ -226,6 +227,11 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
     } catch (err: any) {
       errorMessage = err?.message || String(err);
       console.error(`[MailService] ❌ Dispatch failed for [${templateName}] to ${toStr}:`, errorMessage);
+      systemAlertAgent.recordFailedMail({
+        to: toStr,
+        template: templateName,
+        error: err,
+      }).catch(() => {});
     }
   }
 

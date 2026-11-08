@@ -1460,10 +1460,10 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
 
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
 
-  // Questions strictly preserve author upload order (display_order); options are deterministically shuffled per candidate
+  // Questions & options are shuffled deterministically per student
   const canonicalCandidate = String(studentHt || req.query.candidateId || attemptId || req.query.hallTicket || 'student').toUpperCase().trim();
   const studentIdentifier = `${canonicalCandidate}_${effectiveCode}`;
-  const orderedQuestions = questions || [];
+  const orderedQuestions = deterministicShuffle(questions || [], `${studentIdentifier}_qorder`);
 
   // Question secrecy guard & per-student option shuffling:
   // Options are shuffled per student; grading strictly uses the server's master key.
@@ -2305,6 +2305,8 @@ export async function getExamCodeResumeState(req: Request, res: Response): Promi
     answers: attempt.partial_answers || {},
     partial_answers: attempt.partial_answers || {},
     last_question_index: attempt.last_question_index ?? 0,
+    violation_count: Number(attempt.violation_count || attempt.violations_count || 0),
+    fullscreen_exits: Number(attempt.fullscreen_exit_count || 0),
   });
 }
 

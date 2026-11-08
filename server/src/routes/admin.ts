@@ -235,15 +235,15 @@ router.delete('/exams/:id', requireRole('super_admin'), auditLog('DELETE_EXAM', 
 router.get('/exams/:examId/qr', validateParams(ExamIdParam), getEnrollmentQR);
 router.patch('/exams/:id/settings', requireRole('super_admin'), auditLog('UPDATE_EXAM_SETTINGS', 'exams'), updateExamSettings);
 
-// ——— Questions & Question Papers CRUD (super_admin only) ———
+// ——— Questions & Question Papers CRUD (super_admin and paper_setter) ———
 router.get('/questions', listQuestions);
-router.post('/questions', requireRole('super_admin'), auditLog('CREATE_QUESTION', 'questions'), createQuestion);
-router.patch('/questions/:id', requireRole('super_admin'), auditLog('UPDATE_QUESTION', 'questions'), updateQuestion);
-router.put('/questions/:id', requireRole('super_admin'), auditLog('UPDATE_QUESTION', 'questions'), updateQuestion);
-router.delete('/questions/:id', requireRole('super_admin'), auditLog('DELETE_QUESTION', 'questions'), deleteQuestion);
+router.post('/questions', requireRole('super_admin', 'paper_setter'), auditLog('CREATE_QUESTION', 'questions'), createQuestion);
+router.patch('/questions/:id', requireRole('super_admin', 'paper_setter'), auditLog('UPDATE_QUESTION', 'questions'), updateQuestion);
+router.put('/questions/:id', requireRole('super_admin', 'paper_setter'), auditLog('UPDATE_QUESTION', 'questions'), updateQuestion);
+router.delete('/questions/:id', requireRole('super_admin', 'paper_setter'), auditLog('DELETE_QUESTION', 'questions'), deleteQuestion);
 router.post(
   '/exams/:examId/import-questions',
-  requireRole('super_admin'),
+  requireRole('super_admin', 'paper_setter'),
   auditLog('IMPORT_QUESTIONS', 'questions'),
   validateParams(ExamIdParam),
   (req, res, next) => {
