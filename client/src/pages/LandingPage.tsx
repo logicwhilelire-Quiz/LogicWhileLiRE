@@ -263,7 +263,33 @@ export default function LandingPage() {
       {/* ── HERO ── */}
       <section className="landing-grid-bg" style={{ position: 'relative', padding: '70px 24px 85px', textAlign: 'center', overflow: 'hidden', zIndex: 1 }}>
         <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', width: 800, height: 400, background: 'radial-gradient(ellipse,rgba(2,132,199,0.2) 0%,transparent 70%)', pointerEvents: 'none' }} />
-        <div ref={heroRef} style={{ maxWidth: 860, margin: '0 auto', position: 'relative' }}>
+        
+        {/* Giant Architectural Wordmark (HorizonX Altura Aesthetic) */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '46%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            fontSize: 'clamp(5rem, 16vw, 13rem)',
+            fontWeight: 900,
+            fontFamily: "'Space Grotesk', 'Rajdhani', sans-serif",
+            letterSpacing: '-0.05em',
+            color: 'rgba(255, 255, 255, 0.035)',
+            textTransform: 'lowercase',
+            userSelect: 'none',
+            pointerEvents: 'none',
+            zIndex: 0,
+            whiteSpace: 'nowrap',
+            lineHeight: 1,
+            maskImage: 'linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.1) 100%)',
+            WebkitMaskImage: 'linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.1) 100%)',
+          }}
+        >
+          logicwhile
+        </div>
+
+        <div ref={heroRef} style={{ maxWidth: 860, margin: '0 auto', position: 'relative', zIndex: 1 }}>
           
           {/* Live Cluster Health Badge */}
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }} style={{ marginBottom: 18 }}>
