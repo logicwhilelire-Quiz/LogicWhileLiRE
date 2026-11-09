@@ -27,11 +27,23 @@ export default defineConfig({
             if (id.includes('three') || id.includes('@react-three')) {
               return 'vendor-three'
             }
-            if (id.includes('framer-motion')) {
+            if (id.includes('xlsx')) {
+              return 'vendor-xlsx'
+            }
+            if (id.includes('recharts')) {
+              return 'vendor-recharts'
+            }
+            if (id.includes('@supabase')) {
+              return 'vendor-supabase'
+            }
+            if (id.includes('framer-motion') || id.includes('gsap')) {
               return 'vendor-motion'
             }
             if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
               return 'vendor-react'
+            }
+            if (id.includes('socket.io-client') || id.includes('engine.io-client')) {
+              return 'vendor-socket'
             }
             if (id.includes('monaco-editor') || id.includes('@monaco-editor')) {
               return 'vendor-monaco'
