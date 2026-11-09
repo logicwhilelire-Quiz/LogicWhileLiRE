@@ -10,6 +10,7 @@ import FlightPathLines from '../components/3d/FlightPathLines';
 import CodeEditorHolo from '../components/3d/CodeEditorHolo';
 import SectorRadar3D, { type SectorScore } from '../components/3d/SectorRadar3D';
 import SectorsUniverse3D from '../components/3d/SectorsUniverse3D';
+import { sound } from '../lib/soundService';
 
 interface Challenge {
   id: string;
@@ -735,27 +736,36 @@ export default function PracticeArenaPage() {
         }
       });
     } else {
-      alert('To install LogicWhileLiRE: Click browser menu (⋮ or share) -> "Install App" or "Add to Home Screen"');
+      alert('To install LogicWhile LiRE: Click browser menu (⋮ or share) -> "Install App" or "Add to Home Screen"');
     }
   };
 
   const handleTestPass = (earnedScore: number, maxScore: number) => {
     if (earnedScore === maxScore) {
+      sound.playChime(4);
       setXp((prev) => prev + selectedChallenge.xp);
       setSolvedCount((prev) => prev + 1);
       setXpBanner(`🎉 Sector Challenge Solved! +${selectedChallenge.xp} XP credited to your ${selectedChallenge.sectorName} mastery profile!`);
       setTimeout(() => setXpBanner(null), 5000);
+    } else {
+      sound.playKeyThock();
     }
   };
 
   const handleBlitzAnswer = (idx: number) => {
     const isCorrect = idx === BLITZ_QUESTIONS[blitzIndex].ans;
-    if (isCorrect) setBlitzScore((p) => p + 20);
+    if (isCorrect) {
+      sound.playChime(idx);
+      setBlitzScore((p) => p + 20);
+    } else {
+      sound.playClick(0.7);
+    }
 
     if (blitzIndex < BLITZ_QUESTIONS.length - 1) {
       setBlitzIndex((p) => p + 1);
     } else {
       setBlitzActive(false);
+      sound.playSwell();
       setXp((p) => p + blitzScore + 50);
       setXpBanner(`⚡ Blitz Completed! Final Score: ${blitzScore + (idx === BLITZ_QUESTIONS[blitzIndex].ans ? 20 : 0)}/100 (+50 Bonus XP)`);
       setTimeout(() => setXpBanner(null), 5000);

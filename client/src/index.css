@@ -170,6 +170,102 @@
   --shadow-glass:      0 8px 32px rgba(0, 0, 0, 0.55);
 }
 
+/* ─── SWARM STUDIO THEME (Figma Blueprint & Multi-Agent Canvas) ─── */
+[data-theme="swarm"],
+.theme-swarm {
+  --bg:                #0b0f19;
+  --bg-elevated:       #131a2a;
+  --bg-card:           #111827;
+  --bg-card-hover:     #1a2438;
+  --panel:             #111827;
+  --panel-border:      rgba(13, 153, 255, 0.25);
+  --panel-border-glow: rgba(13, 153, 255, 0.45);
+
+  --text-pure:         #ffffff;
+  --text-primary:      #f9fafb;
+  --text-secondary:    #9ca3af;
+  --text-muted:        #6b7280;
+
+  --color-bg:          #0b0f19;
+  --color-bg-subtle:   #0f172a;
+  --color-surface:     #111827;
+  --color-surface-2:   #162238;
+  --color-surface-3:   #1f2e4a;
+  --color-border:      rgba(255, 255, 255, 0.12);
+  --color-border-hover:rgba(13, 153, 255, 0.40);
+  --color-border-glow: rgba(13, 153, 255, 0.45);
+
+  --color-primary:            #0D99FF;
+  --color-primary-dark:       #0284c7;
+  --color-primary-light:      rgba(13, 153, 255, 0.16);
+  --color-primary-hover:      #38bdf8;
+  --color-primary-glow:       rgba(13, 153, 255, 0.35);
+  --color-primary-glow-strong:rgba(13, 153, 255, 0.60);
+
+  --color-secondary:      #F24E1E;
+  --color-secondary-dark: #dc2626;
+  --color-accent:         #A259FF;
+
+  --color-text:        #f9fafb;
+  --color-text-muted:  #9ca3af;
+  --color-text-faint:  #6b7280;
+
+  --glass-bg:          rgba(17, 24, 39, 0.90);
+  --glass-border:      rgba(13, 153, 255, 0.22);
+  --shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md:         0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-lg:         0 12px 30px rgba(0, 0, 0, 0.6);
+  --shadow-glass:      0 8px 32px rgba(13, 153, 255, 0.15);
+}
+
+/* ─── AURORA EMERALD THEME (Cyber Terminal) ─── */
+[data-theme="emerald"],
+.theme-emerald {
+  --bg:                #04120e;
+  --bg-elevated:       #081e17;
+  --bg-card:           #061a14;
+  --bg-card-hover:     #0d2820;
+  --panel:             #061a14;
+  --panel-border:      rgba(16, 185, 129, 0.25);
+  --panel-border-glow: rgba(16, 185, 129, 0.45);
+
+  --text-pure:         #ffffff;
+  --text-primary:      #f0fdf4;
+  --text-secondary:    #86efac;
+  --text-muted:        #4ade80;
+
+  --color-bg:          #04120e;
+  --color-bg-subtle:   #061c15;
+  --color-surface:     #061a14;
+  --color-surface-2:   #0a261e;
+  --color-surface-3:   #0f352a;
+  --color-border:      rgba(16, 185, 129, 0.15);
+  --color-border-hover:rgba(52, 211, 153, 0.35);
+  --color-border-glow: rgba(16, 185, 129, 0.40);
+
+  --color-primary:            #10B981;
+  --color-primary-dark:       #059669;
+  --color-primary-light:      rgba(16, 185, 129, 0.16);
+  --color-primary-hover:      #34d399;
+  --color-primary-glow:       rgba(16, 185, 129, 0.35);
+  --color-primary-glow-strong:rgba(16, 185, 129, 0.60);
+
+  --color-secondary:      #06B6D4;
+  --color-secondary-dark: #0891b2;
+  --color-accent:         #F59E0B;
+
+  --color-text:        #f0fdf4;
+  --color-text-muted:  #86efac;
+  --color-text-faint:  #4ade80;
+
+  --glass-bg:          rgba(6, 26, 20, 0.90);
+  --glass-border:      rgba(16, 185, 129, 0.22);
+  --shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md:         0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-lg:         0 12px 30px rgba(0, 0, 0, 0.6);
+  --shadow-glass:      0 8px 32px rgba(16, 185, 129, 0.15);
+}
+
 @keyframes skeletonWave {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }

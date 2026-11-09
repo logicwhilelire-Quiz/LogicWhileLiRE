@@ -47,8 +47,8 @@ export default function BrandLogo({
     }
 
     const checkTheme = () => {
-      const docTheme = document.documentElement.getAttribute('data-theme') as 'light' | 'dark' | null;
-      setCurrentTheme(docTheme === 'dark' ? 'dark' : 'light');
+      const docTheme = document.documentElement.getAttribute('data-theme');
+      setCurrentTheme(docTheme === 'light' ? 'light' : 'dark');
     };
 
     checkTheme();
@@ -57,7 +57,7 @@ export default function BrandLogo({
     return () => observer.disconnect();
   }, [themeOverride]);
 
-  const isDark = themeOverride ? themeOverride === 'dark' : currentTheme === 'dark';
+  const isDark = themeOverride ? themeOverride === 'dark' : currentTheme !== 'light';
 
   // Dimension scaling
   const dims = {
@@ -69,7 +69,7 @@ export default function BrandLogo({
     hero: { h: 360, markW: 360, fontSize: 52, subSize: 20,  tagSize: 17,  gap: 24 },
   }[size];
 
-  // IARE Institutional Theme palettes
+  // LogicWhile LiRE Institutional Theme palettes
   const goldGlow    = isDark ? 'rgba(234, 168, 18, 0.55)' : 'rgba(234, 168, 18, 0.35)';
   const blueColor   = isDark ? '#FFFFFF' : '#002147';
   const orangeColor = '#EAA812';

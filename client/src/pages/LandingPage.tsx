@@ -275,17 +275,41 @@ export default function LandingPage() {
             transition={{ delay: 0.4, duration: 0.5 }}
             style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 44 }}
           >
+            <Link to="/enter-exam" id="hero-enter-exam-btn" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: 'linear-gradient(135deg,#10B981 0%,#059669 100%)',
+              color: '#FFFFFF', fontWeight: 800, fontSize: '0.98rem',
+              padding: '13px 30px', borderRadius: 12, textDecoration: 'none',
+              boxShadow: '0 4px 26px rgba(16,185,129,0.45)', transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 34px rgba(16,185,129,0.65)'; }}
+            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 26px rgba(16,185,129,0.45)'; }}
+            >
+              🚀 Enter Exam Code
+            </Link>
             <Link to="/login" id="hero-student-gate-btn" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
               background: 'linear-gradient(135deg,#0284c7 0%,#1d4ed8 100%)',
               color: '#FFFFFF', fontWeight: 800, fontSize: '0.98rem',
-              padding: '13px 30px', borderRadius: 12, textDecoration: 'none',
+              padding: '13px 28px', borderRadius: 12, textDecoration: 'none',
               boxShadow: '0 4px 26px rgba(2,132,199,0.45)', transition: 'all 0.2s ease',
             }}
             onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 34px rgba(2,132,199,0.65)'; }}
             onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 26px rgba(2,132,199,0.45)'; }}
             >
-              🎓 Student / Candidate Gate
+              🎓 Student Gate
+            </Link>
+            <Link to="/practice" id="hero-practice-btn" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: 'linear-gradient(135deg,#8B5CF6 0%,#6D28D9 100%)',
+              color: '#FFFFFF', fontWeight: 800, fontSize: '0.95rem',
+              padding: '13px 26px', borderRadius: 12, textDecoration: 'none',
+              boxShadow: '0 4px 24px rgba(139,92,246,0.35)', transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 32px rgba(139,92,246,0.55)'; }}
+            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 24px rgba(139,92,246,0.35)'; }}
+            >
+              🪐 5 Sectors Arena
             </Link>
             <Link to="/admin" id="hero-admin-btn" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -342,8 +366,9 @@ export default function LandingPage() {
             <p style={{ color: '#64748B', fontSize: '0.93rem', margin: 0 }}>Role-isolated authenticated access with continuous proctoring synchronization.</p>
           </motion.div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 20 }}>
-            <PortalCard icon="🎓" badge="Candidate Gate" badgeColor="#38BDF8" badgeBg="rgba(56,189,248,0.12)" title="Student / Candidate Gate" desc="Official examination portal for verified candidates. Enter your credentials or hall ticket to access assigned exams and waiting lobbies." href="/login" btnId="landing-student-login-btn" btnLabel="Enter Candidate Gate" btnGradient="linear-gradient(135deg,#0284c7 0%,#1d4ed8 100%)" glowColor="#38BDF8" borderColor="rgba(56,189,248,0.25)" delay={0.08} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 20 }}>
+            <PortalCard icon="🚀" badge="Exam Entry" badgeColor="#10B981" badgeBg="rgba(16,185,129,0.12)" title="Exam Code Portal" desc="Direct candidate exam access using assigned Exam Code and Roll Number. Zero email/OTP required for pre-registered candidates." href="/enter-exam" btnId="landing-enter-exam-btn" btnLabel="Enter Exam Session" btnGradient="linear-gradient(135deg,#10B981 0%,#059669 100%)" glowColor="#10B981" borderColor="rgba(16,185,129,0.25)" delay={0.04} />
+            <PortalCard icon="🎓" badge="Candidate Gate" badgeColor="#38BDF8" badgeBg="rgba(56,189,248,0.12)" title="Student Portal" desc="Official examination portal for verified candidates. Sign in to view comprehensive performance analytics, scorecards, and ranking history." href="/login" btnId="landing-student-login-btn" btnLabel="Enter Candidate Gate" btnGradient="linear-gradient(135deg,#0284c7 0%,#1d4ed8 100%)" glowColor="#38BDF8" borderColor="rgba(56,189,248,0.25)" delay={0.08} />
             <PortalCard icon="🔍" badge="Invigilation" badgeColor="#A78BFA" badgeBg="rgba(167,139,250,0.12)" title="Inspector Console" desc="Live invigilation dashboard with real-time leaderboards, violation alerts, whisper messaging, and candidate communication." href="/inspector" btnId="landing-inspector-login-btn" btnLabel="Sign In as Inspector" btnGradient="linear-gradient(135deg,#7C3AED 0%,#8B5CF6 100%)" glowColor="#8B5CF6" borderColor="rgba(139,92,246,0.16)" delay={0.16} />
             <PortalCard icon="🏛️" badge="Master Authority" badgeColor="#FBBF24" badgeBg="rgba(251,191,36,0.12)" title="Admin Console" desc="Complete administrative control — manage colleges, question papers, academic hierarchy, live exam orchestration, and backups." href="/admin" btnId="landing-admin-login-btn" btnLabel="Sign In as Admin" btnGradient="linear-gradient(135deg,#D97706 0%,#EAA812 100%)" glowColor="#EAA812" borderColor="rgba(234,168,18,0.18)" delay={0.24} />
           </div>
