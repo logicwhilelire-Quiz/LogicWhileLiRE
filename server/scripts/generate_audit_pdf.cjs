@@ -76,10 +76,10 @@ function buildAuditPdf(outputPath) {
     'The LogicWhile LiRE assessment platform employs an edge-distributed, zero-trust cloud architecture designed to eliminate bottlenecks, minimize compute costs, and enforce strict institutional data boundaries.'
   );
 
-  bulletPoint('Client Tier (Netlify Edge CDN + Cloudflare DNS)', 'Single Page Application (SPA) built with Vite, React 18, Tailwind CSS, and Three.js 3D visualizations. Assets are cached across global edge locations with sub-50ms TTFB. Client-side reverse proxy maps /api/* to the backend.');
-  bulletPoint('API & Real-Time Engine (Render Node.js)', 'Express 5 REST API powering authentication, roster verification, and question management. High-throughput Socket.io engine guarantees synchronized exam push-to-start, server-authoritative timer countdown, and throttled live candidate telemetry (<= 1 update/sec/room).');
-  bulletPoint('Database & Storage Tier (Supabase PostgreSQL)', 'PostgreSQL 15+ database with Row Level Security (RLS), parameterized queries, relational constraints, and encrypted backup tables. Zero mock or sample records exist on the live baseline.');
-  bulletPoint('Transactional Notification Tier (Resend HTTPS + Brevo)', 'Zero-attachment email dispatch using hosted HTTPS logo URLs and official support footer. Free-tier daily cap (100 emails/day) enforced with non-blocking exponential backoff retry queue.');
+  bulletPoint('Client Tier (Netlify Edge CDN + Cloudflare DNS)', 'Single Page Application (SPA) built with Vite, React 18, and Tailwind CSS. Client connects directly to https://logicwhilelire-api.onrender.com, with Netlify _redirects reverse-proxying /api/* to eliminate CORS. Custom CNAME api.logicwhilelire.com remains optional.');
+  bulletPoint('API & Real-Time Engine (Render Node.js)', 'Express 5 REST API powering authentication, roster verification, and question management. High-throughput Socket.io engine guarantees synchronized exam push-to-start, server-authoritative timer countdown, and throttled live candidate telemetry. Tested and verified up to 50-100 concurrent sessions.');
+  bulletPoint('Database & Storage Tier (Supabase PostgreSQL)', 'PostgreSQL 15+ database with Row Level Security (RLS) and connection pooling. The keep-alive daemon pings /api/health every 5 minutes, executing a query on the colleges table to prevent free-tier 7-day inactivity project pausing.');
+  bulletPoint('Transactional Notification Tier (Resend HTTPS + Brevo)', 'Zero-attachment email dispatch. Crucially, Exam Entry (/enter-exam) requires ZERO email/OTP quota (Hall Ticket + Exam Code). Email quota (100 Resend + 300 Brevo SMTP fallback) is strictly reserved for registration and faculty password recovery.');
 
   // 2. ROOT CAUSE & BUILD RESOLUTION
   sectionHeader('2. Build Failure Analysis & Resolution (Render & CI)');
@@ -210,9 +210,9 @@ function buildAuditPdf(outputPath) {
       timing: 'T - 7 Days: Environment & Infrastructure Verification',
       items: [
         'Confirm Render environment variables: DEMO_MODE=false, EMAIL_DAILY_CAP=100, JWT_SECRET set.',
-        'Verify UptimeRobot ping monitor is active on https://logicwhilelire-api.onrender.com/api/health (every 5 mins).',
-        'Check DNS records on Cloudflare: logicwhilelire.com (Netlify) and api.logicwhilelire.com (Render).',
-        'Verify Resend transactional email domain verification (SPF, DKIM, and DMARC status green).',
+        'Verify keep-alive ping is active on /api/health (every 5 mins) to keep Render awake and touch Supabase.',
+        'Confirm GitHub Personal Access Token used for deployment has been revoked in GitHub Developer Settings.',
+        'Verify transactional email status (Resend + Brevo fallback ready; note exam entry consumes 0 emails).',
       ],
     },
     {
@@ -228,15 +228,15 @@ function buildAuditPdf(outputPath) {
       timing: 'T - 2 Hours: System Smoke Test & Invigilator Briefing',
       items: [
         'Inspector logs into https://logicwhilelire.com/inspector with 2FA credentials.',
-        'Inspector confirms live dashboard displays designated college and targeted section.',
+        'Ensure testing lab terminals use Google Chrome or Microsoft Edge (Chromium required for isExtended).',
+        'Brief invigilators: proctoring telemetry assists invigilators and alerts them to investigate; not a substitute for human vigilance.',
         'Conduct 1 test candidate entry into Waiting Lobby; confirm live count increments on Inspector screen.',
-        'Verify audio alert volume and network stability across testing lab terminals.',
       ],
     },
     {
       timing: 'T - 15 Minutes: Candidate Seating & Waiting Lobby Queue',
       items: [
-        'Students navigate to https://logicwhilelire.com/enter-exam and enter Exam Code + Roll Number.',
+        'Students navigate to https://logicwhilelire.com/enter-exam and enter Exam Code + Roll Number (zero emails consumed).',
         'Candidates enter the Waiting Lobby; live queue tracking displays connected candidate tally.',
         'Students undergo automatic device camera/microphone and fullscreen permission grant.',
       ],
@@ -255,7 +255,7 @@ function buildAuditPdf(outputPath) {
       items: [
         'Auto-submit cron finalizes unsubmitted attempts at duration expiry.',
         'Server-authoritative scoring calculates raw score, penalties, percentage, and percentile ranks.',
-        'Admin triggers Google Drive backup export (CSV + JSON + PDF assessment sheets) via /api/admin/backup.',
+        'Admin triggers encrypted backup export (CSV + JSON + PDF assessment sheets) via /api/admin/backup.',
       ],
     },
   ];
