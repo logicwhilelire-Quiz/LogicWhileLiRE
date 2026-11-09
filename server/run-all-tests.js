@@ -49,7 +49,8 @@ for (const file of testFiles) {
       : '$2b$12$Y65kU/s0HBji1KPpvVjjh.fXc1.p4T.B35JH3xj82W7Udi6PDGPeu';
 
   try {
-    const output = execSync(`node ${file}`, {
+    const nodeBin = process.execPath || 'node';
+    const output = execSync(`"${nodeBin}" "${file}"`, {
       stdio: 'pipe',
       cwd: __dirname,
       env: {

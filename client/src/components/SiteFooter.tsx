@@ -663,7 +663,7 @@ export default function SiteFooter() {
                         <strong>• Answer State History:</strong> Every option change is stored with millisecond timing, creating an undisputable forensic timeline of how questions were tackled.
                       </div>
                       <div style={{ padding: 12, borderRadius: 8, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <strong>• Cryptographic Certificate Verification:</strong> Student completion certificates feature SHA-256 validation hashes verifiable publicly at <code>/verify-certificate</code>.
+                        <strong>• Cryptographic Scorecard Auditing:</strong> Institutional assessment scorecards feature SHA-256 verification hashes auditable through authorized administrative controls.
                       </div>
                     </div>
                   </div>

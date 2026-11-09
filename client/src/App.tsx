@@ -71,7 +71,6 @@ const InstructionsPage = lazyWithRetry(() => import('./pages/InstructionsPage'))
 const ExamCodeQuizPage = lazyWithRetry(() => import('./pages/ExamCodeQuizPage'));
 const ResultECPage = lazyWithRetry(() => import('./pages/ResultECPage'));
 const LeaderboardECPage = lazyWithRetry(() => import('./pages/LeaderboardECPage'));
-const VerifyCertificatePage = lazyWithRetry(() => import('./pages/VerifyCertificatePage'));
 const PracticeArenaPage = lazyWithRetry(() => import('./pages/PracticeArenaPage'));
 const InstitutionalStudentReportPage = lazyWithRetry(() => import('./pages/InstitutionalStudentReportPage'));
 const AboutPage = lazyWithRetry(() => import('./pages/AboutPage'));
@@ -130,11 +129,6 @@ function AnimatedRoutes() {
         <Route path="/result-ec/:examCode" element={<ResultECPage />} />
         <Route path="/leaderboard-ec/:examCode" element={<LeaderboardECPage />} />
         <Route path="/leaderboard/:examCode" element={<LeaderboardECPage />} />
-
-        {/* ── RETIRED CERTIFICATE VERIFICATION (C4 Spec) ── */}
-        <Route path="/verify/:token" element={<VerifyCertificatePage />} />
-        <Route path="/certificate/verify/:token" element={<VerifyCertificatePage />} />
-        <Route path="/verify" element={<VerifyCertificatePage />} />
         <Route path="/practice" element={<PracticeArenaPage />} />
         <Route path="/arena" element={<PracticeArenaPage />} />
         <Route path="/sectors" element={<PracticeArenaPage />} />
