@@ -526,10 +526,23 @@ export default function CodeEditorHolo({
                           )}
                         </div>
                         {r.input && r.input !== '[hidden]' && (
-                          <div style={{ color: 'var(--color-text-faint)', fontSize: '0.75rem' }}>
-                            In: <code style={{ color: '#93c5fd' }}>{r.input}</code> · 
-                            Expected: <code style={{ color: '#86efac' }}>{r.expected}</code> · 
-                            Got: <code style={{ color: r.passed ? '#86efac' : '#fca5a5' }}>{r.actual}</code>
+                          <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, fontSize: '0.74rem' }}>
+                              <div style={{ background: 'rgba(0,0,0,0.35)', padding: '6px 8px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.08)' }}>
+                                <span style={{ color: 'var(--color-text-faint)', fontSize: '0.68rem', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Standard Input</span>
+                                <code style={{ color: '#93c5fd', whiteSpace: 'pre-wrap', fontFamily: 'var(--font-mono)' }}>{r.input}</code>
+                              </div>
+                              <div style={{ background: 'rgba(0,0,0,0.35)', padding: '6px 8px', borderRadius: 5, border: '1px solid rgba(16,185,129,0.2)' }}>
+                                <span style={{ color: '#86efac', fontSize: '0.68rem', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Expected Ground Truth</span>
+                                <code style={{ color: '#86efac', whiteSpace: 'pre-wrap', fontFamily: 'var(--font-mono)' }}>{r.expected}</code>
+                              </div>
+                            </div>
+                            {!r.passed && (
+                              <div style={{ background: 'rgba(239,68,68,0.12)', padding: '6px 8px', borderRadius: 5, border: '1px solid rgba(239,68,68,0.35)', fontSize: '0.74rem' }}>
+                                <span style={{ color: '#fca5a5', fontSize: '0.68rem', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Actual Execution Output (Diff Mismatch)</span>
+                                <code style={{ color: '#f87171', whiteSpace: 'pre-wrap', fontFamily: 'var(--font-mono)' }}>{r.actual || '(no output)'}</code>
+                              </div>
+                            )}
                           </div>
                         )}
                       </motion.div>

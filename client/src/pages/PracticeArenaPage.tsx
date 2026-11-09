@@ -648,6 +648,8 @@ export default function PracticeArenaPage() {
   const initialSectorId = (location.state as { selectedSectorId?: string } | null)?.selectedSectorId || 'all';
 
   const [sectorFilter, setSectorFilter] = useState<string>(initialSectorId);
+  const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'Easy' | 'Medium' | 'Hard'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge>(DAILY_CHALLENGES[0]);
   const [streakDays, setStreakDays] = useState(7);
   const [xp, setXp] = useState(1450);
@@ -674,10 +676,29 @@ export default function PracticeArenaPage() {
     }
   }, [navigate]);
 
-  // Filtered challenges based on sector
-  const filteredChallenges = DAILY_CHALLENGES.filter((ch) =>
-    sectorFilter === 'all' ? true : ch.sectorId === sectorFilter
-  );
+  // Filtered challenges based on sector, difficulty, and search query
+  const filteredChallenges = DAILY_CHALLENGES.filter((ch) => {
+    const matchSector = sectorFilter === 'all' || ch.sectorId === sectorFilter;
+    const matchDiff = difficultyFilter === 'all' || ch.difficulty === difficultyFilter;
+    const q = searchQuery.trim().toLowerCase();
+    const matchQuery =
+      !q ||
+      ch.title.toLowerCase().includes(q) ||
+      ch.topic.toLowerCase().includes(q) ||
+      ch.sectorName.toLowerCase().includes(q) ||
+      ch.description.toLowerCase().includes(q);
+    return matchSector && matchDiff && matchQuery;
+  });
+
+  // Keep selectedChallenge valid when filtered list changes
+  useEffect(() => {
+    if (filteredChallenges.length > 0) {
+      const exists = filteredChallenges.some((c) => c.id === selectedChallenge.id);
+      if (!exists) {
+        setSelectedChallenge(filteredChallenges[0]);
+      }
+    }
+  }, [filteredChallenges, selectedChallenge.id]);
 
   // Quick Blitz Mode State
   const [blitzScore, setBlitzScore] = useState(0);
@@ -1042,13 +1063,14 @@ export default function PracticeArenaPage() {
         {activeTab === 'coding' && (
           <div>
             {/* Sector Quick Filter Toolbar */}
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12, marginBottom: 20 }}>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12, marginBottom: 16 }}>
               {SECTOR_CATEGORIES.map((sec) => {
                 const isActive = sectorFilter === sec.id;
                 return (
                   <button
                     key={sec.id}
                     onClick={() => {
+                      sound.playClick();
                       setSectorFilter(sec.id);
                       const matching = DAILY_CHALLENGES.find((c) => sec.id === 'all' || c.sectorId === sec.id);
                       if (matching) setSelectedChallenge(matching);
@@ -1077,6 +1099,78 @@ export default function PracticeArenaPage() {
               })}
             </div>
 
+            {/* Keyword Search & Difficulty Filter Toolbar */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ flex: '1 1 260px', position: 'relative' }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Search sector challenges by keyword, topic, or system..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '9px 36px 9px 14px',
+                    borderRadius: 10,
+                    background: 'rgba(15, 23, 42, 0.65)',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    color: '#F8FAFC',
+                    fontSize: '0.82rem',
+                    outline: 'none',
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      sound.playClick();
+                      setSearchQuery('');
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: 10,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#94A3B8',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                {(['all', 'Easy', 'Medium', 'Hard'] as const).map((diff) => {
+                  const isDiffActive = difficultyFilter === diff;
+                  const color = diff === 'Easy' ? '#10B981' : diff === 'Medium' ? '#F59E0B' : diff === 'Hard' ? '#EF4444' : '#38BDF8';
+                  return (
+                    <button
+                      key={diff}
+                      onClick={() => {
+                        sound.playClick();
+                        setDifficultyFilter(diff);
+                      }}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: 8,
+                        fontSize: '0.76rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        border: isDiffActive ? `1px solid ${color}` : '1px solid rgba(255, 255, 255, 0.1)',
+                        background: isDiffActive ? `${color}20` : 'rgba(15, 23, 42, 0.6)',
+                        color: isDiffActive ? color : '#94A3B8',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {diff === 'all' ? 'All Tiers' : diff}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="arena-main-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 390px) 1fr', gap: 24 }}>
               {/* Left Column: Challenge Selector & 3D Radar */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -1098,52 +1192,87 @@ export default function PracticeArenaPage() {
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {filteredChallenges.map((ch) => {
-                      const isSelected = selectedChallenge.id === ch.id;
-                      return (
-                        <div
-                          key={ch.id}
-                          onClick={() => setSelectedChallenge(ch)}
-                          style={{
-                            padding: '12px 14px',
-                            borderRadius: 10,
-                            background: isSelected ? 'rgba(43, 127, 255, 0.2)' : 'rgba(255, 255, 255, 0.03)',
-                            border: `1px solid ${isSelected ? ch.sectorColor : 'rgba(255, 255, 255, 0.06)'}`,
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: ch.sectorColor }}>
-                              {ch.sectorBadge}
-                            </span>
-                            <span
-                              style={{
-                                fontSize: '0.68rem',
-                                fontWeight: 700,
-                                padding: '2px 8px',
-                                borderRadius: 6,
-                                background: ch.difficulty === 'Easy' ? 'rgba(16, 185, 129, 0.2)' : ch.difficulty === 'Medium' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                                color: ch.difficulty === 'Easy' ? '#34D399' : ch.difficulty === 'Medium' ? '#FBBF24' : '#F87171',
-                              }}
-                            >
-                              {ch.difficulty}
-                            </span>
-                          </div>
+                  {filteredChallenges.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '32px 16px', color: '#94A3B8' }}>
+                      <div style={{ fontSize: '1.8rem', marginBottom: 8 }}>🔍</div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#E2E8F0', marginBottom: 4 }}>
+                        No challenges match your filters
+                      </div>
+                      <p style={{ fontSize: '0.75rem', margin: '0 0 12px 0' }}>
+                        Try clearing your search query or selecting a different difficulty.
+                      </p>
+                      <button
+                        onClick={() => {
+                          sound.playClick();
+                          setSectorFilter('all');
+                          setDifficultyFilter('all');
+                          setSearchQuery('');
+                        }}
+                        style={{
+                          padding: '6px 16px',
+                          borderRadius: 8,
+                          background: 'rgba(56, 189, 248, 0.15)',
+                          border: '1px solid rgba(56, 189, 248, 0.4)',
+                          color: '#38BDF8',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Reset Filters
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {filteredChallenges.map((ch) => {
+                        const isSelected = selectedChallenge.id === ch.id;
+                        return (
+                          <div
+                            key={ch.id}
+                            onClick={() => {
+                              sound.playClick();
+                              setSelectedChallenge(ch);
+                            }}
+                            style={{
+                              padding: '12px 14px',
+                              borderRadius: 10,
+                              background: isSelected ? 'rgba(43, 127, 255, 0.2)' : 'rgba(255, 255, 255, 0.03)',
+                              border: `1px solid ${isSelected ? ch.sectorColor : 'rgba(255, 255, 255, 0.06)'}`,
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: ch.sectorColor }}>
+                                {ch.sectorBadge}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: '0.68rem',
+                                  fontWeight: 700,
+                                  padding: '2px 8px',
+                                  borderRadius: 6,
+                                  background: ch.difficulty === 'Easy' ? 'rgba(16, 185, 129, 0.2)' : ch.difficulty === 'Medium' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                                  color: ch.difficulty === 'Easy' ? '#34D399' : ch.difficulty === 'Medium' ? '#FBBF24' : '#F87171',
+                                }}
+                              >
+                                {ch.difficulty}
+                              </span>
+                            </div>
 
-                          <div style={{ fontSize: '0.88rem', fontWeight: 700, color: isSelected ? '#FFFFFF' : '#E2E8F0', marginBottom: 4 }}>
-                            {ch.title}
-                          </div>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 700, color: isSelected ? '#FFFFFF' : '#E2E8F0', marginBottom: 4 }}>
+                              {ch.title}
+                            </div>
 
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#64748B' }}>
-                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '70%' }}>{ch.topic}</span>
-                            <span style={{ color: '#A78BFA', fontWeight: 700 }}>+{ch.xp} XP</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#64748B' }}>
+                              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '70%' }}>{ch.topic}</span>
+                              <span style={{ color: '#A78BFA', fontWeight: 700 }}>+{ch.xp} XP</span>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* 3D Technical Competency Radar */}

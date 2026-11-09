@@ -58,7 +58,7 @@ interface StudentRank {
 
 const SECTOR_METRICS = [
   {
-    id: 'sec-01',
+    id: 'sector-quant',
     name: 'Sector 1: Quantitative Velocity',
     short: 'Quant',
     badge: '📐 Math & Speed',
@@ -70,7 +70,7 @@ const SECTOR_METRICS = [
     desc: 'Arithmetic acceleration, algebraic transformations, geometric logic, probabilistic models.',
   },
   {
-    id: 'sec-02',
+    id: 'sector-logic',
     name: 'Sector 2: Deductive Logic',
     short: 'Logic',
     badge: '🧩 Logic Engine',
@@ -82,7 +82,7 @@ const SECTOR_METRICS = [
     desc: 'Constraint satisfaction, inductive sequences, syllogistic deduction, Boolean matrices.',
   },
   {
-    id: 'sec-03',
+    id: 'sector-core-cs',
     name: 'Sector 3: Core CS & Systems',
     short: 'Core CS',
     badge: '💻 Systems Core',
@@ -94,7 +94,7 @@ const SECTOR_METRICS = [
     desc: 'OS scheduling, paging, thread synchronization, TCP/IP handshake, SQL indexing.',
   },
   {
-    id: 'sec-04',
+    id: 'sector-dsa',
     name: 'Sector 4: Data Structures & Algorithms',
     short: 'DSA',
     badge: '⚡ Algorithms',
@@ -106,7 +106,7 @@ const SECTOR_METRICS = [
     desc: 'Asymptotic complexity, DP transitions, graph traversals, segment trees, recursion.',
   },
   {
-    id: 'sec-05',
+    id: 'sector-fullstack',
     name: 'Sector 5: Full-Stack Architecture',
     short: 'Full-Stack',
     badge: '🌐 Web & Cloud',
@@ -879,13 +879,17 @@ export default function StudentDashboardPage() {
                         </div>
                       </div>
 
-                      <Link
-                        to="/practice"
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sound.playClick();
+                          navigate('/practice', { state: { selectedSectorId: sec.id } });
+                        }}
                         className="btn btn-outline text-xs"
-                        style={{ padding: '6px 12px', borderColor: `${sec.color}50`, color: sec.color }}
+                        style={{ padding: '6px 12px', borderColor: `${sec.color}50`, color: sec.color, cursor: 'pointer' }}
                       >
-                        ⚡ Practice
-                      </Link>
+                        ⚡ Launch Sprint
+                      </button>
                     </div>
                   </div>
                 ))}

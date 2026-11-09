@@ -144,33 +144,6 @@ export default function EnterExamPage() {
         throw new Error(data.message || 'Exam code or hall ticket not found.')
       }
     } catch (err) {
-      if (form.examCode.trim().toUpperCase().includes('DEMO')) {
-        const canonicalHt = form.hallTicket.trim() || '2201A0501'
-        const candidateName = 'Candidate ' + canonicalHt
-        const attemptData = JSON.stringify({
-          attemptId: `att_eval_${Date.now()}`,
-          examCode: form.examCode.trim().toUpperCase(),
-          hallTicket: canonicalHt,
-          studentName: candidateName,
-          student_gate_pass: `GP-STU-${canonicalHt}-A9F2`,
-          candidate_gate_pass: `GP-CAND-${canonicalHt}-C7D4`,
-          examDetails: {
-            exam_name: 'LogicWhile LiRE Examination Qualifier',
-            duration_minutes: 45,
-            total_questions: 15,
-          },
-        })
-        localStorage.setItem('logicwhilelire_attempt', attemptData)
-        localStorage.setItem('lw_attempt', attemptData)
-        navigate(`/instructions/${form.examCode.trim()}`, {
-          state: {
-            hallTicket: canonicalHt,
-            studentName: candidateName,
-            gatePass: `GP-STU-${canonicalHt}-A9F2`,
-          }
-        })
-        return
-      }
       const isColdStart =
         (err as any)?.code === 'ECONNABORTED' ||
         (err as any)?.message?.includes('timeout') ||
