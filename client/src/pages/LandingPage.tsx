@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import BrandLogo from '../components/BrandLogo';
+import { sound } from '../lib/soundService';
 
 /* ── Floating orb background ── */
 function CosmicOrbs() {
@@ -163,27 +164,43 @@ function SecurityCard({ icon, badge, title, desc, glow, delay = 0 }: SecurityCar
   );
 }
 
-interface SectorCardProps { color: string; badge: string; name: string; desc: string; delay?: number }
-function SectorCard({ color, badge, name, desc, delay = 0 }: SectorCardProps) {
+interface SectorCardProps { sectorId: string; color: string; badge: string; name: string; desc: string; delay?: number }
+function SectorCard({ sectorId, color, badge, name, desc, delay = 0 }: SectorCardProps) {
   const [hovered, setHovered] = useState(false);
+  const navigate = useNavigate();
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.94 }} whileInView={{ opacity: 1, scale: 1 }}
       viewport={{ once: true }} transition={{ delay, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        sound.playClick();
+        navigate('/practice', { state: { selectedSectorId: sectorId } });
+      }}
       style={{
         background: hovered ? 'linear-gradient(145deg,rgba(15,23,42,0.98),rgba(5,12,28,0.95))' : 'rgba(10,16,35,0.72)',
-        border: `1.5px solid ${hovered ? color + '60' : 'rgba(255,255,255,0.07)'}`,
+        border: `1.5px solid ${hovered ? color + '80' : 'rgba(255,255,255,0.07)'}`,
         borderRadius: 16, borderTop: `3px solid ${color}`,
         padding: '20px 18px', backdropFilter: 'blur(16px)',
-        boxShadow: hovered ? `0 12px 40px rgba(0,0,0,0.4),0 0 24px ${color}22` : '0 4px 16px rgba(0,0,0,0.25)',
+        boxShadow: hovered ? `0 12px 40px rgba(0,0,0,0.4),0 0 24px ${color}33` : '0 4px 16px rgba(0,0,0,0.25)',
         transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
         transition: 'all 0.28s cubic-bezier(0.16,1,0.3,1)',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
       }}
     >
-      <div style={{ fontSize: '0.76rem', fontWeight: 800, color, marginBottom: 8, letterSpacing: '0.03em' }}>{badge}</div>
-      <div style={{ fontSize: '1rem', fontWeight: 800, color: '#F1F5F9', marginBottom: 8, fontFamily: "'Rajdhani',sans-serif" }}>{name}</div>
-      <p style={{ fontSize: '0.77rem', color: '#64748B', lineHeight: 1.55, margin: 0 }}>{desc}</p>
+      <div>
+        <div style={{ fontSize: '0.76rem', fontWeight: 800, color, marginBottom: 8, letterSpacing: '0.03em' }}>{badge}</div>
+        <div style={{ fontSize: '1rem', fontWeight: 800, color: '#F1F5F9', marginBottom: 8, fontFamily: "'Rajdhani',sans-serif" }}>{name}</div>
+        <p style={{ fontSize: '0.77rem', color: '#64748B', lineHeight: 1.55, margin: 0 }}>{desc}</p>
+      </div>
+      <div style={{ marginTop: 14, fontSize: '0.74rem', fontWeight: 700, color, display: 'flex', alignItems: 'center', gap: 4 }}>
+        <span>⚡ Launch Sprint</span>
+        <span>→</span>
+      </div>
     </motion.div>
   );
 }
@@ -202,6 +219,20 @@ function FeaturePill({ icon, text }: { icon: string; text: string }) {
 
 export default function LandingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const [quickExamCode, setQuickExamCode] = useState('');
+  const [quickHallTicket, setQuickHallTicket] = useState('');
+
+  const handleQuickEntry = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickExamCode.trim() || !quickHallTicket.trim()) {
+      sound.playClick();
+      navigate('/enter-exam');
+      return;
+    }
+    sound.playChime(3);
+    navigate(`/enter-exam?code=${encodeURIComponent(quickExamCode.trim().toUpperCase())}&hallTicket=${encodeURIComponent(quickHallTicket.trim())}`);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -230,10 +261,25 @@ export default function LandingPage() {
       <SiteHeader />
 
       {/* ── HERO ── */}
-      <section className="landing-grid-bg" style={{ position: 'relative', padding: '80px 24px 90px', textAlign: 'center', overflow: 'hidden', zIndex: 1 }}>
+      <section className="landing-grid-bg" style={{ position: 'relative', padding: '70px 24px 85px', textAlign: 'center', overflow: 'hidden', zIndex: 1 }}>
         <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', width: 800, height: 400, background: 'radial-gradient(ellipse,rgba(2,132,199,0.2) 0%,transparent 70%)', pointerEvents: 'none' }} />
         <div ref={heroRef} style={{ maxWidth: 860, margin: '0 auto', position: 'relative' }}>
-          <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} style={{ marginBottom: 28 }}>
+          
+          {/* Live Cluster Health Badge */}
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }} style={{ marginBottom: 18 }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 10,
+              background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.35)',
+              borderRadius: 20, padding: '5px 16px',
+              fontSize: '0.74rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.04em',
+              boxShadow: '0 0 16px rgba(16, 185, 129, 0.15)',
+            }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 10px #10B981' }} />
+              <span>LIVE CLUSTER ONLINE &bull; 153ms DB LATENCY &bull; V4.0.0</span>
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} style={{ marginBottom: 24 }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 14,
               background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(234,168,18,0.35)',
@@ -264,7 +310,7 @@ export default function LandingPage() {
           <motion.p
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.28, duration: 0.55 }}
-            style={{ fontSize: '1.08rem', color: '#94A3B8', maxWidth: 680, margin: '0 auto 32px', lineHeight: 1.72 }}
+            style={{ fontSize: '1.08rem', color: '#94A3B8', maxWidth: 680, margin: '0 auto 30px', lineHeight: 1.72 }}
           >
             Synchronous live assessment with server-authoritative timers, automated anti-cheat monitoring,
             real-time proctoring and instantaneous competitive telemetry.
@@ -273,7 +319,7 @@ export default function LandingPage() {
           <motion.div
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 44 }}
+            style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 32 }}
           >
             <Link to="/enter-exam" id="hero-enter-exam-btn" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -337,6 +383,95 @@ export default function LandingPage() {
             </Link>
           </motion.div>
 
+          {/* Quick Exam Passcode Entry Station */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.48, duration: 0.55 }}
+            style={{
+              maxWidth: 720,
+              margin: '0 auto 36px',
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.9) 100%)',
+              border: '1.5px solid rgba(16, 185, 129, 0.35)',
+              borderRadius: 16,
+              padding: '16px 20px',
+              boxShadow: '0 12px 36px rgba(0,0,0,0.4), 0 0 24px rgba(16, 185, 129, 0.12)',
+              backdropFilter: 'blur(16px)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: '1.1rem' }}>⚡</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  Exam Morning Express Gateway
+                </span>
+              </div>
+              <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>
+                Zero OTP &bull; Instant Passcode Authentication
+              </span>
+            </div>
+
+            <form onSubmit={handleQuickEntry} style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder="EXAM CODE (e.g. EXAM2026)"
+                value={quickExamCode}
+                onChange={(e) => setQuickExamCode(e.target.value.toUpperCase())}
+                style={{
+                  flex: '1 1 180px',
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  background: 'rgba(5, 10, 24, 0.85)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  color: '#F8FAFC',
+                  fontSize: '0.86rem',
+                  fontFamily: 'monospace',
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                }}
+              />
+              <input
+                type="text"
+                placeholder="HALL TICKET / ROLL NO."
+                value={quickHallTicket}
+                onChange={(e) => setQuickHallTicket(e.target.value)}
+                style={{
+                  flex: '1 1 180px',
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  background: 'rgba(5, 10, 24, 0.85)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  color: '#F8FAFC',
+                  fontSize: '0.86rem',
+                  fontFamily: 'monospace',
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                }}
+              />
+              <button
+                type="submit"
+                style={{
+                  padding: '10px 22px',
+                  borderRadius: 8,
+                  background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                  color: '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: '0.86rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  boxShadow: '0 4px 18px rgba(16, 185, 129, 0.4)',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <span>🚀</span> Start Assessment
+              </button>
+            </form>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }}
             style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}
@@ -366,11 +501,12 @@ export default function LandingPage() {
             <p style={{ color: '#64748B', fontSize: '0.93rem', margin: 0 }}>Role-isolated authenticated access with continuous proctoring synchronization.</p>
           </motion.div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(230px,1fr))', gap: 20 }}>
             <PortalCard icon="🚀" badge="Exam Entry" badgeColor="#10B981" badgeBg="rgba(16,185,129,0.12)" title="Exam Code Portal" desc="Direct candidate exam access using assigned Exam Code and Roll Number. Zero email/OTP required for pre-registered candidates." href="/enter-exam" btnId="landing-enter-exam-btn" btnLabel="Enter Exam Session" btnGradient="linear-gradient(135deg,#10B981 0%,#059669 100%)" glowColor="#10B981" borderColor="rgba(16,185,129,0.25)" delay={0.04} />
             <PortalCard icon="🎓" badge="Candidate Gate" badgeColor="#38BDF8" badgeBg="rgba(56,189,248,0.12)" title="Student Portal" desc="Official examination portal for verified candidates. Sign in to view comprehensive performance analytics, scorecards, and ranking history." href="/login" btnId="landing-student-login-btn" btnLabel="Enter Candidate Gate" btnGradient="linear-gradient(135deg,#0284c7 0%,#1d4ed8 100%)" glowColor="#38BDF8" borderColor="rgba(56,189,248,0.25)" delay={0.08} />
+            <PortalCard icon="👨‍🏫" badge="Academic Staff" badgeColor="#F43F5E" badgeBg="rgba(244,63,94,0.12)" title="Faculty Portal" desc="Curriculum & question paper setting, section-scoped student management, and assessment creation for accredited trainers." href="/faculty" btnId="landing-faculty-login-btn" btnLabel="Sign In as Faculty" btnGradient="linear-gradient(135deg,#E11D48 0%,#F43F5E 100%)" glowColor="#F43F5E" borderColor="rgba(244,63,94,0.25)" delay={0.12} />
             <PortalCard icon="🔍" badge="Invigilation" badgeColor="#A78BFA" badgeBg="rgba(167,139,250,0.12)" title="Inspector Console" desc="Live invigilation dashboard with real-time leaderboards, violation alerts, whisper messaging, and candidate communication." href="/inspector" btnId="landing-inspector-login-btn" btnLabel="Sign In as Inspector" btnGradient="linear-gradient(135deg,#7C3AED 0%,#8B5CF6 100%)" glowColor="#8B5CF6" borderColor="rgba(139,92,246,0.16)" delay={0.16} />
-            <PortalCard icon="🏛️" badge="Master Authority" badgeColor="#FBBF24" badgeBg="rgba(251,191,36,0.12)" title="Admin Console" desc="Complete administrative control — manage colleges, question papers, academic hierarchy, live exam orchestration, and backups." href="/admin" btnId="landing-admin-login-btn" btnLabel="Sign In as Admin" btnGradient="linear-gradient(135deg,#D97706 0%,#EAA812 100%)" glowColor="#EAA812" borderColor="rgba(234,168,18,0.18)" delay={0.24} />
+            <PortalCard icon="🏛️" badge="Master Authority" badgeColor="#FBBF24" badgeBg="rgba(251,191,36,0.12)" title="Admin Console" desc="Complete administrative control — manage colleges, question papers, academic hierarchy, live exam orchestration, and backups." href="/admin" btnId="landing-admin-login-btn" btnLabel="Sign In as Admin" btnGradient="linear-gradient(135deg,#D97706 0%,#EAA812 100%)" glowColor="#EAA812" borderColor="rgba(234,168,18,0.18)" delay={0.20} />
           </div>
         </div>
       </section>
@@ -641,11 +777,11 @@ export default function LandingPage() {
           </motion.div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 16 }}>
-            <SectorCard color="#F59E0B" badge="📐 Quantitative Velocity" name="Sector 1: Quant" desc="Arithmetic acceleration, algebraic transformations, geometric logic, probabilistic models." delay={0} />
-            <SectorCard color="#8B5CF6" badge="🧩 Deductive Logic" name="Sector 2: Logic" desc="Constraint satisfaction, inductive sequences, syllogistic deduction, Boolean matrices." delay={0.07} />
-            <SectorCard color="#10B981" badge="💻 Core CS & Systems" name="Sector 3: Core CS" desc="OS scheduling, paging, thread synchronization, TCP/IP networking, SQL indexing." delay={0.14} />
-            <SectorCard color="#38BDF8" badge="⚡ Algorithms & DSA" name="Sector 4: DSA" desc="Dynamic programming, graph traversals, amortized complexity, algorithmic velocity." delay={0.21} />
-            <SectorCard color="#F43F5E" badge="🌐 Full-Stack & Cloud" name="Sector 5: Cloud" desc="Distributed architectures, microservices, cloud scaling, concurrency, fault tolerance." delay={0.28} />
+            <SectorCard sectorId="sector-quant" color="#F59E0B" badge="📐 Quantitative Velocity" name="Sector 1: Quant" desc="Arithmetic acceleration, algebraic transformations, geometric logic, probabilistic models." delay={0} />
+            <SectorCard sectorId="sector-logic" color="#8B5CF6" badge="🧩 Deductive Logic" name="Sector 2: Logic" desc="Constraint satisfaction, inductive sequences, syllogistic deduction, Boolean matrices." delay={0.07} />
+            <SectorCard sectorId="sector-core-cs" color="#10B981" badge="💻 Core CS & Systems" name="Sector 3: Core CS" desc="OS scheduling, paging, thread synchronization, TCP/IP networking, SQL indexing." delay={0.14} />
+            <SectorCard sectorId="sector-dsa" color="#38BDF8" badge="⚡ Algorithms & DSA" name="Sector 4: DSA" desc="Dynamic programming, graph traversals, amortized complexity, algorithmic velocity." delay={0.21} />
+            <SectorCard sectorId="sector-fullstack" color="#F43F5E" badge="🌐 Full-Stack & Cloud" name="Sector 5: Cloud" desc="Distributed architectures, microservices, cloud scaling, concurrency, fault tolerance." delay={0.28} />
           </div>
 
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} style={{ textAlign: 'center', marginTop: 36 }}>
