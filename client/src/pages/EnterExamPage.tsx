@@ -155,7 +155,7 @@ export default function EnterExamPage() {
           student_gate_pass: `GP-STU-${canonicalHt}-A9F2`,
           candidate_gate_pass: `GP-CAND-${canonicalHt}-C7D4`,
           examDetails: {
-            exam_name: 'LogicWhileLiRE Examination Qualifier',
+            exam_name: 'LogicWhile LiRE Examination Qualifier',
             duration_minutes: 45,
             total_questions: 15,
           },

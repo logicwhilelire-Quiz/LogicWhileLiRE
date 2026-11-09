@@ -1,5 +1,5 @@
 /**
- * InstructorConsolePage.tsx — LogicWhileLiRE Master Inspector Command Dashboard
+ * InstructorConsolePage.tsx — LogicWhile LiRE Master Inspector Command Dashboard
  *
  * Requirements:
  * - Inspector lands directly on the live dashboard for their college.

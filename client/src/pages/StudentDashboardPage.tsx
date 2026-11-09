@@ -6,6 +6,8 @@ import { API_BASE_URL } from '../lib/config';
 import BrandLogo from '../components/BrandLogo';
 import AnimatedPage from '../components/AnimatedPage';
 import SectorRadar3D, { type SectorScore } from '../components/3d/SectorRadar3D';
+import ThemeToggle from '../components/ui/ThemeToggle';
+import { sound } from '../lib/soundService';
 
 const SectorsUniverse3D = lazy(() => import('../components/3d/SectorsUniverse3D'));
 
@@ -393,8 +395,13 @@ export default function StudentDashboardPage() {
                 <span>5 Sectors 3D Arena</span>
               </Link>
 
+              <ThemeToggle className="ml-2" />
+
               <button
-                onClick={handleLogout}
+                onClick={() => {
+                  sound.playClick();
+                  handleLogout();
+                }}
                 className="btn btn-outline text-xs"
                 style={{ padding: '6px 14px', borderRadius: 6 }}
               >

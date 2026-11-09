@@ -13,6 +13,7 @@ class AudioSynthesizer {
 
   private getContext(): AudioContext | null {
     if (!this.enabled || typeof window === 'undefined') return null
+    if (localStorage.getItem('logicwhilelire_audio_muted') === 'true') return null
     if (!this.ctx) {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
       if (AudioCtx) {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import BrandLogo from '../BrandLogo';
+import ThemeToggle from '../ui/ThemeToggle';
 
 interface AdminSidebarProps {
   activeTab?: string;
@@ -93,9 +94,10 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
 
   return (
     <aside className="admin-sidebar" style={{ width: 260, flexShrink: 0 }}>
-      {/* Brand */}
-      <div style={{ marginBottom: 20 }}>
+      {/* Brand & Theme Header */}
+      <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <BrandLogo size="sm" />
+        <ThemeToggle />
       </div>
 
       {/* Admin / Inspector Identity Badge */}
@@ -189,7 +191,7 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
           <span>Logout Portal</span>
         </button>
         <div style={{ fontSize: '0.68rem', color: 'var(--color-text-faint, #64748b)', textAlign: 'center', marginTop: 12, lineHeight: 1.4 }}>
-          LogicWhileLiRE • <em>"Logic. While. LiRE."</em><br />Autonomous Assessment Engine
+          LogicWhile LiRE • <em>"Logic. While. LiRE."</em><br />Autonomous Assessment Engine
         </div>
       </div>
     </aside>
