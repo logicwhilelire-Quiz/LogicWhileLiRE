@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import { sound } from '../lib/soundService';
@@ -12,28 +12,148 @@ interface InspectTag {
   id: string;
   label: string;
   spec: string;
+  domain: string;
   color: string;
   top: string;
   left?: string;
   right?: string;
+  bounds?: string;
+  desc: string;
 }
 
 const INSPECT_NODES: InspectTag[] = [
-  { id: 'node-hero', label: 'HERO_VIEWPORT', spec: '1240×620 · Z:10', color: '#38BDF8', top: '14%', left: '8%' },
-  { id: 'node-gateway', label: 'EXPRESS_GATEWAY', spec: '720×90 · 0-OTP', color: '#10B981', top: '38%', left: '12%' },
-  { id: 'node-portals', label: 'PORTAL_MATRIX', spec: '5-ROLES · RBAC', color: '#F59E0B', top: '52%', right: '10%' },
-  { id: 'node-lire', label: 'LiRE_ENGINE', spec: 'SUB-50ms · TIE-BREAK', color: '#8B5CF6', top: '68%', left: '7%' },
-  { id: 'node-sectors', label: '5_SECTOR_RADAR', spec: '5-AXIS · HOLOGRAPHIC', color: '#EC4899', top: '82%', right: '12%' },
+  {
+    id: 'node-hero',
+    label: 'HERO_VIEWPORT',
+    spec: '1240 × 640 px · Z:10',
+    domain: 'Platform Gateway',
+    color: '#38BDF8',
+    top: '12%',
+    left: '8%',
+    bounds: '1240 × 640 px',
+    desc: 'Central hero presentation layer with architectural wordmark and real-time cluster health status.',
+  },
+  {
+    id: 'node-gateway',
+    label: 'EXPRESS_GATEWAY',
+    spec: '720 × 90 px · 0-OTP',
+    domain: 'Instant Authentication',
+    color: '#10B981',
+    top: '26%',
+    left: '12%',
+    bounds: '720 × 90 px',
+    desc: 'High-velocity exam entry gateway with in-memory caching (<1ms response) and canonical roll normalization.',
+  },
+  {
+    id: 'node-stats',
+    label: 'CLUSTER_TELEMETRY',
+    spec: '1100 × 120 px · Live Metrics',
+    domain: 'Infrastructure Metrics',
+    color: '#FBBF24',
+    top: '38%',
+    right: '10%',
+    bounds: '1100 × 120 px',
+    desc: 'Live telemetry runway reporting 10,000+ candidate capacity and sub-50ms database latency.',
+  },
+  {
+    id: 'node-sec1',
+    label: 'SEC_01_QUANT',
+    spec: '240 × 260 px · Aptitude',
+    domain: 'Curriculum Sector 1',
+    color: '#F59E0B',
+    top: '50%',
+    left: '6%',
+    bounds: '240 × 260 px',
+    desc: 'Quantitative Velocity: Relative speed, modular arithmetic, probabilistic combinations and geometry.',
+  },
+  {
+    id: 'node-sec2',
+    label: 'SEC_02_LOGIC',
+    spec: '240 × 260 px · Deduction',
+    domain: 'Curriculum Sector 2',
+    color: '#8B5CF6',
+    top: '50%',
+    left: '24%',
+    bounds: '240 × 260 px',
+    desc: 'Deductive Logic & Cognitive Networks: Constraint networks, syllogisms, pattern decoders.',
+  },
+  {
+    id: 'node-sec3',
+    label: 'SEC_03_SYSTEMS',
+    spec: '240 × 260 px · Core CS',
+    domain: 'Curriculum Sector 3',
+    color: '#10B981',
+    top: '50%',
+    left: '42%',
+    bounds: '240 × 260 px',
+    desc: 'Core CS Foundations: OS scheduling, virtual memory paging, deadlock avoidance, TCP/IP flow control.',
+  },
+  {
+    id: 'node-sec4',
+    label: 'SEC_04_DSA',
+    spec: '240 × 260 px · Algorithms',
+    domain: 'Curriculum Sector 4',
+    color: '#38BDF8',
+    top: '50%',
+    left: '60%',
+    bounds: '240 × 260 px',
+    desc: 'Advanced DSA: Longest Increasing Subsequence, Monotonic Stacks, Disjoint Set Union & Kruskal MST.',
+  },
+  {
+    id: 'node-sec5',
+    label: 'SEC_05_FULLSTACK',
+    spec: '240 × 260 px · Cloud Arch',
+    domain: 'Curriculum Sector 5',
+    color: '#F43F5E',
+    top: '50%',
+    left: '78%',
+    bounds: '240 × 260 px',
+    desc: 'Distributed Architecture: Token bucket rate limiting, event loop simulator, microtask priority engines.',
+  },
+  {
+    id: 'node-portals',
+    label: 'PORTAL_MATRIX',
+    spec: '5-ROLES · Zero-Trust RBAC',
+    domain: 'Access Management',
+    color: '#F59E0B',
+    top: '68%',
+    right: '8%',
+    bounds: '1100 × 320 px',
+    desc: 'Institutional role matrix separating Super Admin, College Inspector, Faculty, and Student portals.',
+  },
+  {
+    id: 'node-lire',
+    label: 'LiRE_ENGINE',
+    spec: 'Continuous Continuous Rank',
+    domain: 'Real-Time Telemetry',
+    color: '#8B5CF6',
+    top: '80%',
+    left: '8%',
+    bounds: '1200 × 380 px',
+    desc: 'Synchronous live assessment engine with drift-immune server timers and deterministic tie-breaking.',
+  },
+  {
+    id: 'node-proctor',
+    label: 'PROCTOR_LOCKDOWN',
+    spec: 'Dual-Stream AI Security',
+    domain: 'Anti-Cheat Subsystem',
+    color: '#EC4899',
+    top: '88%',
+    right: '12%',
+    bounds: '1100 × 280 px',
+    desc: 'WebRTC dual-stream video proctoring, audio spike classification, fullscreen lockdown, and face detection.',
+  },
 ];
 
 export default function HorizonXOverlay() {
   const [active, setActive] = useState(false);
   const [mousePos, setMousePos] = useState<Coordinate>({ x: 0, y: 0 });
   const [viewportSize, setViewportSize] = useState({ w: window.innerWidth, h: window.innerHeight });
-  const [activeTab, setActiveTab] = useState<'blueprint' | 'wireframe' | 'metrics'>('blueprint');
+  const [activeTab, setActiveTab] = useState<'blueprint' | 'wireframe' | 'sectors' | 'metrics'>('blueprint');
+  const [selectedNode, setSelectedNode] = useState<InspectTag>(INSPECT_NODES[0]);
   const location = useLocation();
 
-  // Smart security dampener: never display during active quiz
+  // Smart security dampener: unmount during active examinations
   const isTakingQuiz = location.pathname.startsWith('/quiz/');
 
   // Listen to mouse coordinates
@@ -52,7 +172,7 @@ export default function HorizonXOverlay() {
     };
   }, []);
 
-  // Keyboard shortcut: Press 'H' to toggle HorizonX mode
+  // Listen for both keyboard shortcut (H) and custom event 'toggle-horizonx' from SiteHeader
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -65,8 +185,21 @@ export default function HorizonXOverlay() {
         });
       }
     };
+    const handleCustomToggle = () => {
+      setActive((prev) => {
+        const next = !prev;
+        if (next) sound.playSwell();
+        else sound.playClick();
+        return next;
+      });
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('toggle-horizonx', handleCustomToggle);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('toggle-horizonx', handleCustomToggle);
+    };
   }, []);
 
   if (isTakingQuiz) return null;
@@ -101,8 +234,8 @@ export default function HorizonXOverlay() {
             gap: 8,
             padding: '8px 16px',
             borderRadius: 999,
-            background: active ? 'linear-gradient(135deg, #0EA5E9, #8B5CF6)' : 'rgba(10, 16, 35, 0.85)',
-            border: active ? '1.5px solid #38BDF8' : '1px solid rgba(255, 255, 255, 0.15)',
+            background: active ? 'linear-gradient(135deg, #0EA5E9, #8B5CF6)' : 'rgba(10, 16, 35, 0.88)',
+            border: active ? '1.5px solid #38BDF8' : '1px solid rgba(255, 255, 255, 0.18)',
             color: '#FFFFFF',
             fontSize: '0.76rem',
             fontWeight: 800,
@@ -141,12 +274,14 @@ export default function HorizonXOverlay() {
             style={{
               position: 'fixed',
               inset: 0,
-              pointerEvents: 'none',
               zIndex: 9980,
+              pointerEvents: 'none',
               overflow: 'hidden',
+              background: 'rgba(3, 7, 18, 0.55)',
+              backdropFilter: 'saturate(1.2)',
             }}
           >
-            {/* 1. Architectural Blueprint Grid Background */}
+            {/* 1. Precision Architectural Grid Runway */}
             <div
               style={{
                 position: 'absolute',
@@ -162,7 +297,7 @@ export default function HorizonXOverlay() {
               }}
             />
 
-            {/* 2. Precision Vertical Alignment Tracks (HorizonX Runway) */}
+            {/* 2. Precision 12-Column Alignment Runway */}
             <div
               style={{
                 position: 'absolute',
@@ -189,7 +324,7 @@ export default function HorizonXOverlay() {
                       left: 6,
                       fontSize: '0.6rem',
                       fontFamily: "'Space Grotesk', monospace",
-                      color: 'rgba(56, 189, 248, 0.3)',
+                      color: 'rgba(56, 189, 248, 0.35)',
                     }}
                   >
                     COL_{String(i + 1).padStart(2, '0')}
@@ -198,7 +333,35 @@ export default function HorizonXOverlay() {
               ))}
             </div>
 
-            {/* 3. Dynamic Cursor Reticle & Dimension Crosshairs */}
+            {/* 3. Top Mode Banner */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 14,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: 'rgba(6, 12, 28, 0.92)',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                borderRadius: 20,
+                padding: '4px 18px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                fontSize: '0.72rem',
+                fontFamily: "'Space Grotesk', monospace",
+                fontWeight: 700,
+                color: '#38BDF8',
+                boxShadow: '0 0 20px rgba(56, 189, 248, 0.25)',
+                pointerEvents: 'auto',
+              }}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }} />
+              <span>HORIZONX BLUEPRINT ENGINE v4.0.0 &bull; LIVE ARCHITECTURAL INSPECTOR</span>
+              <span style={{ color: '#64748B' }}>|</span>
+              <span style={{ color: '#F8FAFC' }}>HOTKEY: <kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 5px', borderRadius: 3 }}>H</kbd></span>
+            </div>
+
+            {/* 4. Dynamic Cursor Reticle & Dimension Crosshairs */}
             <div
               style={{
                 position: 'absolute',
@@ -228,7 +391,7 @@ export default function HorizonXOverlay() {
                 position: 'absolute',
                 left: mousePos.x + 16,
                 top: mousePos.y + 16,
-                background: 'rgba(5, 10, 24, 0.9)',
+                background: 'rgba(5, 10, 24, 0.92)',
                 border: '1px solid #38BDF8',
                 borderRadius: 6,
                 padding: '4px 8px',
@@ -243,64 +406,78 @@ export default function HorizonXOverlay() {
               X: {mousePos.x}px &bull; Y: {mousePos.y}px
             </div>
 
-            {/* 4. Section Architectural Spec Pins */}
-            {INSPECT_NODES.map((node) => (
-              <div
-                key={node.id}
-                style={{
-                  position: 'absolute',
-                  top: node.top,
-                  left: node.left,
-                  right: node.right,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
+            {/* 5. Section & Sector Architectural Spec Pins (Interactive) */}
+            {INSPECT_NODES.map((node) => {
+              const isSelected = selectedNode.id === node.id;
+              return (
                 <div
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: '50%',
-                    background: node.color,
-                    boxShadow: `0 0 12px ${node.color}`,
+                  key={node.id}
+                  onClick={() => {
+                    sound.playClick();
+                    setSelectedNode(node);
                   }}
-                />
-                <div
+                  onMouseEnter={() => {
+                    setSelectedNode(node);
+                  }}
                   style={{
-                    background: 'rgba(5, 10, 24, 0.88)',
-                    border: `1px solid ${node.color}88`,
-                    borderLeft: `3px solid ${node.color}`,
-                    borderRadius: 6,
-                    padding: '4px 10px',
-                    fontFamily: "'Space Grotesk', monospace",
-                    boxShadow: `0 0 16px ${node.color}33`,
+                    position: 'absolute',
+                    top: node.top,
+                    left: node.left,
+                    right: node.right,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                    pointerEvents: 'auto',
+                    transition: 'all 0.2s ease',
+                    transform: isSelected ? 'scale(1.06)' : 'scale(1)',
                   }}
                 >
-                  <div style={{ fontSize: '0.68rem', fontWeight: 800, color: node.color }}>
-                    {node.label}
-                  </div>
-                  <div style={{ fontSize: '0.6rem', color: '#94A3B8' }}>
-                    {node.spec}
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      background: node.color,
+                      boxShadow: `0 0 12px ${node.color}`,
+                    }}
+                  />
+                  <div
+                    style={{
+                      background: isSelected ? 'rgba(10, 20, 45, 0.96)' : 'rgba(5, 10, 24, 0.88)',
+                      border: `1.5px solid ${isSelected ? node.color : node.color + '66'}`,
+                      borderLeft: `4px solid ${node.color}`,
+                      borderRadius: 6,
+                      padding: '5px 12px',
+                      fontFamily: "'Space Grotesk', monospace",
+                      boxShadow: isSelected ? `0 0 20px ${node.color}66` : `0 0 14px ${node.color}22`,
+                    }}
+                  >
+                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: node.color }}>
+                      {node.label}
+                    </div>
+                    <div style={{ fontSize: '0.62rem', color: '#94A3B8' }}>
+                      {node.spec}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
-            {/* 5. Floating Bottom Architectural Console Terminal (as shown in video) */}
+            {/* 6. Floating Bottom Architectural Console Terminal (Exact HorizonX Design) */}
             <div
               style={{
                 position: 'absolute',
                 bottom: 24,
                 left: '50%',
                 transform: 'translateX(-50%)',
-                width: 'min(760px, calc(100vw - 48px))',
-                background: 'rgba(6, 11, 28, 0.92)',
-                border: '1.5px solid rgba(56, 189, 248, 0.35)',
+                width: 'min(820px, calc(100vw - 48px))',
+                background: 'rgba(6, 11, 28, 0.94)',
+                border: '1.5px solid rgba(56, 189, 248, 0.4)',
                 borderRadius: 14,
                 padding: '14px 20px',
                 backdropFilter: 'blur(20px)',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(56, 189, 248, 0.15)',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.7), 0 0 35px rgba(56, 189, 248, 0.2)',
                 pointerEvents: 'auto',
                 fontFamily: "'Space Grotesk', monospace",
               }}
@@ -318,12 +495,12 @@ export default function HorizonXOverlay() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }} />
-                  <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#F8FAFC', letterSpacing: '0.04em' }}>
-                    HORIZONX AGENT OVERVIEW: ARCHITECTURE v4.0.0
+                  <span style={{ fontSize: '0.76rem', fontWeight: 800, color: '#F8FAFC', letterSpacing: '0.04em' }}>
+                    INSPECT ELEMENT // {selectedNode.label}
                   </span>
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  {(['blueprint', 'wireframe', 'metrics'] as const).map((tab) => (
+                  {(['blueprint', 'wireframe', 'sectors', 'metrics'] as const).map((tab) => (
                     <button
                       key={tab}
                       onClick={() => {
@@ -331,15 +508,16 @@ export default function HorizonXOverlay() {
                         setActiveTab(tab);
                       }}
                       style={{
-                        padding: '2px 8px',
+                        padding: '3px 10px',
                         borderRadius: 4,
                         fontSize: '0.65rem',
                         fontWeight: 700,
                         border: activeTab === tab ? '1px solid #38BDF8' : '1px solid transparent',
-                        background: activeTab === tab ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+                        background: activeTab === tab ? 'rgba(56, 189, 248, 0.22)' : 'transparent',
                         color: activeTab === tab ? '#38BDF8' : '#94A3B8',
                         cursor: 'pointer',
                         textTransform: 'uppercase',
+                        fontFamily: "'Space Grotesk', monospace",
                       }}
                     >
                       {tab}
@@ -351,17 +529,47 @@ export default function HorizonXOverlay() {
                       background: 'transparent',
                       border: 'none',
                       color: '#94A3B8',
-                      fontSize: '0.8rem',
+                      fontSize: '0.85rem',
                       cursor: 'pointer',
-                      padding: '0 4px',
+                      padding: '0 6px',
                     }}
+                    title="Close HorizonX Mode (Key: H)"
                   >
                     ✕
                   </button>
                 </div>
               </div>
 
-              {/* Terminal Live Telemetry Output */}
+              {/* Terminal Active Node Detailed Specifications */}
+              <div
+                style={{
+                  background: 'rgba(3, 7, 18, 0.65)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: 8,
+                  padding: '10px 14px',
+                  marginBottom: 12,
+                  fontSize: '0.72rem',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ color: selectedNode.color, fontWeight: 800 }}>
+                    TAG: &lt;section#{selectedNode.id}&gt;
+                  </span>
+                  <span style={{ color: '#34D399', fontWeight: 700 }}>
+                    STATUS: 200 OK &bull; SYNC ACTIVE
+                  </span>
+                </div>
+                <div style={{ color: '#CBD5E1', fontSize: '0.7rem', lineHeight: 1.45, marginBottom: 6 }}>
+                  {selectedNode.desc}
+                </div>
+                <div style={{ display: 'flex', gap: 16, color: '#64748B', fontSize: '0.65rem' }}>
+                  <span>BOUNDS: <strong style={{ color: '#F8FAFC' }}>{selectedNode.bounds}</strong></span>
+                  <span>DOMAIN: <strong style={{ color: '#F8FAFC' }}>{selectedNode.domain}</strong></span>
+                  <span>LATENCY: <strong style={{ color: '#FBBF24' }}>153ms DB Ping</strong></span>
+                </div>
+              </div>
+
+              {/* Terminal System Overview Bar */}
               <div
                 style={{
                   display: 'grid',
@@ -371,19 +579,19 @@ export default function HorizonXOverlay() {
                 }}
               >
                 <div>
-                  <div style={{ color: '#64748B', fontSize: '0.64rem' }}>VIEWPORT MATRIX</div>
+                  <div style={{ color: '#64748B', fontSize: '0.62rem' }}>VIEWPORT RUNWAY</div>
                   <div style={{ color: '#38BDF8', fontWeight: 700 }}>{viewportSize.w} × {viewportSize.h} px</div>
                 </div>
                 <div>
-                  <div style={{ color: '#64748B', fontSize: '0.64rem' }}>SECTOR ENGINES</div>
-                  <div style={{ color: '#34D399', fontWeight: 700 }}>5/5 Synchronized</div>
+                  <div style={{ color: '#64748B', fontSize: '0.62rem' }}>5 SECTOR ENGINES</div>
+                  <div style={{ color: '#34D399', fontWeight: 700 }}>Quant &bull; Logic &bull; Core &bull; DSA &bull; Cloud</div>
                 </div>
                 <div>
-                  <div style={{ color: '#64748B', fontSize: '0.64rem' }}>DB LATENCY (SUPABASE)</div>
-                  <div style={{ color: '#FBBF24', fontWeight: 700 }}>153ms &bull; SSL/TLS</div>
+                  <div style={{ color: '#64748B', fontSize: '0.62rem' }}>DATABASE BACKEND</div>
+                  <div style={{ color: '#FBBF24', fontWeight: 700 }}>Supabase Managed PG (SSL)</div>
                 </div>
                 <div>
-                  <div style={{ color: '#64748B', fontSize: '0.64rem' }}>DEVELOPED BY</div>
+                  <div style={{ color: '#64748B', fontSize: '0.62rem' }}>DEVELOPED BY</div>
                   <div style={{ color: '#A78BFA', fontWeight: 700 }}>R. Charan Sai Krishna</div>
                 </div>
               </div>
@@ -394,4 +602,3 @@ export default function HorizonXOverlay() {
     </>
   );
 }
-

@@ -289,6 +289,74 @@ export default function LandingPage() {
           logicwhile
         </div>
 
+        {/* Left Architectural Spec Flank Card (HorizonX Style) */}
+        <div
+          className="architectural-flank-card"
+          style={{
+            position: 'absolute',
+            left: 28,
+            top: '38%',
+            transform: 'translateY(-50%)',
+            zIndex: 2,
+            maxWidth: 240,
+            textAlign: 'left',
+            fontFamily: "'Space Grotesk', monospace",
+            background: 'rgba(6, 12, 30, 0.78)',
+            border: '1px solid rgba(56, 189, 248, 0.25)',
+            borderLeft: '3px solid #38BDF8',
+            borderRadius: 12,
+            padding: '14px 18px',
+            backdropFilter: 'blur(16px)',
+            boxShadow: '0 12px 32px rgba(0,0,0,0.5), 0 0 16px rgba(56, 189, 248, 0.1)',
+          }}
+        >
+          <div style={{ fontSize: '0.64rem', color: '#38BDF8', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 4 }}>
+            LOCATION // HYDERABAD
+          </div>
+          <div style={{ fontSize: '0.94rem', fontWeight: 800, color: '#F8FAFC', marginBottom: 4, fontFamily: "'Rajdhani', sans-serif" }}>
+            LogicWhile Institute
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#94A3B8', lineHeight: 1.45 }}>
+            17.3850° N, 78.4867° E<br />
+            Autonomous Assessment Hub<br />
+            <strong style={{ color: '#10B981' }}>10,000+ Synchronous Nodes</strong>
+          </div>
+        </div>
+
+        {/* Right Architectural Spec Flank Card (HorizonX Style) */}
+        <div
+          className="architectural-flank-card"
+          style={{
+            position: 'absolute',
+            right: 28,
+            top: '38%',
+            transform: 'translateY(-50%)',
+            zIndex: 2,
+            maxWidth: 240,
+            textAlign: 'left',
+            fontFamily: "'Space Grotesk', monospace",
+            background: 'rgba(6, 12, 30, 0.78)',
+            border: '1px solid rgba(234, 168, 18, 0.25)',
+            borderLeft: '3px solid #EAA812',
+            borderRadius: 12,
+            padding: '14px 18px',
+            backdropFilter: 'blur(16px)',
+            boxShadow: '0 12px 32px rgba(0,0,0,0.5), 0 0 16px rgba(234, 168, 18, 0.1)',
+          }}
+        >
+          <div style={{ fontSize: '0.64rem', color: '#EAA812', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 4 }}>
+            SPECIFICATION // LiRE v4.0.0
+          </div>
+          <div style={{ fontSize: '0.94rem', fontWeight: 800, color: '#F8FAFC', marginBottom: 4, fontFamily: "'Rajdhani', sans-serif" }}>
+            5 Technical Sectors
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#94A3B8', lineHeight: 1.45 }}>
+            Quant &bull; Logic &bull; Core CS<br />
+            DSA &bull; Cloud Systems<br />
+            <strong style={{ color: '#38BDF8' }}>153ms DB Latency &bull; SSL/TLS</strong>
+          </div>
+        </div>
+
         <div ref={heroRef} style={{ maxWidth: 860, margin: '0 auto', position: 'relative', zIndex: 1 }}>
           
           {/* Live Cluster Health Badge */}

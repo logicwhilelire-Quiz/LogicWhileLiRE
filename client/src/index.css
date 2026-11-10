@@ -3813,3 +3813,14 @@ div[role="radio"]:hover,
   opacity: 0.5;
 }
 
+/* ── HorizonX Architectural Spec Flank Cards ── */
+.architectural-flank-card {
+  display: block;
+}
+@media (max-width: 1220px) {
+  .architectural-flank-card {
+    display: none !important;
+  }
+}
+
+

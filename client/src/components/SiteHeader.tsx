@@ -134,6 +134,32 @@ export default function SiteHeader() {
             <span>
               CLOCK: <strong style={{ color: '#EAA812' }}>SERVER-AUTHORITATIVE</strong>
             </span>
+            <span style={{ color: '#475569' }}>|</span>
+            <button
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('toggle-horizonx'));
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                background: 'rgba(56, 189, 248, 0.12)',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                borderRadius: 4,
+                padding: '2px 8px',
+                color: '#38BDF8',
+                fontSize: '10.5px',
+                fontWeight: 700,
+                fontFamily: "'Space Grotesk', monospace",
+                cursor: 'pointer',
+                letterSpacing: '0.04em',
+                transition: 'all 0.18s ease',
+              }}
+              title="Toggle HorizonX Architectural Blueprint Inspect Mode (Key: H)"
+            >
+              <span>📐</span>
+              <span>HORIZONX [H]</span>
+            </button>
           </div>
         </div>
       </div>
