@@ -71,6 +71,7 @@ import {
   getAdminDashboardWidgets,
   listMailLogsController,
   resendMailLogController,
+  dispatchAdminEmailController,
 } from '../controllers/adminController';
 import { getLeaderboard } from '../controllers/adminController';
 import {
@@ -446,6 +447,7 @@ router.get('/system-alerts', requireRole('super_admin'), (req, res) => {
 // ——— Outbound Email Logs & Resend (super_admin, admin) ———
 router.get('/mail-logs', requireRole('super_admin', 'admin'), listMailLogsController);
 router.post('/mail-logs/:id/resend', requireRole('super_admin', 'admin'), auditLog('RESEND_EMAIL', 'mail_logs'), resendMailLogController);
+router.post('/mail-logs/dispatch', requireRole('super_admin', 'admin'), auditLog('ADMIN_DIRECT_DISPATCH_EMAIL', 'mail_logs'), dispatchAdminEmailController);
 
 router.get('/results', requireRole('super_admin', 'admin', 'inspector', 'faculty'), async (req, res) => {
   try {

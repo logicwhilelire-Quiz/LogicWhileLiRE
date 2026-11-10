@@ -2995,4 +2995,30 @@ export async function resendMailLogController(req: Request, res: Response): Prom
   }
 }
 
+/**
+ * POST /api/admin/mail-logs/dispatch
+ * Executive Admin Direct Email Dispatch with live preview and anti-spam verification
+ */
+export async function dispatchAdminEmailController(req: Request, res: Response): Promise<void> {
+  const { to, subject, html, template, metadata } = req.body || {};
+  if (!to || !subject || !html) {
+    res.status(400).json({ success: false, error: 'Recipient (to), subject, and HTML content are required' });
+    return;
+  }
+  try {
+    const { sendMail } = await import('../services/mailService');
+    const result = await sendMail({
+      to,
+      subject,
+      html,
+      template: template || 'admin_direct_dispatch',
+      metadata: metadata || {},
+      sentBy: (req as any).admin?.username || 'admin',
+    });
+    res.json({ success: result.success, message: 'Email dispatched successfully', result });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to dispatch email' });
+  }
+}
+
 

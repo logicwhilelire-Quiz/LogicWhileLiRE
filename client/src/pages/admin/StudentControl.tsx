@@ -171,6 +171,24 @@ export default function StudentControl() {
     setTimeout(() => setUploadMsg(''), 5000);
   };
 
+  const handleFlushAttemptsFresh = async () => {
+    if (!window.confirm('⚠️ Flush All Previous Exam Attempts & Test History?\n\nThis will remove all test attempts, mock runs, answers, and violation logs from the database while keeping your student roster and colleges intact.\n\nAre you sure you want to proceed?')) {
+      return;
+    }
+    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    try {
+      await axios.post(
+        `${API_BASE_URL}/api/admin/attempts/clear-all`,
+        {},
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      setUploadMsg('🧹 All previous exam attempts, session logs, and scores flushed from database. Fresh exam run ready.');
+    } catch (err: any) {
+      setUploadMsg(`⚠️ Notice: ${err?.response?.data?.error || err.message}`);
+    }
+    setTimeout(() => setUploadMsg(''), 5000);
+  };
+
   const handleToggleRegistration = () => {
     const next = !registrationEnabled;
     setRegistrationEnabled(next);
@@ -1031,6 +1049,27 @@ export default function StudentControl() {
                       title="Clear all student records for a clean fresh institutional deployment"
                     >
                       <span>🧹</span> Clear Roster (Start Fresh)
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleFlushAttemptsFresh}
+                      className="btn btn-sm"
+                      style={{
+                        background: '#b91c1c',
+                        border: 'none',
+                        color: '#FFFFFF',
+                        fontWeight: 800,
+                        padding: '9px 14px',
+                        borderRadius: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        boxShadow: '0 4px 14px rgba(185, 28, 28, 0.35)',
+                      }}
+                      title="Flush all previous test attempts and session scores from database"
+                    >
+                      <span>⚡</span> Flush Exam Attempts
                     </button>
                   </div>
                 </div>

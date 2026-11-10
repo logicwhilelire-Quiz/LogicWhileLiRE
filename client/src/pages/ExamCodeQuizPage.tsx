@@ -279,6 +279,14 @@ export default function QuizPage() {
 
         const computedEndTimeMs = nowSynced + (initialTimeLeft * 1000)
 
+        const portalRules = (() => {
+          try {
+            const raw = localStorage.getItem('lw_portal_rules')
+            return raw ? JSON.parse(raw) : null
+          } catch { return null }
+        })()
+        const adminTabLimit = portalRules?.maxTabSwitchesAllowed ? Number(portalRules.maxTabSwitchesAllowed) : undefined
+
         setSession({
           candidateId: data.candidateId || hallTicket,
           examName: exam?.exam_name || exam?.name || 'Exam',
@@ -287,7 +295,7 @@ export default function QuizPage() {
           questions: randomizedQuestions,
           proctoringMode,
           endTimeMs: computedEndTimeMs,
-          violationThreshold: Number(exam?.max_violations) || Number(exam?.violation_threshold) || 2,
+          violationThreshold: Number(exam?.max_violations) || Number(exam?.violation_threshold) || adminTabLimit || 3,
         })
 
         setTimeLeft(initialTimeLeft)

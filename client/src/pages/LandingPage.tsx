@@ -6,27 +6,18 @@ import SiteFooter from '../components/SiteFooter';
 import BrandLogo from '../components/BrandLogo';
 import { sound } from '../lib/soundService';
 
-/* ── Floating orb background ── */
-function CosmicOrbs() {
+/* ── Institutional Architectural Backdrop ── */
+function InstitutionalGridBackdrop() {
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
       <div style={{
-        position: 'absolute', top: '-10%', left: '-5%',
-        width: 700, height: 700, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(2,132,199,0.18) 0%, transparent 65%)',
-        filter: 'blur(60px)', animation: 'orbFloat1 18s ease-in-out infinite',
+        position: 'absolute', inset: 0,
+        backgroundImage: 'linear-gradient(rgba(2,132,199,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(2,132,199,0.04) 1px, transparent 1px)',
+        backgroundSize: '48px 48px',
       }} />
       <div style={{
-        position: 'absolute', top: '30%', right: '-8%',
-        width: 600, height: 600, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(234,168,18,0.13) 0%, transparent 65%)',
-        filter: 'blur(55px)', animation: 'orbFloat2 22s ease-in-out infinite',
-      }} />
-      <div style={{
-        position: 'absolute', bottom: '-5%', left: '30%',
-        width: 500, height: 500, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(139,92,246,0.11) 0%, transparent 65%)',
-        filter: 'blur(50px)', animation: 'orbFloat3 26s ease-in-out infinite',
+        position: 'absolute', top: 0, left: '20%', right: '20%', height: 350,
+        background: 'radial-gradient(ellipse at 50% 0%, rgba(2,132,199,0.08) 0%, transparent 70%)',
       }} />
     </div>
   );
@@ -257,7 +248,7 @@ export default function LandingPage() {
         .landing-grid-bg { background-image: linear-gradient(rgba(2,132,199,0.055) 1px,transparent 1px),linear-gradient(90deg,rgba(2,132,199,0.055) 1px,transparent 1px); background-size:44px 44px; }
       `}</style>
 
-      <CosmicOrbs />
+      <InstitutionalGridBackdrop />
       <SiteHeader />
 
       {/* ── HERO ── */}

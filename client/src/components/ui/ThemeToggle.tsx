@@ -13,10 +13,10 @@ interface ThemeOption {
 }
 
 const THEMES: ThemeOption[] = [
-  { id: 'dark', label: 'Cyber Obsidian', icon: '🌌', color: '#00d2ff', desc: 'Deep Space & Cyan Glow' },
-  { id: 'swarm', label: 'Swarm Studio', icon: '⚡', color: '#0D99FF', desc: 'Figma Canvas & Blueprint' },
-  { id: 'emerald', label: 'Aurora Emerald', icon: '🌿', color: '#10B981', desc: 'Cyber Matrix Terminal' },
-  { id: 'light', label: 'Pure Ivory', icon: '☀️', color: '#0284c7', desc: 'High-Contrast Daylight' },
+  { id: 'dark', label: 'LogicWhile Midnight', icon: '🌑', color: '#0284c7', desc: 'Executive Slate & Sapphire' },
+  { id: 'swarm', label: 'LogicWhile Enterprise', icon: '🏢', color: '#2563EB', desc: 'Institutional High-Contrast' },
+  { id: 'emerald', label: 'Academic Ivory', icon: '☀️', color: '#0D9488', desc: 'Daylight Proctored Testing' },
+  { id: 'light', label: 'LogicWhile Royal', icon: '🏛️', color: '#EAA812', desc: 'Navy & Official Gold Theme' },
 ];
 
 export default function ThemeToggle({ className = '' }: { className?: string }) {

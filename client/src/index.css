@@ -122,148 +122,148 @@
   --transition-slow: 350ms var(--ease-spring);
 }
 
-/* ─── DARK THEME TOKENS ─── */
+/* ─── 1. LOGICWHILE MIDNIGHT THEME (Executive Slate & Sapphire) ─── */
 [data-theme="dark"],
 .theme-dark {
-  --bg:                #090e1f;
-  --bg-elevated:       #0f172e;
-  --bg-card:           #0e162c;
-  --bg-card-hover:     #15203d;
-  --panel:             #0e162c;
-  --panel-border:      rgba(0, 180, 216, 0.18);
-  --panel-border-glow: rgba(0, 210, 255, 0.35);
+  --bg:                #0b1120;
+  --bg-elevated:       #111827;
+  --bg-card:           #0f172a;
+  --bg-card-hover:     #1e293b;
+  --panel:             #0f172a;
+  --panel-border:      rgba(255, 255, 255, 0.08);
+  --panel-border-glow: rgba(2, 132, 199, 0.15);
 
   --text-pure:         #ffffff;
   --text-primary:      #f8fafc;
   --text-secondary:    #94a3b8;
   --text-muted:        #64748b;
 
-  --color-bg:          #090e1f;
-  --color-bg-subtle:   #0d152b;
-  --color-surface:     #0e162c;
-  --color-surface-2:   #131d38;
-  --color-surface-3:   #1a2748;
+  --color-bg:          #0b1120;
+  --color-bg-subtle:   #0f172a;
+  --color-surface:     #111827;
+  --color-surface-2:   #1e293b;
+  --color-surface-3:   #334155;
   --color-border:      rgba(255, 255, 255, 0.10);
-  --color-border-hover:rgba(0, 210, 255, 0.28);
-  --color-border-glow: rgba(0, 210, 255, 0.30);
+  --color-border-hover:rgba(2, 132, 199, 0.40);
+  --color-border-glow: rgba(2, 132, 199, 0.20);
 
-  --color-primary:            #00d2ff;
-  --color-primary-dark:       #0284c7;
-  --color-primary-light:      rgba(0, 210, 255, 0.15);
+  --color-primary:            #0284c7;
+  --color-primary-dark:       #0369a1;
+  --color-primary-light:      rgba(2, 132, 199, 0.12);
   --color-primary-hover:      #38bdf8;
-  --color-primary-glow:       rgba(0, 210, 255, 0.30);
-  --color-primary-glow-strong:rgba(0, 210, 255, 0.50);
+  --color-primary-glow:       rgba(2, 132, 199, 0.20);
+  --color-primary-glow-strong:rgba(2, 132, 199, 0.35);
 
-  --color-secondary:      #f97316;
-  --color-secondary-dark: #ea580c;
-  --color-accent:         #FFC200;
+  --color-secondary:      #ea580c;
+  --color-secondary-dark: #c2410c;
+  --color-accent:         #EAA812;
 
   --color-text:        #f8fafc;
   --color-text-muted:  #94a3b8;
   --color-text-faint:  #64748b;
 
-  --glass-bg:          rgba(14, 22, 44, 0.88);
-  --glass-border:      rgba(0, 180, 216, 0.18);
-  --shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md:         0 4px 14px rgba(0, 0, 0, 0.5);
-  --shadow-lg:         0 12px 30px rgba(0, 0, 0, 0.6);
-  --shadow-glass:      0 8px 32px rgba(0, 0, 0, 0.55);
+  --glass-bg:          rgba(15, 23, 42, 0.92);
+  --glass-border:      rgba(255, 255, 255, 0.08);
+  --shadow-sm:         0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md:         0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg:         0 12px 28px rgba(0, 0, 0, 0.5);
+  --shadow-glass:      0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
-/* ─── SWARM STUDIO THEME (Figma Blueprint & Multi-Agent Canvas) ─── */
+/* ─── 2. LOGICWHILE ENTERPRISE THEME (High-Contrast Institutional) ─── */
 [data-theme="swarm"],
 .theme-swarm {
-  --bg:                #0b0f19;
-  --bg-elevated:       #131a2a;
-  --bg-card:           #111827;
-  --bg-card-hover:     #1a2438;
-  --panel:             #111827;
-  --panel-border:      rgba(13, 153, 255, 0.25);
-  --panel-border-glow: rgba(13, 153, 255, 0.45);
+  --bg:                #070d1e;
+  --bg-elevated:       #0e172f;
+  --bg-card:           #0a1329;
+  --bg-card-hover:     #132042;
+  --panel:             #0a1329;
+  --panel-border:      rgba(37, 99, 235, 0.20);
+  --panel-border-glow: rgba(37, 99, 235, 0.25);
 
   --text-pure:         #ffffff;
   --text-primary:      #f9fafb;
-  --text-secondary:    #9ca3af;
-  --text-muted:        #6b7280;
+  --text-secondary:    #94a3b8;
+  --text-muted:        #64748b;
 
-  --color-bg:          #0b0f19;
-  --color-bg-subtle:   #0f172a;
-  --color-surface:     #111827;
-  --color-surface-2:   #162238;
-  --color-surface-3:   #1f2e4a;
-  --color-border:      rgba(255, 255, 255, 0.12);
-  --color-border-hover:rgba(13, 153, 255, 0.40);
-  --color-border-glow: rgba(13, 153, 255, 0.45);
+  --color-bg:          #070d1e;
+  --color-bg-subtle:   #0a1329;
+  --color-surface:     #0e172f;
+  --color-surface-2:   #152347;
+  --color-surface-3:   #1e3264;
+  --color-border:      rgba(255, 255, 255, 0.10);
+  --color-border-hover:rgba(37, 99, 235, 0.45);
+  --color-border-glow: rgba(37, 99, 235, 0.25);
 
-  --color-primary:            #0D99FF;
-  --color-primary-dark:       #0284c7;
-  --color-primary-light:      rgba(13, 153, 255, 0.16);
-  --color-primary-hover:      #38bdf8;
-  --color-primary-glow:       rgba(13, 153, 255, 0.35);
-  --color-primary-glow-strong:rgba(13, 153, 255, 0.60);
+  --color-primary:            #2563eb;
+  --color-primary-dark:       #1d4ed8;
+  --color-primary-light:      rgba(37, 99, 235, 0.12);
+  --color-primary-hover:      #3b82f6;
+  --color-primary-glow:       rgba(37, 99, 235, 0.22);
+  --color-primary-glow-strong:rgba(37, 99, 235, 0.40);
 
-  --color-secondary:      #F24E1E;
-  --color-secondary-dark: #dc2626;
-  --color-accent:         #A259FF;
+  --color-secondary:      #e11d48;
+  --color-secondary-dark: #be123c;
+  --color-accent:         #EAA812;
 
   --color-text:        #f9fafb;
-  --color-text-muted:  #9ca3af;
-  --color-text-faint:  #6b7280;
+  --color-text-muted:  #94a3b8;
+  --color-text-faint:  #64748b;
 
-  --glass-bg:          rgba(17, 24, 39, 0.90);
-  --glass-border:      rgba(13, 153, 255, 0.22);
-  --shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md:         0 4px 14px rgba(0, 0, 0, 0.5);
-  --shadow-lg:         0 12px 30px rgba(0, 0, 0, 0.6);
-  --shadow-glass:      0 8px 32px rgba(13, 153, 255, 0.15);
+  --glass-bg:          rgba(10, 19, 41, 0.94);
+  --glass-border:      rgba(37, 99, 235, 0.18);
+  --shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md:         0 4px 14px rgba(0, 0, 0, 0.45);
+  --shadow-lg:         0 12px 30px rgba(0, 0, 0, 0.55);
+  --shadow-glass:      0 8px 30px rgba(0, 0, 0, 0.45);
 }
 
-/* ─── AURORA EMERALD THEME (Cyber Terminal) ─── */
+/* ─── 3. ACADEMIC IVORY THEME (Daylight Proctored Testing) ─── */
 [data-theme="emerald"],
 .theme-emerald {
-  --bg:                #04120e;
-  --bg-elevated:       #081e17;
-  --bg-card:           #061a14;
-  --bg-card-hover:     #0d2820;
-  --panel:             #061a14;
-  --panel-border:      rgba(16, 185, 129, 0.25);
-  --panel-border-glow: rgba(16, 185, 129, 0.45);
+  --bg:                #f8fafc;
+  --bg-elevated:       #ffffff;
+  --bg-card:           #ffffff;
+  --bg-card-hover:     #f1f5f9;
+  --panel:             #ffffff;
+  --panel-border:      #e2e8f0;
+  --panel-border-glow: rgba(13, 148, 136, 0.20);
 
-  --text-pure:         #ffffff;
-  --text-primary:      #f0fdf4;
-  --text-secondary:    #86efac;
-  --text-muted:        #4ade80;
+  --text-pure:         #0f172a;
+  --text-primary:      #0f172a;
+  --text-secondary:    #334155;
+  --text-muted:        #64748b;
 
-  --color-bg:          #04120e;
-  --color-bg-subtle:   #061c15;
-  --color-surface:     #061a14;
-  --color-surface-2:   #0a261e;
-  --color-surface-3:   #0f352a;
-  --color-border:      rgba(16, 185, 129, 0.15);
-  --color-border-hover:rgba(52, 211, 153, 0.35);
-  --color-border-glow: rgba(16, 185, 129, 0.40);
+  --color-bg:          #f8fafc;
+  --color-bg-subtle:   #f1f5f9;
+  --color-surface:     #ffffff;
+  --color-surface-2:   #f8fafc;
+  --color-surface-3:   #f1f5f9;
+  --color-border:      #e2e8f0;
+  --color-border-hover:#cbd5e1;
+  --color-border-glow: rgba(13, 148, 136, 0.20);
 
-  --color-primary:            #10B981;
-  --color-primary-dark:       #059669;
-  --color-primary-light:      rgba(16, 185, 129, 0.16);
-  --color-primary-hover:      #34d399;
-  --color-primary-glow:       rgba(16, 185, 129, 0.35);
-  --color-primary-glow-strong:rgba(16, 185, 129, 0.60);
+  --color-primary:            #0d9488;
+  --color-primary-dark:       #0f766e;
+  --color-primary-light:      rgba(13, 148, 136, 0.10);
+  --color-primary-hover:      #14b8a6;
+  --color-primary-glow:       rgba(13, 148, 136, 0.18);
+  --color-primary-glow-strong:rgba(13, 148, 136, 0.30);
 
-  --color-secondary:      #06B6D4;
-  --color-secondary-dark: #0891b2;
-  --color-accent:         #F59E0B;
+  --color-secondary:      #ea580c;
+  --color-secondary-dark: #c2410c;
+  --color-accent:         #d97706;
 
-  --color-text:        #f0fdf4;
-  --color-text-muted:  #86efac;
-  --color-text-faint:  #4ade80;
+  --color-text:        #0f172a;
+  --color-text-muted:  #475569;
+  --color-text-faint:  #94a3b8;
 
-  --glass-bg:          rgba(6, 26, 20, 0.90);
-  --glass-border:      rgba(16, 185, 129, 0.22);
-  --shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md:         0 4px 14px rgba(0, 0, 0, 0.5);
-  --shadow-lg:         0 12px 30px rgba(0, 0, 0, 0.6);
-  --shadow-glass:      0 8px 32px rgba(16, 185, 129, 0.15);
+  --glass-bg:          rgba(255, 255, 255, 0.96);
+  --glass-border:      #e2e8f0;
+  --shadow-sm:         0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md:         0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-lg:         0 12px 24px rgba(15, 23, 42, 0.10);
+  --shadow-glass:      0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
 @keyframes skeletonWave {

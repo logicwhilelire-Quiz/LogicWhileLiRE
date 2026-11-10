@@ -146,7 +146,7 @@ const handleExamCodeStart = async (req: any, res: any) => {
     }
 
     // Enforce inspector start (Item 3)
-    const isDemoExam = code.includes('DEMO') || code === 'CS2026';
+    const isDemoExam = code.includes('DEMO');
     const effectiveCode = exam.exam_code || code;
     const isExamStarted = Boolean(
       exam.started_at ||
@@ -159,6 +159,30 @@ const handleExamCodeStart = async (req: any, res: any) => {
         return res.status(403).json({
           success: false,
           error: 'The inspector has not started this examination yet. Please wait in the waiting lobby.',
+          code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
+          waiting_list: true,
+          exam_name: exam.exam_name || exam.name || code,
+          duration_minutes: exam.duration_minutes || 60,
+          total_questions: exam.total_questions || 15,
+        });
+      }
+    }
+
+    // Enforce candidate release / lobby status
+    if (!isDemoExam) {
+      const { data: attemptRecord } = await supabase
+        .from('exam_code_attempts')
+        .select('id, status')
+        .eq('exam_code', effectiveCode)
+        .eq('hall_ticket_no', hallTicket)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (attemptRecord && attemptRecord.status === 'waiting_verification') {
+        return res.status(403).json({
+          success: false,
+          error: 'You have not been released by your administrator or inspector yet. Please wait in the waiting lobby.',
           code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
           waiting_list: true,
           exam_name: exam.exam_name || exam.name || code,

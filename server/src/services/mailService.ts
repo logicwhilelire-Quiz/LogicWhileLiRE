@@ -116,6 +116,34 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
   const templateName = options.template || 'custom';
   const sentBy = options.sentBy || 'system';
 
+  // 0. Anti-Spam & Placeholder Filter: Prevent fake / demo / loop emails from triggering real mail dispatch
+  const realRecipients = toList.filter((email) => {
+    const lower = String(email || '').toLowerCase().trim();
+    if (!lower || !lower.includes('@') || !lower.includes('.')) return false;
+    if (
+      lower.endsWith('@example.com') ||
+      lower.endsWith('@test.com') ||
+      lower.endsWith('@sample.com') ||
+      lower.endsWith('@mailinator.com')
+    ) {
+      return false;
+    }
+    if (lower.includes('placeholder') || lower.includes('fake_student') || lower.includes('demo_user')) {
+      return false;
+    }
+    return true;
+  });
+
+  if (realRecipients.length === 0) {
+    console.info(`[MailService] 🛡️ Shielded simulated/test recipient(s) (${toStr}) — suppressed outbound spam.`);
+    return {
+      success: true,
+      status: 'delivered',
+      resend_id: `sim_${Date.now()}`,
+      log_id: `log_sim_${Date.now()}`,
+    };
+  }
+
   const resendApiKey = process.env.RESEND_API_KEY || RESEND_API_KEY;
   const senderAddress = options.from || process.env.MAIL_FROM_NOREPLY || MAIL_FROM_NOREPLY;
   const replyToAddress = options.replyTo || process.env.MAIL_REPLY_TO || MAIL_REPLY_TO;

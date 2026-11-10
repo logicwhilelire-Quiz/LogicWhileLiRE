@@ -3,6 +3,8 @@ import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedPage from '../../components/AnimatedPage';
 import ParticleField from '../../components/3d/ParticleField';
 import { listMailLogs, resendMailLog, type MailLog, extractErrorMessage } from '../../lib/api';
+import axios from 'axios';
+import { API_BASE_URL } from '../../lib/config';
 
 const TEMPLATE_OPTIONS = [
   { value: 'all', label: 'All Role Templates' },
@@ -33,9 +35,51 @@ export default function MailLogsPage() {
   const [stats, setStats] = useState({ total: 0, sent: 0, failed: 0 });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
+  // Direct Dispatch Modal State
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [composeTo, setComposeTo] = useState('');
+  const [composeSubject, setComposeSubject] = useState('LogicWhile Assessment Update');
+  const [composeTemplate, setComposeTemplate] = useState('custom_broadcast');
+  const [composeBody, setComposeBody] = useState('<p>Dear Candidate,</p><p>This is an official assessment notification regarding your upcoming examination session on LogicWhile LiRE.</p><p>Please log in with your hall ticket to ensure your clearance.</p>');
+  const [sendingEmail, setSendingEmail] = useState(false);
+
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4500);
+  };
+
+  const handleDirectDispatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!composeTo.trim() || !composeSubject.trim() || !composeBody.trim()) {
+      showToast('Please fill in recipient, subject, and message content.', 'error');
+      return;
+    }
+    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    setSendingEmail(true);
+    try {
+      const res = await axios.post(
+        `${API_BASE_URL}/api/admin/mail-logs/dispatch`,
+        {
+          to: composeTo.trim(),
+          subject: composeSubject.trim(),
+          html: composeBody.trim(),
+          template: composeTemplate,
+        },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      if (res.data?.success) {
+        showToast('🚀 Official email dispatched successfully!', 'success');
+        setIsComposeOpen(false);
+        setComposeTo('');
+        fetchLogs();
+      } else {
+        showToast(res.data?.error || 'Failed to dispatch email.', 'error');
+      }
+    } catch (err: any) {
+      showToast(err?.response?.data?.error || err.message || 'Dispatch failed.', 'error');
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   const fetchLogs = useCallback(async () => {
@@ -175,15 +219,26 @@ export default function MailLogsPage() {
                 </p>
               </div>
 
-              <button
-                onClick={fetchLogs}
-                disabled={loading}
-                className="btn btn-sm btn-secondary"
-                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <span>🔄</span>
-                <span>{loading ? 'Refreshing...' : 'Refresh Logs'}</span>
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  onClick={() => setIsComposeOpen(true)}
+                  className="btn btn-sm btn-primary"
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#0284c7', color: '#fff', fontWeight: 700 }}
+                >
+                  <span>✉️</span>
+                  <span>Compose &amp; Dispatch Email</span>
+                </button>
+
+                <button
+                  onClick={fetchLogs}
+                  disabled={loading}
+                  className="btn btn-sm btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <span>🔄</span>
+                  <span>{loading ? 'Refreshing...' : 'Refresh Logs'}</span>
+                </button>
+              </div>
             </div>
 
             {/* Toast Notification */}
@@ -570,6 +625,161 @@ export default function MailLogsPage() {
                 sandbox="allow-same-origin"
               />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Compose & Dispatch Modal */}
+      {isComposeOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0,0,0,0.82)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+          }}
+          onClick={() => setIsComposeOpen(false)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 620,
+              background: '#0d1835',
+              border: '1.5px solid rgba(2, 132, 199, 0.4)',
+              borderRadius: 16,
+              overflow: 'hidden',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.85)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                padding: '18px 24px',
+                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'linear-gradient(135deg, rgba(2,132,199,0.15) 0%, transparent 100%)',
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF' }}>
+                  ✉️ Compose &amp; Dispatch Official Email
+                </h3>
+                <p style={{ margin: '3px 0 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>
+                  Targeted administrative dispatch with active anti-spam and fake recipient shielding.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsComposeOpen(false)}
+                className="btn btn-xs btn-secondary"
+                style={{ fontSize: '16px', lineHeight: 1 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleDirectDispatch} style={{ padding: '20px 24px' }}>
+              <div style={{ marginBottom: 16 }}>
+                <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e2e8f0', marginBottom: 6, display: 'block' }}>
+                  Template Type
+                </label>
+                <select
+                  className="form-input"
+                  value={composeTemplate}
+                  onChange={(e) => {
+                    const t = e.target.value;
+                    setComposeTemplate(t);
+                    if (t === 'candidate_credentials') {
+                      setComposeSubject('LogicWhile LiRE — Your Examination Credentials');
+                      setComposeBody('<p>Dear Candidate,</p><p>Your examination credentials have been issued for the upcoming LogicWhile LiRE assessment.</p><p><strong>Hall Ticket:</strong> {{HALL_TICKET}}<br/><strong>Portal URL:</strong> https://logicwhilelire.com/enter-exam</p><p>Please enter your hall ticket and assigned exam code 15 minutes before slot start.</p>');
+                    } else if (t === 'verification_otp') {
+                      setComposeSubject('LogicWhile LiRE — Verification Code');
+                      setComposeBody('<p>Dear Candidate,</p><p>Your verification code for LogicWhile LiRE is: <strong>{{OTP}}</strong></p><p>This code is valid for 10 minutes. Do not share it with anyone.</p>');
+                    } else if (t === 'exam_schedule') {
+                      setComposeSubject('LogicWhile LiRE — Examination Schedule Announced');
+                      setComposeBody('<p>Dear Student,</p><p>The institutional examination schedule has been announced.</p><p>Exam Code: <strong>{{EXAM_CODE}}</strong></p><p>Ensure your camera and fullscreen permissions are verified.</p>');
+                    }
+                  }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: '#070d1e', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}
+                >
+                  <option value="custom_broadcast">Custom Assessment Broadcast</option>
+                  <option value="candidate_credentials">Candidate Credentials &amp; Hall Ticket</option>
+                  <option value="verification_otp">Student Security OTP</option>
+                  <option value="exam_schedule">Examination Schedule Notice</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e2e8f0', marginBottom: 6, display: 'block' }}>
+                  Recipient Email Address(es)
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. student@college.edu (comma-separated for multiple)"
+                  value={composeTo}
+                  onChange={(e) => setComposeTo(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: '#070d1e', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}
+                  required
+                />
+                <span style={{ fontSize: '0.74rem', color: '#64748b', marginTop: 4, display: 'block' }}>
+                  🛡️ Anti-spam shield: Simulated/demo domains (@example.com, @test.com) are safely intercepted.
+                </span>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e2e8f0', marginBottom: 6, display: 'block' }}>
+                  Subject Line
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={composeSubject}
+                  onChange={(e) => setComposeSubject(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: '#070d1e', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}
+                  required
+                />
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e2e8f0', marginBottom: 6, display: 'block' }}>
+                  Email Body (HTML / Formatted)
+                </label>
+                <textarea
+                  className="form-input"
+                  rows={6}
+                  value={composeBody}
+                  onChange={(e) => setComposeBody(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: '#070d1e', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontFamily: 'monospace', fontSize: '0.84rem' }}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => setIsComposeOpen(false)}
+                  className="btn btn-secondary"
+                  style={{ padding: '10px 18px', borderRadius: 8 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sendingEmail}
+                  className="btn btn-primary"
+                  style={{ padding: '10px 22px', borderRadius: 8, background: '#0284c7', color: '#fff', fontWeight: 800 }}
+                >
+                  {sendingEmail ? '🚀 Dispatching...' : '🚀 Dispatch Now'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
