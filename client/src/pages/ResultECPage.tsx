@@ -309,13 +309,28 @@ export default function ResultECPage() {
     );
   }
 
-  const TOPICS = activeResult.topicBreakdown || {
+  const normalizedTopics: Record<string, number> = {};
+  if (activeResult.topicBreakdown && typeof activeResult.topicBreakdown === 'object') {
+    for (const [key, val] of Object.entries(activeResult.topicBreakdown)) {
+      if (typeof val === 'number') {
+        normalizedTopics[key] = Math.round(val);
+      } else if (val && typeof val === 'object') {
+        const item = val as { score?: number; maxScore?: number };
+        const maxSc = Number(item.maxScore) || 0;
+        const sc = Number(item.score) || 0;
+        const pct = maxSc > 0 ? Math.round((sc / maxSc) * 100) : 0;
+        normalizedTopics[key] = pct;
+      }
+    }
+  }
+
+  const TOPICS = Object.keys(normalizedTopics).length > 0 ? normalizedTopics : {
     'Quantitative Aptitude': 86,
     'Logical Reasoning': 92,
     'Core Computer Science': 78,
     'Data Structures & Algorithms': 84,
     'Full-Stack & Systems': 88,
-  }
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)', position: 'relative', overflow: 'hidden' }}>
@@ -747,11 +762,41 @@ export default function ResultECPage() {
             </h3>
             <SectorRadar3D
               scores={[
-                { sector: 'Quantitative Aptitude', short: 'Quant', score: TOPICS['Quantitative Aptitude'] || 86, benchmark: 72, color: '#F59E0B' },
-                { sector: 'Logical Reasoning', short: 'Logic', score: TOPICS['Logical Reasoning'] || 92, benchmark: 76, color: '#8B5CF6' },
-                { sector: 'Core Computer Science', short: 'Core CS', score: TOPICS['Core Computer Science'] || 78, benchmark: 68, color: '#10B981' },
-                { sector: 'Data Structures & Algorithms', short: 'DSA', score: TOPICS['Data Structures & Algorithms'] || 84, benchmark: 64, color: '#38BDF8' },
-                { sector: 'Full-Stack & Systems', short: 'Full-Stack', score: TOPICS['Full-Stack & Systems'] || 88, benchmark: 71, color: '#F43F5E' },
+                {
+                  sector: 'Quantitative Aptitude',
+                  short: 'Quant',
+                  score: TOPICS['Quantitative Aptitude'] ?? TOPICS['Sector 1: Quant'] ?? TOPICS['Quantitative Velocity'] ?? 86,
+                  benchmark: 72,
+                  color: '#F59E0B'
+                },
+                {
+                  sector: 'Logical Reasoning',
+                  short: 'Logic',
+                  score: TOPICS['Logical Reasoning'] ?? TOPICS['Sector 2: Logic'] ?? TOPICS['Deductive Logic'] ?? 92,
+                  benchmark: 76,
+                  color: '#8B5CF6'
+                },
+                {
+                  sector: 'Core Computer Science',
+                  short: 'Core CS',
+                  score: TOPICS['Core Computer Science'] ?? TOPICS['Sector 3: Core CS'] ?? TOPICS['Systems & OS'] ?? 78,
+                  benchmark: 68,
+                  color: '#10B981'
+                },
+                {
+                  sector: 'Data Structures & Algorithms',
+                  short: 'DSA',
+                  score: TOPICS['Data Structures & Algorithms'] ?? TOPICS['Sector 4: DSA'] ?? TOPICS['Algorithms & Structures'] ?? 84,
+                  benchmark: 64,
+                  color: '#38BDF8'
+                },
+                {
+                  sector: 'Full-Stack & Systems',
+                  short: 'Full-Stack',
+                  score: TOPICS['Full-Stack & Systems'] ?? TOPICS['Sector 5: Cloud'] ?? TOPICS['Full-Stack Architecture'] ?? 88,
+                  benchmark: 71,
+                  color: '#F43F5E'
+                },
               ]}
               width={340}
               height={280}
