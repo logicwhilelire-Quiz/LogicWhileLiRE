@@ -16,7 +16,14 @@ import { io as connectSocket, Socket } from "socket.io-client";
 import axios from "axios";
 import AdminSidebar from "../../components/layout/AdminSidebar";
 import AnimatedPage from "../../components/AnimatedPage";
-import { startExam, getExamLobbyStats } from "../../lib/api";
+import {
+  startExam,
+  getExamLobbyStats,
+  releaseStudentForExam,
+  rejectStudentEntry,
+  blockStudentEntry,
+  resetStudentAttempt,
+} from "../../lib/api";
 import { SOCKET_URL, API_BASE_URL } from "../../lib/config";
 
 const BASE = API_BASE_URL;
@@ -353,6 +360,78 @@ export default function InstructorConsolePage() {
       addLog(`❌ STOP ERROR: ${err?.message}`);
     } finally {
       setStopping(false);
+    }
+  };
+
+  // PRIORITY 2: Waiting Hall Control Handlers (Admin/Inspector)
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const handleReleaseStudent = async (hallTicket: string) => {
+    if (!currentCode || !hallTicket) return;
+    setActionLoading(true);
+    try {
+      await releaseStudentForExam(currentCode, { hallTicket });
+      addLog(`✓ Released student ${hallTicket} for exam`);
+    } catch (err: any) {
+      addLog(`⚠️ Failed to release ${hallTicket}: ${err?.response?.data?.error || err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReleaseAll = async () => {
+    if (!currentCode) return;
+    setActionLoading(true);
+    try {
+      const res = await releaseStudentForExam(currentCode, { all: true });
+      addLog(`⚡ Released ${res.data?.count || 'all'} waiting students for exam`);
+    } catch (err: any) {
+      addLog(`⚠️ Release all failed: ${err?.response?.data?.error || err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectStudent = async (hallTicket: string) => {
+    if (!currentCode || !hallTicket) return;
+    const reason = window.prompt(`Enter reason for rejecting candidate ${hallTicket}:`, 'Entry rejected by invigilator');
+    if (!reason) return;
+    setActionLoading(true);
+    try {
+      await rejectStudentEntry(currentCode, { hallTicket, reason });
+      addLog(`⚠️ Rejected student ${hallTicket} entry`);
+    } catch (err: any) {
+      addLog(`Error rejecting ${hallTicket}: ${err?.response?.data?.error || err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleBlockStudent = async (hallTicket: string) => {
+    if (!currentCode || !hallTicket) return;
+    if (!window.confirm(`Are you sure you want to BLOCK candidate ${hallTicket}? They will not be able to write the exam.`)) return;
+    setActionLoading(true);
+    try {
+      await blockStudentEntry(currentCode, { hallTicket, reason: 'Suspended by supervisor' });
+      addLog(`🛑 Blocked candidate ${hallTicket}`);
+    } catch (err: any) {
+      addLog(`Error blocking ${hallTicket}: ${err?.response?.data?.error || err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResetAttempt = async (hallTicket: string) => {
+    if (!currentCode || !hallTicket) return;
+    if (!window.confirm(`Reset exam attempt for ${hallTicket}? This clears their answers and timer, returning them to the Waiting Hall.`)) return;
+    setActionLoading(true);
+    try {
+      await resetStudentAttempt(currentCode, { hallTicket });
+      addLog(`🔄 Reset exam attempt for candidate ${hallTicket}`);
+    } catch (err: any) {
+      addLog(`Error resetting attempt for ${hallTicket}: ${err?.response?.data?.error || err.message}`);
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -938,11 +1017,35 @@ export default function InstructorConsolePage() {
 
                     {/* Panel 2: Live Waiting Lobby Queue */}
                     <div style={{ background: "rgba(15,23,42,0.85)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, overflow: "hidden" }}>
-                      <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#F59E0B" }}>
-                          ⏳ Waiting Queue ({filteredQueue.length})
+                      <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#F59E0B" }}>
+                            ⏳ Waiting Queue ({filteredQueue.length})
+                          </div>
+                          <span style={{ fontSize: "0.72rem", color: "#94A3B8" }}>Present in Lobby</span>
                         </div>
-                        <span style={{ fontSize: "0.72rem", color: "#94A3B8" }}>Present in Lobby</span>
+                        {filteredQueue.length > 0 && (
+                          <button
+                            onClick={handleReleaseAll}
+                            disabled={actionLoading}
+                            style={{
+                              background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                              border: "none",
+                              color: "#FFFFFF",
+                              padding: "6px 14px",
+                              borderRadius: 8,
+                              fontSize: "0.76rem",
+                              fontWeight: 800,
+                              cursor: "pointer",
+                              boxShadow: "0 2px 8px rgba(16,185,129,0.3)",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                            }}
+                          >
+                            ⚡ Release All ({filteredQueue.length})
+                          </button>
+                        )}
                       </div>
 
                       {filteredQueue.length === 0 ? (
@@ -963,7 +1066,8 @@ export default function InstructorConsolePage() {
                                 <th style={{ padding: "10px 14px", textAlign: "left" }}>College</th>
                                 <th style={{ padding: "10px 14px", textAlign: "left" }}>Section</th>
                                 <th style={{ padding: "10px 14px", textAlign: "center" }}>📷 Cam Presence</th>
-                                <th style={{ padding: "10px 14px", textAlign: "right" }}>Lobby Status</th>
+                                <th style={{ padding: "10px 14px", textAlign: "center" }}>Lobby Status</th>
+                                <th style={{ padding: "10px 14px", textAlign: "right" }}>Actions</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -989,10 +1093,65 @@ export default function InstructorConsolePage() {
                                       Active (30 FPS)
                                     </span>
                                   </td>
-                                  <td style={{ padding: "10px 14px", textAlign: "right" }}>
-                                    <span style={{ color: "#10B981", fontWeight: 700, fontSize: "0.72rem", background: "rgba(16,185,129,0.15)", padding: "2px 7px", borderRadius: 4 }}>
-                                      ● Ready to Start
+                                  <td style={{ padding: "10px 14px", textAlign: "center" }}>
+                                    <span style={{ color: "#F59E0B", fontWeight: 700, fontSize: "0.72rem", background: "rgba(245,158,11,0.15)", padding: "2px 7px", borderRadius: 4 }}>
+                                      ⏳ In Lobby
                                     </span>
+                                  </td>
+                                  <td style={{ padding: "10px 14px", textAlign: "right", whiteSpace: "nowrap" }}>
+                                    <button
+                                      onClick={() => handleReleaseStudent(s.hall_ticket_no)}
+                                      disabled={actionLoading}
+                                      title="Release for Exam"
+                                      style={{
+                                        background: "rgba(16,185,129,0.2)",
+                                        border: "1px solid rgba(16,185,129,0.5)",
+                                        color: "#34D399",
+                                        padding: "4px 8px",
+                                        borderRadius: 6,
+                                        fontSize: "0.72rem",
+                                        fontWeight: 700,
+                                        cursor: "pointer",
+                                        marginRight: 6,
+                                      }}
+                                    >
+                                      ✓ Allow
+                                    </button>
+                                    <button
+                                      onClick={() => handleRejectStudent(s.hall_ticket_no)}
+                                      disabled={actionLoading}
+                                      title="Reject Entry"
+                                      style={{
+                                        background: "rgba(245,158,11,0.2)",
+                                        border: "1px solid rgba(245,158,11,0.5)",
+                                        color: "#FCD34D",
+                                        padding: "4px 8px",
+                                        borderRadius: 6,
+                                        fontSize: "0.72rem",
+                                        fontWeight: 700,
+                                        cursor: "pointer",
+                                        marginRight: 6,
+                                      }}
+                                    >
+                                      ✕ Reject
+                                    </button>
+                                    <button
+                                      onClick={() => handleBlockStudent(s.hall_ticket_no)}
+                                      disabled={actionLoading}
+                                      title="Block Student"
+                                      style={{
+                                        background: "rgba(239,68,68,0.2)",
+                                        border: "1px solid rgba(239,68,68,0.5)",
+                                        color: "#F87171",
+                                        padding: "4px 8px",
+                                        borderRadius: 6,
+                                        fontSize: "0.72rem",
+                                        fontWeight: 700,
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      🛑 Block
+                                    </button>
                                   </td>
                                 </tr>
                               ))}
@@ -1326,7 +1485,7 @@ export default function InstructorConsolePage() {
                               <td style={{ padding: "12px 14px", color: "#94A3B8", fontSize: "0.78rem" }}>
                                 {v.details || "Integrity policy violation"}
                               </td>
-                              <td style={{ padding: "12px 14px", textAlign: "right" }}>
+                              <td style={{ padding: "12px 14px", textAlign: "right", whiteSpace: "nowrap" }}>
                                 <button
                                   onClick={() => addLog(`Acknowledge logged for ${v.hallTicket} violation`)}
                                   style={{
@@ -1337,9 +1496,45 @@ export default function InstructorConsolePage() {
                                     color: "#CBD5E1",
                                     fontSize: "0.72rem",
                                     cursor: "pointer",
+                                    marginRight: 6,
                                   }}
                                 >
                                   Acknowledge
+                                </button>
+                                <button
+                                  onClick={() => handleResetAttempt(v.hallTicket)}
+                                  disabled={actionLoading}
+                                  title="Reset student attempt to allow re-entry"
+                                  style={{
+                                    padding: "4px 10px",
+                                    borderRadius: 6,
+                                    background: "rgba(59,130,246,0.15)",
+                                    border: "1px solid rgba(59,130,246,0.4)",
+                                    color: "#60A5FA",
+                                    fontSize: "0.72rem",
+                                    cursor: "pointer",
+                                    marginRight: 6,
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  🔄 Reset
+                                </button>
+                                <button
+                                  onClick={() => handleBlockStudent(v.hallTicket)}
+                                  disabled={actionLoading}
+                                  title="Block student from continuing"
+                                  style={{
+                                    padding: "4px 10px",
+                                    borderRadius: 6,
+                                    background: "rgba(239,68,68,0.2)",
+                                    border: "1px solid rgba(239,68,68,0.5)",
+                                    color: "#F87171",
+                                    fontSize: "0.72rem",
+                                    cursor: "pointer",
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  🛑 Block
                                 </button>
                               </td>
                             </tr>

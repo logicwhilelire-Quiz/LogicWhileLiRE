@@ -509,13 +509,13 @@ export function wrapBrandTemplate(title: string, innerHtml: string): string {
                 Need help? Academic & Technical Support: <a href="mailto:${supportEmail}" style="color:#38bdf8; font-weight:600; text-decoration:none;">${supportEmail}</a>
               </p>
               <p style="margin:0 0 6px; font-size:12px; color:#94a3b8;">
-                Automated transmission from <strong>LogicWhileLiRE</strong> Enterprise Assessment Engine.
+                Automated transmission from <strong>LogicWhile</strong> Online Assessment Platform.
               </p>
               <p style="margin:0 0 4px; font-size:11px; color:#64748b;">
-                LogicWhileLiRE — Logic. While. LiRE. | Career Growth & Assessment Platform
+                LogicWhile — Online Examination Platform
               </p>
               <p style="margin:0; font-size:11px; color:#475569;">
-                Developed by R. Charan Sai • © 2026 R. Charan Sai. All rights reserved.
+                © 2026 LogicWhile. All rights reserved.
               </p>
             </td>
           </tr>

@@ -116,14 +116,10 @@ export default function SiteHeader() {
               }}
             />
             <span style={{ color: '#EAA812', letterSpacing: '0.04em', fontWeight: 800 }}>
-              LOGICWHILE LiRE
+              LOGICWHILE
             </span>
             <span style={{ color: '#475569' }}>•</span>
-            <span style={{ color: '#F1F5F9', fontWeight: 700, letterSpacing: '0.02em' }}>
-              R. CHARAN SAI KRISHNA
-            </span>
-            <span style={{ color: '#475569' }}>•</span>
-            <span style={{ color: '#38BDF8', fontWeight: 700 }}>AUTONOMOUS ASSESSMENT ENGINE</span>
+            <span style={{ color: '#38BDF8', fontWeight: 700 }}>ONLINE ASSESSMENT PLATFORM</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: '11px' }}>

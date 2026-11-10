@@ -639,7 +639,7 @@ export default function QuizPage() {
         codeAnswers: { ...codeAnswers },
       }
 
-      // Retry queue with backoff if network drops
+      // Retry queue with backoff if network drops (silent offline buffering per Rule 7)
       let attempt = 0
       const maxRetries = 5
       let submitSuccess = false
@@ -650,7 +650,7 @@ export default function QuizPage() {
           if (attempt > 0) {
             setIsRetryingSubmit(true)
             setSubmitRetryCount(attempt)
-            setSubmitNetworkErrorNotice(`Network interruption detected. Answers safely buffered locally. Retrying submission (Attempt ${attempt}/${maxRetries})...`)
+            // Silent offline sync — no popups per Rule 7
           }
           const { data } = await axios.post(`${BASE}/api/exam-code/${examCode}/submit`, payload, {
             timeout: 10000,
@@ -3052,71 +3052,6 @@ export default function QuizPage() {
         commsLog={proctorCommsLog}
         initialTab={proctorDeskDefaultTab}
       />
-
-      {/* ─── NETWORK DROP ANSWER RECOVERY MODAL ─── */}
-      {submitNetworkErrorNotice && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 999998,
-          background: 'rgba(5, 8, 18, 0.94)',
-          backdropFilter: 'blur(16px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: 24,
-        }}>
-          <div style={{
-            maxWidth: 520, width: '100%',
-            background: '#0F172A',
-            border: '2px solid #F59E0B',
-            borderRadius: 20,
-            padding: '32px 28px',
-            textAlign: 'center',
-            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(245, 158, 11, 0.25)',
-          }}>
-            <div style={{ fontSize: '3rem', marginBottom: 12 }}>📶</div>
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FCD34D', margin: '0 0 10px 0' }}>
-              Network Interruption Detected
-            </h3>
-            <p style={{ color: '#E2E8F0', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 20 }}>
-              {submitNetworkErrorNotice}
-            </p>
-            <div style={{
-              background: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              borderRadius: 10,
-              padding: '10px 14px',
-              color: '#34D399',
-              fontSize: '0.82rem',
-              fontWeight: 700,
-              marginBottom: 20,
-              textAlign: 'left',
-            }}>
-              🔒 <strong>Offline Protection Active:</strong> {Object.keys(answers).length + Object.keys(codeAnswers).length} answers safely retained in local buffer.
-            </div>
-            <button
-              type="button"
-              id="retry-submission-btn"
-              onClick={() => {
-                setSubmitting(false)
-                setIsRetryingSubmit(false)
-                handleSubmit()
-              }}
-              style={{
-                width: '100%',
-                padding: '12px 20px',
-                background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-                color: '#000',
-                border: 'none',
-                borderRadius: 12,
-                fontSize: '0.95rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                boxShadow: '0 6px 20px rgba(245, 158, 11, 0.4)',
-              }}
-            >
-              🔄 Retry Submission Now
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ─── STRICT SECURITY FORCE-TERMINATION LOCKDOWN SCREEN ─── */}
       {isTerminated && (

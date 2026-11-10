@@ -5,7 +5,13 @@ import crypto from 'crypto';
 import { supabase } from '../db/supabase';
 import { isStudentEligibleForExam, deriveStudyYear } from '../utils/academicYear';
 import { recordAuditLog } from '../middleware/auditLog';
-import { broadcastViolationToMonitor } from '../services/socketService';
+import {
+  broadcastViolationToMonitor,
+  broadcastStudentReleased,
+  broadcastStudentRejected,
+  broadcastStudentBlocked,
+  broadcastAttemptReset,
+} from '../services/socketService';
 
 // ─────────────────────────────────────────────
 // SESSION TOKEN UTILITIES  (1a: concurrent-session block)
@@ -1284,7 +1290,7 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
   // 3. Check for existing attempt
   const { data: existing } = await supabase
     .from('exam_code_attempts')
-    .select('id, status, score, max_score')
+    .select('id, status, score, max_score, start_time')
     .or(`hall_ticket_no.eq.${ht},hall_ticket_no.eq.${canonicalRoll}`)
     .eq('exam_code', ec)
     .maybeSingle();
@@ -1304,6 +1310,8 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
       res.json({
         success: true,
         resumed: true,
+        status: existing.status,
+        is_released: true,
         attempt_id: existing.id,
         session_token: freshToken,
         server_time: Date.now(),
@@ -1321,7 +1329,56 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
           end_time: exam.end_time,
           college: exam.college,
         },
-        message: 'Resuming your existing session. Any other open tabs have been logged out.',
+        message: 'Resuming your active session. Any other open tabs have been logged out.',
+      });
+      return;
+    }
+
+    if (existing.status === 'waiting_verification' || existing.status === 'in_lobby' || existing.status === 'released') {
+      const freshToken = generateSessionToken();
+      await supabase
+        .from('exam_code_attempts')
+        .update({ session_token: freshToken, last_resumed_at: new Date().toISOString() })
+        .eq('id', existing.id);
+
+      const isRel = existing.status === 'released';
+      res.json({
+        success: true,
+        resumed: true,
+        status: existing.status,
+        is_released: isRel,
+        attempt_id: existing.id,
+        session_token: freshToken,
+        server_time: Date.now(),
+        server_start_time: existing.start_time ? new Date(existing.start_time).getTime() : null,
+        hallTicket: canonicalRoll,
+        studentName: candidateDisplayName,
+        student_gate_pass: studentGatePass,
+        candidate_gate_pass: candidateGatePass,
+        examDetails: {
+          exam_code: exam.exam_code,
+          exam_name: exam.exam_name,
+          subject: exam.subject,
+          duration_minutes: exam.duration_minutes,
+          total_questions: exam.total_questions,
+          end_time: exam.end_time,
+          college: exam.college,
+        },
+        message: isRel
+          ? 'You have been released by your exam supervisor. You may proceed to instructions.'
+          : 'You are registered in the Waiting Hall. Please wait for your exam supervisor to release you.',
+      });
+      return;
+    }
+
+    if (existing.status === 'blocked' || existing.status === 'rejected') {
+      res.status(403).json({
+        success: false,
+        error: existing.status === 'blocked'
+          ? 'Your examination access has been suspended/blocked by an administrator.'
+          : 'Your examination entry was rejected by the invigilator.',
+        code: existing.status === 'blocked' ? 'ATTEMPT_BLOCKED' : 'ATTEMPT_REJECTED',
+        status: existing.status,
       });
       return;
     }
@@ -1358,9 +1415,8 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
     return;
   }
 
-  // 5. Create attempt record — include a fresh session_token from the start
+  // 5. Create attempt record in waiting_verification status — clock does NOT start yet
   const newToken = generateSessionToken();
-  const attemptStartTime = new Date().toISOString();
   const attemptEndTime = exam.end_time || new Date(Date.now() + (exam.duration_minutes || 60) * 60000).toISOString();
   const { data: attempt, error: insertError } = await supabase
     .from('exam_code_attempts')
@@ -1368,9 +1424,9 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
       hall_ticket_no: canonicalRoll,
       exam_code: ec,
       student_name: candidateDisplayName,
-      status: 'in_progress',
+      status: 'waiting_verification',
       session_token: newToken,
-      start_time: attemptStartTime,
+      start_time: null,
       end_time: attemptEndTime,
     })
     .select()
@@ -1385,10 +1441,12 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
     success: true,
     valid: true,
     resumed: false,
+    status: 'waiting_verification',
+    is_released: false,
     attempt_id: attempt.id,
     session_token: newToken,
     server_time: Date.now(),
-    server_start_time: new Date(attemptStartTime).getTime(),
+    server_start_time: null,
     hallTicket: canonicalRoll,
     studentName: candidateDisplayName,
     student_gate_pass: studentGatePass,
@@ -1402,6 +1460,7 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
       end_time: exam.end_time,
       college: exam.college,
     },
+    message: 'Registered in Waiting Hall. Please wait for an administrator or inspector to release you.',
   });
 }
 
@@ -3575,6 +3634,290 @@ export async function getExamCodeReport(req: Request, res: Response): Promise<vo
       };
     }),
   });
+}
+
+/**
+ * GET /api/exam-code/:code/attempt-status
+ * Check current release status for a student attempt
+ */
+export async function getAttemptStatus(req: Request, res: Response): Promise<void> {
+  const code = String(req.params.code || '').toUpperCase();
+  const attemptId = (req.query.attemptId || req.query.attempt_id) as string | undefined;
+  const hallTicket = (req.query.hallTicket || req.query.hall_ticket) as string | undefined;
+
+  if (!code || (!attemptId && !hallTicket)) {
+    res.status(400).json({ success: false, error: 'Exam code and attempt ID or hall ticket required' });
+    return;
+  }
+
+  let query = supabase.from('exam_code_attempts').select('id, status, start_time, session_token, hall_ticket_no, student_name').eq('exam_code', code);
+  if (attemptId) {
+    query = query.eq('id', attemptId);
+  } else if (hallTicket) {
+    query = query.eq('hall_ticket_no', hallTicket.toUpperCase().trim());
+  }
+
+  const { data: attempt, error } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
+
+  if (error || !attempt) {
+    res.status(404).json({ success: false, error: 'Attempt not found' });
+    return;
+  }
+
+  const isReleased = attempt.status === 'released' || attempt.status === 'in_progress' || attempt.status === 'active';
+  res.json({
+    success: true,
+    attempt_id: attempt.id,
+    status: attempt.status,
+    is_released: isReleased,
+    start_time: attempt.start_time,
+    hall_ticket: attempt.hall_ticket_no,
+    student_name: attempt.student_name,
+  });
+}
+
+/**
+ * POST /api/exam-code/:code/start-attempt
+ * Releases student from Instructions to Quiz and starts server-authoritative timer
+ */
+export async function startStudentAttempt(req: Request, res: Response): Promise<void> {
+  const code = String(req.params.code || '').toUpperCase();
+  const attemptId = req.body.attemptId || req.body.attempt_id;
+  const sessionToken = req.body.session_token || req.body.sessionToken;
+
+  if (!code || !attemptId) {
+    res.status(400).json({ success: false, error: 'Exam code and attempt ID are required' });
+    return;
+  }
+
+  const tokenCheck = await verifyAttemptToken(String(attemptId), code, sessionToken);
+  if (!tokenCheck.valid) {
+    res.status(403).json({ success: false, error: 'Invalid or evicted session token', code: 'INVALID_TOKEN' });
+    return;
+  }
+
+  const attempt = tokenCheck.attempt;
+  if (!attempt) {
+    res.status(404).json({ success: false, error: 'Attempt record not found' });
+    return;
+  }
+
+  if (attempt.status === 'waiting_verification') {
+    res.status(403).json({
+      success: false,
+      error: 'You have not been released by your administrator or inspector yet. Please wait in the waiting hall.',
+      code: 'WAITING_FOR_RELEASE',
+    });
+    return;
+  }
+
+  if (['blocked', 'rejected', 'terminated', 'terminated_cheating'].includes(attempt.status)) {
+    res.status(403).json({
+      success: false,
+      error: `Your examination attempt is ${attempt.status} and cannot be started.`,
+      code: 'ATTEMPT_BLOCKED',
+    });
+    return;
+  }
+
+  if (attempt.status === 'completed' || attempt.status === 'submitted') {
+    res.status(409).json({ success: false, error: 'Exam already submitted', code: 'ALREADY_SUBMITTED' });
+    return;
+  }
+
+  // If already in_progress, return existing start time
+  if (attempt.status === 'in_progress' || attempt.status === 'active') {
+    res.json({
+      success: true,
+      authorized: true,
+      resumed: true,
+      server_start_time: attempt.start_time ? new Date(attempt.start_time).getTime() : Date.now(),
+      status: attempt.status,
+    });
+    return;
+  }
+
+  // Status is 'released': initialize start_time and set status to 'in_progress'
+  const startTimeIso = new Date().toISOString();
+  const { error: updateErr } = await supabase
+    .from('exam_code_attempts')
+    .update({
+      status: 'in_progress',
+      start_time: startTimeIso,
+      last_resumed_at: startTimeIso,
+    })
+    .eq('id', attempt.id);
+
+  if (updateErr) {
+    res.status(500).json({ success: false, error: 'Failed to start exam clock' });
+    return;
+  }
+
+  res.json({
+    success: true,
+    authorized: true,
+    resumed: false,
+    server_start_time: new Date(startTimeIso).getTime(),
+    status: 'in_progress',
+  });
+}
+
+/**
+ * POST /api/admin/exam-codes/:code/release-student
+ * Admin or Inspector releases student(s) from Waiting Hall
+ */
+export async function releaseStudentForExam(req: Request, res: Response): Promise<void> {
+  const code = String(req.params.code || req.params.id || '').toUpperCase();
+  const { hallTicket, attemptId, all } = req.body;
+
+  if (all) {
+    // Release all waiting students for this exam code
+    const { data: updated, error } = await supabase
+      .from('exam_code_attempts')
+      .update({ status: 'released' })
+      .eq('exam_code', code)
+      .eq('status', 'waiting_verification')
+      .select('id, hall_ticket_no');
+
+    if (error) {
+      res.status(500).json({ success: false, error: error.message });
+      return;
+    }
+
+    for (const u of updated || []) {
+      broadcastStudentReleased({ examCode: code, hallTicket: u.hall_ticket_no, attemptId: u.id });
+    }
+
+    res.json({ success: true, message: `Released ${updated?.length || 0} students for exam`, count: updated?.length || 0 });
+    return;
+  }
+
+  let query = supabase.from('exam_code_attempts').update({ status: 'released' }).eq('exam_code', code);
+  if (attemptId) {
+    query = query.eq('id', attemptId);
+  } else if (hallTicket) {
+    query = query.eq('hall_ticket_no', String(hallTicket).toUpperCase().trim());
+  } else {
+    res.status(400).json({ success: false, error: 'Provide hallTicket, attemptId, or all: true' });
+    return;
+  }
+
+  const { data: updated, error } = await query.select('id, hall_ticket_no').maybeSingle();
+  if (error || !updated) {
+    res.status(404).json({ success: false, error: 'Waiting attempt not found or update failed' });
+    return;
+  }
+
+  broadcastStudentReleased({ examCode: code, hallTicket: updated.hall_ticket_no, attemptId: updated.id });
+  res.json({ success: true, message: `Student ${updated.hall_ticket_no} released for exam`, attempt: updated });
+}
+
+/**
+ * POST /api/admin/exam-codes/:code/reject-student
+ * Admin or Inspector rejects student entry
+ */
+export async function rejectStudentEntry(req: Request, res: Response): Promise<void> {
+  const code = String(req.params.code || req.params.id || '').toUpperCase();
+  const { hallTicket, attemptId, reason } = req.body;
+
+  let query = supabase
+    .from('exam_code_attempts')
+    .update({ status: 'rejected', override_reason: reason || 'Entry rejected by invigilator' })
+    .eq('exam_code', code);
+
+  if (attemptId) {
+    query = query.eq('id', attemptId);
+  } else if (hallTicket) {
+    query = query.eq('hall_ticket_no', String(hallTicket).toUpperCase().trim());
+  } else {
+    res.status(400).json({ success: false, error: 'Provide hallTicket or attemptId' });
+    return;
+  }
+
+  const { data: updated, error } = await query.select('id, hall_ticket_no').maybeSingle();
+  if (error || !updated) {
+    res.status(404).json({ success: false, error: 'Attempt not found or update failed' });
+    return;
+  }
+
+  broadcastStudentRejected({ examCode: code, hallTicket: updated.hall_ticket_no, reason });
+  res.json({ success: true, message: `Student ${updated.hall_ticket_no} entry rejected`, attempt: updated });
+}
+
+/**
+ * POST /api/admin/exam-codes/:code/block-student
+ * Admin or Inspector blocks student
+ */
+export async function blockStudentEntry(req: Request, res: Response): Promise<void> {
+  const code = String(req.params.code || req.params.id || '').toUpperCase();
+  const { hallTicket, attemptId, reason } = req.body;
+
+  let query = supabase
+    .from('exam_code_attempts')
+    .update({ status: 'blocked', override_reason: reason || 'Blocked by supervisor' })
+    .eq('exam_code', code);
+
+  if (attemptId) {
+    query = query.eq('id', attemptId);
+  } else if (hallTicket) {
+    query = query.eq('hall_ticket_no', String(hallTicket).toUpperCase().trim());
+  } else {
+    res.status(400).json({ success: false, error: 'Provide hallTicket or attemptId' });
+    return;
+  }
+
+  const { data: updated, error } = await query.select('id, hall_ticket_no').maybeSingle();
+  if (error || !updated) {
+    res.status(404).json({ success: false, error: 'Attempt not found or update failed' });
+    return;
+  }
+
+  broadcastStudentBlocked({ examCode: code, hallTicket: updated.hall_ticket_no, reason });
+  res.json({ success: true, message: `Student ${updated.hall_ticket_no} blocked`, attempt: updated });
+}
+
+/**
+ * POST /api/admin/exam-codes/:code/reset-attempt
+ * Admin or Inspector resets exam attempt
+ */
+export async function resetStudentAttempt(req: Request, res: Response): Promise<void> {
+  const code = String(req.params.code || req.params.id || '').toUpperCase();
+  const { hallTicket, attemptId } = req.body;
+
+  let query = supabase
+    .from('exam_code_attempts')
+    .update({
+      status: 'waiting_verification',
+      answers: {},
+      partial_answers: {},
+      score: 0,
+      correct_count: 0,
+      wrong_count: 0,
+      unanswered_count: 0,
+      violation_count: 0,
+      start_time: null,
+      end_time: null,
+      override_reason: 'Attempt reset by administrator',
+    })
+    .eq('exam_code', code);
+
+  if (attemptId) {
+    query = query.eq('id', attemptId);
+  } else if (hallTicket) {
+    query = query.eq('hall_ticket_no', String(hallTicket).toUpperCase().trim());
+  } else {
+    res.status(400).json({ success: false, error: 'Provide hallTicket or attemptId' });
+    return;
+  }
+
+  const { data: updated, error } = await query.select('id, hall_ticket_no').maybeSingle();
+  if (error || !updated) {
+    res.status(404).json({ success: false, error: 'Attempt not found or reset failed' });
+    return;
+  }
+
+  broadcastAttemptReset({ examCode: code, hallTicket: updated.hall_ticket_no });
+  res.json({ success: true, message: `Attempt for student ${updated.hall_ticket_no} has been reset to Waiting Hall`, attempt: updated });
 }
 
 

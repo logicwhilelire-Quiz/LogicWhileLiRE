@@ -624,6 +624,39 @@ export const listMailLogs = (params?: {
 export const resendMailLog = (id: string) =>
   api.post<{ success: boolean; message: string; result: any }>(`/api/admin/mail-logs/${id}/resend`);
 
+// ─── WAITING HALL & STUDENT EXAM LIFECYCLE (Priority 2) ────────
+export const getAttemptStatus = (code: string, params: { attemptId?: string; hallTicket?: string }) =>
+  api.get<{
+    success: boolean;
+    attempt_id: string;
+    status: string;
+    is_released: boolean;
+    start_time?: string | null;
+    hall_ticket: string;
+    student_name?: string;
+  }>(`/api/exam-code/${code}/attempt-status`, { params });
+
+export const startStudentAttempt = (code: string, data: { attemptId: string; session_token?: string; hallTicket?: string }) =>
+  api.post<{
+    success: boolean;
+    authorized: boolean;
+    resumed: boolean;
+    server_start_time: number;
+    status: string;
+  }>(`/api/exam-code/${code}/start-attempt`, data);
+
+export const releaseStudentForExam = (code: string, data: { hallTicket?: string; attemptId?: string; all?: boolean }) =>
+  api.post<{ success: boolean; message: string; count?: number }>(`/api/admin/exam-codes/${code}/release-student`, data);
+
+export const rejectStudentEntry = (code: string, data: { hallTicket?: string; attemptId?: string; reason?: string }) =>
+  api.post<{ success: boolean; message: string }>(`/api/admin/exam-codes/${code}/reject-student`, data);
+
+export const blockStudentEntry = (code: string, data: { hallTicket?: string; attemptId?: string; reason?: string }) =>
+  api.post<{ success: boolean; message: string }>(`/api/admin/exam-codes/${code}/block-student`, data);
+
+export const resetStudentAttempt = (code: string, data: { hallTicket?: string; attemptId?: string }) =>
+  api.post<{ success: boolean; message: string }>(`/api/admin/exam-codes/${code}/reset-attempt`, data);
+
 export { api };
 export default api;
 

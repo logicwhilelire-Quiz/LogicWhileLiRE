@@ -1,8 +1,8 @@
 {
   "name": "logicwhilelire-client",
   "version": "4.0.0",
-  "description": "LogicWhile LiRE — Elevating Coding Knowledge • Li: Live • R: Real • E: Engine",
-  "author": "R. Charan Sai Krishna",
+  "description": "LogicWhile — Institutional Online Examination Platform",
+  "author": "LogicWhile",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",

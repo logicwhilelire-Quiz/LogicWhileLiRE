@@ -2364,4 +2364,90 @@ export async function deleteStudent(req: Request, res: Response): Promise<void> 
   res.json({ success: true, message: 'Student deleted successfully' });
 }
 
+/**
+ * POST /api/admin/students/clear-all
+ * Clear student roster records with optional college/section/batch scope.
+ * Exam attempt records are preserved separately unless explicitly requested.
+ */
+export async function clearAllStudents(req: Request, res: Response): Promise<void> {
+  const { college_id, section, batch, passout_year } = req.body || {};
+  let query = supabase.from('students').delete();
+
+  if (college_id) {
+    query = query.eq('college_id', college_id);
+  }
+  if (section) {
+    query = query.eq('section', section);
+  }
+  if (batch) {
+    query = query.eq('batch', batch);
+  }
+  if (passout_year) {
+    query = query.eq('year_of_passing', passout_year);
+  }
+  if (!college_id && !section && !batch && !passout_year) {
+    query = query.neq('id', '00000000-0000-0000-0000-000000000000');
+  }
+
+  const { error } = await query;
+  if (error) {
+    res.status(500).json({ success: false, error: error.message });
+    return;
+  }
+
+  if ((req as any).admin) {
+    recordAuditLog(
+      (req as any).admin,
+      'CLEAR_STUDENT_ROSTER',
+      'students',
+      'all',
+      { college_id, section, batch, passout_year },
+      req
+    ).catch(() => {});
+  }
+
+  res.json({
+    success: true,
+    message: 'Candidate roster cleared successfully from database.',
+  });
+}
+
+/**
+ * POST /api/admin/attempts/clear-all
+ * Clear exam attempts without wiping student accounts.
+ */
+export async function clearExamAttempts(req: Request, res: Response): Promise<void> {
+  const { exam_code } = req.body || {};
+  let query = supabase.from('exam_code_attempts').delete();
+
+  if (exam_code) {
+    query = query.eq('exam_code', exam_code.toUpperCase());
+  } else {
+    query = query.neq('id', '00000000-0000-0000-0000-000000000000');
+  }
+
+  const { error } = await query;
+  if (error) {
+    res.status(500).json({ success: false, error: error.message });
+    return;
+  }
+
+  if ((req as any).admin) {
+    recordAuditLog(
+      (req as any).admin,
+      'CLEAR_EXAM_ATTEMPTS',
+      'exam_code_attempts',
+      exam_code || 'all',
+      { exam_code },
+      req
+    ).catch(() => {});
+  }
+
+  res.json({
+    success: true,
+    message: 'Exam attempt sessions cleared successfully from database.',
+  });
+}
+
+
 

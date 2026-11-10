@@ -43,7 +43,7 @@ export function shouldUseFallback(): boolean {
 /**
  * Enforces DPR cap at 1.5 to protect GPU fillrate across displays
  */
-export function getSafeDpr(customDpr?: number): [number, number] {
+export function getSafeDpr(_customDpr?: number): [number, number] {
   return [1, 1.5]
 }
 

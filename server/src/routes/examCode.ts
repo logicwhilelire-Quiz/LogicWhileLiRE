@@ -39,6 +39,12 @@ import {
   saveExamCodeAnswer,
   getExamCodeResumeState,
   saveScreenThumbnail,
+  getAttemptStatus,
+  startStudentAttempt,
+  releaseStudentForExam,
+  rejectStudentEntry,
+  blockStudentEntry,
+  resetStudentAttempt,
 } from '../controllers/examCodeController';
 import { enrollRateLimit, answerRateLimit, enterExamRateLimit } from '../middleware/rateLimiter';
 import { validateBody, verifyExamEntrySchema, saveExamCodeAnswerSchema, submitExamCodeSchema } from '../middleware/validate';
@@ -260,6 +266,20 @@ router.post('/exam-code/:code/screen-thumbnail', saveScreenThumbnail);
 
 // Public leaderboard per exam code
 router.get('/exam-code/:code/leaderboard', getExamCodeLeaderboard);
+
+// Waiting Hall & Attempt lifecycle (Priority 2)
+router.get('/exam-code/:code/attempt-status', getAttemptStatus);
+router.post('/exam-code/:code/start-attempt', enterExamRateLimit, startStudentAttempt);
+
+// Admin & Inspector Waiting Hall controls (Priority 2)
+router.post('/admin/exam-codes/:code/release-student', adminAuth, requireRole('super_admin', 'inspector'), auditLog('RELEASE_STUDENT', 'exam_code_attempts'), releaseStudentForExam);
+router.post('/exam-code/:code/release-student', adminAuth, requireRole('super_admin', 'inspector'), auditLog('RELEASE_STUDENT', 'exam_code_attempts'), releaseStudentForExam);
+router.post('/admin/exam-codes/:code/reject-student', adminAuth, requireRole('super_admin', 'inspector'), auditLog('REJECT_STUDENT_ENTRY', 'exam_code_attempts'), rejectStudentEntry);
+router.post('/exam-code/:code/reject-student', adminAuth, requireRole('super_admin', 'inspector'), auditLog('REJECT_STUDENT_ENTRY', 'exam_code_attempts'), rejectStudentEntry);
+router.post('/admin/exam-codes/:code/block-student', adminAuth, requireRole('super_admin', 'inspector'), auditLog('BLOCK_STUDENT_ATTEMPT', 'exam_code_attempts'), blockStudentEntry);
+router.post('/exam-code/:code/block-student', adminAuth, requireRole('super_admin', 'inspector'), auditLog('BLOCK_STUDENT_ATTEMPT', 'exam_code_attempts'), blockStudentEntry);
+router.post('/admin/exam-codes/:code/reset-attempt', adminAuth, requireRole('super_admin', 'inspector'), auditLog('RESET_STUDENT_ATTEMPT', 'exam_code_attempts'), resetStudentAttempt);
+router.post('/exam-code/:code/reset-attempt', adminAuth, requireRole('super_admin', 'inspector'), auditLog('RESET_STUDENT_ATTEMPT', 'exam_code_attempts'), resetStudentAttempt);
 
 // ─── ADMIN ROUTES (require adminAuth) ─────────────────────────
 

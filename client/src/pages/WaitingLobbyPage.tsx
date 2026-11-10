@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { io as connectSocket, Socket } from "socket.io-client";
 import BrandLogo from "../components/BrandLogo";
 import AnimatedPage from "../components/AnimatedPage";
-import { getAssessmentSystemCheck, authLogout, getExamLobbyStats } from "../lib/api";
+import { getAssessmentSystemCheck, authLogout, getExamLobbyStats, getAttemptStatus } from "../lib/api";
 import { SOCKET_URL } from "../lib/config";
 import HoloProctorDeskModal from "../components/HoloProctorDeskModal";
 
@@ -56,6 +56,11 @@ export default function WaitingLobbyPage() {
   const [lobbyMeta, setLobbyMeta] = useState<LobbyMeta>({ enrolled: 0, connected: 0, pending: 0 });
   const [examStarted, setExamStarted] = useState(false);
   const [startPayload, setStartPayload] = useState<ExamStartedPayload | null>(null);
+  const [isReleased, setIsReleased] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [isRejected, setIsRejected] = useState(false);
+  const [blockReason, setBlockReason] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
   const [events, setEvents] = useState<Array<{ id: string; time: string; text: string; type: "info" | "success" | "ping" | "alert" }>>([]);
   const [countdown, setCountdown] = useState(300);
   // Real exam duration fetched from server (used for accurate timer when exam starts via LocalStorage/BC)
@@ -174,17 +179,13 @@ export default function WaitingLobbyPage() {
     if (stateCandidate) {
       setCandidate(stateCandidate);
     } else {
-      const stored = localStorage.getItem("student_user");
+      const stored = localStorage.getItem("student_user") || localStorage.getItem("logicwhilelire_attempt") || localStorage.getItem("lw_attempt");
       if (stored) {
-        try { setCandidate(JSON.parse(stored)); } catch { /* ignore */ }
-      } else {
-        setCandidate({
-          first_name: "Venkata Srinivas", last_name: "Katta",
-          name: "Venkata Srinivas Katta", college_id: "COL-UNIV-042",
-          college_name: "University College of Eng.", year_of_passing: 2028,
-          roll_number: "22B91A0501", branch_code: "CSM", section: "B",
-          email: "srinivas.k@college.edu", contact_number: "+91 9876543210",
-        });
+        try {
+          const parsed = JSON.parse(stored);
+          const resolved = parsed.student || parsed;
+          setCandidate(resolved);
+        } catch { /* ignore */ }
       }
     }
 
@@ -204,7 +205,7 @@ export default function WaitingLobbyPage() {
       addEvent(`Socket connected (${socket.id?.slice(0, 8) || "?"}...)`, "success");
       socket.emit("lobby:join", {
         examCode: contestId,
-        hallTicket: candidate?.roll_number || (candidate as any)?.hall_ticket || candidate?.email || 'STUDENT',
+        hallTicket: candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || 'STUDENT',
         studentName: candidate?.name || candidate?.first_name || 'Student Candidate',
         section: candidate?.section || 'General',
       });
@@ -228,10 +229,53 @@ export default function WaitingLobbyPage() {
       }
     });
 
+    // PRIORITY 2: Live release event from Admin or Inspector
+    socket.on("STUDENT_RELEASED", (data: any) => {
+      if (data?.examCode?.toUpperCase() === contestId.toUpperCase()) {
+        const myHt = String(candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || '').toUpperCase();
+        if (!data.hallTicket || data.hallTicket.toUpperCase() === myHt) {
+          setIsReleased(true);
+          addEvent("✓ Release granted by supervisor! Proceeding to instructions...", "success");
+          setTimeout(() => {
+            navigate(`/instructions/${contestId}`, {
+              state: {
+                hallTicket: myHt,
+                studentName: candidate?.name,
+                attemptId: data.attemptId || (location.state as any)?.attemptId,
+              },
+            });
+          }, 1200);
+        }
+      }
+    });
+
+    socket.on("STUDENT_BLOCKED", (data: any) => {
+      if (data?.examCode?.toUpperCase() === contestId.toUpperCase()) {
+        const myHt = String(candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || '').toUpperCase();
+        if (!data.hallTicket || data.hallTicket.toUpperCase() === myHt) {
+          setIsBlocked(true);
+          setBlockReason(data.reason || 'Blocked by supervisor');
+          addEvent(`🛑 Entry suspended: ${data.reason || 'Blocked by supervisor'}`, "alert");
+        }
+      }
+    });
+
+    socket.on("STUDENT_REJECTED", (data: any) => {
+      if (data?.examCode?.toUpperCase() === contestId.toUpperCase()) {
+        const myHt = String(candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || '').toUpperCase();
+        if (!data.hallTicket || data.hallTicket.toUpperCase() === myHt) {
+          setIsRejected(true);
+          setRejectReason(data.reason || 'Entry rejected by invigilator');
+          addEvent(`⚠️ Entry rejected: ${data.reason || 'Rejected by supervisor'}`, "alert");
+        }
+      }
+    });
+
     socket.on("EXAM_STARTED", (payload: ExamStartedPayload) => {
       setExamStarted(true);
       setStartPayload(payload);
       setCountdown(0);
+      setIsReleased(true);
       const elapsed = payload.elapsed_seconds ?? Math.floor((Date.now() - payload.server_start_time) / 1000);
       const remaining = Math.max(0, payload.duration_seconds - elapsed);
       addEvent(
@@ -266,16 +310,47 @@ export default function WaitingLobbyPage() {
     };
   }, [contestId, location.state]);
 
+  // PRIORITY 2: 3-second fallback polling check for supervisor release
+  useEffect(() => {
+    const checkStatus = async () => {
+      const myHt = candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket;
+      const attemptId = (location.state as any)?.attemptId;
+      if (!myHt && !attemptId) return;
+      try {
+        const res = await getAttemptStatus(contestId, { hallTicket: myHt, attemptId });
+        if (res.data?.is_released) {
+          setIsReleased(true);
+          navigate(`/instructions/${contestId}`, {
+            state: {
+              hallTicket: myHt,
+              studentName: candidate?.name,
+              attemptId: res.data.attempt_id,
+            },
+          });
+        } else if (res.data?.status === 'blocked') {
+          setIsBlocked(true);
+        } else if (res.data?.status === 'rejected') {
+          setIsRejected(true);
+        }
+      } catch {}
+    };
+
+    const interval = setInterval(checkStatus, 3000);
+    checkStatus();
+    return () => clearInterval(interval);
+  }, [contestId, candidate, location.state, navigate]);
+
   useEffect(() => {
     if (examStarted && startPayload) {
       const examCode = startPayload.exam_id || contestId;
-      const hallTicket = candidate?.roll_number || (location.state as any)?.hallTicket || "2201A0501";
+      const hallTicket = candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || "";
       try {
         sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
         sessionStorage.setItem('lw_camera_consented', 'true');
       } catch {}
       const timer = setTimeout(() => {
-        navigate(`/quiz/${examCode}`, {
+        // Priority 2 Rule: Released student must view instructions before starting
+        navigate(`/instructions/${examCode}`, {
           state: {
             serverStartTime: startPayload.server_start_time,
             durationSeconds: startPayload.duration_seconds,
@@ -283,28 +358,23 @@ export default function WaitingLobbyPage() {
             hallTicket,
           },
         });
-      }, 1800);
+      }, 1500);
       return () => clearTimeout(timer);
     }
   }, [examStarted, startPayload, contestId, candidate, location.state, navigate]);
 
   const handleManualStart = () => {
     const examCode = startPayload?.exam_id || contestId;
-    const hallTicket = candidate?.roll_number || (location.state as any)?.hallTicket || "2201A0501";
+    const hallTicket = candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || "";
     try {
       sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
       sessionStorage.setItem('lw_camera_consented', 'true');
     } catch {}
-    // Compute remaining from server_start_time to honour server-authoritative timer (Sprint 2, item 4)
-    const elapsed = startPayload
-      ? Math.floor((Date.now() - startPayload.server_start_time) / 1000)
-      : 0;
-    navigate(`/quiz/${examCode}`, {
+    navigate(`/instructions/${examCode}`, {
       state: {
         examCode,
         serverStartTime: startPayload?.server_start_time,
         durationSeconds: startPayload?.duration_seconds,
-        elapsed_seconds: elapsed,
         hallTicket,
       },
     });
@@ -321,7 +391,7 @@ export default function WaitingLobbyPage() {
   const minutes = Math.floor(countdown / 60);
   const seconds = countdown % 60;
   const timeFormatted = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  const displayName = candidate?.name || `${candidate?.first_name || "Venkata"} ${candidate?.last_name || "Katta"}`.trim();
+  const displayName = candidate?.name || `${candidate?.first_name || "Student"} ${candidate?.last_name || "Candidate"}`.trim();
 
   return (
     <AnimatedPage>

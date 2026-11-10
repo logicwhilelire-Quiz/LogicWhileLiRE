@@ -113,6 +113,8 @@ import {
   getInspectorDashboardData,
   bulkVerifyStudents,
   allowExamReentry,
+  clearAllStudents,
+  clearExamAttempts,
 } from '../controllers/hierarchyController';
 import {
   listColleges,
@@ -130,49 +132,6 @@ router.post('/login', adminLoginRateLimit, validateBody(adminLoginSchema), admin
 router.post('/request-login-otp', adminLoginRateLimit, requestLoginOtp);
 router.post('/verify-login-otp', adminLoginRateLimit, verifyLoginOtp);
 router.post('/logout', adminLogout);
-router.post('/demo-login', (req, res) => {
-  if (process.env.DEMO_MODE !== 'true') {
-    res.status(401).json({
-      success: false,
-      error: 'Unauthorized: Demo login bypass is disabled when DEMO_MODE is false',
-      code: 'DEMO_BYPASS_REJECTED',
-    });
-    return;
-  }
-  const role = (req.body?.role || 'super_admin') as StaffRole;
-  const staff = {
-    id: role === 'inspector' ? 'st000000-0000-0000-0000-000000000004' : role === 'faculty' ? 'st000000-0000-0000-0000-000000000003' : 'st000000-0000-0000-0000-000000000001',
-    name: role === 'inspector' ? 'LogicWhile Lead Inspector' : role === 'faculty' ? 'LogicWhile Lead Faculty' : 'LogicWhile Super Admin',
-    email: role === 'inspector' ? 'inspector@logicwhilelire.com' : role === 'faculty' ? 'faculty@logicwhilelire.com' : 'admin@logicwhilelire.com',
-    role,
-    college_id: role === 'super_admin' ? null : 1,
-  };
-  const token = jwt.sign(
-    {
-      sub: staff.email,
-      role: staff.role,
-      staff_id: staff.id,
-      name: staff.name,
-      college_id: staff.college_id,
-      must_change_password: false,
-    },
-    getAdminJwtSecret(),
-    { expiresIn: '8h' }
-  );
-  const isProduction = process.env.NODE_ENV === 'production';
-  res.cookie('admin_token', token, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'none' : 'lax',
-    maxAge: 8 * 60 * 60 * 1000,
-    path: '/',
-  });
-  res.json({
-    success: true,
-    token,
-    user: staff,
-  });
-});
 
 // ——— 2FA enrollment (pre-auth — accessible via enrollment_token issued at login) ———
 router.post('/2fa/enroll-init', setup2fa);
@@ -369,6 +328,8 @@ router.post('/students', requireRole('super_admin'), auditLog('CREATE_STUDENT', 
 router.patch('/students/:id', requireRole('super_admin'), auditLog('UPDATE_STUDENT', 'students'), updateStudent);
 router.put('/students/:id', requireRole('super_admin'), auditLog('UPDATE_STUDENT', 'students'), updateStudent);
 router.delete('/students/:id', requireRole('super_admin'), auditLog('DELETE_STUDENT', 'students'), deleteStudent);
+router.post('/students/clear-all', requireRole('super_admin'), auditLog('CLEAR_STUDENT_ROSTER', 'students'), clearAllStudents);
+router.post('/attempts/clear-all', requireRole('super_admin'), auditLog('CLEAR_EXAM_ATTEMPTS', 'exam_code_attempts'), clearExamAttempts);
 router.post(
   '/students/import-preview',
   requireRole('super_admin'),

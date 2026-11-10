@@ -151,13 +151,23 @@ export default function StudentControl() {
     setTimeout(() => setUploadMsg(''), 5000);
   };
 
-  const handleClearRosterFresh = () => {
-    if (!window.confirm('⚠️ Reset Student Roster to Fresh State?\n\nThis will remove all demo and current student entries from local storage so you can start 100% fresh with new institutional imports. Are you sure?')) {
+  const handleClearRosterFresh = async () => {
+    if (!window.confirm('⚠️ Reset Student Roster to Fresh State?\n\nThis will remove all student entries from both database and local storage so you can start 100% fresh with new institutional imports. Exam attempts are preserved separately.\n\nAre you sure you want to proceed?')) {
       return;
+    }
+    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    try {
+      await axios.post(
+        `${API_BASE_URL}/api/admin/students/clear-all`,
+        {},
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+    } catch (err: any) {
+      console.warn('Backend clear notice:', err?.response?.data || err.message);
     }
     clearAllAdminStudents();
     setStudents([]);
-    setUploadMsg('🧹 All candidate roster records cleared. Platform is now in a 100% fresh application state.');
+    setUploadMsg('🧹 All candidate roster records cleared from database and storage. Platform is now in a 100% fresh state.');
     setTimeout(() => setUploadMsg(''), 5000);
   };
 

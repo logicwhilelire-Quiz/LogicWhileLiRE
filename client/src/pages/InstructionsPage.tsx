@@ -3,14 +3,17 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import BrandLogo from '../components/BrandLogo';
 import CodeRain from '../components/3d/CodeRain';
+import { getAttemptStatus, startStudentAttempt } from '../lib/api';
 
 export default function InstructionsPage() {
   const { examCode } = useParams<{ examCode: string }>();
   const navigate = useNavigate();
   const isDemoOrDev = Boolean(examCode?.toUpperCase().includes('DEMO') || import.meta.env.DEV);
-  const [countdown, setCountdown] = useState(isDemoOrDev ? 5 : 60);
+  const [countdown, setCountdown] = useState(isDemoOrDev ? 5 : 45);
   const [canProceed, setCanProceed] = useState(false);
   const [systemOk, setSystemOk] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
+  const [startError, setStartError] = useState('');
 
   // Get stored attempt
   const stored = (() => {
@@ -24,11 +27,32 @@ export default function InstructionsPage() {
 
   const examDetails = stored.examDetails || {};
 
+  // PRIORITY 2: Strict Waiting Hall release verification on mount
   useEffect(() => {
-    if (!stored.attemptId || !stored.examCode) {
-      navigate('/enter-exam');
+    async function verifyRelease() {
+      if (!examCode) return;
+      const attemptId = stored.attemptId || stored.attempt_id;
+      const hallTicket = stored.hallTicket || stored.roll_number;
+      if (!attemptId && !hallTicket) {
+        navigate(`/waiting-lobby/${examCode}`, { replace: true });
+        return;
+      }
+      try {
+        const res = await getAttemptStatus(examCode, { attemptId, hallTicket });
+        if (!res.data?.is_released) {
+          // Student is not released by admin/inspector yet: redirect to Waiting Hall
+          navigate(`/waiting-lobby/${examCode}`, {
+            replace: true,
+            state: { hallTicket, attemptId, status: res.data?.status }
+          });
+        }
+      } catch {
+        // If unverified or not found, keep student in waiting lobby
+        navigate(`/waiting-lobby/${examCode}`, { replace: true });
+      }
     }
-  }, []);
+    verifyRelease();
+  }, [examCode, navigate]);
 
   // Countdown timer
   useEffect(() => {
@@ -53,15 +77,53 @@ export default function InstructionsPage() {
     check();
   }, []);
 
-  function handleStart() {
-    if (!canProceed) return;
+  async function handleStart() {
+    if (!canProceed || isStarting) return;
+    setIsStarting(true);
+    setStartError('');
+
     try {
       sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
       sessionStorage.setItem('lw_camera_consented', 'true');
     } catch {}
-    navigate(`/quiz/${examCode}`, {
-      state: { hallTicket: stored.hallTicket },
-    });
+
+    try {
+      const attemptId = stored.attemptId || stored.attempt_id;
+      const hallTicket = stored.hallTicket || stored.roll_number;
+      const sessionToken = stored.session_token || stored.token;
+
+      // Server-authoritative start authorization (Priority 2 item 6)
+      const res = await startStudentAttempt(examCode!, {
+        attemptId,
+        session_token: sessionToken,
+        hallTicket,
+      });
+
+      if (res.data?.authorized) {
+        navigate(`/quiz/${examCode}`, {
+          state: {
+            hallTicket,
+            serverStartTime: res.data.server_start_time,
+            attemptId,
+          },
+        });
+      } else {
+        setStartError('Exam attempt authorization failed. Please wait in the Waiting Hall.');
+        setTimeout(() => {
+          navigate(`/waiting-lobby/${examCode}`);
+        }, 1500);
+      }
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.error || 'Failed to authorize exam start. Please return to Waiting Hall.';
+      setStartError(errMsg);
+      if (err?.response?.status === 403) {
+        setTimeout(() => {
+          navigate(`/waiting-lobby/${examCode}`);
+        }, 2000);
+      }
+    } finally {
+      setIsStarting(false);
+    }
   }
 
   const rules = [
@@ -370,6 +432,22 @@ export default function InstructionsPage() {
               </>
             ) : (
               <>
+                {startError && (
+                  <div
+                    style={{
+                      background: 'rgba(239,68,68,0.15)',
+                      border: '1px solid rgba(239,68,68,0.4)',
+                      color: '#F87171',
+                      borderRadius: 8,
+                      padding: '10px 16px',
+                      marginBottom: 16,
+                      fontSize: '0.88rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    ⚠️ {startError}
+                  </div>
+                )}
                 <div
                   style={{
                     fontSize: '0.96rem',
@@ -382,28 +460,29 @@ export default function InstructionsPage() {
                 <motion.button
                   id="start-exam-now-btn"
                   onClick={handleStart}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  disabled={isStarting}
+                  whileHover={{ scale: isStarting ? 1 : 1.02 }}
+                  whileTap={{ scale: isStarting ? 1 : 0.98 }}
                   style={{
-                    background: 'linear-gradient(135deg, #2B7FFF 0%, #1B5FB5 100%)',
+                    background: isStarting ? '#475569' : 'linear-gradient(135deg, #2B7FFF 0%, #1B5FB5 100%)',
                     color: '#fff',
                     border: 'none',
                     borderRadius: 12,
                     padding: '16px 48px',
                     fontWeight: 800,
                     fontSize: '1.05rem',
-                    cursor: 'pointer',
+                    cursor: isStarting ? 'not-allowed' : 'pointer',
                     boxShadow: '0 8px 24px rgba(43,127,255,0.35)',
                     fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
                   }}
                 >
-                  🚀 Start Exam
+                  {isStarting ? '⏳ Authorizing Exam Clock...' : '🚀 Start Exam'}
                 </motion.button>
               </>
             )}
           </div>
 
-          {/* Official Footer Credit */}
+          {/* Official Footer */}
           <div
             style={{
               textAlign: 'center',
@@ -412,7 +491,7 @@ export default function InstructionsPage() {
               paddingBottom: 24,
             }}
           >
-            LogicWhileLiRE • "Logic. While. LiRE." • © 2026 LogicWhile LiRE. All rights reserved.
+            LogicWhile • Institutional Assessment Platform • © 2026 LogicWhile. All rights reserved.
           </div>
         </motion.div>
       </div>

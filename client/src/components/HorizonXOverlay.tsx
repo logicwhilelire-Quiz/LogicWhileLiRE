@@ -591,8 +591,8 @@ export default function HorizonXOverlay() {
                   <div style={{ color: '#FBBF24', fontWeight: 700 }}>Supabase Managed PG (SSL)</div>
                 </div>
                 <div>
-                  <div style={{ color: '#64748B', fontSize: '0.62rem' }}>DEVELOPED BY</div>
-                  <div style={{ color: '#A78BFA', fontWeight: 700 }}>R. Charan Sai Krishna</div>
+                  <div style={{ color: '#64748B', fontSize: '0.62rem' }}>PLATFORM</div>
+                  <div style={{ color: '#A78BFA', fontWeight: 700 }}>LogicWhile</div>
                 </div>
               </div>
             </div>

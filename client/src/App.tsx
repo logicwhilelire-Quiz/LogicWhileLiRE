@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -31,7 +31,7 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
             try {
               const keys = await caches.keys();
               await Promise.all(keys.map((k) => caches.delete(k)));
-            } catch (_) {}
+            } catch {}
           }
           window.location.href = window.location.pathname + '?_t=' + now;
           return new Promise(() => {}) as any;
@@ -44,7 +44,6 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
 
 // Code-split routes for optimal performance and smaller initial bundles
 const StudentLoginPage = lazyWithRetry(() => import('./pages/StudentLoginPage'));
-const StudentRegisterPage = lazyWithRetry(() => import('./pages/StudentRegisterPage'));
 const StudentDashboardPage = lazyWithRetry(() => import('./pages/StudentDashboardPage'));
 const VerifyEmailPage = lazyWithRetry(() => import('./pages/VerifyEmailPage'));
 const CandidateRegisterGatePage = lazyWithRetry(() => import('./pages/CandidateRegisterGatePage'));
@@ -56,7 +55,6 @@ const OTPVerifyPage = lazyWithRetry(() => import('./pages/OTPVerifyPage'));
 const ExamPage = lazyWithRetry(() => import('./pages/ExamPage'));
 const LeaderboardPage = lazyWithRetry(() => import('./pages/LeaderboardPage'));
 const AdminLoginPage = lazyWithRetry(() => import('./pages/admin/AdminLoginPage'));
-const AdminDashboardPage = lazyWithRetry(() => import('./pages/admin/AdminDashboardPage'));
 const CreateExamPage = lazyWithRetry(() => import('./pages/admin/CreateExamPage'));
 const ImportQuestionsPage = lazyWithRetry(() => import('./pages/admin/ImportQuestionsPage'));
 const SessionsPage = lazyWithRetry(() => import('./pages/admin/SessionsPage'));
@@ -81,7 +79,6 @@ const NotFoundPage = lazyWithRetry(() => import('./pages/NotFoundPage'));
 // ── NEW: Admin pages ─────────────────────────────────────────────
 const CollegesPage = lazyWithRetry(() => import('./pages/admin/CollegesPage'));
 const ExamCodesPage = lazyWithRetry(() => import('./pages/admin/ExamCodesPage'));
-const AdminMonitorPage = lazyWithRetry(() => import('./pages/admin/AdminMonitorPage'));
 
 // ── LogicWhileLiRE Clean Admin Control Center ───────────────────────
 const Dashboard = lazyWithRetry(() => import('./pages/admin/Dashboard'));

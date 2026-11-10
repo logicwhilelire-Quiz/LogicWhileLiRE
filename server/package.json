@@ -1,9 +1,9 @@
 {
   "name": "logicwhilelire-server",
   "version": "4.0.0",
-  "description": "LogicWhile LiRE — Elevating Coding Knowledge • Li: Live • R: Real • E: Engine",
+  "description": "LogicWhile — Institutional Online Examination Platform",
   "main": "index.js",
-  "author": "R. Charan Sai Krishna",
+  "author": "LogicWhile",
   "license": "UNLICENSED",
   "scripts": {
     "dev": "tsx watch src/index.ts",

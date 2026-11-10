@@ -133,11 +133,13 @@ export default function EnterExamPage() {
         }
         localStorage.setItem('student_user', JSON.stringify(candidateProfile))
 
-        navigate(`/instructions/${form.examCode.trim()}`, {
+        navigate(`/waiting-lobby/${form.examCode.trim().toUpperCase()}`, {
           state: {
             hallTicket: canonicalHt,
             studentName: candidateName,
             gatePass: data.student_gate_pass || data.candidate_gate_pass,
+            attemptId: data.attempt_id,
+            isReleased: data.is_released,
           }
         })
       } else {

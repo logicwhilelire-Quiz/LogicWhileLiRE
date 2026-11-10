@@ -641,7 +641,7 @@ export default function LandingPage() {
             <h2 style={{
               fontSize: 'clamp(1.8rem,3.5vw,2.5rem)', fontWeight: 900, margin: '0 0 10px',
               color: '#FFFFFF', fontFamily: "'Rajdhani',sans-serif", letterSpacing: '-0.02em',
-            }}>How LogicWhile LiRE Operates</h2>
+            }}>How LogicWhile Operates</h2>
             <p style={{ color: '#64748B', fontSize: '0.92rem', margin: '0 auto', maxWidth: 660 }}>
               From student verification to synchronized examination kickoff and instant competitive telemetry.
             </p>

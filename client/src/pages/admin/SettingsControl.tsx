@@ -168,10 +168,10 @@ export default function SettingsControl() {
 
   // Audit Logs
   const [auditLogs] = useState([
-    { id: 'aud-1', admin: 'R. Charan Sai', action: 'UPDATE_BRANDING', target: 'Branding: LogicWhileLiRE', time: '2026-10-04 11:25:12' },
-    { id: 'aud-2', admin: 'R. Charan Sai', action: 'PORTAL_RULES_SYNC', target: 'Enforce Student Login to Enter Exam', time: '2026-10-04 11:32:00' },
-    { id: 'aud-3', admin: 'R. Charan Sai', action: 'SECTOR_MATRIX_ADJUST', target: '5 Sectors: 20% Uniform Distribution', time: '2026-10-04 11:38:45' },
-    { id: 'aud-4', admin: 'R. Charan Sai', action: 'PROCTOR_POLICY_UPDATE', target: 'Anti-Tab Switch Limit = 3', time: '2026-10-04 11:42:10' },
+    { id: 'aud-1', admin: 'System Admin', action: 'UPDATE_BRANDING', target: 'Branding: LogicWhile', time: '2026-10-04 11:25:12' },
+    { id: 'aud-2', admin: 'System Admin', action: 'PORTAL_RULES_SYNC', target: 'Enforce Student Login to Enter Exam', time: '2026-10-04 11:32:00' },
+    { id: 'aud-3', admin: 'System Admin', action: 'SECTOR_MATRIX_ADJUST', target: '5 Sectors: 20% Uniform Distribution', time: '2026-10-04 11:38:45' },
+    { id: 'aud-4', admin: 'System Admin', action: 'PROCTOR_POLICY_UPDATE', target: 'Anti-Tab Switch Limit = 3', time: '2026-10-04 11:42:10' },
   ]);
 
   const handleSave = (e: React.FormEvent) => {

@@ -94,7 +94,7 @@ export default function AboutPage() {
                   boxShadow: '0 4px 14px rgba(0, 33, 71, 0.3)',
                 }}
               >
-                RC
+                LW
               </div>
               <div style={{ flex: 1 }}>
                 <span
@@ -106,7 +106,7 @@ export default function AboutPage() {
                     color: '#EAA812',
                   }}
                 >
-                  Architect & Engineer
+                  Platform Engineering
                 </span>
                 <h2
                   style={{
@@ -117,10 +117,10 @@ export default function AboutPage() {
                     margin: '4px 0',
                   }}
                 >
-                  R. Charan Sai
+                  LogicWhile Engine
                 </h2>
                 <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
-                  Creator & Lead Developer of the LogicWhileLiRE Autonomous Examination Engine.
+                  Institutional Online Examination Platform and Autonomous Assessment Engine.
                 </p>
               </div>
             </div>

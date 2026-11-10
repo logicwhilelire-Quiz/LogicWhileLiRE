@@ -557,3 +557,73 @@ export function broadcastViolationToMonitor(examCode: string, payload: any): voi
   io.to(`monitor:${code}`).emit('violation:new', payload);
   scheduleThrottledRoomUpdate(code);
 }
+
+export function broadcastStudentReleased(params: {
+  examCode: string;
+  hallTicket: string;
+  attemptId: string;
+}): void {
+  if (!io) return;
+  const code = params.examCode.toUpperCase();
+  const ht = params.hallTicket.toUpperCase();
+  io.to(`lobby:${code}`).emit('STUDENT_RELEASED', {
+    event: 'STUDENT_RELEASED',
+    examCode: code,
+    hallTicket: ht,
+    attemptId: params.attemptId,
+    timestamp: Date.now(),
+  });
+  scheduleThrottledRoomUpdate(code);
+}
+
+export function broadcastStudentRejected(params: {
+  examCode: string;
+  hallTicket: string;
+  reason?: string;
+}): void {
+  if (!io) return;
+  const code = params.examCode.toUpperCase();
+  const ht = params.hallTicket.toUpperCase();
+  io.to(`lobby:${code}`).emit('STUDENT_REJECTED', {
+    event: 'STUDENT_REJECTED',
+    examCode: code,
+    hallTicket: ht,
+    reason: params.reason || 'Entry rejected by exam administrator',
+    timestamp: Date.now(),
+  });
+  scheduleThrottledRoomUpdate(code);
+}
+
+export function broadcastStudentBlocked(params: {
+  examCode: string;
+  hallTicket: string;
+  reason?: string;
+}): void {
+  if (!io) return;
+  const code = params.examCode.toUpperCase();
+  const ht = params.hallTicket.toUpperCase();
+  io.to(`lobby:${code}`).emit('STUDENT_BLOCKED', {
+    event: 'STUDENT_BLOCKED',
+    examCode: code,
+    hallTicket: ht,
+    reason: params.reason || 'Candidate blocked by exam supervisor',
+    timestamp: Date.now(),
+  });
+  scheduleThrottledRoomUpdate(code);
+}
+
+export function broadcastAttemptReset(params: {
+  examCode: string;
+  hallTicket: string;
+}): void {
+  if (!io) return;
+  const code = params.examCode.toUpperCase();
+  const ht = params.hallTicket.toUpperCase();
+  io.to(`lobby:${code}`).emit('ATTEMPT_RESET', {
+    event: 'ATTEMPT_RESET',
+    examCode: code,
+    hallTicket: ht,
+    timestamp: Date.now(),
+  });
+  scheduleThrottledRoomUpdate(code);
+}

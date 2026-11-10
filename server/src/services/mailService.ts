@@ -373,13 +373,13 @@ export function getSharedEmailLayout(options: {
                 Institutional Support & Compliance: <a href="mailto:${supportEmail}" style="color:#38bdf8; font-weight:600; text-decoration:none;">${supportEmail}</a>
               </p>
               <p style="margin:0 0 6px; font-size:12px; color:#94a3b8;">
-                Automated transmission dispatched from the <strong>LogicWhile LiRE</strong> Assessment Engine.
+                Automated transmission dispatched from the <strong>LogicWhile</strong> Online Assessment Platform.
               </p>
               <p style="margin:0 0 4px; font-size:11px; color:#64748b;">
-                <a href="${FRONTEND_URL}" style="color:#64748b; text-decoration:none;">https://logicwhilelire.com</a> • Institutional Career Growth & Proctoring Ecosystem
+                <a href="${FRONTEND_URL}" style="color:#64748b; text-decoration:none;">https://logicwhilelire.com</a> • Institutional Assessment Platform
               </p>
               <p style="margin:0; font-size:11px; color:#475569;">
-                Developed by R. Charan Sai • © ${year} LogicWhile LiRE. All rights reserved.
+                © ${year} LogicWhile. All rights reserved.
               </p>
             </td>
           </tr>

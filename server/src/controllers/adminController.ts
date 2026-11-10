@@ -634,7 +634,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
         ip: successIp,
         timestamp: successNow,
       },
-      targetAdminEmail: staffRecord.email,
+      targetAdminEmail: process.env.ADMIN_ALERT_EMAIL || 'logicwhilelire@gmail.com',
     }).catch((err) => {
       console.warn('[AdminLogin] Notice: login security alert delivery:', err?.message);
     });
@@ -1326,7 +1326,7 @@ export async function exportPdfReport(req: Request, res: Response): Promise<void
   });
 
   doc.moveDown(1.5);
-  doc.fontSize(8).font('Helvetica').fillColor('#64748b').text('LogicWhileLiRE Autonomous Assessment Engine • Developed by R. Charan Sai • © 2026 R. Charan Sai. All rights reserved.', { align: 'center' });
+  doc.fontSize(8).font('Helvetica').fillColor('#64748b').text('LogicWhile Assessment Engine • © 2026 LogicWhile. All rights reserved.', { align: 'center' });
 
   if (req.admin) {
     recordAuditLog(req.admin, 'EXPORT_REPORT_PDF', 'exams', String(examId), { title: exam?.title, count: results?.length || 0 }, req).catch(() => {});

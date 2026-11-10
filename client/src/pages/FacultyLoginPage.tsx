@@ -396,8 +396,8 @@ export default function FacultyLoginPage() {
             </div>
           </motion.div>
 
-          <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.75rem', color: '#334155' }}>
-            LogicWhile LiRE • Created by <strong style={{ color: '#34D399', fontWeight: 700 }}>R. Charan Sai Krishna</strong>
+          <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.75rem', color: '#64748B' }}>
+            LogicWhile • Institutional Assessment Platform
           </div>
         </motion.div>
       </div>
