@@ -57,6 +57,22 @@ export async function verifyAttemptToken(
 }
 
 // ─────────────────────────────────────────────
+// HIGH-VELOCITY IN-MEMORY CACHES (Sub-millisecond Student Scaling)
+// ─────────────────────────────────────────────
+const examMetadataCache = new Map<string, { timestamp: number; exam: any }>();
+const EXAM_METADATA_CACHE_TTL_MS = 20000; // 20s TTL
+
+const rawQuestionsCache = new Map<string, { timestamp: number; questions: any[] }>();
+const RAW_QUESTIONS_CACHE_TTL_MS = 30000; // 30s TTL
+
+export function invalidateExamCaches(examCode: string) {
+  const ec = String(examCode).trim().toUpperCase();
+  examMetadataCache.delete(ec);
+  rawQuestionsCache.delete(ec);
+  leaderboardCache.delete(ec);
+}
+
+// ─────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────
 
@@ -1085,83 +1101,97 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
   const ht = hallTicket.trim().toUpperCase();
   const ec = examCode.trim().toUpperCase();
 
-  // 1. Check exam code exists and is active
-  let { data: exam, error: examError } = await supabase
-    .from('exam_codes')
-    .select(`
-      *,
-      college:college_id ( college_name, college_code )
-    `)
-    .eq('exam_code', ec)
-    .eq('is_active', true)
-    .maybeSingle();
+  // 1. High-speed in-memory cache lookup
+  const cached = examMetadataCache.get(ec);
+  let exam: any = cached && Date.now() - cached.timestamp < EXAM_METADATA_CACHE_TTL_MS ? cached.exam : null;
+  let examError: any = null;
 
   if (!exam) {
-    // Try swapping 5 <-> S, 0 <-> O in exam code to handle character confusion
-    const altCodes = [
-      ec.replace(/5/g, 'S'),
-      ec.replace(/S/g, '5'),
-      ec.replace(/0/g, 'O'),
-      ec.replace(/O/g, '0'),
-    ].filter((c) => c !== ec);
-
-    for (const alt of altCodes) {
-      const { data: altExam } = await supabase
-        .from('exam_codes')
-        .select(`
-          *,
-          college:college_id ( college_name, college_code )
-        `)
-        .eq('exam_code', alt)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (altExam) {
-        exam = altExam;
-        break;
-      }
-    }
-  }
-
-  if (!exam) {
-    // Auto-bridge: Check if questions were uploaded for this code, or if an exam exists in legacy exams table
-    const { data: qCheck } = await supabase
-      .from('questions_ec')
-      .select('id, question, topic')
+    // Check exam code exists and is active
+    const res = await supabase
+      .from('exam_codes')
+      .select(`
+        *,
+        college:college_id ( college_name, college_code )
+      `)
       .eq('exam_code', ec)
-      .limit(1);
-
-    const { data: legacyExam } = await supabase
-      .from('exams')
-      .select('*')
-      .or(`id.eq.${ec},title.eq.${ec}`)
+      .eq('is_active', true)
       .maybeSingle();
 
-    if ((qCheck && qCheck.length > 0) || legacyExam) {
-      const now = new Date();
-      const newEc = {
-        exam_code: ec,
-        exam_name: legacyExam?.title || ec,
-        subject: legacyExam?.title || (qCheck?.[0]?.topic) || 'General',
-        duration_minutes: legacyExam?.duration_minutes || 60,
-        start_time: legacyExam?.start_time || now.toISOString(),
-        end_time: legacyExam?.end_time || new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        is_active: true,
-        is_launched: true,
-        college_id: legacyExam?.college_id || 1,
-        total_questions: legacyExam?.total_questions || (qCheck?.length || 15),
-      };
-      await supabase.from('exam_codes').upsert(newEc, { onConflict: 'exam_code' });
-      const { data: freshlyCreated } = await supabase
-        .from('exam_codes')
-        .select(`
-          *,
-          college:college_id ( college_name, college_code )
-        `)
-        .eq('exam_code', ec)
-        .maybeSingle();
-      if (freshlyCreated) {
-        exam = freshlyCreated;
+    exam = res.data;
+    examError = res.error;
+
+    if (!exam) {
+      // Try swapping 5 <-> S, 0 <-> O in exam code to handle character confusion
+      const altCodes = [
+        ec.replace(/5/g, 'S'),
+        ec.replace(/S/g, '5'),
+        ec.replace(/0/g, 'O'),
+        ec.replace(/O/g, '0'),
+      ].filter((c) => c !== ec);
+
+      for (const alt of altCodes) {
+        const { data: altExam } = await supabase
+          .from('exam_codes')
+          .select(`
+            *,
+            college:college_id ( college_name, college_code )
+          `)
+          .eq('exam_code', alt)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (altExam) {
+          exam = altExam;
+          break;
+        }
       }
+    }
+
+    if (!exam) {
+      // Auto-bridge: Check if questions were uploaded for this code, or if an exam exists in legacy exams table
+      const { data: qCheck } = await supabase
+        .from('questions_ec')
+        .select('id, question, topic')
+        .eq('exam_code', ec)
+        .limit(1);
+
+      const { data: legacyExam } = await supabase
+        .from('exams')
+        .select('*')
+        .or(`id.eq.${ec},title.eq.${ec}`)
+        .maybeSingle();
+
+      if ((qCheck && qCheck.length > 0) || legacyExam) {
+        const now = new Date();
+        const newEc = {
+          exam_code: ec,
+          exam_name: legacyExam?.title || ec,
+          subject: legacyExam?.title || (qCheck?.[0]?.topic) || 'General',
+          duration_minutes: legacyExam?.duration_minutes || 60,
+          start_time: legacyExam?.start_time || now.toISOString(),
+          end_time: legacyExam?.end_time || new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          is_active: true,
+          is_launched: true,
+          college_id: legacyExam?.college_id || 1,
+          total_questions: legacyExam?.total_questions || (qCheck?.length || 15),
+        };
+        await supabase.from('exam_codes').upsert(newEc, { onConflict: 'exam_code' });
+        const { data: freshlyCreated } = await supabase
+          .from('exam_codes')
+          .select(`
+            *,
+            college:college_id ( college_name, college_code )
+          `)
+          .eq('exam_code', ec)
+          .maybeSingle();
+        if (freshlyCreated) {
+          exam = freshlyCreated;
+        }
+      }
+    }
+
+    if (exam) {
+      examMetadataCache.set(ec, { timestamp: Date.now(), exam });
     }
   }
 
@@ -1276,6 +1306,8 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
         resumed: true,
         attempt_id: existing.id,
         session_token: freshToken,
+        server_time: Date.now(),
+        server_start_time: existing.start_time ? new Date(existing.start_time).getTime() : Date.now(),
         hallTicket: canonicalRoll,
         studentName: candidateDisplayName,
         student_gate_pass: studentGatePass,
@@ -1355,6 +1387,8 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
     resumed: false,
     attempt_id: attempt.id,
     session_token: newToken,
+    server_time: Date.now(),
+    server_start_time: new Date(attemptStartTime).getTime(),
     hallTicket: canonicalRoll,
     studentName: candidateDisplayName,
     student_gate_pass: studentGatePass,
@@ -1451,14 +1485,23 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
   }
 
   const effectiveCode = exam.exam_code || ec;
-  const { data: questions, error } = await supabase
-    .from('questions_ec')
-    .select('id, question, option_a, option_b, option_c, option_d, marks, penalty, negative_marks, difficulty, topic, section, tags, display_order, starter_code')
-    .eq('exam_code', effectiveCode)
-    .order('display_order', { ascending: true, nullsFirst: false })
-    .order('created_at');
+  const cachedQ = rawQuestionsCache.get(effectiveCode);
+  let questions: any[];
 
-  if (error) { res.status(500).json({ success: false, error: error.message }); return; }
+  if (cachedQ && Date.now() - cachedQ.timestamp < RAW_QUESTIONS_CACHE_TTL_MS) {
+    questions = cachedQ.questions;
+  } else {
+    const { data, error } = await supabase
+      .from('questions_ec')
+      .select('id, question, option_a, option_b, option_c, option_d, marks, penalty, negative_marks, difficulty, topic, section, tags, display_order, starter_code')
+      .eq('exam_code', effectiveCode)
+      .order('display_order', { ascending: true, nullsFirst: false })
+      .order('created_at');
+
+    if (error) { res.status(500).json({ success: false, error: error.message }); return; }
+    questions = data || [];
+    rawQuestionsCache.set(effectiveCode, { timestamp: Date.now(), questions });
+  }
 
   // Questions & options are shuffled deterministically per student
   const canonicalCandidate = String(studentHt || req.query.candidateId || attemptId || req.query.hallTicket || 'student').toUpperCase().trim();
@@ -1721,6 +1764,12 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
 
   totalScore = Math.max(0, Math.round(totalScore * 100) / 100);
   mcqScore = Math.max(0, Math.round(mcqScore * 100) / 100);
+
+  // Precision stabilization: guarantee topic breakdowns are cleanly rounded to 2 decimal places
+  for (const topic of Object.keys(topicBreakdown)) {
+    topicBreakdown[topic].score = Math.max(0, Math.round(topicBreakdown[topic].score * 100) / 100);
+    topicBreakdown[topic].penalty = Math.round((topicBreakdown[topic].penalty || 0) * 100) / 100;
+  }
 
   const vCount = violationCount !== undefined ? violationCount : (attempt.violation_count || 0);
   const isTerminatedViolation =
@@ -2132,12 +2181,21 @@ export async function saveExamCodeAnswer(req: Request, res: Response): Promise<v
   const { question_id, answer, answers, items, current_question_index, session_token } = req.body;
   const candidateId = req.body.candidateId || req.body.hallTicket || req.body.hall_ticket;
 
-  // Look up exam to check targeting
-  const { data: exam } = await supabase
-    .from('exam_codes')
-    .select('*')
-    .eq('exam_code', code)
-    .maybeSingle();
+  // High-speed in-memory cache lookup for exam targeting
+  const cachedExam = examMetadataCache.get(code);
+  let exam: any = cachedExam && Date.now() - cachedExam.timestamp < EXAM_METADATA_CACHE_TTL_MS ? cachedExam.exam : null;
+
+  if (!exam) {
+    const { data } = await supabase
+      .from('exam_codes')
+      .select('*')
+      .eq('exam_code', code)
+      .maybeSingle();
+    exam = data;
+    if (exam) {
+      examMetadataCache.set(code, { timestamp: Date.now(), exam });
+    }
+  }
 
   if (!exam) {
     res.status(404).json({ success: false, error: 'Exam not found or unavailable', code: 'EXAM_NOT_FOUND' });
@@ -2244,12 +2302,21 @@ export async function getExamCodeResumeState(req: Request, res: Response): Promi
   const attemptId = (req.query.attemptId || req.query.attempt_id) as string | undefined;
   const candidateId = (req.query.candidateId || req.query.hallTicket || req.query.hall_ticket) as string | undefined;
 
-  // Look up exam to check targeting
-  const { data: exam } = await supabase
-    .from('exam_codes')
-    .select('*')
-    .eq('exam_code', code)
-    .maybeSingle();
+  // High-speed in-memory cache lookup for exam targeting
+  const cachedExam = examMetadataCache.get(code);
+  let exam: any = cachedExam && Date.now() - cachedExam.timestamp < EXAM_METADATA_CACHE_TTL_MS ? cachedExam.exam : null;
+
+  if (!exam) {
+    const { data } = await supabase
+      .from('exam_codes')
+      .select('*')
+      .eq('exam_code', code)
+      .maybeSingle();
+    exam = data;
+    if (exam) {
+      examMetadataCache.set(code, { timestamp: Date.now(), exam });
+    }
+  }
 
   if (!exam) {
     res.status(404).json({ success: false, error: 'Exam not found or unavailable', code: 'EXAM_NOT_FOUND' });
@@ -2336,7 +2403,8 @@ export async function getExamCodeLeaderboard(req: Request, res: Response): Promi
     .eq('exam_code', cacheKey)
     .in('status', ['completed', 'submitted'])
     .order('score', { ascending: false })
-    .order('time_taken_seconds', { ascending: true });
+    .order('time_taken_seconds', { ascending: true })
+    .order('created_at', { ascending: true });
 
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
 

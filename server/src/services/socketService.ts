@@ -152,7 +152,14 @@ export async function emitBatchRoomTelemetry(examCode: string): Promise<void> {
       percentage: (r.max_score || 0) > 0 ? Math.round(((r.score || 0) / r.max_score) * 100) : 0,
       rank_score: (r.score || 0) - ((r.time_taken_seconds || 0) / (totalDurationSec || 3600)),
     }))
-    .sort((a, b) => b.rank_score - a.rank_score)
+    .sort((a, b) => {
+      if (Math.abs(b.rank_score - a.rank_score) > 0.0001) {
+        return b.rank_score - a.rank_score;
+      }
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return timeA - timeB;
+    })
     .map((r, i) => ({
       rank: i + 1,
       student_id: r.hall_ticket_no,

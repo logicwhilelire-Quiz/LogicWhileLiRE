@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -121,30 +121,34 @@ export default function LeaderboardECPage() {
 
 
 
-  const displayRows = filterBranch
-    ? rows.filter(
-        r =>
-          r.hall_ticket.toLowerCase().includes(filterBranch.toLowerCase()) ||
-          r.name.toLowerCase().includes(filterBranch.toLowerCase()) ||
-          (r.department && r.department.toLowerCase().includes(filterBranch.toLowerCase()))
-      )
-    : rows;
+  const displayRows = useMemo(() => {
+    if (!filterBranch.trim()) return rows;
+    const q = filterBranch.toLowerCase().trim();
+    return rows.filter(
+      r =>
+        r.hall_ticket.toLowerCase().includes(q) ||
+        r.name.toLowerCase().includes(q) ||
+        (r.department && r.department.toLowerCase().includes(q))
+    );
+  }, [rows, filterBranch]);
 
-  const myHT = (() => {
+  const myHT = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem('lw_attempt') || '{}').hallTicket || '';
     } catch {
       return '';
     }
-  })();
+  }, []);
 
-  const top3Entries = rows.slice(0, 3).map((r, i) => ({
-    rank: i + 1,
-    name: r.name,
-    score: r.score,
-    hall_ticket: r.hall_ticket,
-    department: r.department || 'Engineering',
-  }));
+  const top3Entries = useMemo(() => {
+    return rows.slice(0, 3).map((r, i) => ({
+      rank: i + 1,
+      name: r.name,
+      score: r.score,
+      hall_ticket: r.hall_ticket,
+      department: r.department || 'Engineering',
+    }));
+  }, [rows]);
 
   return (
     <div style={{

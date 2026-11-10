@@ -137,6 +137,8 @@ export default function QuizPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
   const sessionIdRef = useRef<string | undefined>(undefined)
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const serverClockOffsetRef = useRef<number>(0)
+  const debounceSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   /* ── Inspector Remote Actions & Integrity State ── */
   const [broadcastBanner, setBroadcastBanner] = useState('')
@@ -251,26 +253,31 @@ export default function QuizPage() {
               return q
             })
 
+        if (data.server_time) {
+          serverClockOffsetRef.current = Number(data.server_time) - Date.now()
+        }
+
         sessionIdRef.current = data.sessionId || data.session_id
         const proctoringMode: 'webcam' | 'screen' | 'dual' = exam?.proctoring_mode || 'webcam'
         const fullDuration = (exam?.duration_minutes || 60) * 60
         let initialTimeLeft: number
+        const nowSynced = Date.now() + serverClockOffsetRef.current
 
         if (routerServerStartTime && routerDurationSeconds) {
           // Accurate: router state populated by WaitingLobbyPage from EXAM_STARTED
-          const elapsed = Math.floor((Date.now() - routerServerStartTime) / 1000)
+          const elapsed = Math.floor((nowSynced - routerServerStartTime) / 1000)
           initialTimeLeft = Math.max(0, routerDurationSeconds - elapsed)
         } else if (exam?.started_at) {
           // Started by inspector via POST /start
           const startedAtMs = new Date(exam.started_at).getTime()
-          const elapsed = Math.floor((Date.now() - startedAtMs) / 1000)
+          const elapsed = Math.floor((nowSynced - startedAtMs) / 1000)
           initialTimeLeft = Math.max(0, fullDuration - elapsed)
         } else {
           // Standard full duration for this exam attempt (e.g. 30 or 60 min)
           initialTimeLeft = fullDuration
         }
 
-        const computedEndTimeMs = Date.now() + (initialTimeLeft * 1000)
+        const computedEndTimeMs = nowSynced + (initialTimeLeft * 1000)
 
         setSession({
           candidateId: data.candidateId || hallTicket,
@@ -1310,13 +1317,14 @@ export default function QuizPage() {
       if (isExamPausedRef.current) return // Timer freezes while exam is paused by inspector!
       setTimeLeft(prev => {
         let rem: number
+        const nowSynced = Date.now() + serverClockOffsetRef.current
         if (routerServerStartTime && routerDurationSeconds) {
           // Continuous sync against server start time: immune to background tab throttling
-          const elapsed = Math.floor((Date.now() - routerServerStartTime) / 1000)
+          const elapsed = Math.floor((nowSynced - routerServerStartTime) / 1000)
           rem = Math.max(0, routerDurationSeconds - elapsed)
         } else if (session.endTimeMs) {
-          // Continuous sync against server end_time from DB
-          rem = Math.max(0, Math.floor((session.endTimeMs - Date.now()) / 1000))
+          // Continuous sync against server end_time with server clock synchronization
+          rem = Math.max(0, Math.floor((session.endTimeMs - nowSynced) / 1000))
         } else {
           rem = Math.max(0, prev - 1)
         }
@@ -1466,6 +1474,11 @@ export default function QuizPage() {
     setAnswers(prev => ({ ...prev, [currentQuestion.id]: optionIdx }))
     if (examCode && hallTicket) {
       bufferAnswer(examCode, hallTicket, currentQuestion.id, optionIdx, 'mcq')
+      // High-velocity debounced sync: dispatch within 800ms to preserve instantaneous responsiveness
+      if (debounceSyncTimeoutRef.current) clearTimeout(debounceSyncTimeoutRef.current)
+      debounceSyncTimeoutRef.current = setTimeout(() => {
+        syncPendingAnswers().catch(() => {})
+      }, 800)
     }
   }
 
@@ -1474,6 +1487,10 @@ export default function QuizPage() {
     setCodeAnswers(prev => ({ ...prev, [currentQuestion.id]: code }))
     if (examCode && hallTicket) {
       bufferAnswer(examCode, hallTicket, currentQuestion.id, code, 'code')
+      if (debounceSyncTimeoutRef.current) clearTimeout(debounceSyncTimeoutRef.current)
+      debounceSyncTimeoutRef.current = setTimeout(() => {
+        syncPendingAnswers().catch(() => {})
+      }, 1200)
     }
   }
 

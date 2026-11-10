@@ -275,6 +275,17 @@ router.post('/execute', answerRateLimit, async (req: Request, res: Response) => 
           } catch {}
         }
 
+        // 7. Token-by-token whitespace-normalized comparison (handles arbitrary space/tab separation)
+        if (!isPassed && !runRes.hasError) {
+          const actTokens = actual.split(/\s+/).filter(Boolean);
+          const expTokens = expected.split(/\s+/).filter(Boolean);
+          if (actTokens.length > 0 && actTokens.length === expTokens.length) {
+            if (actTokens.every((token, idx) => token === expTokens[idx])) {
+              isPassed = true;
+            }
+          }
+        }
+
         return {
           id: tc.id || index + 1,
           test_index: index + 1,
