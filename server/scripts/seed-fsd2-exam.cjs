@@ -576,12 +576,12 @@ async function seedFSD2Exam() {
 
   // 5. Ensure core student test accounts are verified and eligible
   console.log('[4/4] Ensuring student eligibility across all test cohorts...');
-  const studentRolls = ['24HU1A05F9', 'RVACJ31411', '2201A0501'];
+  const studentRolls = ['2201A0501', 'RVACJ31411'];
   for (const r of studentRolls) {
     const { data: existing } = await supabase.from('students').select('*').eq('roll_number', r);
     if (!existing || existing.length === 0) {
       await supabase.from('students').insert({
-        name: 'R. Charan Sai Krishna',
+        name: 'Student Candidate',
         roll_number: r,
         hall_ticket: r,
         email: `${r.toLowerCase()}@logicwhilelire.com`,
@@ -616,7 +616,7 @@ async function seedFSD2Exam() {
   console.log('  2. RVIT-FSD2-2026 → RVIT FSD – 2 Lab Examination (60 min, 100 marks)');
   console.log('Student Access:');
   console.log('  Portal URL:  http://localhost:5173/enter-exam');
-  console.log('  Roll Number: 2201A0501, RVACJ31411, or 24HU1A05F9');
+  console.log('  Roll Number: 2201A0501 or RVACJ31411');
   console.log('════════════════════════════════════════════════════════════════\n');
 }
 

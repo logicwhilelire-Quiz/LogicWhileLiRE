@@ -68,6 +68,8 @@ app.use(
           "'self'",
           ...allowedOrigins,
           "https://*.supabase.co",
+          "https://*.onrender.com",
+          "https://*.vercel.app",
           "wss:",
           "ws:",
           "https://fonts.googleapis.com",
@@ -109,10 +111,19 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       const cleanOrigin = origin.replace(/\/+$/, '');
+      const isAllowedDomain =
+        cleanOrigin.endsWith('.onrender.com') ||
+        cleanOrigin.endsWith('.render.com') ||
+        cleanOrigin.endsWith('.vercel.app') ||
+        cleanOrigin.endsWith('.logicwhilelire.com') ||
+        cleanOrigin.includes('logicwhilelire') ||
+        cleanOrigin.startsWith('http://localhost:') ||
+        cleanOrigin.startsWith('http://127.0.0.1:');
+
       if (
         allowedOrigins.includes(cleanOrigin) ||
         allowedOrigins.includes(origin) ||
-        (process.env.NODE_ENV !== 'production' && (cleanOrigin.startsWith('http://localhost:') || cleanOrigin.startsWith('http://127.0.0.1:')))
+        isAllowedDomain
       ) {
         return callback(null, true);
       }
@@ -176,9 +187,10 @@ const isDemo =
   (process.env.SUPABASE_URL || '').includes('your-project');
 
 const handleHealthCheck = async (_req: express.Request, res: express.Response) => {
-  const dbStatus = await verifyDatabaseConnectivity(3500);
+  const dbStatus = await verifyDatabaseConnectivity(6000);
   const isHealthy = dbStatus.connected || isDemo;
-  res.status(isHealthy ? 200 : 503).json({
+  // Always return HTTP 200 on liveness probe so Render orchestrator does not enter boot crash-loop on cold start
+  res.status(200).json({
     status: isHealthy ? 'ok' : 'degraded',
     service: 'LogicWhileLiRE Assessment Engine',
     version: '4.0.0',

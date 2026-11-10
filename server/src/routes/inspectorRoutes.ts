@@ -17,6 +17,7 @@ import {
   sendOtpEmail,
   sendResultEmail,
 } from '../services/emailService';
+import { getPrimaryClientOrigin } from '../utils/url';
 
 
 const router = Router();
@@ -336,7 +337,7 @@ router.post('/send-invitation', adminAuth, async (req: Request, res: Response) =
       return res.status(400).json({ success: false, error: 'email, hallTicket, and examCode are required' });
     }
 
-    const clientBase = (process.env.CLIENT_ORIGIN || process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/+$/, '');
+    const clientBase = getPrimaryClientOrigin();
     const appUrl = accessUrl || `${clientBase}/enter-exam`;
 
     await sendExamInvitationEmail(
@@ -458,7 +459,7 @@ router.post('/test-email', adminAuth, async (req: Request, res: Response) => {
       await sendOtpEmail(recipient, name, code, examTitle);
       subject = `🔐 Your Verification Code: ${code} — ${examTitle}`;
     } else if (type === 'invitation') {
-      const clientBase = (process.env.CLIENT_ORIGIN || process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/+$/, '');
+      const clientBase = getPrimaryClientOrigin();
       await sendExamInvitationEmail(
         recipient,
         name,

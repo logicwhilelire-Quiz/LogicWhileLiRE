@@ -306,6 +306,31 @@ export async function logDeliverableFailure(
 export async function sendWithRetry(payload: EmailPayload, maxAttempts: number = 3): Promise<boolean> {
   const toList = Array.isArray(payload.to) ? payload.to : [payload.to];
   const toStr = toList.join(', ');
+
+  // 0. Anti-Spam & Placeholder Filter: Prevent fake / demo / loop emails from triggering real mail dispatch
+  const realRecipients = toList.filter((email) => {
+    const lower = String(email || '').toLowerCase().trim();
+    if (!lower || !lower.includes('@') || !lower.includes('.')) return false;
+    if (
+      lower.endsWith('@example.com') ||
+      lower.endsWith('@test.com') ||
+      lower.endsWith('@sample.com') ||
+      lower.endsWith('@mailinator.com')
+    ) {
+      return false;
+    }
+    if (lower.includes('placeholder') || lower.includes('fake_student') || lower.includes('demo_user')) {
+      return false;
+    }
+    return true;
+  });
+
+  if (realRecipients.length === 0) {
+    console.info(`[EmailService] 🛡️ Shielded simulated/test recipient(s) (${toStr}) — suppressed outbound spam.`);
+    dailyEmailQuota.recordSent();
+    return true;
+  }
+
   const resendApiKey = process.env.RESEND_API_KEY;
   const smtpTransporter = getTransporter();
   const brevoFallback = getBrevoTransporter();
@@ -348,7 +373,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
           },
           body: JSON.stringify({
             from: EMAIL_FROM,
-            to: toList,
+            to: realRecipients,
             subject: payload.subject,
             html: payload.html,
             text: payload.text,
@@ -369,7 +394,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
             },
             body: JSON.stringify({
               from: 'LogicWhile LiRE <onboarding@resend.dev>',
-              to: toList,
+              to: realRecipients,
               subject: payload.subject,
               html: payload.html,
               text: payload.text,
@@ -389,7 +414,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
         }
 
         dailyEmailQuota.recordSent();
-        console.log(`[Resend-API] ✅ ${payload.emailType} → ${toStr} (id: ${resData?.id || 'ok'}) attempt ${attempt}`);
+        console.log(`[Resend-API] ✅ ${payload.emailType} → ${realRecipients.join(', ')} (id: ${resData?.id || 'ok'}) attempt ${attempt}`);
         return true;
       }
 
@@ -397,7 +422,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
       if (smtpTransporter) {
         const info = await smtpTransporter.sendMail({
           from: EMAIL_FROM,
-          to: toStr,
+          to: realRecipients.join(', '),
           subject: payload.subject,
           text: payload.text,
           html: payload.html,

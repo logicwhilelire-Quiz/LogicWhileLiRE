@@ -10,17 +10,8 @@ import ServerWakeupModal from '../../components/ServerWakeupModal';
 function AdminGridBg() {
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: '-20%', right: '-10%', width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle,rgba(245,158,11,0.2) 0%,transparent 65%)', filter: 'blur(80px)', animation: 'agOrb1 22s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', bottom: '-15%', left: '-8%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle,rgba(234,88,12,0.15) 0%,transparent 65%)', filter: 'blur(70px)', animation: 'agOrb2 28s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', top: '50%', left: '25%', width: 350, height: 350, borderRadius: '50%', background: 'radial-gradient(circle,rgba(251,191,36,0.1) 0%,transparent 65%)', filter: 'blur(50px)', animation: 'agOrb3 16s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', inset: 0, opacity: 0.35, backgroundImage: 'linear-gradient(rgba(245,158,11,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(245,158,11,0.06) 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
-      <style>{`
-        @keyframes agOrb1 { 0%,100%{transform:translate(0,0) scale(1)} 35%{transform:translate(-50px,40px) scale(1.08)} 65%{transform:translate(30px,-30px) scale(0.92)} }
-        @keyframes agOrb2 { 0%,100%{transform:translate(0,0) scale(1)} 40%{transform:translate(60px,-45px) scale(1.1)} 70%{transform:translate(-25px,25px) scale(0.94)} }
-        @keyframes agOrb3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-35px,50px) scale(1.15)} }
-        @keyframes agPulse { 0%,100%{opacity:0.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.2)} }
-        @keyframes agSpin { to { transform: rotate(360deg); } }
-      `}</style>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 15%, rgba(245,158,11,0.08) 0%, transparent 65%)' }} />
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.22, backgroundImage: 'linear-gradient(rgba(245,158,11,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(245,158,11,0.08) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
     </div>
   );
 }

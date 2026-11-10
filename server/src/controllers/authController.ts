@@ -14,6 +14,7 @@ import { StudentJWTPayload } from '../middleware/auth';
 import { isStrongPassword } from '../middleware/validate';
 import { isStudentEligibleForExam } from '../utils/academicYear';
 import { systemAlertAgent } from '../services/systemAlertService';
+import { getPrimaryClientOrigin } from '../utils/url';
 
 const BCRYPT_ROUNDS = 12;
 const STUDENT_JWT_EXPIRY = (process.env.STUDENT_JWT_EXPIRY || '24h') as any;
@@ -248,7 +249,7 @@ export async function studentRegister(req: Request, res: Response): Promise<void
   }
 
   // 7. Dispatch verification email with OTP and direct activation link
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const clientOrigin = getPrimaryClientOrigin();
   const verifyLink = `${clientOrigin}/verify-email?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
   try {
@@ -471,7 +472,7 @@ export async function resendRegistrationOtp(req: Request, res: Response): Promis
     })
     .eq('id', student.id);
 
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const clientOrigin = getPrimaryClientOrigin();
   const verifyLink = `${clientOrigin}/verify-email?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
   try {
@@ -1133,7 +1134,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
   }
 
   // 4. Construct reset link
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const clientOrigin = getPrimaryClientOrigin();
   const resetLink = `${clientOrigin}/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
 
   // 5. Send branded email via mailService

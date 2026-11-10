@@ -11,18 +11,8 @@ import ServerWakeupModal from '../components/ServerWakeupModal'
 function ExamEntryBg() {
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(160deg,#060B1A 0%,#080A16 50%,#050916 100%)' }} />
-      <div style={{ position: 'absolute', top: '-10%', left: '20%', width: 650, height: 650, borderRadius: '50%', background: 'radial-gradient(circle,rgba(234,168,18,0.18) 0%,transparent 65%)', filter: 'blur(80px)', animation: 'eeOrb1 22s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', bottom: '-10%', right: '10%', width: 550, height: 550, borderRadius: '50%', background: 'radial-gradient(circle,rgba(0,33,71,0.5) 0%,transparent 65%)', filter: 'blur(70px)', animation: 'eeOrb2 28s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', top: '40%', left: '-5%', width: 380, height: 380, borderRadius: '50%', background: 'radial-gradient(circle,rgba(37,99,235,0.1) 0%,transparent 65%)', filter: 'blur(55px)', animation: 'eeOrb3 18s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', inset: 0, opacity: 0.3, backgroundImage: 'linear-gradient(rgba(234,168,18,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(234,168,18,0.05) 1px,transparent 1px)', backgroundSize: '52px 52px' }} />
-      <style>{`
-        @keyframes eeOrb1 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(40px,-30px) scale(1.06)} 66%{transform:translate(-25px,25px) scale(0.94)} }
-        @keyframes eeOrb2 { 0%,100%{transform:translate(0,0) scale(1)} 45%{transform:translate(-45px,38px) scale(1.08)} 72%{transform:translate(28px,-22px) scale(0.96)} }
-        @keyframes eeOrb3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(35px,-45px) scale(1.12)} }
-        @keyframes eePulse { 0%,100%{opacity:0.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.25)} }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 15%, rgba(16,185,129,0.08) 0%, transparent 65%)' }} />
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.22, backgroundImage: 'linear-gradient(rgba(16,185,129,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(16,185,129,0.08) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
     </div>
   );
 }

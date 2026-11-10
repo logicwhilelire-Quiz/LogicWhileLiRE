@@ -3,8 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import ErrorBoundary from './components/ErrorBoundary';
 import PageLoader from './components/PageLoader';
-import SwarmPresence from './components/SwarmPresence';
-import HorizonXOverlay from './components/HorizonXOverlay';
 
 // Resilient lazy loader: automatically purges stale cache and reloads on deployment chunk hash changes
 function lazyWithRetry<T extends React.ComponentType<any>>(
@@ -228,8 +226,6 @@ export default function App() {
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
             <AnimatedRoutes />
-            <SwarmPresence />
-            <HorizonXOverlay />
           </Suspense>
         </BrowserRouter>
       </MotionConfig>

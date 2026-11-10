@@ -253,100 +253,7 @@ export default function LandingPage() {
 
       {/* ── HERO ── */}
       <section className="landing-grid-bg" style={{ position: 'relative', padding: '70px 24px 85px', textAlign: 'center', overflow: 'hidden', zIndex: 1 }}>
-        <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', width: 800, height: 400, background: 'radial-gradient(ellipse,rgba(2,132,199,0.2) 0%,transparent 70%)', pointerEvents: 'none' }} />
-        
-        {/* Giant Architectural Wordmark (HorizonX Altura Aesthetic) */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '46%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            fontSize: 'clamp(5rem, 16vw, 13rem)',
-            fontWeight: 900,
-            fontFamily: "'Space Grotesk', 'Rajdhani', sans-serif",
-            letterSpacing: '-0.05em',
-            color: 'rgba(255, 255, 255, 0.035)',
-            textTransform: 'lowercase',
-            userSelect: 'none',
-            pointerEvents: 'none',
-            zIndex: 0,
-            whiteSpace: 'nowrap',
-            lineHeight: 1,
-            maskImage: 'linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.1) 100%)',
-            WebkitMaskImage: 'linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.1) 100%)',
-          }}
-        >
-          logicwhile
-        </div>
-
-        {/* Left Architectural Spec Flank Card (HorizonX Style) */}
-        <div
-          className="architectural-flank-card"
-          style={{
-            position: 'absolute',
-            left: 28,
-            top: '38%',
-            transform: 'translateY(-50%)',
-            zIndex: 2,
-            maxWidth: 240,
-            textAlign: 'left',
-            fontFamily: "'Space Grotesk', monospace",
-            background: 'rgba(6, 12, 30, 0.78)',
-            border: '1px solid rgba(56, 189, 248, 0.25)',
-            borderLeft: '3px solid #38BDF8',
-            borderRadius: 12,
-            padding: '14px 18px',
-            backdropFilter: 'blur(16px)',
-            boxShadow: '0 12px 32px rgba(0,0,0,0.5), 0 0 16px rgba(56, 189, 248, 0.1)',
-          }}
-        >
-          <div style={{ fontSize: '0.64rem', color: '#38BDF8', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 4 }}>
-            LOCATION // HYDERABAD
-          </div>
-          <div style={{ fontSize: '0.94rem', fontWeight: 800, color: '#F8FAFC', marginBottom: 4, fontFamily: "'Rajdhani', sans-serif" }}>
-            LogicWhile Institute
-          </div>
-          <div style={{ fontSize: '0.72rem', color: '#94A3B8', lineHeight: 1.45 }}>
-            17.3850° N, 78.4867° E<br />
-            Autonomous Assessment Hub<br />
-            <strong style={{ color: '#10B981' }}>10,000+ Synchronous Nodes</strong>
-          </div>
-        </div>
-
-        {/* Right Architectural Spec Flank Card (HorizonX Style) */}
-        <div
-          className="architectural-flank-card"
-          style={{
-            position: 'absolute',
-            right: 28,
-            top: '38%',
-            transform: 'translateY(-50%)',
-            zIndex: 2,
-            maxWidth: 240,
-            textAlign: 'left',
-            fontFamily: "'Space Grotesk', monospace",
-            background: 'rgba(6, 12, 30, 0.78)',
-            border: '1px solid rgba(234, 168, 18, 0.25)',
-            borderLeft: '3px solid #EAA812',
-            borderRadius: 12,
-            padding: '14px 18px',
-            backdropFilter: 'blur(16px)',
-            boxShadow: '0 12px 32px rgba(0,0,0,0.5), 0 0 16px rgba(234, 168, 18, 0.1)',
-          }}
-        >
-          <div style={{ fontSize: '0.64rem', color: '#EAA812', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 4 }}>
-            SPECIFICATION // LiRE v4.0.0
-          </div>
-          <div style={{ fontSize: '0.94rem', fontWeight: 800, color: '#F8FAFC', marginBottom: 4, fontFamily: "'Rajdhani', sans-serif" }}>
-            5 Technical Sectors
-          </div>
-          <div style={{ fontSize: '0.72rem', color: '#94A3B8', lineHeight: 1.45 }}>
-            Quant &bull; Logic &bull; Core CS<br />
-            DSA &bull; Cloud Systems<br />
-            <strong style={{ color: '#38BDF8' }}>153ms DB Latency &bull; SSL/TLS</strong>
-          </div>
-        </div>
+        <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', width: 800, height: 400, background: 'radial-gradient(ellipse,rgba(2,132,199,0.15) 0%,transparent 70%)', pointerEvents: 'none' }} />
 
         <div ref={heroRef} style={{ maxWidth: 860, margin: '0 auto', position: 'relative', zIndex: 1 }}>
           
@@ -360,7 +267,7 @@ export default function LandingPage() {
               boxShadow: '0 0 16px rgba(16, 185, 129, 0.15)',
             }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 10px #10B981' }} />
-              <span>LIVE CLUSTER ONLINE &bull; 153ms DB LATENCY &bull; V4.0.0</span>
+              <span>OFFICIAL INSTITUTIONAL PLATFORM &bull; SECURE PROCTORED TESTING</span>
             </div>
           </motion.div>
 

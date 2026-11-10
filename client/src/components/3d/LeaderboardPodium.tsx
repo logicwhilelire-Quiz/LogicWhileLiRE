@@ -1,7 +1,5 @@
-import { useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import PlasmaBall from './PlasmaBall'
-import CodeCube from './CodeCube'
+import { useState } from 'react'
+import { motion } from 'framer-motion'
 
 export interface LeaderboardEntry {
   rank: number
@@ -65,52 +63,39 @@ export default function LeaderboardPodium({ entries = [], examName = 'Exam' }: L
                 width: 150,
               }}
             >
-              {/* Avatar area with 3D component */}
+              {/* Crown / Avatar Area */}
               <motion.div
                 style={{ marginBottom: 12, position: 'relative' }}
-                animate={isHovered ? { y: -8 } : { y: 0 }}
+                animate={isHovered ? { y: -6 } : { y: 0 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
               >
                 {rank === 1 && (
-                  <div style={{ position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)', zIndex: 2, pointerEvents: 'none' }}>
-                    <PlasmaBall height={80} />
-                  </div>
-                )}
-                {rank === 2 && (
-                  <div style={{ position: 'absolute', top: -50, left: '50%', transform: 'translateX(-50%)', zIndex: 2, pointerEvents: 'none', opacity: 0.8 }}>
-                    <CodeCube height={60} />
-                  </div>
-                )}
-                {rank === 3 && (
-                  <div style={{ position: 'absolute', top: -36, left: '50%', transform: 'translateX(-50%)', zIndex: 2, pointerEvents: 'none', opacity: 0.7 }}>
-                    {/* NeonGrid mini — just a glowing circle for 3rd */}
-                    <div style={{
-                      width: 40, height: 40, borderRadius: '50%',
-                      border: '2px solid rgba(106,90,205,0.6)',
-                      background: 'radial-gradient(circle, rgba(106,90,205,0.3), transparent)',
-                      boxShadow: '0 0 16px rgba(106,90,205,0.4)',
-                    }} />
+                  <div style={{
+                    position: 'absolute', top: -24, left: '50%', transform: 'translateX(-50%)',
+                    fontSize: '1.4rem', filter: 'drop-shadow(0 2px 6px rgba(251,191,36,0.6))',
+                  }}>
+                    👑
                   </div>
                 )}
 
-                {/* Avatar */}
+                {/* Avatar Badge */}
                 <motion.div
                   style={{
-                    width: 60, height: 60, borderRadius: '50%',
+                    width: 62, height: 62, borderRadius: '50%',
                     background: isFirst
-                      ? 'linear-gradient(135deg, #fbbf24, #f59e0b)'
+                      ? 'linear-gradient(135deg, #fbbf24, #d97706)'
                       : rank === 2
                         ? 'linear-gradient(135deg, #e2e8f0, #94a3b8)'
-                        : 'linear-gradient(135deg, #cd7f32, #a0522d)',
+                        : 'linear-gradient(135deg, #f59e0b, #b45309)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1.5rem',
-                    border: `3px solid ${isFirst ? '#fbbf24' : rank === 2 ? '#94a3b8' : '#cd7f32'}`,
+                    fontSize: '1.6rem',
+                    border: `3px solid ${isFirst ? '#fbbf24' : rank === 2 ? '#cbd5e1' : '#f59e0b'}`,
                     boxShadow: isFirst
-                      ? '0 0 24px rgba(251,191,36,0.4)'
-                      : rank === 2 ? '0 0 16px rgba(148,163,184,0.3)' : '0 0 12px rgba(205,127,50,0.3)',
+                      ? '0 4px 20px rgba(251,191,36,0.35)'
+                      : rank === 2 ? '0 4px 14px rgba(148,163,184,0.25)' : '0 4px 12px rgba(217,119,6,0.25)',
                     transition: 'box-shadow 0.3s ease',
                     zIndex: 3, position: 'relative',
-                    marginTop: rank === 1 ? 60 : rank === 2 ? 50 : 36,
+                    marginTop: rank === 1 ? 16 : 8,
                   }}
                 >
                   {MEDALS[dataIdx]}

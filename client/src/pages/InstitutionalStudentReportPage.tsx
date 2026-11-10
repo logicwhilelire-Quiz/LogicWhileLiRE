@@ -13,7 +13,7 @@ export default function InstitutionalStudentReportPage() {
   // Resolve roll number from URL or logged-in student session
   const storedUserStr = localStorage.getItem('student_user')
   const storedUser = storedUserStr ? JSON.parse(storedUserStr) : null
-  const targetRoll = (paramHallTicket || storedUser?.hall_ticket || storedUser?.roll_number || '24HU1A05F9').trim()
+  const targetRoll = (paramHallTicket || storedUser?.hall_ticket || storedUser?.roll_number || '').trim()
 
   const [loading, setLoading] = useState(true)
   const [reportData, setReportData] = useState<any>(null)
@@ -23,6 +23,10 @@ export default function InstitutionalStudentReportPage() {
   useEffect(() => {
     let isMounted = true
     async function loadReport() {
+      if (!targetRoll) {
+        setLoading(false)
+        return
+      }
       setLoading(true)
       try {
         const res = await axios.get(`${API_BASE_URL}/api/student/report/${encodeURIComponent(targetRoll)}`)

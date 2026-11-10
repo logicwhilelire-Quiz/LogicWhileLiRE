@@ -263,10 +263,10 @@ const store: MockTableData = {
       id: 'roster-03',
       college_id: 1,
       roll_number: '2201A0503',
-      name: 'Charan Sai',
+      name: 'Chaitanya Sharma',
       section: 'A',
       cohort_id: 'coh-vrsec-2026',
-      email: 'charan@campus.edu',
+      email: 'chaitanya@campus.edu',
     },
     {
       id: 'roster-04',

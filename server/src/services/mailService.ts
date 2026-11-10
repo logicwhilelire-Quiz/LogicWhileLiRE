@@ -169,7 +169,7 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
           },
           body: JSON.stringify({
             from: senderAddress,
-            to: toList,
+            to: realRecipients,
             subject: options.subject,
             html: options.html,
             text: options.text || undefined,
@@ -190,7 +190,7 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
             },
             body: JSON.stringify({
               from: 'LogicWhile LiRE <onboarding@resend.dev>',
-              to: toList,
+              to: realRecipients,
               subject: options.subject,
               html: options.html,
               text: options.text || undefined,
@@ -204,7 +204,7 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
           resendId = resData?.id || `resend_${Date.now()}`;
           isSuccess = true;
           dailyEmailQuota.recordSent();
-          console.log(`[MailService:Resend] ✅ Sent [${templateName}] to ${toStr} (ID: ${resendId})`);
+          console.log(`[MailService:Resend] ✅ Sent [${templateName}] to ${realRecipients.join(', ')} (ID: ${resendId})`);
         } else {
           // Fall back to SMTP relay if Resend API failed
           const smtp = getTransporter() || getBrevoTransporter();
@@ -212,7 +212,7 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
             console.log(`[MailService] Engaging SMTP fallback transport...`);
             const info = await smtp.sendMail({
               from: senderAddress,
-              to: toStr,
+              to: realRecipients.join(', '),
               subject: options.subject,
               html: options.html,
               text: options.text,
@@ -232,7 +232,7 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
         if (smtp) {
           const info = await smtp.sendMail({
             from: senderAddress,
-            to: toStr,
+            to: realRecipients.join(', '),
             subject: options.subject,
             html: options.html,
             text: options.text,

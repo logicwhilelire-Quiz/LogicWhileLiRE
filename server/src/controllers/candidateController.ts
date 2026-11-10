@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { supabase } from '../db/supabase';
 import { resolveCollegeName } from '../constants/assessmentGateData';
 import { sendStudentVerificationEmail } from '../services/emailService';
+import { getPrimaryClientOrigin } from '../utils/url';
 
 const BCRYPT_ROUNDS = 12;
 const STUDENT_JWT_EXPIRY = (process.env.STUDENT_JWT_EXPIRY || '24h') as any;
@@ -186,7 +187,7 @@ export async function registerCandidate(req: Request, res: Response): Promise<vo
   }
 
   // 6. Send verification email with OTP and direct activation link
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const clientOrigin = getPrimaryClientOrigin();
   const verifyLink = `${clientOrigin}/verify-email?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`;
   try {
     await sendStudentVerificationEmail(normalizedEmail, fullName, otp, verifyLink);

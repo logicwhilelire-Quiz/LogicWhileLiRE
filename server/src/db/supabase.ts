@@ -69,7 +69,7 @@ export const supabase: SupabaseClient = (
  * In production mode, queries the database to confirm reachable credentials.
  * In demo / test mode, verifies mock store readiness.
  */
-export async function verifyDatabaseConnectivity(timeoutMs: number = 5000): Promise<{ connected: boolean; latencyMs: number; error?: string }> {
+export async function verifyDatabaseConnectivity(timeoutMs: number = 12000): Promise<{ connected: boolean; latencyMs: number; error?: string }> {
   const start = Date.now();
   try {
     const queryPromise = supabase

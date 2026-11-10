@@ -36,9 +36,11 @@ axios.defaults.withCredentials = true;
 // 60-second timeout ensures Render free-tier cold starts (~25-35s) complete cleanly without premature timeout aborts
 axios.defaults.timeout = 60000;
 
-// Request interceptor to automatically attach admin and session tokens from storage if present
+// Request interceptor to automatically attach admin, inspector, faculty, student, and session tokens
 axios.interceptors.request.use((reqConfig) => {
   const adminToken = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+  const inspectorToken = localStorage.getItem('inspector_token') || sessionStorage.getItem('inspector_token');
+  const facultyToken = localStorage.getItem('faculty_token') || sessionStorage.getItem('faculty_token');
   const studentToken = localStorage.getItem('student_token') || sessionStorage.getItem('student_token');
   const sessionToken = localStorage.getItem('session_token') || sessionStorage.getItem('session_token');
 
@@ -46,8 +48,9 @@ axios.interceptors.request.use((reqConfig) => {
     reqConfig.headers = {} as any;
   }
 
-  if (adminToken && (!reqConfig.headers.Authorization || reqConfig.headers.Authorization === 'Bearer ')) {
-    reqConfig.headers.Authorization = `Bearer ${adminToken}`;
+  const staffToken = adminToken || inspectorToken || facultyToken;
+  if (staffToken && (!reqConfig.headers.Authorization || reqConfig.headers.Authorization === 'Bearer ')) {
+    reqConfig.headers.Authorization = `Bearer ${staffToken}`;
   } else if (studentToken && !reqConfig.headers.Authorization) {
     reqConfig.headers.Authorization = `Bearer ${studentToken}`;
   } else if (sessionToken && !reqConfig.headers.Authorization) {

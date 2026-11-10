@@ -10,17 +10,8 @@ import ServerWakeupModal from '../components/ServerWakeupModal';
 function InspectorGridBg() {
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: '-12%', right: '-8%', width: 680, height: 680, borderRadius: '50%', background: 'radial-gradient(circle,rgba(0,180,216,0.22) 0%,transparent 65%)', filter: 'blur(75px)', animation: 'igOrb1 22s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', bottom: '-10%', left: '-8%', width: 580, height: 580, borderRadius: '50%', background: 'radial-gradient(circle,rgba(56,189,248,0.18) 0%,transparent 65%)', filter: 'blur(65px)', animation: 'igOrb2 28s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', top: '35%', left: '20%', width: 380, height: 380, borderRadius: '50%', background: 'radial-gradient(circle,rgba(139,92,246,0.12) 0%,transparent 65%)', filter: 'blur(50px)', animation: 'igOrb3 18s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', inset: 0, opacity: 0.35, backgroundImage: 'linear-gradient(rgba(0,180,216,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,180,216,0.06) 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
-      <style>{`
-        @keyframes igOrb1 { 0%,100%{transform:translate(0,0) scale(1)} 35%{transform:translate(-52px,38px) scale(1.08)} 65%{transform:translate(28px,-30px) scale(0.92)} }
-        @keyframes igOrb2 { 0%,100%{transform:translate(0,0) scale(1)} 42%{transform:translate(55px,-42px) scale(1.1)} 70%{transform:translate(-22px,24px) scale(0.95)} }
-        @keyframes igOrb3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(38px,-52px) scale(1.14)} }
-        @keyframes igPulse { 0%,100%{opacity:0.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.2)} }
-        @keyframes igSpin { to { transform: rotate(360deg); } }
-      `}</style>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 15%, rgba(139,92,246,0.08) 0%, transparent 65%)' }} />
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.22, backgroundImage: 'linear-gradient(rgba(139,92,246,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(139,92,246,0.08) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
     </div>
   );
 }

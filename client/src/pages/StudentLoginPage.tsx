@@ -11,18 +11,8 @@ import { findAdminRosterStudent, type AdminRosterStudent } from '../lib/adminRos
 function GridBackground() {
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(37,99,235,0.22) 0%, transparent 70%)' }} />
-      <div style={{ position: 'absolute', top: '-15%', left: '-10%', width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(37,99,235,0.2) 0%, transparent 65%)', filter: 'blur(70px)', animation: 'slOrb1 20s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', bottom: '-10%', right: '-8%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(56,189,248,0.15) 0%, transparent 65%)', filter: 'blur(60px)', animation: 'slOrb2 26s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', top: '40%', right: '20%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 65%)', filter: 'blur(50px)', animation: 'slOrb3 18s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', inset: 0, opacity: 0.4, backgroundImage: 'linear-gradient(rgba(56,189,248,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,0.06) 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
-      <style>{`
-        @keyframes slOrb1 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(60px,-40px) scale(1.1)} 66%{transform:translate(-30px,30px) scale(0.9)} }
-        @keyframes slOrb2 { 0%,100%{transform:translate(0,0) scale(1)} 40%{transform:translate(-50px,40px) scale(1.08)} 70%{transform:translate(30px,-20px) scale(0.95)} }
-        @keyframes slOrb3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(30px,-50px) scale(1.12)} }
-        @keyframes slPulse { 0%,100%{opacity:0.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.2)} }
-        @keyframes slSpin { to { transform: rotate(360deg); } }
-      `}</style>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 15%, rgba(59,130,246,0.08) 0%, transparent 65%)' }} />
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.22, backgroundImage: 'linear-gradient(rgba(59,130,246,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.08) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
     </div>
   );
 }

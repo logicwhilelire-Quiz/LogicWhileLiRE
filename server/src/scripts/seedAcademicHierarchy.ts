@@ -191,7 +191,7 @@ async function seedEverything() {
 
       // E. Prepare Students for this section
       const sampleNames = [
-        ['Charan Sai', 'Ravuri'],
+        ['Chaitanya', 'Sharma'],
         ['Aravind', 'Swamy'],
         ['Bhavana', 'Reddy'],
         ['Karthik', 'Varma'],

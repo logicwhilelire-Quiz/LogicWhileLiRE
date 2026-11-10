@@ -10,17 +10,8 @@ import ServerWakeupModal from '../components/ServerWakeupModal';
 function FacultyGridBg() {
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: '-15%', left: '-8%', width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle,rgba(16,185,129,0.22) 0%,transparent 65%)', filter: 'blur(75px)', animation: 'fgOrb1 20s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', bottom: '-10%', right: '-8%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle,rgba(5,150,105,0.18) 0%,transparent 65%)', filter: 'blur(65px)', animation: 'fgOrb2 26s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', top: '40%', right: '15%', width: 380, height: 380, borderRadius: '50%', background: 'radial-gradient(circle,rgba(52,211,153,0.12) 0%,transparent 65%)', filter: 'blur(50px)', animation: 'fgOrb3 18s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', inset: 0, opacity: 0.35, backgroundImage: 'linear-gradient(rgba(16,185,129,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(16,185,129,0.06) 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
-      <style>{`
-        @keyframes fgOrb1 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(55px,-35px) scale(1.08)} 66%{transform:translate(-25px,28px) scale(0.92)} }
-        @keyframes fgOrb2 { 0%,100%{transform:translate(0,0) scale(1)} 42%{transform:translate(-48px,42px) scale(1.1)} 70%{transform:translate(28px,-22px) scale(0.95)} }
-        @keyframes fgOrb3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(32px,-48px) scale(1.14)} }
-        @keyframes fgPulse { 0%,100%{opacity:0.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.2)} }
-        @keyframes fgSpin { to { transform: rotate(360deg); } }
-      `}</style>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 15%, rgba(16,185,129,0.08) 0%, transparent 65%)' }} />
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.22, backgroundImage: 'linear-gradient(rgba(16,185,129,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(16,185,129,0.08) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
     </div>
   );
 }
