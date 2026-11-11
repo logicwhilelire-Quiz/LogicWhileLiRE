@@ -15,6 +15,7 @@ interface SectorRadar3DProps {
   height?: number;
   className?: string;
   showBenchmark?: boolean;
+  isBaseline?: boolean;
 }
 
 const DEFAULT_SCORES: SectorScore[] = [
@@ -31,11 +32,13 @@ export default function SectorRadar3D({
   height = 340,
   className = '',
   showBenchmark = true,
+  isBaseline = false,
 }: SectorRadar3DProps) {
   const cx = width / 2;
   const cy = height / 2;
   const maxRadius = Math.min(cx, cy) - 52;
   const totalAxes = scores.length;
+  const baselineActive = isBaseline || scores.every((s) => (s.score || 0) === 0);
 
   // Grid level rings: 25%, 50%, 75%, 100%
   const levels = [0.25, 0.5, 0.75, 1.0];
@@ -93,11 +96,12 @@ export default function SectorRadar3D({
 
         <div style={{ display: 'flex', gap: 12, fontSize: '0.72rem' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#38BDF8', fontWeight: 700 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#38BDF8' }} /> Candidate
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#38BDF8', opacity: baselineActive ? 0.6 : 1 }} />
+            {baselineActive ? 'Candidate: Baseline' : 'Candidate'}
           </span>
           {showBenchmark && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#94A3B8' }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(148,163,184,0.5)' }} /> Cohort Avg
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(148,163,184,0.5)' }} /> Cohort Benchmark
             </span>
           )}
         </div>
@@ -164,39 +168,48 @@ export default function SectorRadar3D({
           <polygon
             points={benchmarkPolygonPoints}
             fill="rgba(148, 163, 184, 0.08)"
-            stroke="rgba(148, 163, 184, 0.5)"
+            stroke="rgba(148, 163, 184, 0.6)"
             strokeWidth="1.5"
             strokeDasharray="4,4"
           />
         )}
 
-        {/* Candidate Performance Polygon */}
-        <motion.polygon
-          points={userPolygonPoints}
-          fill="url(#radarUserGrad)"
-          stroke="#38BDF8"
-          strokeWidth="2.5"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7, ease: 'easeOut' }}
-          style={{ transformOrigin: `${cx}px ${cy}px` }}
-        />
+        {/* Candidate Performance Polygon (only rendered when assessed) */}
+        {!baselineActive ? (
+          <motion.polygon
+            points={userPolygonPoints}
+            fill="url(#radarUserGrad)"
+            stroke="#38BDF8"
+            strokeWidth="2.5"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+            style={{ transformOrigin: `${cx}px ${cy}px` }}
+          />
+        ) : (
+          <g>
+            <circle cx={cx} cy={cy} r="26" fill="rgba(15, 23, 42, 0.9)" stroke="rgba(56, 189, 248, 0.3)" strokeDasharray="3,3" />
+            <text x={cx} y={cy - 3} textAnchor="middle" fill="#38BDF8" fontSize="8" fontWeight="700">BASELINE</text>
+            <text x={cx} y={cy + 8} textAnchor="middle" fill="#94A3B8" fontSize="7.5">TARGETS</text>
+          </g>
+        )}
 
         {/* Vertex Markers & Sector Labels */}
         {scores.map((s, idx) => {
-          const userCoord = getCoordinates(idx, Math.max(0.1, s.score / 100));
+          const userCoord = getCoordinates(idx, baselineActive ? Math.max(0.1, s.benchmark / 100) : Math.max(0.1, s.score / 100));
           const labelCoord = getCoordinates(idx, 1.18);
 
           return (
             <g key={idx}>
-              {/* Vertex glow marker */}
+              {/* Vertex marker */}
               <circle
                 cx={userCoord.x}
                 cy={userCoord.y}
-                r="4.5"
-                fill={s.color}
-                stroke="#FFFFFF"
+                r={baselineActive ? "3" : "4.5"}
+                fill={baselineActive ? 'rgba(148, 163, 184, 0.6)' : s.color}
+                stroke={baselineActive ? 'rgba(255,255,255,0.4)' : '#FFFFFF'}
                 strokeWidth="1.5"
+                opacity={baselineActive ? 0.7 : 1}
               />
 
               {/* Label */}
@@ -217,12 +230,12 @@ export default function SectorRadar3D({
                 y={labelCoord.y + 13}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fill={s.color}
-                fontSize="10"
+                fill={baselineActive ? '#94A3B8' : s.color}
+                fontSize={baselineActive ? "9" : "10"}
                 fontWeight="800"
                 fontFamily="monospace"
               >
-                {s.score}%
+                {baselineActive ? `Target: ${s.benchmark}%` : `${s.score}%`}
               </text>
             </g>
           );

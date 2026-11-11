@@ -749,7 +749,7 @@ export async function getStudentDashboard(req: Request, res: Response): Promise<
     return true;
   });
 
-  // 2. Fetch past results
+  // 2. Fetch past results (from both participants & exam_code_attempts)
   const rollNumber = (student.roll_number || student.hall_ticket || '').toUpperCase();
   const { data: allParticipants } = await supabase
     .from('participants')
@@ -774,6 +774,31 @@ export async function getStudentDashboard(req: Request, res: Response): Promise<
         exam_title: exam?.title || 'Assessment',
         percentage: r.max_score > 0 ? Math.round((r.total_score / r.max_score) * 100) : r.normalized_score || 0,
       };
+    });
+  }
+
+  // 2b. Also fetch completed exam_code_attempts
+  const { data: ecAttempts } = await supabase
+    .from('exam_code_attempts')
+    .select('id, exam_code, score, max_score, status, started_at, submitted_at, time_taken_seconds, exam_codes:exam_code(exam_code, exam_name, subject, duration_minutes)')
+    .or(`hall_ticket_no.ilike.${rollNumber},student_id.eq.${student.id}`);
+
+  const completedEc = (ecAttempts || []).filter((a: any) => a.status === 'submitted' || a.status === 'completed' || Number(a.score) > 0);
+  for (const ec of completedEc) {
+    const scoreVal = Number(ec.score) || 0;
+    const maxVal = Number(ec.max_score) || 100;
+    const ecName = (ec.exam_codes as any)?.exam_name || ec.exam_code;
+    pastResults.push({
+      id: ec.id,
+      exam_id: ec.exam_code,
+      exam_title: ecName,
+      total_score: scoreVal,
+      max_score: maxVal,
+      percentage: maxVal > 0 ? Math.round((scoreVal / maxVal) * 100) : 0,
+      correct_count: 0,
+      wrong_count: 0,
+      time_taken_seconds: Number(ec.time_taken_seconds) || 0,
+      graded_at: ec.submitted_at || ec.started_at,
     });
   }
 
@@ -955,13 +980,78 @@ export async function getStudentInstitutionalReport(req: Request, res: Response)
     // 2. Fetch participants & results
     const { data: participants } = await supabase
       .from('participants')
-      .select('id, exam_id, enrolled_at, exams(id, title, duration_minutes), results(id, total_score, max_score, correct_count, wrong_count, time_taken_seconds, graded_at)')
+      .select('id, exam_id, enrolled_at, exams(id, title, duration_minutes), results(id, total_score, max_score, correct_count, wrong_count, time_taken_seconds, topic_breakdown, graded_at)')
       .or(`hall_ticket.ilike.${hallTicket},email.ilike.${student.email}`);
 
     const completedEcAttempts = (ecAttempts || []).filter((a: any) => a.status === 'submitted' || a.status === 'completed' || Number(a.score) > 0);
     const participantResults = (participants || []).flatMap((p: any) => p.results || []);
 
-    const hasAttempts = completedEcAttempts.length > 0 || participantResults.length > 0;
+    let allCompletedResults: any[] = [];
+    const ecAttemptIds = completedEcAttempts.map((a: any) => a.id);
+    if (ecAttemptIds.length > 0) {
+      const { data: rData } = await supabase
+        .from('results')
+        .select('id, attempt_id, total_score, max_score, percentage, correct_count, wrong_count, time_taken_seconds, topic_breakdown, graded_at')
+        .in('attempt_id', ecAttemptIds);
+      if (rData && rData.length > 0) {
+        allCompletedResults.push(...rData);
+      } else {
+        for (const ec of completedEcAttempts) {
+          const s = Number(ec.score) || 0;
+          const m = Number(ec.max_score) || 100;
+          allCompletedResults.push({
+            id: ec.id,
+            attempt_id: ec.id,
+            total_score: s,
+            max_score: m,
+            percentage: m > 0 ? Math.round((s / m) * 100) : 0,
+            correct_count: 0,
+            wrong_count: 0,
+            time_taken_seconds: Number(ec.time_taken_seconds) || 0,
+            topic_breakdown: null,
+            graded_at: ec.submitted_at || ec.started_at,
+          });
+        }
+      }
+    }
+    if (participantResults.length > 0) {
+      allCompletedResults.push(...participantResults);
+    }
+
+    const hasAttempts = allCompletedResults.length > 0;
+
+    // Aggregate topic breakdown across completed results
+    const aggregatedTopics: Record<string, { correct: number; wrong: number; score: number; maxScore: number }> = {};
+    for (const r of allCompletedResults) {
+      if (r.topic_breakdown && typeof r.topic_breakdown === 'object') {
+        for (const [topic, stats] of Object.entries(r.topic_breakdown as Record<string, any>)) {
+          if (!aggregatedTopics[topic]) {
+            aggregatedTopics[topic] = { correct: 0, wrong: 0, score: 0, maxScore: 0 };
+          }
+          aggregatedTopics[topic].correct += Number(stats?.correct) || 0;
+          aggregatedTopics[topic].wrong += Number(stats?.wrong) || 0;
+          aggregatedTopics[topic].score += Number(stats?.score) || 0;
+          aggregatedTopics[topic].maxScore += Number(stats?.maxScore) || 0;
+        }
+      }
+    }
+
+    const latestResult = allCompletedResults[allCompletedResults.length - 1] || null;
+    const latestAttempt = completedEcAttempts[completedEcAttempts.length - 1] || null;
+    const pExamTitle = (participants?.[0]?.exams as any)?.title;
+    const ecExamName = (latestAttempt?.exam_codes as any)?.exam_name;
+    const examCode = latestAttempt?.exam_code || pExamTitle || 'ASSESSMENT';
+    const examTitle = ecExamName || latestAttempt?.exam_code || pExamTitle || 'Assessment';
+
+    const diagnostic = hasAttempts
+      ? {
+          status: 'assessed',
+          message: `Candidate ${student.name} completed assessment "${examTitle}" with score ${latestResult?.total_score || latestAttempt?.score || 0} / ${latestResult?.max_score || latestAttempt?.max_score || 100}. Detailed sector velocity recorded below.`,
+        }
+      : {
+          status: 'baseline',
+          message: `Candidate ${student.name} (${student.hall_ticket || student.roll_number || hallTicket}) is enrolled in ${student.college_name || 'RV Institute of Technology'} (${student.branch_code || 'CSE'} - Sec ${student.section || 'C'}). Baseline enrollment active. Performance diagnostics and velocity suggestions will generate dynamically upon submission of the candidate's first proctored examination.`,
+        };
 
     res.json({
       success: true,
@@ -977,6 +1067,29 @@ export async function getStudentInstitutionalReport(req: Request, res: Response)
         batch: student.batch || student.year_of_passing || '2028',
         registeredAt: student.created_at,
       },
+      summary: hasAttempts ? {
+        totalScore: latestResult?.total_score ?? Number(latestAttempt?.score) ?? 0,
+        maxScore: latestResult?.max_score ?? Number(latestAttempt?.max_score) ?? 100,
+        percentage: latestResult?.percentage ?? (latestAttempt?.max_score ? Math.round((Number(latestAttempt.score) / Number(latestAttempt.max_score)) * 100) : 0),
+        correctCount: latestResult?.correct_count ?? 0,
+        wrongCount: latestResult?.wrong_count ?? 0,
+        timeTakenSeconds: latestResult?.time_taken_seconds ?? Number(latestAttempt?.time_taken_seconds) ?? 0,
+        examCode,
+        examTitle,
+        gradedAt: latestResult?.graded_at || latestAttempt?.submitted_at || null,
+      } : {
+        totalScore: 0,
+        maxScore: 70,
+        percentage: 0,
+        correctCount: 0,
+        wrongCount: 0,
+        timeTakenSeconds: 0,
+        examCode: 'PRE-EXAM-BASELINE',
+        examTitle: 'Curriculum Baseline Target',
+        gradedAt: null,
+      },
+      topicBreakdown: hasAttempts && Object.keys(aggregatedTopics).length > 0 ? aggregatedTopics : null,
+      diagnostic,
       attempts: ecAttempts || [],
       participants: participants || [],
     });

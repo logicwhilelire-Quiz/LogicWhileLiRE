@@ -56,17 +56,14 @@ interface StudentRank {
   exams_completed: number;
 }
 
-const SECTOR_METRICS = [
+const SECTOR_BENCHMARKS = [
   {
     id: 'sector-quant',
     name: 'Sector 1: Quantitative Velocity',
     short: 'Quant',
     badge: '📐 Math & Speed',
     color: '#F59E0B',
-    score: 92,
     benchmark: 74,
-    questionsDone: 48,
-    accuracy: '94%',
     desc: 'Arithmetic acceleration, algebraic transformations, geometric logic, probabilistic models.',
   },
   {
@@ -75,10 +72,7 @@ const SECTOR_METRICS = [
     short: 'Logic',
     badge: '🧩 Logic Engine',
     color: '#8B5CF6',
-    score: 88,
     benchmark: 78,
-    questionsDone: 52,
-    accuracy: '91%',
     desc: 'Constraint satisfaction, inductive sequences, syllogistic deduction, Boolean matrices.',
   },
   {
@@ -87,10 +81,7 @@ const SECTOR_METRICS = [
     short: 'Core CS',
     badge: '💻 Systems Core',
     color: '#10B981',
-    score: 95,
     benchmark: 70,
-    questionsDone: 64,
-    accuracy: '96%',
     desc: 'OS scheduling, paging, thread synchronization, TCP/IP handshake, SQL indexing.',
   },
   {
@@ -99,10 +90,7 @@ const SECTOR_METRICS = [
     short: 'DSA',
     badge: '⚡ Algorithms',
     color: '#38BDF8',
-    score: 86,
     benchmark: 66,
-    questionsDone: 70,
-    accuracy: '88%',
     desc: 'Asymptotic complexity, DP transitions, graph traversals, segment trees, recursion.',
   },
   {
@@ -111,10 +99,7 @@ const SECTOR_METRICS = [
     short: 'Full-Stack',
     badge: '🌐 Web & Cloud',
     color: '#F43F5E',
-    score: 90,
     benchmark: 72,
-    questionsDone: 55,
-    accuracy: '93%',
     desc: 'Reactive UI state, RESTful pipelines, WebSockets, microservices, containerization.',
   },
 ];
@@ -267,10 +252,37 @@ export default function StudentDashboardPage() {
     }
   };
 
-  const radarScores: SectorScore[] = SECTOR_METRICS.map((s) => ({
+  const hasAttempts = pastResults.length > 0;
+
+  const sectorMetrics = SECTOR_BENCHMARKS.map((sec) => {
+    if (!hasAttempts) {
+      return {
+        ...sec,
+        score: 0,
+        scoreDisplay: '—',
+        questionsDone: 0,
+        accuracy: 'Awaiting Assessment',
+        accuracyTarget: `${sec.benchmark}%`,
+        status: 'Pre-Exam Baseline',
+      };
+    }
+    const avgPct = rank?.average_score ?? 75;
+    const sectorScore = Math.min(100, Math.round(avgPct * (sec.benchmark / 70)));
+    return {
+      ...sec,
+      score: sectorScore,
+      scoreDisplay: `${sectorScore}%`,
+      questionsDone: pastResults.length * 10,
+      accuracy: `${Math.max(40, Math.min(99, Math.round(avgPct)))}%`,
+      accuracyTarget: `${sec.benchmark}%`,
+      status: 'Assessed',
+    };
+  });
+
+  const radarScores: SectorScore[] = sectorMetrics.map((s) => ({
     sector: s.name,
     short: s.short,
-    score: s.score,
+    score: hasAttempts ? s.score : 0,
     benchmark: s.benchmark,
     color: s.color,
   }));
@@ -814,11 +826,11 @@ export default function StudentDashboardPage() {
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>
                   Holographic 5-Axis Radar
                 </div>
-                <SectorRadar3D scores={radarScores} width={340} height={300} showBenchmark={true} />
+                <SectorRadar3D scores={radarScores} width={340} height={300} showBenchmark={true} isBaseline={!hasAttempts} />
                 <div style={{ display: 'flex', gap: 16, fontSize: '0.75rem', color: '#94a3b8', marginTop: 8 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ width: 10, height: 10, background: '#38BDF8', borderRadius: 2 }} />
-                    Candidate Mastery
+                    <span style={{ width: 10, height: 10, background: '#38BDF8', borderRadius: 2, opacity: hasAttempts ? 1 : 0.5 }} />
+                    {hasAttempts ? 'Candidate Mastery' : 'Candidate (Baseline)'}
                   </span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ width: 10, height: 10, background: '#94A3B8', borderRadius: 2, opacity: 0.5 }} />
@@ -829,7 +841,7 @@ export default function StudentDashboardPage() {
 
               {/* 5-Sector Breakdown List */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {SECTOR_METRICS.map((sec) => (
+                {sectorMetrics.map((sec) => (
                   <div
                     key={sec.id}
                     style={{
@@ -863,6 +875,21 @@ export default function StudentDashboardPage() {
                         >
                           {sec.badge}
                         </span>
+                        {!hasAttempts && (
+                          <span
+                            style={{
+                              fontSize: '0.65rem',
+                              fontWeight: 700,
+                              padding: '1px 6px',
+                              borderRadius: 4,
+                              background: 'rgba(148, 163, 184, 0.15)',
+                              color: '#94a3b8',
+                              border: '1px solid rgba(148, 163, 184, 0.25)',
+                            }}
+                          >
+                            Baseline
+                          </span>
+                        )}
                       </div>
                       <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8' }}>
                         {sec.desc}
@@ -871,11 +898,11 @@ export default function StudentDashboardPage() {
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 900, color: sec.color }}>
-                          {sec.score}%
+                        <div style={{ fontSize: '1.25rem', fontWeight: 900, color: hasAttempts ? sec.color : '#94a3b8' }}>
+                          {sec.scoreDisplay}
                         </div>
                         <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                          Accuracy: {sec.accuracy}
+                          {hasAttempts ? `Accuracy: ${sec.accuracy}` : `Target: ${sec.accuracyTarget}`}
                         </div>
                       </div>
 
