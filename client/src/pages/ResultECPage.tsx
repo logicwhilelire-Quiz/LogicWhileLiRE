@@ -202,12 +202,10 @@ export default function ResultECPage() {
     activeResult.codingQuestions ||
     []
 
-  const isDemo123 = Boolean(examCode && examCode.toUpperCase().includes('DEMO123'))
   const hasCodingQuestions = Boolean(
     activeResult.has_coding_questions ||
     activeResult.hasCodingQuestions ||
     initialCodingQuestions.length > 0 ||
-    isDemo123 ||
     Object.keys(resolvedCodeAnswers).length > 0
   )
 
@@ -216,8 +214,8 @@ export default function ResultECPage() {
       ? initialCodingQuestions
       : hasCodingQuestions
       ? [
-          { id: `${(examCode || 'demo123').toLowerCase()}-code-01`, title: '⚡ CODING CHALLENGE: Two Sum', marks: 10 },
-          { id: `${(examCode || 'demo123').toLowerCase()}-code-02`, title: '⚡ CODING CHALLENGE: Valid Anagram', marks: 10 },
+          { id: `${(examCode || 'cs2026').toLowerCase()}-code-01`, title: '⚡ CODING CHALLENGE: Two Sum', marks: 10 },
+          { id: `${(examCode || 'cs2026').toLowerCase()}-code-02`, title: '⚡ CODING CHALLENGE: Valid Anagram', marks: 10 },
         ]
       : []
 
@@ -545,7 +543,7 @@ export default function ResultECPage() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, margin: '14px 0' }}>
                     {resolvedCodingQuestions.map((cq, idx) => {
-                      const codeVal = resolvedCodeAnswers[cq.id] || resolvedCodeAnswers[`demo123-code-0${idx + 1}`] || ''
+                      const codeVal = resolvedCodeAnswers[cq.id] || ''
                       const isAttempted = cq.submitted ?? Boolean(typeof codeVal === 'string' && codeVal.trim().length > 0)
 
                       return (

@@ -41,7 +41,7 @@ interface ExamStats {
 }
 
 export default function ResultControl() {
-  const [selectedExam, setSelectedExam] = useState<string>('GR-LOGICWHILE-285G9G');
+  const [selectedExam, setSelectedExam] = useState<string>('CS2026');
   const [exams, setExams] = useState<ExamOption[]>([]);
   const [results, setResults] = useState<ResultItem[]>([]);
   const [stats, setStats] = useState<ExamStats>({

@@ -587,7 +587,7 @@ export default function QuizPage() {
         bc = new BroadcastChannel('logicwhilelire_admin_exam_commands')
         bc.onmessage = (ev) => {
           if (
-            (ev.data?.examCode?.toUpperCase() === examCode.toUpperCase() || ev.data?.examCode === 'DEMO123') &&
+            ev.data?.examCode?.toUpperCase() === examCode.toUpperCase() &&
             ev.data?.state === 'started'
           ) {
             triggerLaunch()
@@ -1249,8 +1249,7 @@ export default function QuizPage() {
       try {
         const state =
           localStorage.getItem(`admin_exam_state_${examCode}`) ||
-          localStorage.getItem(`admin_exam_state_${examCode.toUpperCase()}`) ||
-          (examCode.toUpperCase().includes('DEMO') ? localStorage.getItem('admin_exam_state_DEMO123') : null)
+          localStorage.getItem(`admin_exam_state_${examCode.toUpperCase()}`)
 
         if (state === 'paused') {
           if (!isExamPausedRef.current) {
@@ -1281,10 +1280,7 @@ export default function QuizPage() {
       try {
         bc = new BroadcastChannel('logicwhilelire_admin_exam_commands')
         bc.onmessage = (e) => {
-          if (
-            e.data?.examCode?.toUpperCase() === examCode.toUpperCase() ||
-            (examCode.toUpperCase().includes('DEMO') && e.data?.examCode === 'DEMO123')
-          ) {
+          if (e.data?.examCode?.toUpperCase() === examCode.toUpperCase()) {
             checkAdminState()
           }
         }
