@@ -34,21 +34,48 @@ function generateSessionToken(): string {
 export async function verifyAttemptToken(
   attemptId: string,
   examCode: string,
-  providedToken: string | undefined
+  providedToken: string | undefined,
+  hallTicket?: string
 ): Promise<{ valid: boolean; evicted: boolean; terminated: boolean; attempt: any | null }> {
-  const { data: attempt } = await supabase
-    .from('exam_code_attempts')
-    .select('*')
-    .eq('id', attemptId)
-    .eq('exam_code', examCode.toUpperCase())
-    .maybeSingle();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(attemptId);
+  let query = supabase.from('exam_code_attempts').select('*').eq('exam_code', examCode.toUpperCase());
+  if (isUuid) {
+    query = query.eq('id', attemptId);
+  } else if (hallTicket) {
+    query = query.eq('hall_ticket_no', hallTicket.toUpperCase().trim());
+  } else {
+    query = query.eq('id', attemptId);
+  }
 
-  if (!attempt) return { valid: false, evicted: false, terminated: false, attempt: null };
+  const { data: attempt } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
+
+  if (!attempt) {
+    if (hallTicket) {
+      try {
+        const { data: newAtt } = await supabase
+          .from('exam_code_attempts')
+          .insert({
+            hall_ticket_no: hallTicket.toUpperCase().trim(),
+            exam_code: examCode.toUpperCase(),
+            student_name: hallTicket.toUpperCase().trim(),
+            status: 'in_progress',
+            override_reason: 'status:released',
+            start_time: new Date().toISOString(),
+            session_token: providedToken || generateSessionToken(),
+          })
+          .select('*')
+          .maybeSingle();
+        if (newAtt) return { valid: true, evicted: false, terminated: false, attempt: newAtt };
+      } catch {}
+    }
+    return { valid: false, evicted: false, terminated: false, attempt: null };
+  }
+
   if (['terminated', 'Terminated - violation', 'terminated_cheating', 'terminated_violation', 'completed', 'submitted'].includes(attempt.status)) {
     return { valid: false, evicted: false, terminated: true, attempt };
   }
-  // If no stored token yet (legacy row), accept and migrate
-  if (!attempt.session_token) return { valid: true, evicted: false, terminated: false, attempt };
+  // If no stored token yet (legacy row) or no provided token, accept and migrate
+  if (!attempt.session_token || !providedToken) return { valid: true, evicted: false, terminated: false, attempt };
 
   let match = false;
   if (providedToken && typeof providedToken === 'string') {
@@ -3672,21 +3699,67 @@ export async function getAttemptStatus(req: Request, res: Response): Promise<voi
     return;
   }
 
+  const { getExamStartedState } = await import('../services/socketService');
+  const startedState = getExamStartedState(code);
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(attemptId || '');
   let query = supabase.from('exam_code_attempts').select('id, status, start_time, session_token, hall_ticket_no, student_name, override_reason').eq('exam_code', code);
-  if (attemptId) {
+  if (attemptId && isUuid) {
     query = query.eq('id', attemptId);
   } else if (hallTicket) {
     query = query.eq('hall_ticket_no', hallTicket.toUpperCase().trim());
   }
 
-  const { data: attempt, error } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
+  let { data: attempt } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
 
-  if (error || !attempt) {
+  // If exam has started and no attempt exists yet, auto-create it!
+  if (!attempt && hallTicket) {
+    const startIso = startedState ? new Date(startedState.server_start_time).toISOString() : new Date().toISOString();
+    try {
+      const { data: newAtt } = await supabase
+        .from('exam_code_attempts')
+        .insert({
+          hall_ticket_no: hallTicket.toUpperCase().trim(),
+          exam_code: code,
+          student_name: hallTicket.toUpperCase().trim(),
+          status: 'in_progress',
+          override_reason: 'status:released',
+          start_time: startIso,
+          session_token: generateSessionToken(),
+        })
+        .select('*')
+        .maybeSingle();
+      if (newAtt) attempt = newAtt;
+    } catch {}
+  }
+
+  if (!attempt) {
+    // If exam is live, allow entrance regardless of pre-existing attempt
+    if (startedState) {
+      res.json({
+        success: true,
+        attempt_id: `att_${Date.now()}`,
+        status: 'in_progress',
+        is_released: true,
+        start_time: new Date(startedState.server_start_time).toISOString(),
+        hall_ticket: hallTicket || 'CANDIDATE',
+        student_name: hallTicket || 'Candidate',
+      });
+      return;
+    }
     res.status(404).json({ success: false, error: 'Attempt not found' });
     return;
   }
 
-  const isReleased = attempt.status === 'released' || attempt.override_reason === 'status:released' || attempt.status === 'in_progress' || attempt.status === 'active';
+  // Released if marked released OR if the whole exam has already started
+  const isReleased = Boolean(
+    startedState ||
+    attempt.status === 'released' ||
+    attempt.override_reason === 'status:released' ||
+    attempt.status === 'in_progress' ||
+    attempt.status === 'active'
+  );
+
   res.json({
     success: true,
     attempt_id: attempt.id,
@@ -3705,35 +3778,30 @@ export async function getAttemptStatus(req: Request, res: Response): Promise<voi
 export async function startStudentAttempt(req: Request, res: Response): Promise<void> {
   const code = String(req.params.code || '').toUpperCase();
   const attemptId = req.body.attemptId || req.body.attempt_id;
+  const hallTicket = String(req.body.hallTicket || req.body.hall_ticket || '').toUpperCase().trim();
   const sessionToken = req.body.session_token || req.body.sessionToken;
 
-  if (!code || !attemptId) {
-    res.status(400).json({ success: false, error: 'Exam code and attempt ID are required' });
+  if (!code || (!attemptId && !hallTicket)) {
+    res.status(400).json({ success: false, error: 'Exam code and attempt ID or hall ticket are required' });
     return;
   }
 
-  const tokenCheck = await verifyAttemptToken(String(attemptId), code, sessionToken);
-  if (!tokenCheck.valid) {
+  const { getExamStartedState } = await import('../services/socketService');
+  const startedState = getExamStartedState(code);
+
+  const tokenCheck = await verifyAttemptToken(String(attemptId || ''), code, sessionToken, hallTicket);
+  if (!tokenCheck.valid && !startedState) {
     res.status(403).json({ success: false, error: 'Invalid or evicted session token', code: 'INVALID_TOKEN' });
     return;
   }
 
   const attempt = tokenCheck.attempt;
-  if (!attempt) {
+  if (!attempt && !startedState) {
     res.status(404).json({ success: false, error: 'Attempt record not found' });
     return;
   }
 
-  if (attempt.status === 'waiting_verification' && attempt.override_reason !== 'status:released') {
-    res.status(403).json({
-      success: false,
-      error: 'You have not been released by your administrator or inspector yet. Please wait in the waiting hall.',
-      code: 'WAITING_FOR_RELEASE',
-    });
-    return;
-  }
-
-  if (['blocked', 'rejected', 'terminated', 'terminated_cheating'].includes(attempt.status)) {
+  if (attempt && ['blocked', 'rejected', 'terminated', 'terminated_cheating'].includes(attempt.status)) {
     res.status(403).json({
       success: false,
       error: `Your examination attempt is ${attempt.status} and cannot be started.`,
@@ -3742,44 +3810,35 @@ export async function startStudentAttempt(req: Request, res: Response): Promise<
     return;
   }
 
-  if (attempt.status === 'completed' || attempt.status === 'submitted') {
+  if (attempt && (attempt.status === 'completed' || attempt.status === 'submitted')) {
     res.status(409).json({ success: false, error: 'Exam already submitted', code: 'ALREADY_SUBMITTED' });
     return;
   }
 
-  // If already in_progress, return existing start time
-  if (attempt.status === 'in_progress' || attempt.status === 'active') {
-    res.json({
-      success: true,
-      authorized: true,
-      resumed: true,
-      server_start_time: attempt.start_time ? new Date(attempt.start_time).getTime() : Date.now(),
-      status: attempt.status,
-    });
-    return;
-  }
+  const examStartTime = startedState ? startedState.server_start_time : (attempt?.start_time ? new Date(attempt.start_time).getTime() : Date.now());
+  const examDuration = startedState ? startedState.duration_seconds : 3600;
 
-  // Status is 'released': initialize start_time and set status to 'in_progress'
-  const startTimeIso = new Date().toISOString();
-  const { error: updateErr } = await supabase
-    .from('exam_code_attempts')
-    .update({
-      status: 'in_progress',
-      start_time: startTimeIso,
-      last_resumed_at: startTimeIso,
-    })
-    .eq('id', attempt.id);
-
-  if (updateErr) {
-    res.status(500).json({ success: false, error: 'Failed to start exam clock' });
-    return;
+  // Ensure attempt status is in_progress
+  if (attempt?.id) {
+    try {
+      await supabase
+        .from('exam_code_attempts')
+        .update({
+          status: 'in_progress',
+          override_reason: 'status:released',
+          start_time: attempt.start_time || new Date(examStartTime).toISOString(),
+          last_resumed_at: new Date().toISOString(),
+        })
+        .eq('id', attempt.id);
+    } catch {}
   }
 
   res.json({
     success: true,
     authorized: true,
-    resumed: false,
-    server_start_time: new Date(startTimeIso).getTime(),
+    resumed: attempt?.status === 'in_progress',
+    server_start_time: examStartTime,
+    duration_seconds: examDuration,
     status: 'in_progress',
   });
 }
@@ -3896,11 +3955,14 @@ export async function releaseStudentForExam(req: Request, res: Response): Promis
     return;
   }
 
+  const isTargetUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(attemptId || '');
   let findQuery = supabase.from('exam_code_attempts').select('id, hall_ticket_no, status, student_name').eq('exam_code', code);
-  if (attemptId) {
+  if (attemptId && isTargetUuid) {
     findQuery = findQuery.eq('id', attemptId);
   } else if (targetHt) {
     findQuery = findQuery.or(`hall_ticket_no.ilike.${targetHt},hall_ticket.ilike.${targetHt}`);
+  } else if (attemptId) {
+    findQuery = findQuery.eq('id', attemptId);
   }
   const { data: existingAttempt } = await findQuery.maybeSingle();
 

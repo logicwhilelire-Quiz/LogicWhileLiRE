@@ -878,16 +878,16 @@ function Step5QuestionPaper({
       {/* Toggles */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         {[
-          { key: 'is_proctored', label: 'AI Face Proctoring', icon: '🎥' },
-          { key: 'is_randomized', label: 'Randomize Questions', icon: '🔀' },
-          { key: 'is_leaderboard_public', label: 'Live Public Leaderboard', icon: '🏆' },
+          { key: 'is_proctored', label: 'AI Face & Camera Proctoring' },
+          { key: 'is_randomized', label: 'Randomize Questions Per Student' },
+          { key: 'is_leaderboard_public', label: 'Live Real-Time Leaderboard' },
         ].map(t => (
           <label
             key={t.key}
             style={{
               display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.84rem',
               fontWeight: 600, color: '#f8fafc', cursor: 'pointer',
-              padding: '6px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.04)',
+              padding: '8px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.04)',
               border: '1px solid var(--color-border, #334155)'
             }}
           >
@@ -896,9 +896,39 @@ function Step5QuestionPaper({
               checked={Boolean(form[t.key as keyof ExamMeta])}
               onChange={e => setForm(p => ({ ...p, [t.key]: e.target.checked }))}
             />
-            <span>{t.icon} {t.label}</span>
+            <span>{t.label}</span>
           </label>
         ))}
+      </div>
+
+      {/* Configurable Tab Violation Limit */}
+      <div style={{ marginTop: 20, padding: '16px 18px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10 }}>
+        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#38BDF8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Maximum Tab Violations Allowed Before Auto-Lockout
+        </label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <input
+            type="number"
+            min={1}
+            max={20}
+            value={form.max_violations || 5}
+            onChange={e => setForm(p => ({ ...p, max_violations: Math.max(1, parseInt(e.target.value) || 5) }))}
+            style={{
+              width: 90,
+              padding: '8px 12px',
+              borderRadius: 8,
+              background: '#081326',
+              border: '1px solid rgba(56, 189, 248, 0.4)',
+              color: '#FFFFFF',
+              fontSize: '0.95rem',
+              fontWeight: 800,
+              textAlign: 'center',
+            }}
+          />
+          <span style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
+            Permitted tab switches & fullscreen exits before the exam is terminated. Candidates will see this threshold on instructions.
+          </span>
+        </div>
       </div>
     </div>
   )

@@ -78,15 +78,17 @@ export default function WaitingLobbyPage() {
     ]);
   };
 
-  // ── Mount-time REST check (item 2): recover from page refresh after EXAM_STARTED ──
-  // This runs before the socket connects so a student who refreshes the page
-  // mid-exam doesn't get permanently stuck on the disabled "Waiting" button.
+  // ── High-Speed REST Synchronization & Fallback Polling ──
+  // Polls lobby status every 2.5 seconds to guarantee candidates are immediately dispatched
+  // even if network fluctuations drop a single WebSocket frame.
   useEffect(() => {
+    let isMounted = true;
     const checkIfAlreadyStarted = async () => {
+      if (!isMounted || examStarted) return;
       try {
         const res = await getExamLobbyStats(contestId);
         const d = res.data;
-        // Cache real duration for use when admin starts via LocalStorage/BroadcastChannel
+        if (!isMounted) return;
         if (d?.duration_seconds) {
           setExamDurationSeconds(d.duration_seconds);
         } else if (d?.exam_started?.duration_seconds) {
@@ -95,6 +97,7 @@ export default function WaitingLobbyPage() {
         if (d?.exam_started && d.exam_started.server_start_time) {
           const s = d.exam_started;
           setExamStarted(true);
+          setIsReleased(true);
           setStartPayload({
             event: "EXAM_STARTED",
             exam_id: s.exam_id || contestId.toUpperCase(),
@@ -104,16 +107,22 @@ export default function WaitingLobbyPage() {
             elapsed_seconds: s.elapsed_seconds,
           });
           addEvent(
-            `[REST-sync] Exam already started — elapsed=${s.elapsed_seconds}s, remaining=${s.remaining_seconds}s`,
+            `[REST-sync] Exam active — remaining=${s.remaining_seconds}s`,
             "alert"
           );
         }
       } catch {
-        // Non-fatal — socket event is the primary mechanism
+        // Non-fatal
       }
     };
+
     checkIfAlreadyStarted();
-  }, [contestId]);
+    const interval = setInterval(checkIfAlreadyStarted, 2500);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [contestId, examStarted, examDurationSeconds]);
 
   // Real-time Administrator Command Synchronizer (Cross-Window & Broadcast Channel)
   useEffect(() => {
@@ -233,18 +242,32 @@ export default function WaitingLobbyPage() {
     socket.on("STUDENT_RELEASED", (data: any) => {
       if (data?.examCode?.toUpperCase() === contestId.toUpperCase()) {
         const myHt = String(candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || '').toUpperCase();
-        if (!data.hallTicket || data.hallTicket.toUpperCase() === myHt) {
+        if (data.all || !data.hallTicket || data.hallTicket.toUpperCase() === myHt) {
           setIsReleased(true);
-          addEvent("✓ Release granted by supervisor! Proceeding to instructions...", "success");
+          addEvent("Release granted by supervisor! Proceeding to instructions...", "success");
+          try {
+            const currentAttempt = {
+              examCode: contestId.toUpperCase(),
+              hallTicket: myHt,
+              studentName: candidate?.name || displayName,
+              attemptId: data.attemptId || (location.state as any)?.attemptId,
+              serverStartTime: startPayload?.server_start_time,
+              durationSeconds: startPayload?.duration_seconds || examDurationSeconds,
+            };
+            localStorage.setItem('logicwhilelire_attempt', JSON.stringify(currentAttempt));
+            localStorage.setItem('lw_attempt', JSON.stringify(currentAttempt));
+          } catch {}
           setTimeout(() => {
             navigate(`/instructions/${contestId}`, {
               state: {
                 hallTicket: myHt,
                 studentName: candidate?.name,
                 attemptId: data.attemptId || (location.state as any)?.attemptId,
+                serverStartTime: startPayload?.server_start_time,
+                durationSeconds: startPayload?.duration_seconds || examDurationSeconds,
               },
             });
-          }, 1200);
+          }, 800);
         }
       }
     });
@@ -347,21 +370,36 @@ export default function WaitingLobbyPage() {
       try {
         sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
         sessionStorage.setItem('lw_camera_consented', 'true');
+        const attemptData = {
+          examCode,
+          hallTicket,
+          studentName: displayName,
+          attemptId: (location.state as any)?.attemptId,
+          serverStartTime: startPayload.server_start_time,
+          durationSeconds: startPayload.duration_seconds,
+          examDetails: {
+            exam_name: examCode,
+            duration_minutes: Math.round(startPayload.duration_seconds / 60),
+            total_questions: 15,
+          },
+        };
+        localStorage.setItem('logicwhilelire_attempt', JSON.stringify(attemptData));
+        localStorage.setItem('lw_attempt', JSON.stringify(attemptData));
       } catch {}
       const timer = setTimeout(() => {
-        // Priority 2 Rule: Released student must view instructions before starting
         navigate(`/instructions/${examCode}`, {
           state: {
             serverStartTime: startPayload.server_start_time,
             durationSeconds: startPayload.duration_seconds,
             examCode,
             hallTicket,
+            attemptId: (location.state as any)?.attemptId,
           },
         });
-      }, 1500);
+      }, 900);
       return () => clearTimeout(timer);
     }
-  }, [examStarted, startPayload, contestId, candidate, location.state, navigate]);
+  }, [examStarted, startPayload, contestId, candidate, location.state, navigate, displayName]);
 
   const handleManualStart = () => {
     const examCode = startPayload?.exam_id || contestId;

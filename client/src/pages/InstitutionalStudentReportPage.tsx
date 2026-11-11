@@ -4,6 +4,12 @@ import axios from 'axios'
 import SiteHeader from '../components/SiteHeader'
 import SiteFooter from '../components/SiteFooter'
 import { API_BASE_URL } from '../lib/config'
+import {
+  IconDownload,
+  IconPrinter,
+  IconCpu,
+  IconShield,
+} from '../components/icons/HumanIcons'
 
 export default function InstitutionalStudentReportPage() {
   const { hallTicket: paramHallTicket } = useParams<{ hallTicket?: string }>()
@@ -293,10 +299,11 @@ export default function InstitutionalStudentReportPage() {
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 7,
               }}
             >
-              <span>📊</span> Export Excel / CSV
+              <IconDownload size={15} color="#38BDF8" />
+              <span>Export Excel / CSV</span>
             </button>
             <button
               onClick={handlePrint}
@@ -311,10 +318,11 @@ export default function InstitutionalStudentReportPage() {
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 7,
               }}
             >
-              <span>📄</span> Print / PDF Report
+              <IconPrinter size={15} color="#FFFFFF" />
+              <span>Print / PDF Report</span>
             </button>
           </div>
         </div>
@@ -778,7 +786,7 @@ export default function InstitutionalStudentReportPage() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <span style={{ fontSize: '1.3rem' }}>{hasAttempts ? '📊' : '🎓'}</span>
+            <IconCpu size={20} color="#38BDF8" />
             <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#38BDF8' }}>
               LogicWhileLiRE Assessment Intelligence · {hasAttempts ? 'Official Diagnostic Evaluation' : 'Candidate Enrollment Diagnostic'}
             </h4>

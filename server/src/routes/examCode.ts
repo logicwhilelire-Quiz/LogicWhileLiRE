@@ -247,14 +247,20 @@ const handleExamCodeStart = async (req: any, res: any) => {
       };
     });
 
+    const officialStartTime = startedState?.server_start_time || (exam?.start_time ? new Date(exam.start_time).getTime() : Date.now());
+    const durationMinutes = exam?.duration_minutes || exam?.duration || 45;
+    const durationSec = startedState?.duration_seconds || (durationMinutes * 60);
+    const endTimeIso = new Date(officialStartTime + durationSec * 1000).toISOString();
+
     // Record active attempt in exam_code_attempts
     try {
       await supabase.from('exam_code_attempts').upsert({
         hall_ticket_no: hallTicket,
         exam_code: effectiveCode,
-        student_name: hallTicket,
+        student_name: (studentRecord as any)?.name || hallTicket,
         status: 'in_progress',
-        start_time: new Date().toISOString(),
+        override_reason: 'status:released',
+        start_time: new Date(officialStartTime).toISOString(),
       }, { onConflict: 'hall_ticket_no,exam_code' });
     } catch {}
 
@@ -263,10 +269,16 @@ const handleExamCodeStart = async (req: any, res: any) => {
       server_shuffled: true,
       questions_shuffled: true,
       sessionId: `sess_${effectiveCode}_${hallTicket}_${Date.now()}`,
-      exam: exam || {
-        exam_name: effectiveCode,
-        duration_minutes: 45,
+      exam: {
+        ...(exam || {}),
+        exam_name: exam?.exam_name || exam?.name || effectiveCode,
+        duration_minutes: durationMinutes,
+        duration_seconds: durationSec,
         total_questions: formattedQuestions.length,
+        server_start_time: officialStartTime,
+        started_at: new Date(officialStartTime).toISOString(),
+        end_time: endTimeIso,
+        max_violations: Number(exam?.max_violations) > 0 ? Number(exam.max_violations) : 5,
       },
       questions: formattedQuestions,
     });

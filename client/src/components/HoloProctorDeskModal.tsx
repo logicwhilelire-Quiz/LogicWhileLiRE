@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
 import { API_BASE_URL } from '../lib/config'
+import { IconChat, IconRadio, IconShield, IconAlert } from './icons/HumanIcons'
 
 export interface ProctorCommsMessage {
   id: string
@@ -196,9 +197,9 @@ export default function HoloProctorDeskModal({
             }}
           >
             {[
-              { id: 'comms', label: `💬 Proctor Feed (${commsLog.length})` },
-              { id: 'raise_hand', label: '📬 Report Issue / Drop Box' },
-              { id: 'telemetry', label: '⚡ Sentinel Integrity' },
+              { id: 'comms', label: `Proctor Feed (${commsLog.length})`, icon: <IconChat size={13} color="currentColor" /> },
+              { id: 'raise_hand', label: 'Report Issue / Query', icon: <IconAlert size={13} color="currentColor" /> },
+              { id: 'telemetry', label: 'Proctoring Mesh Integrity', icon: <IconShield size={13} color="currentColor" /> },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -214,9 +215,13 @@ export default function HoloProctorDeskModal({
                   fontSize: '0.76rem',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
                 }}
               >
-                {tab.label}
+                {tab.icon}
+                <span>{tab.label}</span>
               </button>
             ))}
           </div>
@@ -228,7 +233,9 @@ export default function HoloProctorDeskModal({
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {commsLog.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '36px 16px', color: '#64748B' }}>
-                    <div style={{ fontSize: '2rem', marginBottom: 8 }}>📡</div>
+                    <div style={{ display: 'inline-flex', padding: 12, borderRadius: 12, background: 'rgba(255,255,255,0.03)', marginBottom: 10 }}>
+                      <IconRadio size={24} color="#64748B" />
+                    </div>
                     <div style={{ fontSize: '0.86rem', fontWeight: 600, color: '#94A3B8' }}>No Proctor Announcements Yet</div>
                     <p style={{ fontSize: '0.74rem', maxWidth: 360, margin: '6px auto 0' }}>
                       All live broadcasts, time extensions, and invigilator notices will appear here in chronological order.

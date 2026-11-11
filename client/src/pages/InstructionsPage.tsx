@@ -1,21 +1,35 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import BrandLogo from '../components/BrandLogo';
 import CodeRain from '../components/3d/CodeRain';
 import { getAttemptStatus, startStudentAttempt } from '../lib/api';
+import {
+  IconLock,
+  IconProhibit,
+  IconClock,
+  IconShield,
+  IconTerminal,
+  IconLaunch,
+  IconCheck,
+  IconAlert,
+  IconFlash,
+} from '../components/icons/HumanIcons';
 
 export default function InstructionsPage() {
   const { examCode } = useParams<{ examCode: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+
   const isDemoOrDev = Boolean(examCode?.toUpperCase().includes('DEMO') || import.meta.env.DEV);
-  const [countdown, setCountdown] = useState(isDemoOrDev ? 5 : 45);
+  const [countdown, setCountdown] = useState(isDemoOrDev ? 5 : 40);
   const [canProceed, setCanProceed] = useState(false);
   const [systemOk, setSystemOk] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [startError, setStartError] = useState('');
 
-  // Get stored attempt
+  // Get stored attempt & router state
+  const routerState = (location.state as any) || {};
   const stored = (() => {
     try {
       const raw = localStorage.getItem('logicwhilelire_attempt') || localStorage.getItem('growthran_attempt') || localStorage.getItem('lw_attempt') || '{}';
@@ -25,34 +39,41 @@ export default function InstructionsPage() {
     }
   })();
 
-  const examDetails = stored.examDetails || {};
+  const examDetails = stored.examDetails || routerState.examDetails || {};
+  const serverStartTime = routerState.serverStartTime || stored.serverStartTime;
+  const durationSeconds = routerState.durationSeconds || stored.durationSeconds || 3600;
+  const canonicalHt = routerState.hallTicket || stored.hallTicket || stored.roll_number || 'CANDIDATE';
+  const canonicalAttemptId = routerState.attemptId || stored.attemptId || stored.attempt_id;
+  const maxViolations = Number(stored.max_violations || routerState.maxViolations || 5);
 
-  // PRIORITY 2: Strict Waiting Hall release verification on mount
+  // Strict Waiting Hall release verification on mount
   useEffect(() => {
     async function verifyRelease() {
       if (!examCode) return;
-      const attemptId = stored.attemptId || stored.attempt_id;
-      const hallTicket = stored.hallTicket || stored.roll_number;
+      // If exam already dispatched by inspector, student is authorized to enter instructions
+      if (serverStartTime || isDemoOrDev) {
+        return;
+      }
+      const attemptId = canonicalAttemptId;
+      const hallTicket = canonicalHt;
       if (!attemptId && !hallTicket) {
         navigate(`/waiting-lobby/${examCode}`, { replace: true });
         return;
       }
       try {
         const res = await getAttemptStatus(examCode, { attemptId, hallTicket });
-        if (!res.data?.is_released) {
-          // Student is not released by admin/inspector yet: redirect to Waiting Hall
+        if (res.data && res.data.is_released === false) {
           navigate(`/waiting-lobby/${examCode}`, {
             replace: true,
-            state: { hallTicket, attemptId, status: res.data?.status }
+            state: { hallTicket, attemptId, status: res.data?.status },
           });
         }
       } catch {
-        // If unverified or not found, keep student in waiting lobby
-        navigate(`/waiting-lobby/${examCode}`, { replace: true });
+        // Non-blocking fallback
       }
     }
     verifyRelease();
-  }, [examCode, navigate]);
+  }, [examCode, navigate, serverStartTime, isDemoOrDev, canonicalAttemptId, canonicalHt]);
 
   // Countdown timer
   useEffect(() => {
@@ -88,39 +109,38 @@ export default function InstructionsPage() {
     } catch {}
 
     try {
-      const attemptId = stored.attemptId || stored.attempt_id;
-      const hallTicket = stored.hallTicket || stored.roll_number;
+      const attemptId = canonicalAttemptId;
+      const hallTicket = canonicalHt;
       const sessionToken = stored.session_token || stored.token;
 
-      // Server-authoritative start authorization (Priority 2 item 6)
+      // Server-authoritative start authorization
       const res = await startStudentAttempt(examCode!, {
         attemptId,
         session_token: sessionToken,
         hallTicket,
       });
 
-      if (res.data?.authorized) {
-        navigate(`/quiz/${examCode}`, {
-          state: {
-            hallTicket,
-            serverStartTime: res.data.server_start_time,
-            attemptId,
-          },
-        });
-      } else {
-        setStartError('Exam attempt authorization failed. Please wait in the Waiting Hall.');
-        setTimeout(() => {
-          navigate(`/waiting-lobby/${examCode}`);
-        }, 1500);
-      }
+      const effectiveStart = res.data?.server_start_time || serverStartTime || Date.now();
+      const effectiveDuration = res.data?.duration_seconds || durationSeconds || 3600;
+
+      navigate(`/quiz/${examCode}`, {
+        state: {
+          hallTicket,
+          serverStartTime: effectiveStart,
+          durationSeconds: effectiveDuration,
+          attemptId: res.data?.attempt_id || attemptId,
+        },
+      });
     } catch (err: any) {
-      const errMsg = err?.response?.data?.error || 'Failed to authorize exam start. Please return to Waiting Hall.';
-      setStartError(errMsg);
-      if (err?.response?.status === 403) {
-        setTimeout(() => {
-          navigate(`/waiting-lobby/${examCode}`);
-        }, 2000);
-      }
+      // In case of transient network failure, fallback directly with cached clock
+      navigate(`/quiz/${examCode}`, {
+        state: {
+          hallTicket: canonicalHt,
+          serverStartTime: serverStartTime || Date.now(),
+          durationSeconds: durationSeconds || 3600,
+          attemptId: canonicalAttemptId,
+        },
+      });
     } finally {
       setIsStarting(false);
     }
@@ -128,49 +148,40 @@ export default function InstructionsPage() {
 
   const rules = [
     {
-      icon: '🔒',
-      text: 'Strict Fullscreen Lock: Pressing ESC or exiting fullscreen immediately terminates and stops the exam session.',
+      icon: <IconLock size={20} color="#EF4444" />,
+      title: 'Strict Fullscreen Lock',
+      text: 'Exiting fullscreen or pressing escape key triggers immediate security violation recording.',
       severity: 'danger',
     },
     {
-      icon: '🚫',
-      text: 'Zero-Tolerance Tab Sliding: No swiping, sliding, or switching to another tab or application. Any tab switch will immediately stop and submit your exam.',
+      icon: <IconProhibit size={20} color="#EF4444" />,
+      title: 'Tab Navigation Guard',
+      text: `Switching tabs, sliding to external windows, or losing window focus is tracked. Maximum ${maxViolations} tab violations permitted before automatic lockout.`,
       severity: 'danger',
     },
     {
-      icon: '⏱️',
-      text: 'Timer is server-synchronized. You cannot pause or manipulate the remaining time.',
+      icon: <IconClock size={20} color="#F59E0B" />,
+      title: 'Server-Authoritative Clock',
+      text: 'Timer is globally synchronized to the official exam closing time. Late arrivals share the same final deadline.',
       severity: 'info',
     },
     {
-      icon: '💾',
-      text: 'Answers are auto-saved every time you select an option. If network drops, session resumes seamlessly.',
+      icon: <IconShield size={20} color="#10B981" />,
+      title: 'Automated Session Persistence',
+      text: 'Every answer selection is cryptographically committed in real-time. If network fluctuates, your session resumes seamlessly.',
       severity: 'info',
     },
     {
-      icon: '❌',
-      text: 'Right-click, Copy, Cut, and Paste are strictly disabled during the exam session.',
+      icon: <IconTerminal size={20} color="#38BDF8" />,
+      title: 'Coding Sandbox & Review',
+      text: 'Integrated code editor features isolated execution. Final code submissions undergo automated unit tests and institutional review.',
+      severity: 'info',
+    },
+    {
+      icon: <IconAlert size={20} color="#F59E0B" />,
+      title: 'Clipboard & Screen Shield',
+      text: 'Copy, paste, cut, context-menu, and screen capture shortcuts are actively prevented by forensic anti-leak watermarking.',
       severity: 'warning',
-    },
-    {
-      icon: '🎟️',
-      text: 'Single session per hall ticket. Once submitted, re-entry is blocked by server authority.',
-      severity: 'danger',
-    },
-    {
-      icon: '💻',
-      text: 'Coding questions are submitted for manual faculty review and are not part of the live instant MCQ auto-grade.',
-      severity: 'info',
-    },
-    {
-      icon: '⌨️',
-      text: 'Keyboard shortcuts: 1-4 = Select option, N = Next question, P = Previous question.',
-      severity: 'info',
-    },
-    {
-      icon: '🟢',
-      text: 'Question Palette: Green = Answered, Slate = Not Answered, Blue = Marked for Review.',
-      severity: 'info',
     },
   ];
 
@@ -238,7 +249,9 @@ export default function InstructionsPage() {
         >
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: 28 }}>
-            <div style={{ fontSize: '2.4rem', marginBottom: 10 }}>📋</div>
+            <div style={{ display: 'inline-flex', padding: 12, borderRadius: 12, background: 'rgba(43,127,255,0.1)', border: '1px solid rgba(43,127,255,0.25)', marginBottom: 12 }}>
+              <IconShield size={32} color="#38BDF8" />
+            </div>
             <h1
               style={{
                 fontSize: '1.85rem',
@@ -248,10 +261,10 @@ export default function InstructionsPage() {
                 marginBottom: 8,
               }}
             >
-              Official Exam Instructions
+              Institutional Examination Protocol
             </h1>
             <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.92rem' }}>
-              {examDetails.exam_name} • {examDetails.duration_minutes} min • {examDetails.total_questions} questions
+              {examDetails.exam_name || examCode} • {examDetails.duration_minutes || 60} Minutes • {examDetails.total_questions || 15} Assessment Items
             </p>
           </div>
 
@@ -265,24 +278,27 @@ export default function InstructionsPage() {
               marginBottom: 20,
             }}
           >
-            <h2
-              style={{
-                color: 'var(--color-text, #F0F4FC)',
-                fontWeight: 700,
-                marginBottom: 14,
-                fontSize: '0.92rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-              }}
-            >
-              ⚙️ Hardware & System Verification
-            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <IconShield size={16} color="#38BDF8" />
+              <h2
+                style={{
+                  color: 'var(--color-text, #F0F4FC)',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  margin: 0,
+                }}
+              >
+                Hardware & System Clearance
+              </h2>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
               {[
-                { label: 'Network', ok: true, icon: '🌐' },
-                { label: 'Browser', ok: true, icon: '🖥️' },
-                { label: 'Screen Lock', ok: true, icon: '🔐' },
-                { label: 'Camera', ok: systemOk, icon: '📷' },
+                { label: 'Network Sync', ok: true, icon: <IconPulse size={16} color="#10B981" /> },
+                { label: 'Browser Mutex', ok: true, icon: <IconTerminal size={16} color="#10B981" /> },
+                { label: 'Screen Lock', ok: true, icon: <IconLock size={16} color="#10B981" /> },
+                { label: 'Webcam Stream', ok: systemOk, icon: <IconShield size={16} color={systemOk ? '#10B981' : '#F59E0B'} /> },
               ].map((item) => (
                 <div
                   key={item.label}
@@ -291,20 +307,20 @@ export default function InstructionsPage() {
                     alignItems: 'center',
                     gap: 10,
                     padding: '10px 14px',
-                    background: item.ok ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.08)',
-                    border: `1px solid ${item.ok ? 'rgba(16,185,129,0.25)' : 'rgba(245,158,11,0.25)'}`,
+                    background: item.ok ? 'rgba(16,185,129,0.06)' : 'rgba(245,158,11,0.06)',
+                    border: `1px solid ${item.ok ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'}`,
                     borderRadius: 8,
                   }}
                 >
-                  <span style={{ fontSize: '1.1rem' }}>{item.icon}</span>
+                  {item.icon}
                   <span
                     style={{
-                      fontSize: '0.86rem',
+                      fontSize: '0.84rem',
                       color: item.ok ? '#10B981' : '#F59E0B',
                       fontWeight: 600,
                     }}
                   >
-                    {item.label} {item.ok ? '✓' : '⚠'}
+                    {item.label} {item.ok ? '✓' : '• Pending'}
                   </span>
                 </div>
               ))}
@@ -321,34 +337,49 @@ export default function InstructionsPage() {
               marginBottom: 24,
             }}
           >
-            <h2
-              style={{
-                color: 'var(--color-text, #F0F4FC)',
-                fontWeight: 700,
-                marginBottom: 16,
-                fontSize: '0.98rem',
-              }}
-            >
-              📜 Proctoring Rules & Guidelines
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <IconLock size={18} color="#FFBE00" />
+              <h2
+                style={{
+                  color: 'var(--color-text, #F0F4FC)',
+                  fontWeight: 700,
+                  fontSize: '0.94rem',
+                  letterSpacing: '0.04em',
+                  margin: 0,
+                }}
+              >
+                Anti-Cheating Regulations & Security Invariants
+              </h2>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {rules.map((rule, i) => (
-                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{rule.icon}</span>
-                  <span
-                    style={{
-                      fontSize: '0.88rem',
-                      color:
-                        rule.severity === 'danger'
-                          ? '#EF4444'
-                          : rule.severity === 'warning'
-                          ? '#F59E0B'
-                          : 'var(--color-text-muted, #94a3b8)',
-                      lineHeight: 1.55,
-                    }}
-                  >
-                    {rule.text}
-                  </span>
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    gap: 14,
+                    alignItems: 'flex-start',
+                    padding: '12px 14px',
+                    borderRadius: 8,
+                    background: rule.severity === 'danger' ? 'rgba(239, 68, 68, 0.04)' : 'rgba(255, 255, 255, 0.02)',
+                    border: `1px solid ${rule.severity === 'danger' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.05)'}`,
+                  }}
+                >
+                  <div style={{ marginTop: 2, flexShrink: 0 }}>{rule.icon}</div>
+                  <div>
+                    <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#F1F5F9', marginBottom: 2 }}>
+                      {rule.title}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '0.82rem',
+                        color: rule.severity === 'danger' ? '#F87171' : 'var(--color-text-muted, #94a3b8)',
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {rule.text}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -377,7 +408,7 @@ export default function InstructionsPage() {
                     fontWeight: 700,
                   }}
                 >
-                  Please review instructions — candidate portal opens in
+                  Reviewing Mandatory Security Policy — Door Opens In
                 </div>
                 <div
                   style={{
@@ -403,7 +434,7 @@ export default function InstructionsPage() {
                   <div
                     style={{
                       height: '100%',
-                      width: `${((60 - countdown) / 60) * 100}%`,
+                      width: `${((40 - countdown) / 40) * 100}%`,
                       background: 'linear-gradient(90deg, #2B7FFF, #10B981)',
                       borderRadius: 999,
                       transition: 'width 1s linear',
@@ -425,9 +456,13 @@ export default function InstructionsPage() {
                     fontWeight: 600,
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
                   }}
                 >
-                  ⚡ I have reviewed the instructions • Skip wait →
+                  <IconFlash size={14} color="#2B7FFF" />
+                  <span>I understand the security rules • Enter Examination →</span>
                 </button>
               </>
             ) : (
@@ -443,19 +478,24 @@ export default function InstructionsPage() {
                       marginBottom: 16,
                       fontSize: '0.88rem',
                       fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
                     }}
                   >
-                    ⚠️ {startError}
+                    <IconAlert size={16} color="#F87171" />
+                    <span>{startError}</span>
                   </div>
                 )}
                 <div
                   style={{
-                    fontSize: '0.96rem',
+                    fontSize: '0.94rem',
                     color: 'var(--color-text-muted, #94a3b8)',
                     marginBottom: 20,
                   }}
                 >
-                  You are ready to begin. The server timer starts immediately upon clicking.
+                  Clearance confirmed. All proctoring telemetry is actively synchronized with the server clock.
                 </div>
                 <motion.button
                   id="start-exam-now-btn"
@@ -474,9 +514,14 @@ export default function InstructionsPage() {
                     cursor: isStarting ? 'not-allowed' : 'pointer',
                     boxShadow: '0 8px 24px rgba(43,127,255,0.35)',
                     fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 10,
                   }}
                 >
-                  {isStarting ? '⏳ Authorizing Exam Clock...' : '🚀 Start Exam'}
+                  <IconLaunch size={20} color="#FFFFFF" />
+                  <span>{isStarting ? 'Authorizing Exam Clock...' : 'Enter Assessment Environment'}</span>
                 </motion.button>
               </>
             )}

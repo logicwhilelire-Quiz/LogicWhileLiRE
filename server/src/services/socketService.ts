@@ -520,7 +520,7 @@ export async function emitLeaderboardUpdate(examCode: string) {
 
 /**
  * Broadcast EXAM_STARTED to all sockets in lobby:{examCode}.
- * IDEMPOTENT: second call returns existing payload, does NOT re-broadcast.
+ * Anchored to server-authoritative clock and synchronously dispatches to all waiting candidates.
  */
 export async function broadcastExamStarted(params: {
   examCode: string;
@@ -530,28 +530,45 @@ export async function broadcastExamStarted(params: {
 }): Promise<{ payload: ExamStartedState; alreadyStarted: boolean }> {
   const code = params.examCode.toUpperCase();
 
-  // Idempotency: return existing state without re-broadcasting
+  // Check existing state to preserve clock anchor
   const existing = examStartedState.get(code);
+  let state: ExamStartedState;
+  let alreadyStarted = false;
+
   if (existing) {
-    console.log(`[Socket.io] EXAM_STARTED idempotency hit for ${code}`);
-    return { payload: existing, alreadyStarted: true };
+    state = existing;
+    alreadyStarted = true;
+    console.log(`[Socket.io] EXAM_STARTED re-sync for active exam ${code} (start_time=${state.server_start_time})`);
+  } else {
+    const serverStartTime = params.serverStartTime ?? Date.now();
+    state = {
+      exam_id: code,
+      server_start_time: serverStartTime,
+      duration_seconds: params.durationSeconds,
+      allow_late_join: params.allowLateJoin ?? true,
+    };
+    // Store before emitting so reconnectors immediately see it
+    examStartedState.set(code, state);
   }
 
-  const serverStartTime = params.serverStartTime ?? Date.now();
-  const state: ExamStartedState = {
-    exam_id: code,
-    server_start_time: serverStartTime,
-    duration_seconds: params.durationSeconds,
-    allow_late_join: params.allowLateJoin ?? false,
-  };
-
-  // Store before emitting so reconnectors immediately see it
-  examStartedState.set(code, state);
-
   if (io) {
-    const payload = { event: 'EXAM_STARTED', ...state };
+    const elapsed = Math.floor((Date.now() - state.server_start_time) / 1000);
+    const payload = {
+      event: 'EXAM_STARTED',
+      ...state,
+      elapsed_seconds: elapsed,
+      remaining_seconds: Math.max(0, state.duration_seconds - elapsed),
+    };
     console.log(`[Socket.io] Broadcasting EXAM_STARTED to lobby:${code}`, payload);
     io.to(`lobby:${code}`).emit('EXAM_STARTED', payload);
+
+    // Also broadcast student release to release all candidates simultaneously
+    io.to(`lobby:${code}`).emit('STUDENT_RELEASED', {
+      event: 'STUDENT_RELEASED',
+      examCode: code,
+      all: true,
+      timestamp: Date.now(),
+    });
   }
 
   // Start throttled 1-second pulse for ranks and monitor
@@ -564,7 +581,7 @@ export async function broadcastExamStarted(params: {
 
   scheduleThrottledRoomUpdate(code);
 
-  return { payload: state, alreadyStarted: false };
+  return { payload: state, alreadyStarted };
 }
 
 export function stopLeaderboardStream(examCode: string) {

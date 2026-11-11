@@ -25,6 +25,18 @@ import {
   resetStudentAttempt,
 } from "../../lib/api";
 import { SOCKET_URL, API_BASE_URL } from "../../lib/config";
+import {
+  IconLaunch,
+  IconStop,
+  IconTrophy,
+  IconUsers,
+  IconShield,
+  IconAlert,
+  IconClock,
+  IconCheck,
+  IconCross,
+  IconRadio,
+} from "../../components/icons/HumanIcons";
 
 const BASE = API_BASE_URL;
 
@@ -328,17 +340,23 @@ export default function InstructorConsolePage() {
     setStarting(true);
     setStartError(null);
     try {
-      const res = await startExam(currentCode, { allow_late_join: false });
+      // 1. Release all waiting candidates synchronously
+      try {
+        await releaseStudentForExam(currentCode, { all: true });
+      } catch {}
+
+      // 2. Broadcast authoritative start signal (allow late joiners with same fixed end time)
+      const res = await startExam(currentCode, { allow_late_join: true });
       if (res.data?.success) {
         setExamStarted(true);
         setConfirmOpen(false);
         setActiveTab("leaderboard");
-        addLog(`🚀 EXAM_STARTED triggered by Inspector for ${currentCode}!`);
+        addLog(`EXAM_STARTED broadcast confirmed for ${currentCode}!`);
       }
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.message || "Exam start failed";
       setStartError(msg);
-      addLog(`❌ START ERROR: ${msg}`);
+      addLog(`START ERROR: ${msg}`);
     } finally {
       setStarting(false);
     }
@@ -461,7 +479,30 @@ export default function InstructorConsolePage() {
     return `${m}m ${String(s).padStart(2, "0")}s`;
   };
 
-  const medal = (rank: number) => ["🥇", "🥈", "🥉"][rank - 1] || `#${rank}`;
+  const medal = (rank: number) => {
+    if (rank === 1) {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 6, background: 'rgba(234, 168, 18, 0.15)', border: '1px solid rgba(234, 168, 18, 0.4)', color: '#FFBE00', fontWeight: 800 }}>
+          <IconTrophy size={13} color="#FFBE00" /> 1st
+        </span>
+      );
+    }
+    if (rank === 2) {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 6, background: 'rgba(203, 213, 225, 0.15)', border: '1px solid rgba(203, 213, 225, 0.4)', color: '#E2E8F0', fontWeight: 800 }}>
+          <IconTrophy size={13} color="#CBD5E1" /> 2nd
+        </span>
+      );
+    }
+    if (rank === 3) {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 6, background: 'rgba(217, 119, 6, 0.15)', border: '1px solid rgba(217, 119, 6, 0.4)', color: '#F59E0B', fontWeight: 800 }}>
+          <IconTrophy size={13} color="#F59E0B" /> 3rd
+        </span>
+      );
+    }
+    return <span style={{ color: '#94A3B8', fontFamily: 'monospace', fontWeight: 700 }}>#{rank}</span>;
+  };
 
   return (
     <AnimatedPage>
@@ -723,9 +764,13 @@ export default function InstructorConsolePage() {
                       fontWeight: 800,
                       fontSize: "0.85rem",
                       cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
                     }}
                   >
-                    {stopping ? "Ending..." : "🛑 Stop"}
+                    <IconStop size={14} color="#EF4444" />
+                    <span>{stopping ? "Ending..." : "End Exam"}</span>
                   </button>
                 </div>
               ) : (
@@ -750,7 +795,8 @@ export default function InstructorConsolePage() {
                     gap: 8,
                   }}
                 >
-                  {starting ? "Starting..." : "🚀 Start Exam"}
+                  <IconLaunch size={16} color="#FFFFFF" />
+                  <span>{starting ? "Starting..." : "Start Examination"}</span>
                 </button>
               )}
             </div>
@@ -835,9 +881,13 @@ export default function InstructorConsolePage() {
                 fontWeight: 700,
                 fontSize: "0.85rem",
                 cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
               }}
             >
-              ⏳ Waiting Queue ({filteredQueue.length})
+              <IconUsers size={15} color={activeTab === "queue" ? "#60A5FA" : "#94A3B8"} />
+              <span>Waiting Queue ({filteredQueue.length})</span>
             </button>
 
             <button
@@ -851,9 +901,13 @@ export default function InstructorConsolePage() {
                 fontWeight: 700,
                 fontSize: "0.85rem",
                 cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
               }}
             >
-              🏆 Live Leaderboard ({leaderboard.length})
+              <IconTrophy size={15} color={activeTab === "leaderboard" ? "#60A5FA" : "#94A3B8"} />
+              <span>Live Leaderboard ({leaderboard.length})</span>
             </button>
 
             <button
@@ -867,9 +921,13 @@ export default function InstructorConsolePage() {
                 fontWeight: 700,
                 fontSize: "0.85rem",
                 cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
               }}
             >
-              📡 Student Status & Monitor
+              <IconShield size={15} color={activeTab === "monitor" ? "#60A5FA" : "#94A3B8"} />
+              <span>Student Status & Monitor</span>
             </button>
 
             <button
@@ -883,26 +941,13 @@ export default function InstructorConsolePage() {
                 fontWeight: 700,
                 fontSize: "0.85rem",
                 cursor: "pointer",
-                display: "flex",
+                display: "inline-flex",
                 alignItems: "center",
-                gap: 6,
+                gap: 7,
               }}
             >
-              <span>🚨 Violations Feed</span>
-              {violationsList.length > 0 && (
-                <span
-                  style={{
-                    background: "#EF4444",
-                    color: "#FFFFFF",
-                    fontSize: "0.7rem",
-                    fontWeight: 800,
-                    padding: "1px 6px",
-                    borderRadius: 999,
-                  }}
-                >
-                  {violationsList.length}
-                </span>
-              )}
+              <IconAlert size={15} color={activeTab === "violations" ? "#F87171" : "#94A3B8"} />
+              <span>Violations Feed ({violationsList.length})</span>
             </button>
           </div>
 
@@ -1180,7 +1225,9 @@ export default function InstructorConsolePage() {
 
                   {leaderboard.length === 0 ? (
                     <div style={{ padding: "48px 24px", textAlign: "center", color: "#64748B" }}>
-                      <div style={{ fontSize: "2.4rem", marginBottom: 10 }}>🏆</div>
+                      <div style={{ display: "inline-flex", padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.03)", marginBottom: 12 }}>
+                        <IconTrophy size={32} color="#64748B" />
+                      </div>
                       <div style={{ fontWeight: 700, fontSize: "1rem", color: "#E2E8F0" }}>No completed scores yet</div>
                       <div style={{ fontSize: "0.82rem", marginTop: 4 }}>
                         Ranks will stream live as students answer and submit.

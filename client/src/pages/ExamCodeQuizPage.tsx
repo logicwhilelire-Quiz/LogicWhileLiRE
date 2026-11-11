@@ -23,6 +23,14 @@ import {
 import AntiLeakWatermark from '../components/AntiLeakWatermark'
 import HoloProctorDeskModal, { type ProctorCommsMessage } from '../components/HoloProctorDeskModal'
 import { soundFx } from '../lib/synthAudio'
+import {
+  IconClock,
+  IconShield,
+  IconAlert,
+  IconCheck,
+  IconLock,
+  IconLaunch,
+} from '../components/icons/HumanIcons'
 
 /* ── Types ── */
 interface ExamQuestion {
@@ -1929,42 +1937,72 @@ export default function QuizPage() {
         </div>
 
         {/* Center: Timer */}
-        <motion.div
-          style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            padding: '8px 20px',
-            background: 'rgba(20,28,47,0.8)',
-            border: `1px solid ${timerColor}40`,
-            borderRadius: 'var(--radius-lg)',
-            boxShadow: `0 0 16px ${timerColor}20`,
-            transition: 'all 0.5s ease',
-          }}
-          animate={timerStatus === 'critical' ? {
-            boxShadow: [`0 0 16px ${timerColor}20`, `0 0 32px ${timerColor}40`, `0 0 16px ${timerColor}20`],
-          } : {}}
-          transition={{ repeat: Infinity, duration: 1 }}
-        >
-          <ExamTimerProgress
-            timeLeft={timeLeft}
-            totalTime={session?.duration || 3600}
-          />
-          <div>
-            <div
-              id="quiz-timer-display"
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '1.5rem', fontWeight: 800,
-                color: timerColor, letterSpacing: '0.04em',
-                lineHeight: 1,
-              }}
-            >
-              {formatTime(timeLeft)}
+        {/* ── HIGH-VISIBILITY DOMINANT SERVER-AUTHORITATIVE TIMER ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <motion.div
+            style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '10px 24px',
+              background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 16, 32, 0.98) 100%)',
+              border: `2px solid ${timerColor}`,
+              borderRadius: 14,
+              boxShadow: `0 8px 24px ${timerColor}25, inset 0 0 16px ${timerColor}15`,
+              transition: 'all 0.5s ease',
+            }}
+            animate={timerStatus === 'critical' ? {
+              boxShadow: [`0 0 18px ${timerColor}30`, `0 0 36px ${timerColor}60`, `0 0 18px ${timerColor}30`],
+            } : {}}
+            transition={{ repeat: Infinity, duration: 1 }}
+          >
+            <ExamTimerProgress
+              timeLeft={timeLeft}
+              totalTime={session?.duration || 3600}
+            />
+            <div>
+              <div
+                id="quiz-timer-display"
+                style={{
+                  fontFamily: 'var(--font-mono, monospace)',
+                  fontSize: '2.4rem',
+                  fontWeight: 900,
+                  color: timerColor,
+                  letterSpacing: '0.06em',
+                  lineHeight: 1,
+                  textShadow: `0 0 12px ${timerColor}40`,
+                }}
+              >
+                {formatTime(timeLeft)}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <IconClock size={11} color="var(--color-text-faint)" />
+                <span style={{ fontSize: '0.68rem', color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
+                  Fixed Deadline Sync
+                </span>
+              </div>
             </div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Remaining
+          </motion.div>
+
+          {/* Active Security & Violation Policy Monitor Badge */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '8px 14px',
+              borderRadius: 10,
+              background: violationCount > 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(56, 189, 248, 0.08)',
+              border: `1px solid ${violationCount > 0 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(56, 189, 248, 0.25)'}`,
+            }}
+            title="Inspector configurable tab violation policy"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: violationCount > 0 ? '#F87171' : '#38BDF8', fontWeight: 700 }}>
+              {violationCount > 0 ? <IconAlert size={13} color="#F87171" /> : <IconShield size={13} color="#38BDF8" />}
+              <span>{violationCount > 0 ? 'Tab Strikes Logged' : 'Proctor Guard Active'}</span>
+            </div>
+            <div style={{ fontSize: '0.88rem', fontWeight: 900, color: violationCount > 0 ? '#EF4444' : '#F1F5F9', fontFamily: 'monospace', marginTop: 1 }}>
+              {violationCount} / {session?.violationThreshold || 5} Max
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Right: Proctor Monitor + Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

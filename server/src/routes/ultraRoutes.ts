@@ -1134,19 +1134,33 @@ router.post(
     const { allow_late_join = false, duration_seconds } = req.body;
     const code = (req.params.examCode as string).toUpperCase();
 
-    // ── Idempotency check (Sprint 2, item 1) ──────────────────────────────
-    const { getExamStartedState } = await import('../services/socketService');
+    // ── Idempotency & Re-Broadcast check ──────────────────────────────
+    const { getExamStartedState, broadcastExamStarted } = await import('../services/socketService');
     const alreadyState = getExamStartedState(code);
     if (alreadyState) {
-      console.log(`[ExamStart] Idempotent call — ${code} already started at ${alreadyState.server_start_time}`);
+      console.log(`[ExamStart] Re-broadcasting active exam ${code} started at ${alreadyState.server_start_time}`);
+      const { payload } = await broadcastExamStarted({
+        examCode: code,
+        durationSeconds: alreadyState.duration_seconds,
+        allowLateJoin: true,
+        serverStartTime: alreadyState.server_start_time,
+      });
+
+      try {
+        await supabase
+          .from('exam_code_attempts')
+          .update({ override_reason: 'status:released' })
+          .eq('exam_code', code);
+      } catch {}
+
       return res.json({
         success: true,
         already_started: true,
-        message: `Exam ${code} was already started — no re-broadcast`,
-        exam_id: alreadyState.exam_id,
-        server_start_time: alreadyState.server_start_time,
-        duration_seconds: alreadyState.duration_seconds,
-        allow_late_join: alreadyState.allow_late_join,
+        message: `Exam ${code} start signal broadcast to all waiting candidates`,
+        exam_id: payload.exam_id,
+        server_start_time: payload.server_start_time,
+        duration_seconds: payload.duration_seconds,
+        allow_late_join: payload.allow_late_join,
       });
     }
 
@@ -1191,19 +1205,24 @@ router.post(
       if (updErr) {
         console.warn('[ExamStart] DB update notice:', updErr.message);
       }
-      // Release all waiting students into active exam status
-      await supabase
+      // Release all waiting students into active exam status with safe fallback
+      const rel1 = await supabase
         .from('exam_code_attempts')
-        .update({ status: 'released' })
-        .eq('exam_code', code)
-        .eq('status', 'waiting_verification');
+        .update({ status: 'released', override_reason: 'status:released' })
+        .eq('exam_code', code);
+      if (rel1.error && rel1.error.code === '23514') {
+        await supabase
+          .from('exam_code_attempts')
+          .update({ override_reason: 'status:released' })
+          .eq('exam_code', code);
+      }
     } catch (e: any) {
       console.warn('[ExamStart] DB update exception:', e?.message);
     }
 
     // ── Broadcast EXAM_STARTED ────────────────────────────────────────────
-    const { broadcastExamStarted } = await import('../services/socketService');
-    const { payload, alreadyStarted } = await broadcastExamStarted({
+    const socketSvc = await import('../services/socketService');
+    const { payload, alreadyStarted } = await socketSvc.broadcastExamStarted({
       examCode: code,
       durationSeconds,
       allowLateJoin: allow_late_join,
@@ -1294,13 +1313,25 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
             .eq('exam_code', code),
           supabase
             .from('exam_codes')
-            .select('duration_minutes')
+            .select('duration_minutes, start_time, is_active')
             .eq('exam_code', code)
             .maybeSingle(),
         ]);
 
         enrolledCount = (enrolled.data as any)?.count ?? stats.enrolled;
         durationSec = ((examRow.data as any)?.duration_minutes || 60) * 60;
+
+        // If exam was started in DB but memory cache was empty (e.g. server restart), restore startedState
+        if (!startedState && examRow.data?.is_active && examRow.data?.start_time) {
+          const dbStartMs = new Date(examRow.data.start_time).getTime();
+          const { broadcastExamStarted } = await import('../services/socketService');
+          await broadcastExamStarted({
+            examCode: code,
+            durationSeconds: durationSec,
+            allowLateJoin: true,
+            serverStartTime: dbStartMs,
+          });
+        }
 
         lobbyDbCache.set(code, {
           enrolledCount,
