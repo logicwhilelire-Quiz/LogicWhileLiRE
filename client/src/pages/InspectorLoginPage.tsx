@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
+import { motion } from 'framer-motion';
 import { adminLogin } from '../lib/api';
 import { API_BASE_URL } from '../lib/config';
 import BrandLogo from '../components/BrandLogo';

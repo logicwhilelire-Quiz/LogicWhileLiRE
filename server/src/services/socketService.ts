@@ -363,7 +363,7 @@ export function initSocketIO(httpServer: HttpServer): IOServer {
               .from('exam_code_attempts')
               .select('id, status')
               .eq('exam_code', code)
-              .or(`hall_ticket_no.ilike.${ht},hall_ticket.ilike.${ht}`)
+              .ilike('hall_ticket_no', ht)
               .maybeSingle();
 
             if (!existing) {

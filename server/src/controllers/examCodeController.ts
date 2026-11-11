@@ -3960,7 +3960,7 @@ export async function releaseStudentForExam(req: Request, res: Response): Promis
   if (attemptId && isTargetUuid) {
     findQuery = findQuery.eq('id', attemptId);
   } else if (targetHt) {
-    findQuery = findQuery.or(`hall_ticket_no.ilike.${targetHt},hall_ticket.ilike.${targetHt}`);
+    findQuery = findQuery.ilike('hall_ticket_no', targetHt);
   } else if (attemptId) {
     findQuery = findQuery.eq('id', attemptId);
   }
@@ -4032,6 +4032,19 @@ export async function releaseStudentForExam(req: Request, res: Response): Promis
     } else {
       finalAttempt = ins1.data;
     }
+
+    if (!finalAttempt && targetHt) {
+      try {
+        const fallbackUpd = await supabase
+          .from('exam_code_attempts')
+          .update({ status: 'released', override_reason: 'status:released' })
+          .eq('exam_code', code)
+          .ilike('hall_ticket_no', targetHt)
+          .select('id, hall_ticket_no')
+          .maybeSingle();
+        finalAttempt = fallbackUpd.data;
+      } catch {}
+    }
   }
 
   const releasedHt = finalAttempt?.hall_ticket_no || targetHt;
@@ -4063,7 +4076,7 @@ export async function rejectStudentEntry(req: Request, res: Response): Promise<v
   if (attemptId) {
     query = query.eq('id', attemptId);
   } else {
-    query = query.or(`hall_ticket_no.ilike.${targetHt},hall_ticket.ilike.${targetHt}`);
+    query = query.ilike('hall_ticket_no', targetHt);
   }
 
   const upd1 = await query.select('id, hall_ticket_no').maybeSingle();

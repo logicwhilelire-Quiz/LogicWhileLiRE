@@ -14,6 +14,7 @@ import {
   IconCheck,
   IconAlert,
   IconFlash,
+  IconPulse,
 } from '../components/icons/HumanIcons';
 
 export default function InstructionsPage() {
@@ -22,13 +23,6 @@ export default function InstructionsPage() {
   const location = useLocation();
 
   const isDemoOrDev = Boolean(examCode?.toUpperCase().includes('DEMO') || import.meta.env.DEV);
-  const [countdown, setCountdown] = useState(isDemoOrDev ? 5 : 40);
-  const [canProceed, setCanProceed] = useState(false);
-  const [systemOk, setSystemOk] = useState(false);
-  const [isStarting, setIsStarting] = useState(false);
-  const [startError, setStartError] = useState('');
-
-  // Get stored attempt & router state
   const routerState = (location.state as any) || {};
   const stored = (() => {
     try {
@@ -41,6 +35,12 @@ export default function InstructionsPage() {
 
   const examDetails = stored.examDetails || routerState.examDetails || {};
   const serverStartTime = routerState.serverStartTime || stored.serverStartTime;
+  const isExamLive = Boolean(serverStartTime);
+  const [countdown, setCountdown] = useState(isDemoOrDev || isExamLive ? 3 : 15);
+  const [canProceed, setCanProceed] = useState(isDemoOrDev || isExamLive);
+  const [systemOk, setSystemOk] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
+  const [startError, setStartError] = useState('');
   const durationSeconds = routerState.durationSeconds || stored.durationSeconds || 3600;
   const canonicalHt = routerState.hallTicket || stored.hallTicket || stored.roll_number || 'CANDIDATE';
   const canonicalAttemptId = routerState.attemptId || stored.attemptId || stored.attempt_id;
@@ -50,8 +50,8 @@ export default function InstructionsPage() {
   useEffect(() => {
     async function verifyRelease() {
       if (!examCode) return;
-      // If exam already dispatched by inspector, student is authorized to enter instructions
-      if (serverStartTime || isDemoOrDev) {
+      // If exam already dispatched or student released by inspector, student is authorized to enter instructions
+      if (serverStartTime || isDemoOrDev || routerState.isReleased || stored.isReleased || stored.is_released) {
         return;
       }
       const attemptId = canonicalAttemptId;

@@ -6,6 +6,7 @@ import AnimatedPage from "../components/AnimatedPage";
 import { getAssessmentSystemCheck, authLogout, getExamLobbyStats, getAttemptStatus } from "../lib/api";
 import { SOCKET_URL } from "../lib/config";
 import HoloProctorDeskModal from "../components/HoloProctorDeskModal";
+import { IconClock, IconLaunch, IconCheck, IconShield, IconPulse, IconAlert } from "../components/icons/HumanIcons";
 
 
 interface CandidateProfile {
@@ -66,6 +67,8 @@ export default function WaitingLobbyPage() {
   // Real exam duration fetched from server (used for accurate timer when exam starts via LocalStorage/BC)
   const [examDurationSeconds, setExamDurationSeconds] = useState(3600);
   const [showProctorDesk, setShowProctorDesk] = useState(false);
+
+  const displayName = candidate?.name || `${candidate?.first_name || "Student"} ${candidate?.last_name || "Candidate"}`.trim();
 
   const socketRef = useRef<Socket | null>(null);
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -184,19 +187,29 @@ export default function WaitingLobbyPage() {
   }, [contestId, examStarted]);
 
   useEffect(() => {
-    const stateCandidate = (location.state as any)?.candidate;
-    if (stateCandidate) {
-      setCandidate(stateCandidate);
-    } else {
+    let resolvedCandidate = (location.state as any)?.candidate;
+    if (!resolvedCandidate) {
       const stored = localStorage.getItem("student_user") || localStorage.getItem("logicwhilelire_attempt") || localStorage.getItem("lw_attempt");
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          const resolved = parsed.student || parsed;
-          setCandidate(resolved);
+          resolvedCandidate = parsed.student || parsed;
         } catch { /* ignore */ }
       }
     }
+    if (resolvedCandidate) {
+      setCandidate(resolvedCandidate);
+    }
+
+    const effectiveHt = String(
+      resolvedCandidate?.roll_number ||
+      resolvedCandidate?.hall_ticket ||
+      (location.state as any)?.hallTicket ||
+      ''
+    ).toUpperCase().trim();
+    const effectiveName = resolvedCandidate?.name || resolvedCandidate?.first_name || (location.state as any)?.studentName || 'Student Candidate';
+    const effectiveSection = resolvedCandidate?.section || 'General';
+    const effectiveAttemptId = (location.state as any)?.attemptId || resolvedCandidate?.attemptId;
 
     getAssessmentSystemCheck().catch(() => {});
 
@@ -214,9 +227,9 @@ export default function WaitingLobbyPage() {
       addEvent(`Socket connected (${socket.id?.slice(0, 8) || "?"}...)`, "success");
       socket.emit("lobby:join", {
         examCode: contestId,
-        hallTicket: candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || 'STUDENT',
-        studentName: candidate?.name || candidate?.first_name || 'Student Candidate',
-        section: candidate?.section || 'General',
+        hallTicket: effectiveHt || 'STUDENT',
+        studentName: effectiveName,
+        section: effectiveSection,
       });
       addEvent(`Joined lobby room: lobby:${contestId.toUpperCase()}`, "info");
     });
@@ -241,18 +254,19 @@ export default function WaitingLobbyPage() {
     // PRIORITY 2: Live release event from Admin or Inspector
     socket.on("STUDENT_RELEASED", (data: any) => {
       if (data?.examCode?.toUpperCase() === contestId.toUpperCase()) {
-        const myHt = String(candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || '').toUpperCase();
-        if (data.all || !data.hallTicket || data.hallTicket.toUpperCase() === myHt) {
+        const myHt = String(effectiveHt || candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || '').toUpperCase();
+        if (data.all || !data.hallTicket || !myHt || data.hallTicket.toUpperCase() === myHt) {
           setIsReleased(true);
           addEvent("Release granted by supervisor! Proceeding to instructions...", "success");
           try {
             const currentAttempt = {
               examCode: contestId.toUpperCase(),
-              hallTicket: myHt,
-              studentName: candidate?.name || displayName,
-              attemptId: data.attemptId || (location.state as any)?.attemptId,
+              hallTicket: myHt || effectiveHt,
+              studentName: effectiveName,
+              attemptId: data.attemptId || effectiveAttemptId,
               serverStartTime: startPayload?.server_start_time,
               durationSeconds: startPayload?.duration_seconds || examDurationSeconds,
+              isReleased: true,
             };
             localStorage.setItem('logicwhilelire_attempt', JSON.stringify(currentAttempt));
             localStorage.setItem('lw_attempt', JSON.stringify(currentAttempt));
@@ -260,21 +274,22 @@ export default function WaitingLobbyPage() {
           setTimeout(() => {
             navigate(`/instructions/${contestId}`, {
               state: {
-                hallTicket: myHt,
-                studentName: candidate?.name,
-                attemptId: data.attemptId || (location.state as any)?.attemptId,
+                hallTicket: myHt || effectiveHt,
+                studentName: effectiveName,
+                attemptId: data.attemptId || effectiveAttemptId,
                 serverStartTime: startPayload?.server_start_time,
                 durationSeconds: startPayload?.duration_seconds || examDurationSeconds,
+                isReleased: true,
               },
             });
-          }, 800);
+          }, 600);
         }
       }
     });
 
     socket.on("STUDENT_BLOCKED", (data: any) => {
       if (data?.examCode?.toUpperCase() === contestId.toUpperCase()) {
-        const myHt = String(candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || '').toUpperCase();
+        const myHt = String(effectiveHt || candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || '').toUpperCase();
         if (!data.hallTicket || data.hallTicket.toUpperCase() === myHt) {
           setIsBlocked(true);
           setBlockReason(data.reason || 'Blocked by supervisor');
@@ -285,7 +300,7 @@ export default function WaitingLobbyPage() {
 
     socket.on("STUDENT_REJECTED", (data: any) => {
       if (data?.examCode?.toUpperCase() === contestId.toUpperCase()) {
-        const myHt = String(candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || '').toUpperCase();
+        const myHt = String(effectiveHt || candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || '').toUpperCase();
         if (!data.hallTicket || data.hallTicket.toUpperCase() === myHt) {
           setIsRejected(true);
           setRejectReason(data.reason || 'Entry rejected by invigilator');
@@ -306,6 +321,32 @@ export default function WaitingLobbyPage() {
         `${payload.elapsed_seconds != null ? 'reconnect-sync' : 'fresh start'}`,
         "alert"
       );
+      try {
+        const myHt = String(effectiveHt || candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || '').toUpperCase();
+        const currentAttempt = {
+          examCode: contestId.toUpperCase(),
+          hallTicket: myHt || effectiveHt,
+          studentName: effectiveName,
+          attemptId: effectiveAttemptId,
+          serverStartTime: payload.server_start_time,
+          durationSeconds: payload.duration_seconds,
+          isReleased: true,
+        };
+        localStorage.setItem('logicwhilelire_attempt', JSON.stringify(currentAttempt));
+        localStorage.setItem('lw_attempt', JSON.stringify(currentAttempt));
+      } catch {}
+      setTimeout(() => {
+        navigate(`/instructions/${contestId}`, {
+          state: {
+            serverStartTime: payload.server_start_time,
+            durationSeconds: payload.duration_seconds,
+            examCode: contestId,
+            hallTicket: effectiveHt,
+            attemptId: effectiveAttemptId,
+            isReleased: true,
+          },
+        });
+      }, 600);
     });
 
     const pingStart: { t?: number } = {};
@@ -348,6 +389,8 @@ export default function WaitingLobbyPage() {
               hallTicket: myHt,
               studentName: candidate?.name,
               attemptId: res.data.attempt_id,
+              isReleased: true,
+              serverStartTime: res.data.start_time ? new Date(res.data.start_time).getTime() : undefined,
             },
           });
         } else if (res.data?.status === 'blocked') {
@@ -414,6 +457,8 @@ export default function WaitingLobbyPage() {
         serverStartTime: startPayload?.server_start_time,
         durationSeconds: startPayload?.duration_seconds,
         hallTicket,
+        attemptId: (location.state as any)?.attemptId,
+        isReleased: true,
       },
     });
   };
@@ -429,7 +474,6 @@ export default function WaitingLobbyPage() {
   const minutes = Math.floor(countdown / 60);
   const seconds = countdown % 60;
   const timeFormatted = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  const displayName = candidate?.name || `${candidate?.first_name || "Student"} ${candidate?.last_name || "Candidate"}`.trim();
 
   return (
     <AnimatedPage>
@@ -661,24 +705,47 @@ export default function WaitingLobbyPage() {
               <button
                 id="start-assessment-now-btn"
                 onClick={handleManualStart}
-                disabled={!examStarted}
+                disabled={!examStarted && !isReleased}
                 style={{
                   width: "100%",
-                  background: examStarted ? "#EAA812" : "rgba(255,255,255,0.08)",
-                  boxShadow: examStarted ? "0 4px 16px rgba(234,168,18,0.4)" : "none",
+                  background: examStarted
+                    ? "linear-gradient(135deg, #10B981, #059669)"
+                    : isReleased
+                    ? "linear-gradient(135deg, #2563EB, #1D4ED8)"
+                    : "rgba(255,255,255,0.08)",
+                  boxShadow: (examStarted || isReleased) ? "0 4px 16px rgba(16,185,129,0.35)" : "none",
                   fontSize: "0.9rem",
                   fontWeight: 800,
                   letterSpacing: "0.04em",
                   textTransform: "uppercase",
                   padding: "13px 18px",
-                  borderRadius: 6,
-                  cursor: examStarted ? "pointer" : "not-allowed",
-                  color: examStarted ? "#002147" : "#64748B",
-                  border: examStarted ? "none" : "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: 8,
+                  cursor: (examStarted || isReleased) ? "pointer" : "not-allowed",
+                  color: (examStarted || isReleased) ? "#FFFFFF" : "#64748B",
+                  border: (examStarted || isReleased) ? "none" : "1px solid rgba(255,255,255,0.12)",
                   transition: "all 0.25s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
                 }}
               >
-                {examStarted ? "ENTER LIVE ASSESSMENT NOW →" : "⏳ Waiting for Instructor to Dispatch EXAM_STARTED..."}
+                {examStarted ? (
+                  <>
+                    <IconLaunch size={16} color="#FFFFFF" />
+                    <span>ENTER ASSESSMENT NOW →</span>
+                  </>
+                ) : isReleased ? (
+                  <>
+                    <IconCheck size={16} color="#FFFFFF" />
+                    <span>SUPERVISOR RELEASE GRANTED • PROCEED TO INSTRUCTIONS →</span>
+                  </>
+                ) : (
+                  <>
+                    <IconClock size={16} color="#64748B" />
+                    <span>Awaiting Supervisor Dispatch Signal...</span>
+                  </>
+                )}
               </button>
 
               <button

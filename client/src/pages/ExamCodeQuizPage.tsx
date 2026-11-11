@@ -30,6 +30,7 @@ import {
   IconCheck,
   IconLock,
   IconLaunch,
+  IconTerminal,
 } from '../components/icons/HumanIcons'
 
 /* ── Types ── */
@@ -1898,7 +1899,57 @@ export default function QuizPage() {
   const isFlagged = flagged.has(currentQuestion.id)
 
   return (
-    <div style={{ height: '100vh', maxHeight: '100vh', overflow: 'hidden', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100vh', maxHeight: '100vh', overflow: 'hidden', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+
+      {/* ── Anti-Screenshot & Print Shield ── */}
+      <style>{`
+        @media print {
+          body, html, * {
+            display: none !important;
+            visibility: hidden !important;
+          }
+        }
+      `}</style>
+
+      {/* ── Dynamic Forensic Anti-Leak Watermark Grid ── */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 95,
+          pointerEvents: 'none',
+          userSelect: 'none',
+          overflow: 'hidden',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gridAutoRows: '150px',
+          opacity: 0.032,
+          transform: 'rotate(-14deg) scale(1.15)',
+        }}
+      >
+        {Array.from({ length: 48 }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              fontFamily: 'monospace',
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              color: '#FFFFFF',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
+          >
+            <span>LOGICWHILE PROCTORING</span>
+            <span>{hallTicket || 'OFFICIAL CANDIDATE'}</span>
+            <span>{session.examName}</span>
+          </div>
+        ))}
+      </div>
 
       {/* Subtle Focus Background */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.03, backgroundImage: 'radial-gradient(circle, #EAA812 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
@@ -1918,18 +1969,19 @@ export default function QuizPage() {
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 4,
+                    gap: 5,
                     fontSize: '0.7rem',
-                    padding: '1px 6px',
+                    padding: '2px 8px',
                     borderRadius: 4,
                     background: 'rgba(56, 189, 248, 0.12)',
                     border: '1px solid rgba(56, 189, 248, 0.3)',
                     color: '#38BDF8',
-                    fontWeight: 600,
+                    fontWeight: 700,
                   }}
                   title="Coding questions are evaluated manually by instructors; they are not part of the live instant MCQ auto-grade."
                 >
-                  💻 Coding: Manual Review
+                  <IconTerminal size={12} color="#38BDF8" />
+                  <span>Coding: Manual Review</span>
                 </span>
               )}
             </div>
@@ -1942,7 +1994,7 @@ export default function QuizPage() {
           <motion.div
             style={{
               display: 'flex', alignItems: 'center', gap: 14,
-              padding: '10px 24px',
+              padding: '10px 26px',
               background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 16, 32, 0.98) 100%)',
               border: `2px solid ${timerColor}`,
               borderRadius: 14,
@@ -1963,20 +2015,20 @@ export default function QuizPage() {
                 id="quiz-timer-display"
                 style={{
                   fontFamily: 'var(--font-mono, monospace)',
-                  fontSize: '2.4rem',
+                  fontSize: '2.8rem',
                   fontWeight: 900,
                   color: timerColor,
                   letterSpacing: '0.06em',
                   lineHeight: 1,
-                  textShadow: `0 0 12px ${timerColor}40`,
+                  textShadow: `0 0 16px ${timerColor}55`,
                 }}
               >
                 {formatTime(timeLeft)}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                <IconClock size={11} color="var(--color-text-faint)" />
-                <span style={{ fontSize: '0.68rem', color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
-                  Fixed Deadline Sync
+                <IconClock size={12} color="var(--color-text-faint)" />
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
+                  Server Deadline Clock
                 </span>
               </div>
             </div>

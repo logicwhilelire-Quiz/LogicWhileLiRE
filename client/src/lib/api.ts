@@ -644,6 +644,8 @@ export const startStudentAttempt = (code: string, data: { attemptId: string; ses
     authorized: boolean;
     resumed: boolean;
     server_start_time: number;
+    duration_seconds?: number;
+    attempt_id?: string;
     status: string;
   }>(`/api/exam-code/${code}/start-attempt`, data);
 

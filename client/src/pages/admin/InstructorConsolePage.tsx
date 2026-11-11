@@ -36,6 +36,12 @@ import {
   IconCheck,
   IconCross,
   IconRadio,
+  IconEye,
+  IconClipboard,
+  IconRefresh,
+  IconPulse,
+  IconFlash,
+  IconLock,
 } from "../../components/icons/HumanIcons";
 
 const BASE = API_BASE_URL;
@@ -973,8 +979,9 @@ export default function InstructorConsolePage() {
                     }}
                   >
                     <div>
-                      <div style={{ fontWeight: 800, color: "#FFFFFF", fontSize: "0.95rem" }}>
-                        📋 Pre-Exam Verification Matrix
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontWeight: 800, color: "#FFFFFF", fontSize: "0.95rem" }}>
+                        <IconClipboard size={16} color="#38BDF8" />
+                        <span>Pre-Exam Verification Matrix</span>
                       </div>
                       <div style={{ fontSize: "0.82rem", color: "#BAE6FD", marginTop: 2 }}>
                         Inspect enrolled students against the live waiting lobby before initiating server start.
@@ -992,8 +999,9 @@ export default function InstructorConsolePage() {
                     {/* Panel 1: Authoritative Enrolled Roster */}
                     <div style={{ background: "rgba(15,23,42,0.85)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, overflow: "hidden" }}>
                       <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#38BDF8" }}>
-                          📋 Enrolled Students ({filteredEnrolled.length})
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 800, fontSize: "0.92rem", color: "#38BDF8" }}>
+                          <IconUsers size={15} color="#38BDF8" />
+                          <span>Enrolled Students ({filteredEnrolled.length})</span>
                         </div>
                         <span style={{ fontSize: "0.72rem", color: "#94A3B8" }}>Expected Roster</span>
                       </div>
@@ -1011,7 +1019,7 @@ export default function InstructorConsolePage() {
                                 <th style={{ padding: "10px 14px", textAlign: "left" }}>Roll / HT</th>
                                 <th style={{ padding: "10px 14px", textAlign: "left" }}>College</th>
                                 <th style={{ padding: "10px 14px", textAlign: "left" }}>Sec / Group</th>
-                                <th style={{ padding: "10px 14px", textAlign: "center" }}>📷 Cam Presence</th>
+                                <th style={{ padding: "10px 14px", textAlign: "center" }}>Cam Stream</th>
                                 <th style={{ padding: "10px 14px", textAlign: "right" }}>Arrival Status</th>
                               </tr>
                             </thead>
@@ -1064,8 +1072,9 @@ export default function InstructorConsolePage() {
                     <div style={{ background: "rgba(15,23,42,0.85)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, overflow: "hidden" }}>
                       <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#F59E0B" }}>
-                            ⏳ Waiting Queue ({filteredQueue.length})
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 800, fontSize: "0.92rem", color: "#F59E0B" }}>
+                            <IconClock size={15} color="#F59E0B" />
+                            <span>Waiting Queue ({filteredQueue.length})</span>
                           </div>
                           <span style={{ fontSize: "0.72rem", color: "#94A3B8" }}>Present in Lobby</span>
                         </div>
@@ -1088,14 +1097,17 @@ export default function InstructorConsolePage() {
                               gap: 6,
                             }}
                           >
-                            ⚡ Release All ({filteredQueue.length})
+                            <IconFlash size={14} color="#FFFFFF" />
+                            <span>Release All ({filteredQueue.length})</span>
                           </button>
                         )}
                       </div>
 
                       {filteredQueue.length === 0 ? (
                         <div style={{ padding: "48px 24px", textAlign: "center", color: "#64748B" }}>
-                          <div style={{ fontSize: "2.2rem", marginBottom: 8 }}>⏳</div>
+                          <div style={{ display: "inline-flex", padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.03)", marginBottom: 8 }}>
+                            <IconClock size={28} color="#64748B" />
+                          </div>
                           <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#E2E8F0" }}>No students in waiting lobby</div>
                           <div style={{ fontSize: "0.78rem", marginTop: 4 }}>
                             Students entering exam code <code style={{ color: "#60A5FA" }}>{currentCode}</code> appear here in real time.
@@ -1110,7 +1122,7 @@ export default function InstructorConsolePage() {
                                 <th style={{ padding: "10px 14px", textAlign: "left" }}>Roll Number</th>
                                 <th style={{ padding: "10px 14px", textAlign: "left" }}>College</th>
                                 <th style={{ padding: "10px 14px", textAlign: "left" }}>Section</th>
-                                <th style={{ padding: "10px 14px", textAlign: "center" }}>📷 Cam Presence</th>
+                                <th style={{ padding: "10px 14px", textAlign: "center" }}>Cam Stream</th>
                                 <th style={{ padding: "10px 14px", textAlign: "center" }}>Lobby Status</th>
                                 <th style={{ padding: "10px 14px", textAlign: "right" }}>Actions</th>
                               </tr>
@@ -1139,8 +1151,9 @@ export default function InstructorConsolePage() {
                                     </span>
                                   </td>
                                   <td style={{ padding: "10px 14px", textAlign: "center" }}>
-                                    <span style={{ color: "#F59E0B", fontWeight: 700, fontSize: "0.72rem", background: "rgba(245,158,11,0.15)", padding: "2px 7px", borderRadius: 4 }}>
-                                      ⏳ In Lobby
+                                    <span style={{ color: "#F59E0B", fontWeight: 700, fontSize: "0.72rem", background: "rgba(245,158,11,0.15)", padding: "2px 7px", borderRadius: 4, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#F59E0B" }} />
+                                      In Lobby
                                     </span>
                                   </td>
                                   <td style={{ padding: "10px 14px", textAlign: "right", whiteSpace: "nowrap" }}>
@@ -1158,9 +1171,13 @@ export default function InstructorConsolePage() {
                                         fontWeight: 700,
                                         cursor: "pointer",
                                         marginRight: 6,
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: 4,
                                       }}
                                     >
-                                      ✓ Allow
+                                      <IconCheck size={12} color="#10B981" />
+                                      <span>Allow</span>
                                     </button>
                                     <button
                                       onClick={() => handleRejectStudent(s.hall_ticket_no)}
@@ -1176,9 +1193,13 @@ export default function InstructorConsolePage() {
                                         fontWeight: 700,
                                         cursor: "pointer",
                                         marginRight: 6,
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: 4,
                                       }}
                                     >
-                                      ✕ Reject
+                                      <IconCross size={12} color="#EF4444" />
+                                      <span>Reject</span>
                                     </button>
                                     <button
                                       onClick={() => handleBlockStudent(s.hall_ticket_no)}
@@ -1193,9 +1214,13 @@ export default function InstructorConsolePage() {
                                         fontSize: "0.72rem",
                                         fontWeight: 700,
                                         cursor: "pointer",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: 4,
                                       }}
                                     >
-                                      🛑 Block
+                                      <IconLock size={12} color="#F87171" />
+                                      <span>Block</span>
                                     </button>
                                   </td>
                                 </tr>
@@ -1439,8 +1464,9 @@ export default function InstructorConsolePage() {
                 <div style={{ background: "rgba(15,23,42,0.85)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, overflow: "hidden" }}>
                   <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "#F87171" }}>
-                        🚨 Live Proctoring Violations Feed
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 800, fontSize: "0.95rem", color: "#F87171" }}>
+                        <IconAlert size={16} color="#EF4444" />
+                        <span>Live Proctoring Violations Feed</span>
                       </div>
                       <div style={{ fontSize: "0.74rem", color: "#64748B", marginTop: 2 }}>
                         Real-time violation detection: tab switch, blur, devtools shortcuts, and audio anomaly detection.
@@ -1482,7 +1508,9 @@ export default function InstructorConsolePage() {
 
                   {violationsList.length === 0 ? (
                     <div style={{ padding: "48px 24px", textAlign: "center", color: "#64748B" }}>
-                      <div style={{ fontSize: "2.4rem", marginBottom: 10 }}>🛡️</div>
+                      <div style={{ display: "inline-flex", padding: 14, borderRadius: 14, background: "rgba(16,185,129,0.08)", marginBottom: 10 }}>
+                        <IconShield size={32} color="#10B981" />
+                      </div>
                       <div style={{ fontWeight: 700, fontSize: "1rem", color: "#E2E8F0" }}>Zero proctoring violations recorded</div>
                       <div style={{ fontSize: "0.82rem", marginTop: 4 }}>
                         All active candidates are currently operating in full exam integrity compliance.
@@ -1526,7 +1554,7 @@ export default function InstructorConsolePage() {
                                     border: `1px solid ${v.strikeCount >= 2 ? "rgba(239,68,68,0.4)" : "rgba(245,158,11,0.4)"}`,
                                   }}
                                 >
-                                  {v.strikeCount >= 2 ? "🛑 Strike 2: Auto-Terminated" : "⚠️ Strike 1: Warning"}
+                                  {v.strikeCount >= 2 ? "Strike 2: Auto-Terminated" : "Strike 1: Warning"}
                                 </span>
                               </td>
                               <td style={{ padding: "12px 14px", color: "#94A3B8", fontSize: "0.78rem" }}>
@@ -1562,9 +1590,13 @@ export default function InstructorConsolePage() {
                                     cursor: "pointer",
                                     marginRight: 6,
                                     fontWeight: 700,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 4,
                                   }}
                                 >
-                                  🔄 Reset
+                                  <IconRefresh size={12} color="#60A5FA" />
+                                  <span>Reset</span>
                                 </button>
                                 <button
                                   onClick={() => handleBlockStudent(v.hallTicket)}
@@ -1579,9 +1611,13 @@ export default function InstructorConsolePage() {
                                     fontSize: "0.72rem",
                                     cursor: "pointer",
                                     fontWeight: 700,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 4,
                                   }}
                                 >
-                                  🛑 Block
+                                  <IconLock size={12} color="#F87171" />
+                                  <span>Block</span>
                                 </button>
                               </td>
                             </tr>
@@ -1596,8 +1632,9 @@ export default function InstructorConsolePage() {
 
             {/* Right Column: Live Event Stream */}
             <div style={{ background: "rgba(15,23,42,0.85)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-              <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)", fontWeight: 800, fontSize: "0.9rem" }}>
-                📡 Live Inspector Event Stream
+              <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)", fontWeight: 800, fontSize: "0.9rem", display: "inline-flex", alignItems: "center", gap: 7 }}>
+                <IconPulse size={15} color="#38BDF8" />
+                <span>Live Inspector Event Stream</span>
               </div>
               <div style={{ flex: 1, padding: "14px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, maxHeight: 520 }}>
                 {events.length === 0 && (
@@ -1627,7 +1664,9 @@ export default function InstructorConsolePage() {
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: 460, width: "100%", background: "#0F172A", borderRadius: 14, border: "1px solid rgba(43,127,255,0.35)", padding: 28 }}
           >
-            <div style={{ fontSize: "2rem", marginBottom: 10 }}>🚀</div>
+            <div style={{ display: "inline-flex", padding: 14, borderRadius: 14, background: "rgba(37,99,235,0.12)", marginBottom: 12 }}>
+              <IconLaunch size={28} color="#60A5FA" />
+            </div>
             <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#FFFFFF", margin: "0 0 10px" }}>
               Start Assessment for All Candidates?
             </h2>
