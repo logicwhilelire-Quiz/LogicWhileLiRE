@@ -150,9 +150,9 @@ function AnimatedRoutes() {
         <Route path="/contest/:contestId/waiting-lobby" element={<WaitingLobbyPage />} />
         <Route path="/waiting-lobby/:contestId" element={<WaitingLobbyPage />} />
         <Route path="/lobby/:contestId" element={<WaitingLobbyPage />} />
-        <Route path="/contest/waiting-lobby" element={<Navigate to="/contest/demo-contest/waiting-lobby" replace />} />
-        <Route path="/waiting-lobby" element={<Navigate to="/contest/demo-contest/waiting-lobby" replace />} />
-        <Route path="/enter-quiz" element={<Navigate to="/contest/demo-contest/waiting-lobby" replace />} />
+        <Route path="/contest/waiting-lobby" element={<Navigate to="/enter-exam" replace />} />
+        <Route path="/waiting-lobby" element={<Navigate to="/enter-exam" replace />} />
+        <Route path="/enter-quiz" element={<Navigate to="/enter-exam" replace />} />
 
         {/* Student Auth & Recovery */}
         <Route path="/login" element={<StudentLoginPage />} />

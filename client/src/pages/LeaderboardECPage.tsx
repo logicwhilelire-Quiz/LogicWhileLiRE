@@ -43,7 +43,7 @@ const MEDAL: Record<number, { bg: string; text: string; icon: string }> = {
 
 export default function LeaderboardECPage() {
   const { examCode } = useParams<{ examCode: string }>();
-  const activeCode = examCode || 'DEMO123';
+  const activeCode = examCode || 'CS2026';
   const navigate = useNavigate();
 
   const [rows, setRows] = useState<LeaderboardRow[]>([]);

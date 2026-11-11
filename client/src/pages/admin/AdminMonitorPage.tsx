@@ -8,7 +8,6 @@ import LiveGridWall, { type StudentTile } from '../../components/3d/LiveGridWall
 import GlowCard from '../../components/3d/GlowCard'
 import MagneticButton from '../../components/3d/MagneticButton'
 import FlightPathLines from '../../components/3d/FlightPathLines'
-import AltimeterDial from '../../components/3d/AltimeterDial'
 import ShimmerText from '../../components/3d/ShimmerText'
 import CandidateViolationTimelineModal from '../../components/CandidateViolationTimelineModal'
 import InspectorRadarMatrix3D from '../../components/3d/InspectorRadarMatrix3D'
@@ -809,7 +808,7 @@ export default function AdminMonitorPage() {
                   color: '#38BDF8', padding: '6px 12px', borderRadius: 8, fontSize: '0.86rem', fontWeight: 700, fontFamily: 'var(--font-mono)'
                 }}
               >
-                {Array.from(new Set(['DEMO123', 'DEMO100', 'CS2026', ...availableExamCodes])).map(code => (
+                {Array.from(new Set(['CS2026', ...availableExamCodes])).map(code => (
                   <option key={code} value={code}>{code}</option>
                 ))}
               </select>
@@ -1191,7 +1190,16 @@ export default function AdminMonitorPage() {
             {/* Quick Dial Card */}
             {stats.total > 0 && (
               <GlowCard style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 20 }}>
-                <AltimeterDial value={stats.avgScore} label="Cohort Avg" suffix="%" color="#2B7FFF" size={80} duration={1200} />
+                <div style={{ position: 'relative', width: 74, height: 74, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="#2B7FFF" strokeWidth="8" strokeDasharray={`${(stats.avgScore / 100) * 251.3} 251.3`} strokeLinecap="round" />
+                  </svg>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1 }}>{Math.round(stats.avgScore)}%</div>
+                    <div style={{ fontSize: '0.55rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', marginTop: 2 }}>Avg</div>
+                  </div>
+                </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                   <div>Completion: <strong style={{ color: 'var(--color-text)' }}>{stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0}%</strong></div>
                   <div>Cheat rate: <strong style={{ color: stats.cheat > 0 ? '#EF4444' : '#10B981' }}>{stats.total > 0 ? Math.round((stats.cheat / stats.total) * 100) : 0}%</strong></div>

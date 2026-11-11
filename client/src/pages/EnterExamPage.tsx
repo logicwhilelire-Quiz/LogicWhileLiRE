@@ -269,36 +269,17 @@ export default function EnterExamPage() {
                   )}
                 </button>
 
-                {/* 1-Click Evaluation / Demo Exam Action */}
-                <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center' }}>
-                  <button
-                    type="button"
-                    id="quick-demo-fill-btn"
-                    onClick={() => {
-                      setForm({
-                        examCode: 'DEMO-CS2026',
-                        hallTicket: form.hallTicket || '24VR1A0501',
-                      })
-                    }}
-                    style={{
-                      background: 'rgba(56, 189, 248, 0.12)',
-                      border: '1px solid rgba(56, 189, 248, 0.35)',
-                      color: '#38BDF8',
-                      borderRadius: 8,
-                      padding: '8px 16px',
-                      fontSize: '0.8rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      transition: 'all 0.2s ease',
-                    }}
-                    title="Pre-fill DEMO-CS2026 exam code for quick evaluation"
-                  >
-                    <span>🚀</span>
-                    <span>Quick Fill Evaluation Demo (DEMO-CS2026)</span>
-                  </button>
+                {/* Official Candidate Assistance & Instructions */}
+                <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'left' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <span style={{ fontSize: '0.85rem' }}>ℹ️</span>
+                    <span style={{ fontSize: '0.76rem', fontWeight: 800, color: '#38BDF8', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                      Candidate Examination Assistance
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.74rem', color: '#94A3B8', lineHeight: 1.5 }}>
+                    Enter your official <strong>Exam Code</strong> provided by your institution alongside your registered <strong>Hall Ticket / Roll Number</strong>. For credential assistance or section verification, contact your institutional invigilator.
+                  </p>
                 </div>
               </form>
 

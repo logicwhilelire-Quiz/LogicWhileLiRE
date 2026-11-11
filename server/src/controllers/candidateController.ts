@@ -223,7 +223,7 @@ export async function registerCandidate(req: Request, res: Response): Promise<vo
     requires_otp: true,
     email: normalizedEmail,
     roll_number: normalizedRoll,
-    demo_otp: otp,
+    ...(process.env.NODE_ENV !== 'production' && process.env.DEMO_MODE === 'true' ? { demo_otp: otp } : {}),
     candidate: {
       id: newCandidate.id,
       first_name: newCandidate.first_name,
@@ -261,7 +261,7 @@ export async function getSystemCheck(_req: Request, res: Response): Promise<void
  * Live Waiting Lobby statistics and candidate queue
  */
 export async function getLobbyStatus(req: Request, res: Response): Promise<void> {
-  const contestId = req.query.contest_id?.toString() || 'demo-contest';
+  const contestId = req.query.contest_id?.toString() || 'national-qualifier';
 
   res.status(200).json({
     success: true,

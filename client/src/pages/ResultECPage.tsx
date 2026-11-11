@@ -9,8 +9,6 @@ import GlowCard from '../components/3d/GlowCard'
 import MagneticButton from '../components/3d/MagneticButton'
 import LeaderboardPodium from '../components/3d/LeaderboardPodium'
 import ShimmerText from '../components/3d/ShimmerText'
-import FlightPathLines from '../components/3d/FlightPathLines'
-import AltimeterDial from '../components/3d/AltimeterDial'
 import Confetti from '../components/Confetti'
 import LogicWhileLiRELoader from '../components/LogicWhileLiRELoader'
 import SectorRadar3D from '../components/3d/SectorRadar3D'
@@ -642,20 +640,53 @@ export default function ResultECPage() {
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             style={{ textAlign: 'center', marginBottom: 56 }}
           >
+            {/* Certified Academic Achievement Progress Ring */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
               <motion.div
                 initial={{ scale: 0.72, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+                style={{
+                  position: 'relative',
+                  width: 140,
+                  height: 140,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                <AltimeterDial
-                  value={Math.round(pct)}
-                  label="FINAL SCORE"
-                  suffix="%"
-                  color={scoreColor}
-                  size={140}
-                  duration={1400}
-                />
+                <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="42"
+                    fill="none"
+                    stroke="rgba(255, 255, 255, 0.08)"
+                    strokeWidth="6"
+                  />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="42"
+                    fill="none"
+                    stroke={scoreColor}
+                    strokeWidth="6"
+                    strokeDasharray={`${(pct / 100) * 263.9} 263.9`}
+                    strokeLinecap="round"
+                    style={{ transition: 'stroke-dasharray 1.2s ease-out' }}
+                  />
+                </svg>
+                <div style={{ textAlign: 'center', zIndex: 1 }}>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    GRADE
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: scoreColor, lineHeight: 1.1 }}>
+                    {pct >= 85 ? 'A+' : pct >= 75 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : 'PASS'}
+                  </div>
+                  <div style={{ fontSize: '0.65rem', color: '#CBD5E1', fontWeight: 700, marginTop: 2 }}>
+                    {pct >= 75 ? 'Distinction' : pct >= 60 ? 'First Class' : 'Qualified'}
+                  </div>
+                </div>
               </motion.div>
             </div>
 

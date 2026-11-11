@@ -491,7 +491,7 @@ export default function SectorsUniverse3D({ onSelectSector, className = '' }: Se
   };
 
   const handleEnterExam = () => {
-    navigate('/enter-exam?code=DEMO123&hallTicket=2201A0501');
+    navigate('/enter-exam');
   };
 
   return (
