@@ -17,12 +17,31 @@ async function runTests() {
 
   // ─── [A] Migration Schema Verification ──────────────────────────────────────
   console.log('\n--- [A] SQL Migration Schema Integrity ---');
-  const migrationPath = path.resolve(__dirname, '../supabase/migrations/20261003000000_production_schema.sql');
-  assert.strictEqual(fs.existsSync(migrationPath), true, 'Migration file must exist at supabase/migrations/20261003000000_production_schema.sql');
-  console.log('  ✅ Migration file located in /supabase/migrations');
+  const coreMigrationPath = path.resolve(__dirname, '../supabase/migrations/20261003000000_core_schema.sql');
+  const rlsMigrationPath = path.resolve(__dirname, '../supabase/migrations/20261004000001_enable_rls_and_policies.sql');
+  const fullSchemaPath = path.resolve(__dirname, '../supabase/schema_full.sql');
+
+  assert.strictEqual(fs.existsSync(coreMigrationPath), true, 'Core migration file must exist at supabase/migrations/20261003000000_core_schema.sql');
+  assert.strictEqual(fs.existsSync(rlsMigrationPath), true, 'RLS migration file must exist at supabase/migrations/20261004000001_enable_rls_and_policies.sql');
+  assert.strictEqual(fs.existsSync(fullSchemaPath), true, 'Full schema file must exist at supabase/schema_full.sql');
+  console.log('  ✅ Canonical migration files and full schema located in /supabase');
   passed++;
 
-  const sqlContent = fs.readFileSync(migrationPath, 'utf8');
+  // Verify strict version uniqueness across all migrations in supabase/migrations/
+  const migrationsDir = path.resolve(__dirname, '../supabase/migrations');
+  const migrationFiles = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql'));
+  const versions = new Set();
+  for (const file of migrationFiles) {
+    const version = file.split('_')[0];
+    assert.strictEqual(versions.has(version), false, `Duplicate migration version detected: ${version} in file ${file}`);
+    versions.add(version);
+  }
+  console.log(`  ✅ All ${migrationFiles.length} migration files in supabase/migrations have strictly unique version timestamps (zero collisions)`);
+  passed++;
+
+  const coreSqlContent = fs.readFileSync(coreMigrationPath, 'utf8');
+  const rlsSqlContent = fs.readFileSync(rlsMigrationPath, 'utf8');
+  const fullSqlContent = fs.readFileSync(fullSchemaPath, 'utf8');
 
   // Verify all required tables are created
   const requiredTables = [
@@ -49,14 +68,14 @@ async function runTests() {
 
   for (const table of requiredTables) {
     const tableRegex = new RegExp(`CREATE\\s+TABLE\\s+(IF\\s+NOT\\s+EXISTS\\s+)?${table}\\b`, 'i');
-    assert.strictEqual(tableRegex.test(sqlContent), true, `Migration must create table: ${table}`);
+    assert.strictEqual(tableRegex.test(coreSqlContent), true, `Core migration must create table: ${table}`);
   }
   console.log(`  ✅ All ${requiredTables.length} core database tables defined with primary keys`);
   passed++;
 
   // Verify Composite Unique Constraint on students (college_id, roll_number)
   assert.strictEqual(
-    sqlContent.includes('CONSTRAINT uq_student_college_roll UNIQUE (college_id, roll_number)'),
+    coreSqlContent.includes('CONSTRAINT uq_student_college_roll UNIQUE (college_id, roll_number)'),
     true,
     'Students table must enforce composite unique (college_id, roll_number)'
   );
@@ -64,8 +83,8 @@ async function runTests() {
   passed++;
 
   // Verify Foreign Key Cascades on hot relation paths
-  assert.strictEqual(sqlContent.includes('REFERENCES exam_codes(exam_code) ON DELETE CASCADE'), true, 'questions_ec and attempts must cascade on exam_code');
-  assert.strictEqual(sqlContent.includes('REFERENCES colleges(id) ON DELETE CASCADE'), true, 'exam_codes and students must cascade on college_id');
+  assert.strictEqual(coreSqlContent.includes('REFERENCES exam_codes(exam_code) ON DELETE CASCADE'), true, 'questions_ec and attempts must cascade on exam_code');
+  assert.strictEqual(coreSqlContent.includes('REFERENCES colleges(id) ON DELETE CASCADE'), true, 'exam_codes and students must cascade on college_id');
   console.log('  ✅ Foreign key constraints and ON DELETE CASCADE policies verified');
   passed++;
 
@@ -83,20 +102,25 @@ async function runTests() {
   ];
 
   for (const idx of requiredIndexes) {
-    assert.strictEqual(sqlContent.includes(idx), true, `Hot path index ${idx} must be present`);
+    assert.strictEqual(coreSqlContent.includes(idx), true, `Hot path index ${idx} must be present`);
   }
   console.log(`  ✅ All ${requiredIndexes.length} performance indexes defined for hot query paths`);
   passed++;
 
-  // Verify Row Level Security (RLS) & Deny-by-default policies
+  // Verify Row Level Security (RLS) & Deny-by-default policies in RLS migration
   for (const table of requiredTables) {
-    const rlsRegex = new RegExp(`ALTER\\s+TABLE\\s+${table}\\s+ENABLE\\s+ROW\\s+LEVEL\\s+SECURITY`, 'i');
-    assert.strictEqual(rlsRegex.test(sqlContent), true, `RLS must be enabled on ${table}`);
+    const rlsRegex = new RegExp(`ALTER\\s+TABLE\\s+(IF\\s+EXISTS\\s+)?${table}\\s+ENABLE\\s+ROW\\s+LEVEL\\s+SECURITY`, 'i');
+    assert.strictEqual(rlsRegex.test(rlsSqlContent), true, `RLS must be enabled on ${table} in enable_rls_and_policies.sql`);
   }
   console.log(`  ✅ Row Level Security (RLS) enabled on all ${requiredTables.length} tables (deny-by-default)`);
   passed++;
 
-  assert.strictEqual(sqlContent.includes('service_role USING (true) WITH CHECK (true)'), true, 'service_role policies must be defined');
+  assert.strictEqual(
+    /TO\s+service_role\s+USING\s*\(\s*true\s*\)\s+WITH\s+CHECK\s*\(\s*true\s*\)/i.test(rlsSqlContent) ||
+    rlsSqlContent.includes('service_role USING (true) WITH CHECK (true)'),
+    true,
+    'service_role policies must be defined'
+  );
   console.log('  ✅ Service role policies defined for backend database access');
   passed++;
 

@@ -534,3 +534,48 @@ CREATE TABLE IF NOT EXISTS leaderboard (
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT uq_leaderboard_exam_candidate UNIQUE (exam_id, candidate_id)
 );
+
+-- ─── 21. PERFORMANCE & HOT-PATH INDEXES ───────────────────────────────────────
+CREATE INDEX IF NOT EXISTS idx_colleges_code ON colleges(college_code);
+CREATE INDEX IF NOT EXISTS idx_colleges_active ON colleges(is_active);
+
+CREATE INDEX IF NOT EXISTS idx_staff_email ON staff(email);
+CREATE INDEX IF NOT EXISTS idx_staff_role ON staff(role);
+CREATE INDEX IF NOT EXISTS idx_staff_college ON staff(college_id);
+
+CREATE INDEX IF NOT EXISTS idx_students_college_roll ON students(college_id, roll_number);
+CREATE INDEX IF NOT EXISTS idx_students_email ON students(email);
+CREATE INDEX IF NOT EXISTS idx_students_hall_ticket ON students(hall_ticket);
+CREATE INDEX IF NOT EXISTS idx_students_active ON students(is_active);
+
+CREATE INDEX IF NOT EXISTS idx_exams_active ON exams(is_active, start_time, end_time);
+CREATE INDEX IF NOT EXISTS idx_exams_code ON exams(exam_code);
+
+CREATE INDEX IF NOT EXISTS idx_participants_exam_hall ON participants(exam_id, hall_ticket);
+CREATE INDEX IF NOT EXISTS idx_participants_student ON participants(student_id);
+
+CREATE INDEX IF NOT EXISTS idx_exam_sessions_part ON exam_sessions(participant_id);
+CREATE INDEX IF NOT EXISTS idx_exam_sessions_exam ON exam_sessions(exam_id);
+CREATE INDEX IF NOT EXISTS idx_exam_sessions_status ON exam_sessions(status);
+
+CREATE INDEX IF NOT EXISTS idx_session_answers_session ON session_answers(session_id);
+CREATE INDEX IF NOT EXISTS idx_questions_exam ON questions(exam_id);
+
+CREATE INDEX IF NOT EXISTS idx_results_part ON results(participant_id);
+
+CREATE INDEX IF NOT EXISTS idx_exam_codes_code ON exam_codes(exam_code);
+CREATE INDEX IF NOT EXISTS idx_exam_codes_college ON exam_codes(college_id);
+CREATE INDEX IF NOT EXISTS idx_exam_codes_active ON exam_codes(is_active, start_time, end_time);
+
+CREATE INDEX IF NOT EXISTS idx_questions_ec_code ON questions_ec(exam_code);
+CREATE INDEX IF NOT EXISTS idx_questions_ec_order ON questions_ec(exam_code, display_order);
+
+CREATE INDEX IF NOT EXISTS idx_exam_code_attempts_hall ON exam_code_attempts(hall_ticket_no, exam_code);
+CREATE INDEX IF NOT EXISTS idx_exam_code_attempts_exam ON exam_code_attempts(exam_code);
+CREATE INDEX IF NOT EXISTS idx_exam_code_attempts_status ON exam_code_attempts(status);
+CREATE INDEX IF NOT EXISTS idx_exam_code_attempts_token ON exam_code_attempts(session_token);
+CREATE INDEX IF NOT EXISTS idx_exam_code_attempts_submitted ON exam_code_attempts(end_time);
+
+CREATE INDEX IF NOT EXISTS idx_audit_log_target ON audit_log(target_table, target_id);
+CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at DESC);
+
