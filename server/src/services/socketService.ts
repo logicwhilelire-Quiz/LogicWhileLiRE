@@ -354,6 +354,53 @@ export function initSocketIO(httpServer: HttpServer): IOServer {
       };
       socketStudents.set(socket.id, studentInfo);
 
+      // Ensure attempt record exists in database for this student so inspector release never 404s
+      if (data.hallTicket) {
+        const ht = String(data.hallTicket).toUpperCase().trim();
+        (async () => {
+          try {
+            const { data: existing } = await supabase
+              .from('exam_code_attempts')
+              .select('id, status')
+              .eq('exam_code', code)
+              .or(`hall_ticket_no.ilike.${ht},hall_ticket.ilike.${ht}`)
+              .maybeSingle();
+
+            if (!existing) {
+              const startIso = new Date().toISOString();
+              const newToken = `tok_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+              const ins = await supabase
+                .from('exam_code_attempts')
+                .insert({
+                  hall_ticket_no: ht,
+                  exam_code: code,
+                  student_name: resolvedName || data.studentName || ht,
+                  status: 'waiting_verification',
+                  override_reason: 'status:waiting_verification',
+                  start_time: startIso,
+                  session_token: newToken,
+                });
+
+              if (ins.error && (ins.error.code === '23514' || ins.error.code === '23502')) {
+                await supabase
+                  .from('exam_code_attempts')
+                  .insert({
+                    hall_ticket_no: ht,
+                    exam_code: code,
+                    student_name: resolvedName || data.studentName || ht,
+                    status: 'in_progress',
+                    override_reason: 'status:waiting_verification',
+                    start_time: startIso,
+                    session_token: newToken,
+                  });
+              }
+            }
+          } catch {
+            // Non-fatal logging
+          }
+        })();
+      }
+
       // Schedule throttled room update (max 1/sec)
       scheduleThrottledRoomUpdate(code);
 

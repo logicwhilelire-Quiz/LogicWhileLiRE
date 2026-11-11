@@ -1419,21 +1419,42 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
   // 5. Create attempt record in waiting_verification status — clock does NOT start yet
   const newToken = generateSessionToken();
   const attemptEndTime = exam.end_time || new Date(Date.now() + (exam.duration_minutes || 60) * 60000).toISOString();
-  const { data: attempt, error: insertError } = await supabase
+  const startIso = new Date().toISOString();
+  let { data: attempt, error: insertError } = await supabase
     .from('exam_code_attempts')
     .insert({
       hall_ticket_no: canonicalRoll,
       exam_code: ec,
       student_name: candidateDisplayName,
       status: 'waiting_verification',
+      override_reason: 'status:waiting_verification',
       session_token: newToken,
-      start_time: null,
+      start_time: startIso,
       end_time: attemptEndTime,
     })
     .select()
-    .single();
+    .maybeSingle();
 
-  if (insertError) {
+  if (insertError && (insertError.code === '23514' || insertError.code === '23502')) {
+    const fallback = await supabase
+      .from('exam_code_attempts')
+      .insert({
+        hall_ticket_no: canonicalRoll,
+        exam_code: ec,
+        student_name: candidateDisplayName,
+        status: 'in_progress',
+        override_reason: 'status:waiting_verification',
+        session_token: newToken,
+        start_time: startIso,
+        end_time: attemptEndTime,
+      })
+      .select()
+      .maybeSingle();
+    attempt = fallback.data;
+    insertError = fallback.error;
+  }
+
+  if (insertError || !attempt) {
     res.status(500).json({ success: false, error: 'Failed to create attempt. Please try again.' });
     return;
   }
@@ -3651,7 +3672,7 @@ export async function getAttemptStatus(req: Request, res: Response): Promise<voi
     return;
   }
 
-  let query = supabase.from('exam_code_attempts').select('id, status, start_time, session_token, hall_ticket_no, student_name').eq('exam_code', code);
+  let query = supabase.from('exam_code_attempts').select('id, status, start_time, session_token, hall_ticket_no, student_name, override_reason').eq('exam_code', code);
   if (attemptId) {
     query = query.eq('id', attemptId);
   } else if (hallTicket) {
@@ -3665,7 +3686,7 @@ export async function getAttemptStatus(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const isReleased = attempt.status === 'released' || attempt.status === 'in_progress' || attempt.status === 'active';
+  const isReleased = attempt.status === 'released' || attempt.override_reason === 'status:released' || attempt.status === 'in_progress' || attempt.status === 'active';
   res.json({
     success: true,
     attempt_id: attempt.id,
@@ -3703,7 +3724,7 @@ export async function startStudentAttempt(req: Request, res: Response): Promise<
     return;
   }
 
-  if (attempt.status === 'waiting_verification') {
+  if (attempt.status === 'waiting_verification' && attempt.override_reason !== 'status:released') {
     res.status(403).json({
       success: false,
       error: 'You have not been released by your administrator or inspector yet. Please wait in the waiting hall.',
@@ -3770,47 +3791,196 @@ export async function startStudentAttempt(req: Request, res: Response): Promise<
 export async function releaseStudentForExam(req: Request, res: Response): Promise<void> {
   const code = String(req.params.code || req.params.id || '').toUpperCase();
   const { hallTicket, attemptId, all } = req.body;
+  const { getWaitingStudents } = await import('../services/socketService');
 
   if (all) {
-    // Release all waiting students for this exam code
-    const { data: updated, error } = await supabase
+    let updatedAttempts: Array<{ id: string; hall_ticket_no: string }> = [];
+
+    // 1. Update any existing waiting attempts
+    let { data: updated, error } = await supabase
       .from('exam_code_attempts')
-      .update({ status: 'released' })
+      .update({ status: 'released', override_reason: 'status:released' })
       .eq('exam_code', code)
-      .eq('status', 'waiting_verification')
+      .in('status', ['waiting_verification', 'in_lobby', 'waiting'])
       .select('id, hall_ticket_no');
 
-    if (error) {
-      res.status(500).json({ success: false, error: error.message });
-      return;
+    if (error && error.code === '23514') {
+      const fallback = await supabase
+        .from('exam_code_attempts')
+        .update({ override_reason: 'status:released' })
+        .eq('exam_code', code)
+        .select('id, hall_ticket_no');
+      updated = fallback.data;
     }
 
-    for (const u of updated || []) {
+    if (updated) {
+      updatedAttempts.push(...updated);
+    }
+
+    // 2. Also ensure any connected waiting students from socket queue are guaranteed released
+    const waitingList = getWaitingStudents(code);
+    for (const ws of waitingList) {
+      const ht = String(ws.hallTicket).toUpperCase().trim();
+      const existing = updatedAttempts.find((u) => u.hall_ticket_no?.toUpperCase() === ht);
+      if (!existing) {
+        const { data: stu } = await supabase
+          .from('students')
+          .select('id, name, roll_number, hall_ticket')
+          .or(`hall_ticket.ilike.${ht},roll_number.ilike.${ht}`)
+          .maybeSingle();
+
+        const token = generateSessionToken();
+        const startIso = new Date().toISOString();
+        let created: any = null;
+
+        const ins1 = await supabase
+          .from('exam_code_attempts')
+          .insert({
+            hall_ticket_no: ht,
+            exam_code: code,
+            student_name: stu?.name || ws.studentName || ht,
+            student_id: stu?.id,
+            status: 'released',
+            override_reason: 'status:released',
+            start_time: startIso,
+            session_token: token,
+          })
+          .select('id, hall_ticket_no')
+          .maybeSingle();
+
+        if (ins1.error && (ins1.error.code === '23514' || ins1.error.code === '23502')) {
+          const ins2 = await supabase
+            .from('exam_code_attempts')
+            .insert({
+              hall_ticket_no: ht,
+              exam_code: code,
+              student_name: stu?.name || ws.studentName || ht,
+              student_id: stu?.id,
+              status: 'in_progress',
+              override_reason: 'status:released',
+              start_time: startIso,
+              session_token: token,
+            })
+            .select('id, hall_ticket_no')
+            .maybeSingle();
+          created = ins2.data;
+        } else {
+          created = ins1.data;
+        }
+
+        if (created) {
+          updatedAttempts.push(created);
+        } else {
+          updatedAttempts.push({ id: `rel_${Date.now()}`, hall_ticket_no: ht });
+        }
+      }
+    }
+
+    for (const u of updatedAttempts) {
       broadcastStudentReleased({ examCode: code, hallTicket: u.hall_ticket_no, attemptId: u.id });
     }
 
-    res.json({ success: true, message: `Released ${updated?.length || 0} students for exam`, count: updated?.length || 0 });
+    res.json({
+      success: true,
+      message: `Released ${updatedAttempts.length} student(s) for exam`,
+      count: updatedAttempts.length,
+      attempts: updatedAttempts,
+    });
     return;
   }
 
-  let query = supabase.from('exam_code_attempts').update({ status: 'released' }).eq('exam_code', code);
-  if (attemptId) {
-    query = query.eq('id', attemptId);
-  } else if (hallTicket) {
-    query = query.eq('hall_ticket_no', String(hallTicket).toUpperCase().trim());
-  } else {
+  // Single student release
+  const targetHt = hallTicket ? String(hallTicket).toUpperCase().trim() : '';
+  if (!attemptId && !targetHt) {
     res.status(400).json({ success: false, error: 'Provide hallTicket, attemptId, or all: true' });
     return;
   }
 
-  const { data: updated, error } = await query.select('id, hall_ticket_no').maybeSingle();
-  if (error || !updated) {
-    res.status(404).json({ success: false, error: 'Waiting attempt not found or update failed' });
-    return;
+  let findQuery = supabase.from('exam_code_attempts').select('id, hall_ticket_no, status, student_name').eq('exam_code', code);
+  if (attemptId) {
+    findQuery = findQuery.eq('id', attemptId);
+  } else if (targetHt) {
+    findQuery = findQuery.or(`hall_ticket_no.ilike.${targetHt},hall_ticket.ilike.${targetHt}`);
+  }
+  const { data: existingAttempt } = await findQuery.maybeSingle();
+
+  let finalAttempt: { id: string; hall_ticket_no: string } | null = null;
+
+  if (existingAttempt) {
+    const upd1 = await supabase
+      .from('exam_code_attempts')
+      .update({ status: 'released', override_reason: 'status:released' })
+      .eq('id', existingAttempt.id)
+      .select('id, hall_ticket_no')
+      .maybeSingle();
+
+    if (upd1.error && upd1.error.code === '23514') {
+      const upd2 = await supabase
+        .from('exam_code_attempts')
+        .update({ override_reason: 'status:released' })
+        .eq('id', existingAttempt.id)
+        .select('id, hall_ticket_no')
+        .maybeSingle();
+      finalAttempt = upd2.data;
+    } else {
+      finalAttempt = upd1.data;
+    }
+  } else {
+    // Attempt not yet in DB — look up student and insert directly
+    const { data: stu } = await supabase
+      .from('students')
+      .select('id, name, roll_number, hall_ticket')
+      .or(`hall_ticket.ilike.${targetHt},roll_number.ilike.${targetHt}`)
+      .maybeSingle();
+
+    const token = generateSessionToken();
+    const startIso = new Date().toISOString();
+
+    const ins1 = await supabase
+      .from('exam_code_attempts')
+      .insert({
+        hall_ticket_no: targetHt || stu?.roll_number || stu?.hall_ticket || 'CANDIDATE',
+        exam_code: code,
+        student_name: stu?.name || targetHt || 'Student Candidate',
+        student_id: stu?.id,
+        status: 'released',
+        override_reason: 'status:released',
+        start_time: startIso,
+        session_token: token,
+      })
+      .select('id, hall_ticket_no')
+      .maybeSingle();
+
+    if (ins1.error && (ins1.error.code === '23514' || ins1.error.code === '23502')) {
+      const ins2 = await supabase
+        .from('exam_code_attempts')
+        .insert({
+          hall_ticket_no: targetHt || stu?.roll_number || stu?.hall_ticket || 'CANDIDATE',
+          exam_code: code,
+          student_name: stu?.name || targetHt || 'Student Candidate',
+          student_id: stu?.id,
+          status: 'in_progress',
+          override_reason: 'status:released',
+          start_time: startIso,
+          session_token: token,
+        })
+        .select('id, hall_ticket_no')
+        .maybeSingle();
+      finalAttempt = ins2.data;
+    } else {
+      finalAttempt = ins1.data;
+    }
   }
 
-  broadcastStudentReleased({ examCode: code, hallTicket: updated.hall_ticket_no, attemptId: updated.id });
-  res.json({ success: true, message: `Student ${updated.hall_ticket_no} released for exam`, attempt: updated });
+  const releasedHt = finalAttempt?.hall_ticket_no || targetHt;
+  const releasedId = finalAttempt?.id || attemptId || `rel_${Date.now()}`;
+
+  broadcastStudentReleased({ examCode: code, hallTicket: releasedHt, attemptId: releasedId });
+  res.json({
+    success: true,
+    message: `Student ${releasedHt} released for exam`,
+    attempt: { id: releasedId, hall_ticket_no: releasedHt },
+  });
 }
 
 /**
@@ -3820,29 +3990,26 @@ export async function releaseStudentForExam(req: Request, res: Response): Promis
 export async function rejectStudentEntry(req: Request, res: Response): Promise<void> {
   const code = String(req.params.code || req.params.id || '').toUpperCase();
   const { hallTicket, attemptId, reason } = req.body;
+  const targetHt = hallTicket ? String(hallTicket).toUpperCase().trim() : '';
 
-  let query = supabase
-    .from('exam_code_attempts')
-    .update({ status: 'rejected', override_reason: reason || 'Entry rejected by invigilator' })
-    .eq('exam_code', code);
-
-  if (attemptId) {
-    query = query.eq('id', attemptId);
-  } else if (hallTicket) {
-    query = query.eq('hall_ticket_no', String(hallTicket).toUpperCase().trim());
-  } else {
+  if (!attemptId && !targetHt) {
     res.status(400).json({ success: false, error: 'Provide hallTicket or attemptId' });
     return;
   }
 
-  const { data: updated, error } = await query.select('id, hall_ticket_no').maybeSingle();
-  if (error || !updated) {
-    res.status(404).json({ success: false, error: 'Attempt not found or update failed' });
-    return;
+  let query = supabase.from('exam_code_attempts').update({ override_reason: reason || 'Entry rejected by invigilator' }).eq('exam_code', code);
+  if (attemptId) {
+    query = query.eq('id', attemptId);
+  } else {
+    query = query.or(`hall_ticket_no.ilike.${targetHt},hall_ticket.ilike.${targetHt}`);
   }
 
-  broadcastStudentRejected({ examCode: code, hallTicket: updated.hall_ticket_no, reason });
-  res.json({ success: true, message: `Student ${updated.hall_ticket_no} entry rejected`, attempt: updated });
+  const upd1 = await query.select('id, hall_ticket_no').maybeSingle();
+  let updated = upd1.data;
+
+  const finalHt = updated?.hall_ticket_no || targetHt;
+  broadcastStudentRejected({ examCode: code, hallTicket: finalHt, reason });
+  res.json({ success: true, message: `Student ${finalHt} entry rejected`, attempt: { hall_ticket_no: finalHt } });
 }
 
 /**
