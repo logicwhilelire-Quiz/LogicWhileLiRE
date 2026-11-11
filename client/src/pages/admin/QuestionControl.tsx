@@ -62,6 +62,7 @@ export default function QuestionControl() {
 
   // Filter States
   const [filterCollege, setFilterCollege] = useState<string>('all');
+  const [filterSector, setFilterSector] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterDifficulty, setFilterDifficulty] = useState<string>('all');
   const [topicFilter, setTopicFilter] = useState<string>('all');
@@ -120,6 +121,7 @@ export default function QuestionControl() {
       question_type: filterType !== 'all' ? filterType : undefined,
       difficulty: filterDifficulty !== 'all' ? filterDifficulty : undefined,
       topic: topicFilter !== 'all' ? topicFilter : undefined,
+      sector: filterSector !== 'all' ? filterSector : undefined,
       search: search.trim() ? search.trim() : undefined,
     })
       .then((res) => {
@@ -139,7 +141,7 @@ export default function QuestionControl() {
 
   useEffect(() => {
     loadQuestions();
-  }, [filterCollege, filterType, filterDifficulty, topicFilter, search]);
+  }, [filterCollege, filterSector, filterType, filterDifficulty, topicFilter, search]);
 
   const handleOpenCreateModal = () => {
     setEditingQuestion(null);
@@ -356,6 +358,55 @@ export default function QuestionControl() {
               {actionMsg}
             </div>
           )}
+
+          {/* Institutional 5-Sector Navigation Strip */}
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              marginBottom: 20,
+              overflowX: 'auto',
+              paddingBottom: 4,
+            }}
+          >
+            {[
+              { id: 'all', label: 'All Sectors (Full Bank)', icon: '🌐' },
+              { id: 'Sector 1', label: 'S1 · Quantitative Aptitude', icon: '📐' },
+              { id: 'Sector 2', label: 'S2 · Logical Reasoning', icon: '🧩' },
+              { id: 'Sector 3', label: 'S3 · Core CS Systems', icon: '💻' },
+              { id: 'Sector 4', label: 'S4 · Algorithms & DS', icon: '⚡' },
+              { id: 'Sector 5', label: 'S5 · Full-Stack Architecture', icon: '🏛️' },
+            ].map((s) => {
+              const active = filterSector === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setFilterSector(s.id)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    transition: 'all 0.15s ease',
+                    border: active ? '1px solid #FFC200' : '1px solid rgba(255, 255, 255, 0.12)',
+                    background: active
+                      ? 'linear-gradient(135deg, rgba(255, 194, 0, 0.22) 0%, rgba(234, 88, 12, 0.25) 100%)'
+                      : 'rgba(15, 23, 42, 0.6)',
+                    color: active ? '#FFC200' : '#94A3B8',
+                  }}
+                >
+                  <span>{s.icon}</span>
+                  <span>{s.label}</span>
+                </button>
+              );
+            })}
+          </div>
 
           {/* Multi-Dimensional Filter Bar (College, Topic, Difficulty, Type, Search) */}
           <div

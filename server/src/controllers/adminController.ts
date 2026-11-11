@@ -2439,7 +2439,7 @@ export async function deleteExam(req: Request, res: Response): Promise<void> {
  */
 export async function listQuestions(req: Request, res: Response): Promise<void> {
   try {
-    const { exam_id, college_id, topic, difficulty, question_type, search } = req.query;
+    const { exam_id, college_id, topic, difficulty, question_type, search, sector, section } = req.query;
 
     // Fetch exam_codes and colleges map for college scoping and metadata enrichment
     const { data: examCodesList } = await supabase
@@ -2561,6 +2561,24 @@ export async function listQuestions(req: Request, res: Response): Promise<void> 
     }
 
     // In-memory filters for topic substring and search keyword
+    if (sector && sector !== 'all') {
+      const secLower = String(sector).toLowerCase();
+      results = results.filter(
+        (q) =>
+          (q.section && q.section.toLowerCase().includes(secLower)) ||
+          (q.topic && q.topic.toLowerCase().includes(secLower)) ||
+          ((q as any).sector && (q as any).sector.toLowerCase().includes(secLower)) ||
+          (Array.isArray(q.tags) && q.tags.some((t: string) => t.toLowerCase().includes(secLower)))
+      );
+    }
+    if (section && section !== 'all') {
+      const sLower = String(section).toLowerCase();
+      results = results.filter(
+        (q) =>
+          (q.section && q.section.toLowerCase().includes(sLower)) ||
+          (q.topic && q.topic.toLowerCase().includes(sLower))
+      );
+    }
     if (topic && topic !== 'all') {
       const topLower = String(topic).toLowerCase();
       results = results.filter((q) => q.topic.toLowerCase().includes(topLower));

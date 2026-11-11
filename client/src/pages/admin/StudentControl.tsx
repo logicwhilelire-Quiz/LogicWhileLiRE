@@ -12,7 +12,6 @@ import {
   getRegistrationAuthorityMode,
   setRegistrationAuthorityMode,
   approveCandidateRoster,
-  rejectCandidateRoster,
   bulkApproveAllPendingCandidates,
   generateSystemBackupArchive,
   exportRosterCsvString,
@@ -72,12 +71,10 @@ export default function StudentControl() {
   const [verificationFilter, setVerificationFilter] = useState<'ALL' | 'VERIFIED' | 'UNVERIFIED'>('ALL');
   const [uploadMsg, setUploadMsg] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [colleges, setColleges] = useState<College[]>([]);
   const [copiedPass, setCopiedPass] = useState<string | null>(null);
   const [copiedCreds, setCopiedCreds] = useState<string | null>(null);
   const [previewEmailStudent, setPreviewEmailStudent] = useState<StudentRosterItem | null>(null);
-  const [bulkUploadSummary, setBulkUploadSummary] = useState<{ total: number; emailsSent: number; filename: string } | null>(null);
 
   const [registrationEnabled, setRegistrationEnabled] = useState<boolean>(() => {
     try {
@@ -539,12 +536,6 @@ export default function StudentControl() {
         return [...uniqueNew, ...prev];
       });
 
-      setBulkUploadSummary({
-        total: parsedRoster.length,
-        emailsSent: parsedRoster.length,
-        filename: file.name,
-      });
-
       setUploadMsg(
         `✅ Successfully loaded ${parsedRoster.length} candidate(s) from "${file.name}"! Auto-reply credentials emails dispatched with Login ID, Hall Ticket, and Password.`
       );
@@ -659,28 +650,6 @@ export default function StudentControl() {
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
     } catch {}
-  };
-
-  const handleVerifyEmail = async (student: StudentRosterItem) => {
-    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
-    try {
-      await axios.patch(
-        `${API_BASE_URL}/api/admin/students/${student.id}`,
-        { is_verified: true },
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-      );
-      setStudents((prev) =>
-        prev.map((s) => (s.id === student.id ? { ...s, is_verified: true } : s))
-      );
-      setUploadMsg(`Student ${student.name} (${student.hall_ticket}) email marked as verified.`);
-      setTimeout(() => setUploadMsg(''), 4000);
-    } catch {
-      setStudents((prev) =>
-        prev.map((s) => (s.id === student.id ? { ...s, is_verified: true } : s))
-      );
-      setUploadMsg(`Student ${student.name} email marked as verified.`);
-      setTimeout(() => setUploadMsg(''), 4000);
-    }
   };
 
   const filtered = students.filter((s) => {

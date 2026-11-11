@@ -152,9 +152,10 @@ const handleExamCodeStart = async (req: any, res: any) => {
       exam.started_at ||
       exam.is_launched
     );
+    let startedState: any = null;
     if (!isDemoExam && !isExamStarted) {
       const { getExamStartedState } = await import('../services/socketService');
-      const startedState = getExamStartedState(code) || getExamStartedState(effectiveCode);
+      startedState = getExamStartedState(code) || getExamStartedState(effectiveCode);
       if (!startedState) {
         return res.status(403).json({
           success: false,
@@ -180,15 +181,23 @@ const handleExamCodeStart = async (req: any, res: any) => {
         .maybeSingle();
 
       if (attemptRecord && attemptRecord.status === 'waiting_verification') {
-        return res.status(403).json({
-          success: false,
-          error: 'You have not been released by your administrator or inspector yet. Please wait in the waiting lobby.',
-          code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
-          waiting_list: true,
-          exam_name: exam.exam_name || exam.name || code,
-          duration_minutes: exam.duration_minutes || 60,
-          total_questions: exam.total_questions || 15,
-        });
+        if (isExamStarted || startedState) {
+          // Exam is live by central dispatch: student auto-enters live exam
+          await supabase
+            .from('exam_code_attempts')
+            .update({ status: 'in_progress', start_time: new Date().toISOString() })
+            .eq('id', attemptRecord.id);
+        } else {
+          return res.status(403).json({
+            success: false,
+            error: 'You have not been released by your administrator or inspector yet. Please wait in the waiting lobby.',
+            code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
+            waiting_list: true,
+            exam_name: exam.exam_name || exam.name || code,
+            duration_minutes: exam.duration_minutes || 60,
+            total_questions: exam.total_questions || 15,
+          });
+        }
       }
     }
 

@@ -267,6 +267,8 @@ export const listQuestionBank = (params?: {
   difficulty?: string;
   question_type?: string;
   search?: string;
+  sector?: string;
+  section?: string;
 }) => api.get('/api/admin/questions', { params });
 
 export const createQuestionBankItem = (data: any) =>

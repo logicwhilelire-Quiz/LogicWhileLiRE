@@ -2386,7 +2386,7 @@ export async function clearAllStudents(req: Request, res: Response): Promise<voi
     query = query.eq('year_of_passing', passout_year);
   }
   if (!college_id && !section && !batch && !passout_year) {
-    query = query.neq('id', '00000000-0000-0000-0000-000000000000');
+    query = (query as any).not('id', 'is', null);
   }
 
   const { error } = await query;

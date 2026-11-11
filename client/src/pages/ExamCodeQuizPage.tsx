@@ -117,11 +117,9 @@ export default function QuizPage() {
   const [violationMsg, setViolationMsg] = useState('')
   const [faceStatus, setFaceStatus] = useState<FaceStatus>('loading')
   const [showProctoringAlert, setShowProctoringAlert] = useState(false)
-  const [consentGiven, setConsentGiven] = useState(true)
   const [adminWarningMsg, setAdminWarningMsg] = useState('')
   const [showAdminWarning, setShowAdminWarning] = useState(false)
   const [runResult, setRunResult] = useState<{ output: string; error?: string } | null>(null)
-  const [running, setRunning] = useState(false)
   const [showFullscreenOverlay, setShowFullscreenOverlay] = useState(false)
   const [fullscreenExitCount, setFullscreenExitCount] = useState(0)
   const fullscreenExitCountRef = useRef(0)
@@ -131,9 +129,7 @@ export default function QuizPage() {
   /* ── Strict Integrity Auto-Termination State ── */
   const [isTerminated, setIsTerminated] = useState(false)
   const [terminationReason, setTerminationReason] = useState('')
-  const isTerminatedRef = useRef(false)
   const hasTerminatedRef = useRef(false)
-  const altMetaWarningCountRef = useRef(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
   const sessionIdRef = useRef<string | undefined>(undefined)
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
@@ -698,6 +694,7 @@ export default function QuizPage() {
               break
             }
             setIsRetryingSubmit(false)
+            setSubmitting(false)
             setSubmitNetworkErrorNotice(`Connection lost after ${maxRetries} automatic retry attempts. All your answers are 100% safely protected in local offline storage. Please verify your network and click 'Retry Submission Now'.`)
             return
           }
@@ -1499,26 +1496,6 @@ export default function QuizPage() {
       debounceSyncTimeoutRef.current = setTimeout(() => {
         syncPendingAnswers().catch(() => {})
       }, 1200)
-    }
-  }
-
-  const handleRunCode = async () => {
-    if (!currentQuestion) return
-    const code = codeAnswers[currentQuestion.id] || ''
-    if (!code.trim()) return
-    setRunning(true)
-    setRunResult(null)
-    try {
-      const { data } = await axios.post(`${BASE}/api/execute`, {
-        language: 'python',
-        code,
-        testCases: [],
-      })
-      setRunResult({ output: data.output || data.stdout || 'No output', error: data.stderr })
-    } catch (e) {
-      setRunResult({ output: '', error: e instanceof Error ? e.message : 'Execution failed' })
-    } finally {
-      setRunning(false)
     }
   }
 
@@ -2837,6 +2814,44 @@ export default function QuizPage() {
                 </div>
               )}
 
+              {submitNetworkErrorNotice && (
+                <div style={{
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  borderRadius: 8,
+                  padding: '12px 14px',
+                  marginBottom: 16,
+                  color: '#F87171',
+                  fontSize: '0.85rem',
+                  lineHeight: 1.5,
+                  textAlign: 'left'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, marginBottom: 4 }}>
+                    <span>⚠️</span>
+                    <span>Submission Network Alert</span>
+                  </div>
+                  <p style={{ margin: 0, color: '#FECACA' }}>{submitNetworkErrorNotice}</p>
+                </div>
+              )}
+
+              {isRetryingSubmit && (
+                <div style={{
+                  background: 'rgba(245, 158, 11, 0.12)',
+                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                  borderRadius: 8,
+                  padding: '10px 14px',
+                  marginBottom: 16,
+                  color: '#FBBF24',
+                  fontSize: '0.83rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8
+                }}>
+                  <span className="btn-spinner" />
+                  <span>Connecting to grading vault (Attempt {submitRetryCount}/5)...</span>
+                </div>
+              )}
+
               <p style={{ color: '#94A3B8', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 20px', textAlign: 'center' }}>
                 Are you sure you want to end your exam? Once confirmed, all your answers will be securely sealed and submitted for final evaluation.
               </p>
@@ -2846,6 +2861,7 @@ export default function QuizPage() {
                   type="button"
                   className="btn btn-ghost w-full"
                   onClick={() => setShowSubmitModal(false)}
+                  disabled={submitting}
                   style={{ fontWeight: 700 }}
                 >
                   Return to Questions
@@ -2857,11 +2873,21 @@ export default function QuizPage() {
                   disabled={submitting}
                   style={{
                     fontWeight: 800,
-                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-                    boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
+                    background: submitNetworkErrorNotice
+                      ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
+                      : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                    boxShadow: submitNetworkErrorNotice
+                      ? '0 4px 15px rgba(245, 158, 11, 0.4)'
+                      : '0 4px 15px rgba(16, 185, 129, 0.4)',
                   }}
                 >
-                  {submitting ? <><span className="btn-spinner" /> Sealing Answers...</> : '✓ Yes, Final Submit'}
+                  {submitting ? (
+                    <><span className="btn-spinner" /> Sealing Answers...</>
+                  ) : submitNetworkErrorNotice ? (
+                    '🔄 Retry Submission Now'
+                  ) : (
+                    '✓ Yes, Final Submit'
+                  )}
                 </button>
               </div>
             </motion.div>

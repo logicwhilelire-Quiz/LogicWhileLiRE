@@ -1191,6 +1191,12 @@ router.post(
       if (updErr) {
         console.warn('[ExamStart] DB update notice:', updErr.message);
       }
+      // Release all waiting students into active exam status
+      await supabase
+        .from('exam_code_attempts')
+        .update({ status: 'released' })
+        .eq('exam_code', code)
+        .eq('status', 'waiting_verification');
     } catch (e: any) {
       console.warn('[ExamStart] DB update exception:', e?.message);
     }
