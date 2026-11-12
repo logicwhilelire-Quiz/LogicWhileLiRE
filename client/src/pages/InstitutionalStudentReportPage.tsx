@@ -9,6 +9,15 @@ import {
   IconPrinter,
   IconCpu,
   IconShield,
+  IconGraduation,
+  IconFlash,
+  IconTarget,
+  IconTrophy,
+  IconClock,
+  IconLock,
+  IconTerminal,
+  IconPulse,
+  IconCheck,
 } from '../components/icons/HumanIcons'
 
 export default function InstitutionalStudentReportPage() {
@@ -196,7 +205,9 @@ export default function InstitutionalStudentReportPage() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: '1.8rem' }}>🎓</span>
+              <div style={{ display: 'inline-flex', padding: 10, borderRadius: 10, background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
+                <IconGraduation size={26} color="#38BDF8" />
+              </div>
               <div>
                 <strong style={{ color: '#38BDF8', fontSize: '0.98rem' }}>
                   Candidate Profile Active · {studentMeta.college}
@@ -223,7 +234,8 @@ export default function InstitutionalStudentReportPage() {
                   gap: 6,
                 }}
               >
-                ⚡ Enter Assessment
+                <IconFlash size={14} color="#EAA812" />
+                <span>Enter Assessment</span>
               </Link>
               <Link
                 to="/practice"
@@ -236,9 +248,13 @@ export default function InstitutionalStudentReportPage() {
                   fontSize: '0.8rem',
                   fontWeight: 700,
                   textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
                 }}
               >
-                🎯 Practice Arena
+                <IconTarget size={14} color="#38BDF8" />
+                <span>Practice Arena</span>
               </Link>
             </div>
           </div>
@@ -258,7 +274,9 @@ export default function InstitutionalStudentReportPage() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: '1.8rem' }}>🏆</span>
+              <div style={{ display: 'inline-flex', padding: 10, borderRadius: 10, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                <IconTrophy size={26} color="#10B981" />
+              </div>
               <div>
                 <strong style={{ color: '#10B981', fontSize: '0.98rem' }}>
                   Official Assessment Results Certified · {studentMeta.college}
@@ -499,7 +517,7 @@ export default function InstitutionalStudentReportPage() {
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 12px', textAlign: 'center' }}>
                     <div style={{ width: 100, height: 100, borderRadius: '50%', border: '2px dashed rgba(56, 189, 248, 0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 12, background: 'rgba(56, 189, 248, 0.04)' }}>
-                      <span style={{ fontSize: '1.6rem' }}>🎯</span>
+                      <IconTarget size={28} color="#38BDF8" />
                       <span style={{ fontSize: '0.7rem', color: '#94A3B8', fontWeight: 700, marginTop: 4 }}>0 Points</span>
                     </div>
                     <strong style={{ color: '#F8FAFC', fontSize: '0.88rem' }}>Pre-Exam Baseline (No Points Recorded)</strong>
@@ -681,8 +699,9 @@ export default function InstitutionalStudentReportPage() {
 
             {!hasAttempts && (
               <div style={{ background: '#0B1120', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 20, textAlign: 'center' }}>
-                <p style={{ margin: 0, fontSize: '0.84rem', color: '#94A3B8' }}>
-                  ⏱️ Live pacing velocity and section time analytics will be captured during candidate examination sessions.
+                <p style={{ margin: 0, fontSize: '0.84rem', color: '#94A3B8', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <IconClock size={16} color="#38BDF8" />
+                  <span>Live pacing velocity and section time analytics will be captured during candidate examination sessions.</span>
                 </p>
               </div>
             )}
@@ -724,18 +743,32 @@ export default function InstitutionalStudentReportPage() {
               </div>
             ) : (
               <div style={{ background: '#0B1120', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 32, textAlign: 'center' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📈</div>
+                <div style={{ display: 'inline-flex', padding: 14, borderRadius: 14, background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.25)', marginBottom: 14 }}>
+                  <IconPulse size={36} color="#38BDF8" />
+                </div>
                 <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 8px 0', color: '#FFF' }}>
                   Milestone 0: Enrolled Candidate Baseline
                 </h3>
                 <p style={{ margin: '0 auto 20px', fontSize: '0.84rem', color: '#94A3B8', maxWidth: 480, lineHeight: 1.5 }}>
                   Multi-assessment trajectory tracking requires at least 1 completed examination submission. Once candidate {studentMeta.studentName} submits their first test, comparative progress curves across assessments will populate automatically.
                 </p>
-                <div style={{ display: 'inline-flex', gap: 16, background: 'rgba(255,255,255,0.03)', padding: '12px 20px', borderRadius: 8, fontSize: '0.78rem', color: '#CBD5E1' }}>
-                  <span>✓ 1. Directory Enrollment (Done)</span>
-                  <span style={{ color: '#EAB308' }}>⏳ 2. Assessment 1 (Pending)</span>
-                  <span style={{ color: '#64748B' }}>🔒 3. Midterm Evaluation</span>
-                  <span style={{ color: '#64748B' }}>🔒 4. Final Certification</span>
+                <div style={{ display: 'inline-flex', gap: 16, background: 'rgba(255,255,255,0.03)', padding: '12px 20px', borderRadius: 8, fontSize: '0.78rem', color: '#CBD5E1', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    <IconCheck size={13} color="#10B981" />
+                    <span>1. Directory Enrollment (Done)</span>
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#EAB308' }}>
+                    <IconClock size={13} color="#EAB308" />
+                    <span>2. Assessment 1 (Pending)</span>
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#64748B' }}>
+                    <IconLock size={13} color="#64748B" />
+                    <span>3. Midterm Evaluation</span>
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#64748B' }}>
+                    <IconLock size={13} color="#64748B" />
+                    <span>4. Final Certification</span>
+                  </span>
                 </div>
               </div>
             )}
@@ -768,8 +801,9 @@ export default function InstitutionalStudentReportPage() {
             </div>
 
             <div style={{ background: '#0B1120', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 24, textAlign: 'center' }}>
-              <p style={{ margin: 0, fontSize: '0.84rem', color: '#94A3B8' }}>
-                💻 Practice arena and live sprint history log directly to candidate's learning timeline. Launch a practice sprint from the Student Dashboard to begin building your skill portfolio.
+              <p style={{ margin: 0, fontSize: '0.84rem', color: '#94A3B8', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <IconTerminal size={16} color="#38BDF8" />
+                <span>Practice arena and live sprint history log directly to candidate's learning timeline. Launch a practice sprint from the Student Dashboard to begin building your skill portfolio.</span>
               </p>
             </div>
           </div>

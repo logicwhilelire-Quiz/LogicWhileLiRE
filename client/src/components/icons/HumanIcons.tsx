@@ -303,5 +303,20 @@ export const IconLogout: React.FC<IconProps> = ({ size = 18, color = 'currentCol
   </svg>
 );
 
+export const IconGraduation: React.FC<IconProps> = ({ size = 18, color = 'currentColor', strokeWidth = 1.8, style, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" style={style} className={className}>
+    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+    <path d="M6 12v5c3 3 9 3 12 0v-5" />
+  </svg>
+);
+
+export const IconTarget: React.FC<IconProps> = ({ size = 18, color = 'currentColor', strokeWidth = 1.8, style, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" style={style} className={className}>
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="6" />
+    <circle cx="12" cy="12" r="2" />
+  </svg>
+);
+
 
 

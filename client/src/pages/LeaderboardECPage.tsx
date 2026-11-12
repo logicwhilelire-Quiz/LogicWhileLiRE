@@ -86,12 +86,12 @@ export default function LeaderboardECPage() {
     const channelName = `realtime:leaderboard-${activeCode}`;
     const channel = supabase.channel(channelName)
       .on('broadcast', { event: 'leaderboard_update' }, (payload) => {
-        setLiveEventLog(`⚡ Live submission from ${payload.payload?.hall_ticket || 'student'}`);
+        setLiveEventLog(`[LIVE] Submission recorded for ${payload.payload?.hall_ticket || 'student'}`);
         setTimeout(() => setLiveEventLog(null), 4000);
         load(true);
       })
       .on('broadcast', { event: 'score_submitted' }, (payload) => {
-        setLiveEventLog(`🏆 New Score: ${payload.payload?.name || 'Candidate'} scored ${payload.payload?.score || 0}!`);
+        setLiveEventLog(`[SCORE] ${payload.payload?.name || 'Candidate'} scored ${payload.payload?.score || 0}!`);
         setTimeout(() => setLiveEventLog(null), 4000);
         load(true);
       })
@@ -236,7 +236,7 @@ export default function LeaderboardECPage() {
               cursor: 'pointer',
             }}
           >
-            {refreshing ? '↻ Syncing...' : '↻ Refresh'}
+            {refreshing ? 'Syncing...' : 'Refresh'}
           </button>
         </div>
       </nav>
@@ -284,7 +284,8 @@ export default function LeaderboardECPage() {
             marginBottom: 8,
             fontFamily: "'Space Grotesk', sans-serif",
           }}>
-            <span>🏆</span> OFFICIAL TOURNAMENT STANDINGS
+            <IconTrophy size={16} color="#EAA812" />
+            <span>OFFICIAL TOURNAMENT STANDINGS</span>
           </div>
 
           <h1 style={{
@@ -323,7 +324,7 @@ export default function LeaderboardECPage() {
         <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
           <input
             type="text"
-            placeholder="🔍 Search candidate name, hall ticket, or department..."
+            placeholder="Search candidate name, hall ticket, or department..."
             value={filterBranch}
             onChange={e => setFilterBranch(e.target.value)}
             style={{
@@ -423,7 +424,7 @@ export default function LeaderboardECPage() {
                           alignItems: 'center',
                           gap: 2,
                         }}>
-                          {row.delta > 0 ? `▲ +${row.delta}` : `▼ ${row.delta}`}
+                          {row.delta > 0 ? `+${row.delta}` : `${row.delta}`}
                         </span>
                       )}
                       {row.department && (
@@ -491,7 +492,7 @@ export default function LeaderboardECPage() {
               transition: 'all 0.2s ease',
             }}
           >
-            ← Back to Portal Home
+            Back to Portal Home
           </button>
         </div>
       </div>

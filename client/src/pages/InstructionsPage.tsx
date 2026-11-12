@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { io as connectSocket, Socket } from 'socket.io-client';
 import BrandLogo from '../components/BrandLogo';
 import CodeRain from '../components/3d/CodeRain';
-import { getAttemptStatus, startStudentAttempt } from '../lib/api';
+import { getAttemptStatus, startStudentAttempt, getExamLobbyStats } from '../lib/api';
+import { SOCKET_URL } from '../lib/config';
 import {
   IconLock,
   IconProhibit,
@@ -52,12 +54,80 @@ export default function InstructionsPage() {
     return null;
   })();
   const maxViolations = Number(adminSetViolations || stored.max_violations || routerState.maxViolations || 3);
+  const [currentMaxViolations, setCurrentMaxViolations] = useState<number>(maxViolations);
+  const [liveServerStart, setLiveServerStart] = useState<number | null>(serverStartTime || null);
+  const [liveDuration, setLiveDuration] = useState<number>(durationSeconds);
+  const [examLiveDispatched, setExamLiveDispatched] = useState<boolean>(isExamLive);
+
+  // Synchronous WebSocket connection for live start dispatch and inspector config
+  useEffect(() => {
+    if (!examCode) return;
+    const socket = connectSocket(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      auth: { token: localStorage.getItem('student_token') || undefined },
+    });
+
+    socket.on('connect', () => {
+      socket.emit('instructions:join', {
+        examCode,
+        hallTicket: canonicalHt,
+      });
+    });
+
+    socket.on('EXAM_STARTED', (data: any) => {
+      if (data?.exam_id?.toUpperCase() === examCode.toUpperCase() || data?.examCode?.toUpperCase() === examCode.toUpperCase()) {
+        setExamLiveDispatched(true);
+        if (data.server_start_time) setLiveServerStart(data.server_start_time);
+        if (data.duration_seconds) setLiveDuration(data.duration_seconds);
+        setCanProceed(true);
+        setCountdown(0);
+      }
+    });
+
+    socket.on('STUDENT_RELEASED', (data: any) => {
+      if (data?.examCode?.toUpperCase() === examCode.toUpperCase()) {
+        setCanProceed(true);
+      }
+    });
+
+    socket.on('exam:config', (data: any) => {
+      if (data?.examCode?.toUpperCase() === examCode.toUpperCase() && data.maxViolations) {
+        setCurrentMaxViolations(Number(data.maxViolations));
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [examCode, canonicalHt]);
+
+  // REST polling fallback: guarantee instant proceed when inspector triggers live start
+  useEffect(() => {
+    if (!examCode || examLiveDispatched) return;
+    const poll = async () => {
+      try {
+        const res = await getExamLobbyStats(examCode);
+        if (res.data?.exam_started?.server_start_time) {
+          setExamLiveDispatched(true);
+          setLiveServerStart(res.data.exam_started.server_start_time);
+          if (res.data.exam_started.duration_seconds) {
+            setLiveDuration(res.data.exam_started.duration_seconds);
+          }
+          setCanProceed(true);
+          setCountdown(0);
+        }
+      } catch {}
+    };
+    poll();
+    const interval = setInterval(poll, 3000);
+    return () => clearInterval(interval);
+  }, [examCode, examLiveDispatched]);
 
   // Strict Waiting Hall release verification on mount
   useEffect(() => {
     async function verifyRelease() {
       if (!examCode) return;
-      // If exam already dispatched or student released by inspector, student is authorized to enter instructions
       if (serverStartTime || isDemoOrDev || routerState.isReleased || stored.isReleased || stored.is_released) {
         return;
       }
@@ -74,18 +144,13 @@ export default function InstructionsPage() {
             const updated = { ...stored, isReleased: true };
             localStorage.setItem('logicwhilelire_attempt', JSON.stringify(updated));
           } catch {}
-        } else if (res.data && res.data.is_released === false) {
-          navigate(`/waiting-lobby/${examCode}`, {
-            replace: true,
-            state: { hallTicket, attemptId, status: res.data?.status },
-          });
         }
       } catch {
         // Non-blocking fallback
       }
     }
     verifyRelease();
-  }, [examCode, navigate, serverStartTime, isDemoOrDev, canonicalAttemptId, canonicalHt]);
+  }, [examCode, serverStartTime, isDemoOrDev, canonicalAttemptId, canonicalHt]);
 
   // Countdown timer
   useEffect(() => {
@@ -132,8 +197,8 @@ export default function InstructionsPage() {
         hallTicket,
       });
 
-      const effectiveStart = res.data?.server_start_time || serverStartTime || Date.now();
-      const effectiveDuration = res.data?.duration_seconds || durationSeconds || 3600;
+      const effectiveStart = res.data?.server_start_time || liveServerStart || serverStartTime || Date.now();
+      const effectiveDuration = res.data?.duration_seconds || liveDuration || durationSeconds || 3600;
 
       navigate(`/quiz/${examCode}`, {
         state: {
@@ -148,8 +213,8 @@ export default function InstructionsPage() {
       navigate(`/quiz/${examCode}`, {
         state: {
           hallTicket: canonicalHt,
-          serverStartTime: serverStartTime || Date.now(),
-          durationSeconds: durationSeconds || 3600,
+          serverStartTime: liveServerStart || serverStartTime || Date.now(),
+          durationSeconds: liveDuration || durationSeconds || 3600,
           attemptId: canonicalAttemptId,
         },
       });
@@ -168,7 +233,7 @@ export default function InstructionsPage() {
     {
       icon: <IconProhibit size={20} color="#EF4444" />,
       title: 'Tab Navigation Guard',
-      text: `Switching tabs, sliding to external windows, or losing window focus is tracked. Maximum ${maxViolations} tab violations permitted before automatic lockout.`,
+      text: `Switching tabs, sliding to external windows, or losing window focus is strictly tracked. Maximum ${currentMaxViolations} tab violations permitted before automatic lockout (Settled by Inspector).`,
       severity: 'danger',
     },
     {
@@ -338,6 +403,33 @@ export default function InstructionsPage() {
               ))}
             </div>
           </div>
+
+          {/* Live Dispatch Banner */}
+          {examLiveDispatched && (
+            <div
+              style={{
+                background: 'rgba(16,185,129,0.15)',
+                border: '1.5px solid rgba(16,185,129,0.45)',
+                borderRadius: 14,
+                padding: '16px 20px',
+                marginBottom: 20,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                boxShadow: '0 8px 24px rgba(16,185,129,0.15)',
+              }}
+            >
+              <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 12px #10B981' }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ color: '#34D399', fontWeight: 800, fontSize: '0.96rem', letterSpacing: '0.02em' }}>
+                  EXAMINATION IS LIVE ON SERVER
+                </div>
+                <div style={{ color: '#CBD5E1', fontSize: '0.82rem', marginTop: 2 }}>
+                  The supervisor has authorized live assessment start. All candidate clocks are synchronized. You may enter immediately.
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Rules */}
           <div

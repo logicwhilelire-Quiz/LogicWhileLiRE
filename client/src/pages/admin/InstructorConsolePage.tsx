@@ -799,7 +799,19 @@ export default function InstructorConsolePage() {
                   justifyContent: "space-between",
                 }}
               >
-                <span>{examStarted ? "● CLOCK RUNNING" : "⏸ WAITING TO START"}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  {examStarted ? (
+                    <>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#34D399', display: 'inline-block' }} />
+                      <span>CLOCK RUNNING</span>
+                    </>
+                  ) : (
+                    <>
+                      <IconClock size={14} color="#F59E0B" />
+                      <span>WAITING TO START</span>
+                    </>
+                  )}
+                </span>
                 {serverRemainingSeconds != null && (
                   <span style={{ fontFamily: "monospace", fontSize: "0.85rem" }}>
                     {fmtTime(serverRemainingSeconds)}

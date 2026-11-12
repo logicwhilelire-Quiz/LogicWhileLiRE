@@ -6,6 +6,7 @@ import BrandLogo from '../components/BrandLogo';
 import LogicWhileLiRELoader from '../components/LogicWhileLiRELoader';
 import SiteFooter from '../components/SiteFooter';
 import AnimatedPage from '../components/AnimatedPage';
+import { IconTrophy, IconClock, IconPulse } from '../components/icons/HumanIcons';
 
 function formatTime(s: number): string {
   const m = Math.floor(s / 60);
@@ -26,7 +27,7 @@ const LeaderboardRow = memo(({ entry }: { entry: LeaderboardEntry }) => {
     >
       <td>
         <div className={`rank-badge ${entry.rank <= 3 ? `rank-${entry.rank}` : 'rank-other'}`}>
-          {entry.rank <= 3 ? ['🥇', '🥈', '🥉'][entry.rank - 1] : entry.rank}
+          {entry.rank <= 3 ? ['1st', '2nd', '3rd'][entry.rank - 1] : entry.rank}
         </div>
       </td>
       <td className="font-bold">{entry.name}</td>
@@ -57,7 +58,7 @@ export default function LeaderboardPage() {
         <nav className="navbar">
           <BrandLogo size="sm" />
           <button id="leaderboard-refresh-btn" className="btn btn-secondary btn-sm" onClick={refresh}>
-            🔄 Refresh
+            Refresh
           </button>
         </nav>
 
@@ -72,14 +73,21 @@ export default function LeaderboardPage() {
                 background: 'linear-gradient(135deg, #f59e0b, #06b6d4)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 12,
               }}
             >
-              🏆 Live Standings & Leaderboard
+              <IconTrophy size={32} color="#F59E0B" />
+              <span>Live Standings & Leaderboard</span>
             </h1>
             {lastUpdated && (
               <p className="text-muted text-sm" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span>Live • Last updated {lastUpdated.toLocaleTimeString()}</span>
-                <span className="badge badge-primary">⚡ Supabase Realtime</span>
+                <span className="badge badge-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <IconPulse size={12} color="#38BDF8" />
+                  <span>Supabase Realtime</span>
+                </span>
               </p>
             )}
           </div>
@@ -94,7 +102,9 @@ export default function LeaderboardPage() {
 
           {!loading && memoizedEntries.length === 0 && (
             <div className="card text-center" style={{ padding: 64 }}>
-              <div style={{ fontSize: '3rem', marginBottom: 16 }}>⏳</div>
+              <div style={{ display: 'inline-flex', padding: 14, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', marginBottom: 16 }}>
+                <IconClock size={36} color="#94A3B8" />
+              </div>
               <h3 style={{ fontWeight: 600, marginBottom: 8 }}>No results recorded yet</h3>
               <p className="text-muted">Results will populate automatically as candidates submit their exams.</p>
             </div>
@@ -113,7 +123,7 @@ export default function LeaderboardPage() {
                     className="card text-center"
                     style={{ padding: '24px 20px', width: 170, order: 1 }}
                   >
-                    <div style={{ fontSize: '2.2rem', marginBottom: 8 }}>🥈</div>
+                    <div style={{ fontWeight: 800, color: '#94a3b8', fontSize: '1.1rem', marginBottom: 8 }}>2nd Place</div>
                     <div className="font-bold" style={{ fontSize: '0.95rem', marginBottom: 4 }}>{memoizedEntries[1]?.name}</div>
                     <div className="text-muted text-xs font-mono">{memoizedEntries[1]?.hall_ticket}</div>
                     <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#94a3b8', marginTop: 8 }}>
@@ -135,7 +145,9 @@ export default function LeaderboardPage() {
                       boxShadow: '0 0 36px rgba(245,158,11,0.25)',
                     }}
                   >
-                    <div style={{ fontSize: '3rem', marginBottom: 8, animation: 'pulse 2s infinite' }}>👑</div>
+                    <div style={{ display: 'inline-flex', padding: 8, borderRadius: '50%', background: 'rgba(245,158,11,0.15)', marginBottom: 8 }}>
+                      <IconTrophy size={32} color="#FBBF24" />
+                    </div>
                     <div className="font-bold" style={{ fontSize: '1.1rem', marginBottom: 4 }}>{memoizedEntries[0]?.name}</div>
                     <div className="text-muted text-xs font-mono">{memoizedEntries[0]?.hall_ticket}</div>
                     <div style={{ fontSize: '2.1rem', fontWeight: 900, color: '#fbbf24', marginTop: 8 }}>
@@ -152,7 +164,7 @@ export default function LeaderboardPage() {
                     className="card text-center"
                     style={{ padding: '24px 20px', width: 170, order: 3 }}
                   >
-                    <div style={{ fontSize: '2.2rem', marginBottom: 8 }}>🥉</div>
+                    <div style={{ fontWeight: 800, color: '#d97706', fontSize: '1.1rem', marginBottom: 8 }}>3rd Place</div>
                     <div className="font-bold" style={{ fontSize: '0.95rem', marginBottom: 4 }}>{memoizedEntries[2]?.name}</div>
                     <div className="text-muted text-xs font-mono">{memoizedEntries[2]?.hall_ticket}</div>
                     <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#d97706', marginTop: 8 }}>

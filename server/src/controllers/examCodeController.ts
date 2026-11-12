@@ -1270,25 +1270,17 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
   const studentGatePass = `GP-STU-${canonicalRoll}-${(studentRecord?.id || '0000').substring(0, 4)}`.toUpperCase();
   const candidateGatePass = `GP-CAND-${canonicalRoll}-${(studentRecord?.id || '0000').substring(0, 4)}`.toUpperCase();
 
-  // 1.3 ENFORCE INSPECTOR START (Item 3)
+  // 1.3 INSPECTOR START & WAITING LOBBY DISPATCH
   const isDemoExam = ec.includes('DEMO') || ec === 'CS2026';
   const effectiveEc = exam.exam_code || ec;
+  const { getExamStartedState, isStudentReleasedInMemory } = await import('../services/socketService');
+  const startedState = getExamStartedState(ec) || getExamStartedState(effectiveEc);
+  const memoryReleased = isStudentReleasedInMemory(ec, ht) || isStudentReleasedInMemory(effectiveEc, ht);
   const isExamStarted = Boolean(
+    startedState ||
     exam.started_at ||
     exam.is_launched
   );
-  if (!isDemoExam && !isExamStarted) {
-    const { getExamStartedState } = await import('../services/socketService');
-    const startedState = getExamStartedState(ec) || getExamStartedState(effectiveEc);
-    if (!startedState) {
-      res.status(403).json({
-        success: false,
-        error: 'The inspector has not started this examination yet. Please wait in the waiting lobby.',
-        code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
-      });
-      return;
-    }
-  }
 
   // 2. Time window check
   const now = new Date();
@@ -1318,7 +1310,7 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
   // 3. Check for existing attempt
   const { data: existing } = await supabase
     .from('exam_code_attempts')
-    .select('id, status, score, max_score, start_time')
+    .select('id, status, score, max_score, start_time, override_reason')
     .or(`hall_ticket_no.eq.${ht},hall_ticket_no.eq.${canonicalRoll}`)
     .eq('exam_code', ec)
     .maybeSingle();
@@ -1369,7 +1361,7 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
         .update({ session_token: freshToken, last_resumed_at: new Date().toISOString() })
         .eq('id', existing.id);
 
-      const isRel = existing.status === 'released';
+      const isRel = Boolean(isExamStarted || memoryReleased || existing.status === 'released' || existing.override_reason === 'status:released');
       res.json({
         success: true,
         resumed: true,
@@ -1490,8 +1482,8 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
     success: true,
     valid: true,
     resumed: false,
-    status: 'waiting_verification',
-    is_released: false,
+    status: isExamStarted ? 'in_progress' : 'waiting_verification',
+    is_released: Boolean(isExamStarted || memoryReleased),
     attempt_id: attempt.id,
     session_token: newToken,
     server_time: Date.now(),
@@ -3699,8 +3691,9 @@ export async function getAttemptStatus(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const { getExamStartedState } = await import('../services/socketService');
+  const { getExamStartedState, isStudentReleasedInMemory } = await import('../services/socketService');
   const startedState = getExamStartedState(code);
+  const memoryReleased = isStudentReleasedInMemory(code, hallTicket);
 
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(attemptId || '');
   let query = supabase.from('exam_code_attempts').select('id, status, start_time, session_token, hall_ticket_no, student_name, override_reason').eq('exam_code', code);
@@ -3712,7 +3705,7 @@ export async function getAttemptStatus(req: Request, res: Response): Promise<voi
 
   let { data: attempt } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
 
-  // If exam has started and no attempt exists yet, auto-create it!
+  // If exam has started or released and no attempt exists yet, auto-create it!
   if (!attempt && hallTicket) {
     const startIso = startedState ? new Date(startedState.server_start_time).toISOString() : new Date().toISOString();
     try {
@@ -3734,14 +3727,14 @@ export async function getAttemptStatus(req: Request, res: Response): Promise<voi
   }
 
   if (!attempt) {
-    // If exam is live, allow entrance regardless of pre-existing attempt
-    if (startedState) {
+    // If exam is live or student released in-memory, allow entrance regardless of pre-existing attempt
+    if (startedState || memoryReleased) {
       res.json({
         success: true,
         attempt_id: `att_${Date.now()}`,
         status: 'in_progress',
         is_released: true,
-        start_time: new Date(startedState.server_start_time).toISOString(),
+        start_time: startedState ? new Date(startedState.server_start_time).toISOString() : new Date().toISOString(),
         hall_ticket: hallTicket || 'CANDIDATE',
         student_name: hallTicket || 'Candidate',
       });
@@ -3754,6 +3747,7 @@ export async function getAttemptStatus(req: Request, res: Response): Promise<voi
   // Released if marked released OR if the whole exam has already started
   const isReleased = Boolean(
     startedState ||
+    memoryReleased ||
     attempt.status === 'released' ||
     attempt.override_reason === 'status:released' ||
     attempt.status === 'in_progress' ||
@@ -3786,17 +3780,18 @@ export async function startStudentAttempt(req: Request, res: Response): Promise<
     return;
   }
 
-  const { getExamStartedState } = await import('../services/socketService');
+  const { getExamStartedState, isStudentReleasedInMemory } = await import('../services/socketService');
   const startedState = getExamStartedState(code);
+  const memoryReleased = isStudentReleasedInMemory(code, hallTicket);
 
   const tokenCheck = await verifyAttemptToken(String(attemptId || ''), code, sessionToken, hallTicket);
-  if (!tokenCheck.valid && !startedState) {
+  if (!tokenCheck.valid && !startedState && !memoryReleased) {
     res.status(403).json({ success: false, error: 'Invalid or evicted session token', code: 'INVALID_TOKEN' });
     return;
   }
 
   const attempt = tokenCheck.attempt;
-  if (!attempt && !startedState) {
+  if (!attempt && !startedState && !memoryReleased) {
     res.status(404).json({ success: false, error: 'Attempt record not found' });
     return;
   }

@@ -40,15 +40,44 @@ export interface ExamStartedState {
 // Idempotency + reconnect-sync store
 const examStartedState = new Map<string, ExamStartedState>();
 
+// In-memory registry of released students so supervisor release and start dispatch never fail
+export const releasedStudentsByExam = new Map<string, Set<string>>();
+export const releasedAllExams = new Set<string>();
+
+export function markStudentReleased(examCode: string, hallTicket?: string): void {
+  const code = examCode.toUpperCase();
+  if (!hallTicket || hallTicket === 'ALL') {
+    releasedAllExams.add(code);
+  } else {
+    if (!releasedStudentsByExam.has(code)) {
+      releasedStudentsByExam.set(code, new Set());
+    }
+    releasedStudentsByExam.get(code)!.add(hallTicket.toUpperCase().trim());
+  }
+}
+
+export function isStudentReleasedInMemory(examCode: string, hallTicket?: string): boolean {
+  const code = examCode.toUpperCase();
+  if (releasedAllExams.has(code)) return true;
+  if (examStartedState.has(code)) return true;
+  if (!hallTicket) return false;
+  return releasedStudentsByExam.get(code)?.has(hallTicket.toUpperCase().trim()) ?? false;
+}
+
 export function getExamStartedState(examCode: string): ExamStartedState | undefined {
   return examStartedState.get(examCode.toUpperCase());
 }
 
 export function resetExamStartedState(examCode?: string): void {
   if (examCode) {
-    examStartedState.delete(examCode.toUpperCase());
+    const code = examCode.toUpperCase();
+    examStartedState.delete(code);
+    releasedStudentsByExam.delete(code);
+    releasedAllExams.delete(code);
   } else {
     examStartedState.clear();
+    releasedStudentsByExam.clear();
+    releasedAllExams.clear();
   }
 }
 
@@ -457,6 +486,41 @@ export function initSocketIO(httpServer: HttpServer): IOServer {
       io?.to(`exam:${code}`).emit('exam:config', { examCode: code, maxViolations: limit });
     });
 
+    // Instructions screen room
+    socket.on('instructions:join', async (data: { examCode: string; hallTicket?: string }) => {
+      if (!data?.examCode) return;
+      const code = data.examCode.toUpperCase();
+      socket.join(`instructions:${code}`);
+      socket.join(`lobby:${code}`);
+
+      // Check if already released or exam started
+      const isRel = isStudentReleasedInMemory(code, data.hallTicket);
+      if (isRel) {
+        socket.emit('STUDENT_RELEASED', {
+          event: 'STUDENT_RELEASED',
+          examCode: code,
+          hallTicket: data.hallTicket,
+          timestamp: Date.now(),
+        });
+      }
+
+      const startedState = examStartedState.get(code);
+      if (startedState) {
+        const elapsed = Math.floor((Date.now() - startedState.server_start_time) / 1000);
+        const remainingSeconds = Math.max(0, startedState.duration_seconds - elapsed);
+        if (startedState.allow_late_join || remainingSeconds > 0) {
+          socket.emit('EXAM_STARTED', {
+            event: 'EXAM_STARTED',
+            exam_id: startedState.exam_id,
+            server_start_time: startedState.server_start_time,
+            duration_seconds: startedState.duration_seconds,
+            allow_late_join: startedState.allow_late_join,
+            elapsed_seconds: elapsed,
+          });
+        }
+      }
+    });
+
     socket.on('disconnect', () => {
       console.log(`[Socket.io] Client disconnected: ${socket.id}`);
       const student = socketStudents.get(socket.id);
@@ -572,16 +636,22 @@ export async function broadcastExamStarted(params: {
       elapsed_seconds: elapsed,
       remaining_seconds: Math.max(0, state.duration_seconds - elapsed),
     };
-    console.log(`[Socket.io] Broadcasting EXAM_STARTED to lobby:${code}`, payload);
+    markStudentReleased(code);
+    console.log(`[Socket.io] Broadcasting EXAM_STARTED to lobby:${code}, instructions:${code}`, payload);
     io.to(`lobby:${code}`).emit('EXAM_STARTED', payload);
+    io.to(`instructions:${code}`).emit('EXAM_STARTED', payload);
+    io.to(`exam:${code}`).emit('EXAM_STARTED', payload);
 
     // Also broadcast student release to release all candidates simultaneously
-    io.to(`lobby:${code}`).emit('STUDENT_RELEASED', {
+    const releasePayload = {
       event: 'STUDENT_RELEASED',
       examCode: code,
       all: true,
       timestamp: Date.now(),
-    });
+    };
+    io.to(`lobby:${code}`).emit('STUDENT_RELEASED', releasePayload);
+    io.to(`instructions:${code}`).emit('STUDENT_RELEASED', releasePayload);
+    io.to(`exam:${code}`).emit('STUDENT_RELEASED', releasePayload);
   }
 
   // Start throttled 1-second pulse for ranks and monitor
@@ -640,16 +710,20 @@ export function broadcastStudentReleased(params: {
   hallTicket: string;
   attemptId: string;
 }): void {
-  if (!io) return;
   const code = params.examCode.toUpperCase();
   const ht = params.hallTicket.toUpperCase();
-  io.to(`lobby:${code}`).emit('STUDENT_RELEASED', {
+  markStudentReleased(code, ht);
+  if (!io) return;
+  const payload = {
     event: 'STUDENT_RELEASED',
     examCode: code,
     hallTicket: ht,
     attemptId: params.attemptId,
     timestamp: Date.now(),
-  });
+  };
+  io.to(`lobby:${code}`).emit('STUDENT_RELEASED', payload);
+  io.to(`instructions:${code}`).emit('STUDENT_RELEASED', payload);
+  io.to(`exam:${code}`).emit('STUDENT_RELEASED', payload);
   scheduleThrottledRoomUpdate(code);
 }
 

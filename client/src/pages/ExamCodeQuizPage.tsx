@@ -2018,7 +2018,7 @@ export default function QuizPage() {
                 id="quiz-timer-display"
                 style={{
                   fontFamily: 'var(--font-mono, monospace)',
-                  fontSize: '2.8rem',
+                  fontSize: '3.2rem',
                   fontWeight: 900,
                   color: timerColor,
                   letterSpacing: '0.06em',

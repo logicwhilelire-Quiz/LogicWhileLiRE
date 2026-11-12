@@ -99,6 +99,55 @@ export default function WaitingLobbyPage() {
   const socketRef = useRef<Socket | null>(null);
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hasNavigatedRef = useRef(false);
+
+  const navigateToInstructions = (extra?: { attemptId?: string; serverStartTime?: number; durationSeconds?: number }) => {
+    if (hasNavigatedRef.current) return;
+    hasNavigatedRef.current = true;
+    const myHt = String(
+      candidate?.roll_number ||
+      (candidate as any)?.hall_ticket ||
+      (location.state as any)?.hallTicket ||
+      ''
+    ).toUpperCase().trim();
+    const myName = displayName || candidate?.name || 'Student Candidate';
+    const effectiveAttId = extra?.attemptId || (location.state as any)?.attemptId;
+    const sStart = extra?.serverStartTime ?? startPayload?.server_start_time;
+    const dSec = extra?.durationSeconds ?? (startPayload?.duration_seconds || examDurationSeconds);
+
+    const currentAttempt = {
+      examCode: contestId.toUpperCase(),
+      hallTicket: myHt,
+      studentName: myName,
+      attemptId: effectiveAttId,
+      serverStartTime: sStart,
+      durationSeconds: dSec,
+      isReleased: true,
+      examDetails: {
+        exam_name: contestId.toUpperCase(),
+        duration_minutes: Math.round(dSec / 60),
+        total_questions: 15,
+      },
+    };
+    try {
+      sessionStorage.setItem(`lw_camera_consented_${contestId.toUpperCase()}`, 'true');
+      sessionStorage.setItem('lw_camera_consented', 'true');
+      localStorage.setItem('logicwhilelire_attempt', JSON.stringify(currentAttempt));
+      localStorage.setItem('lw_attempt', JSON.stringify(currentAttempt));
+    } catch {}
+
+    navigate(`/instructions/${contestId}`, {
+      state: {
+        hallTicket: myHt,
+        studentName: myName,
+        attemptId: effectiveAttId,
+        serverStartTime: sStart,
+        durationSeconds: dSec,
+        examCode: contestId,
+        isReleased: true,
+      },
+    });
+  };
 
   const addEvent = (text: string, type: "info" | "success" | "ping" | "alert" = "info") => {
     setEvents((prev) => [
@@ -139,6 +188,7 @@ export default function WaitingLobbyPage() {
             `[REST-sync] Exam active — remaining=${s.remaining_seconds}s`,
             "alert"
           );
+          navigateToInstructions({ serverStartTime: s.server_start_time, durationSeconds: s.duration_seconds || examDurationSeconds });
         }
       } catch {
         // Non-fatal
@@ -284,31 +334,7 @@ export default function WaitingLobbyPage() {
         if (data.all || !data.hallTicket || !myHt || data.hallTicket.toUpperCase() === myHt) {
           setIsReleased(true);
           addEvent("Release granted by supervisor! Proceeding to instructions...", "success");
-          try {
-            const currentAttempt = {
-              examCode: contestId.toUpperCase(),
-              hallTicket: myHt || effectiveHt,
-              studentName: effectiveName,
-              attemptId: data.attemptId || effectiveAttemptId,
-              serverStartTime: startPayload?.server_start_time,
-              durationSeconds: startPayload?.duration_seconds || examDurationSeconds,
-              isReleased: true,
-            };
-            localStorage.setItem('logicwhilelire_attempt', JSON.stringify(currentAttempt));
-            localStorage.setItem('lw_attempt', JSON.stringify(currentAttempt));
-          } catch {}
-          setTimeout(() => {
-            navigate(`/instructions/${contestId}`, {
-              state: {
-                hallTicket: myHt || effectiveHt,
-                studentName: effectiveName,
-                attemptId: data.attemptId || effectiveAttemptId,
-                serverStartTime: startPayload?.server_start_time,
-                durationSeconds: startPayload?.duration_seconds || examDurationSeconds,
-                isReleased: true,
-              },
-            });
-          }, 600);
+          navigateToInstructions({ attemptId: data.attemptId || effectiveAttemptId });
         }
       }
     });
@@ -347,32 +373,11 @@ export default function WaitingLobbyPage() {
         `${payload.elapsed_seconds != null ? 'reconnect-sync' : 'fresh start'}`,
         "alert"
       );
-      try {
-        const myHt = String(effectiveHt || candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || '').toUpperCase();
-        const currentAttempt = {
-          examCode: contestId.toUpperCase(),
-          hallTicket: myHt || effectiveHt,
-          studentName: effectiveName,
-          attemptId: effectiveAttemptId,
-          serverStartTime: payload.server_start_time,
-          durationSeconds: payload.duration_seconds,
-          isReleased: true,
-        };
-        localStorage.setItem('logicwhilelire_attempt', JSON.stringify(currentAttempt));
-        localStorage.setItem('lw_attempt', JSON.stringify(currentAttempt));
-      } catch {}
-      setTimeout(() => {
-        navigate(`/instructions/${contestId}`, {
-          state: {
-            serverStartTime: payload.server_start_time,
-            durationSeconds: payload.duration_seconds,
-            examCode: contestId,
-            hallTicket: effectiveHt,
-            attemptId: effectiveAttemptId,
-            isReleased: true,
-          },
-        });
-      }, 600);
+      navigateToInstructions({
+        serverStartTime: payload.server_start_time,
+        durationSeconds: payload.duration_seconds,
+        attemptId: effectiveAttemptId,
+      });
     });
 
     const pingStart: { t?: number } = {};
@@ -398,7 +403,7 @@ export default function WaitingLobbyPage() {
       if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-  }, [contestId, location.state]);
+  }, [contestId]);
 
   // PRIORITY 2: 3-second fallback polling check for supervisor release
   useEffect(() => {
@@ -410,14 +415,9 @@ export default function WaitingLobbyPage() {
         const res = await getAttemptStatus(contestId, { hallTicket: myHt, attemptId });
         if (res.data?.is_released) {
           setIsReleased(true);
-          navigate(`/instructions/${contestId}`, {
-            state: {
-              hallTicket: myHt,
-              studentName: candidate?.name,
-              attemptId: res.data.attempt_id,
-              isReleased: true,
-              serverStartTime: res.data.start_time ? new Date(res.data.start_time).getTime() : undefined,
-            },
+          navigateToInstructions({
+            attemptId: res.data.attempt_id,
+            serverStartTime: res.data.start_time ? new Date(res.data.start_time).getTime() : undefined,
           });
         } else if (res.data?.status === 'blocked') {
           setIsBlocked(true);
@@ -430,64 +430,21 @@ export default function WaitingLobbyPage() {
     const interval = setInterval(checkStatus, 3000);
     checkStatus();
     return () => clearInterval(interval);
-  }, [contestId, candidate, location.state, navigate]);
+  }, [contestId, candidate, location.state]);
 
   useEffect(() => {
     if (examStarted && startPayload) {
-      const examCode = startPayload.exam_id || contestId;
-      const hallTicket = candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || "";
-      try {
-        sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
-        sessionStorage.setItem('lw_camera_consented', 'true');
-        const attemptData = {
-          examCode,
-          hallTicket,
-          studentName: displayName,
-          attemptId: (location.state as any)?.attemptId,
-          serverStartTime: startPayload.server_start_time,
-          durationSeconds: startPayload.duration_seconds,
-          isReleased: true,
-          examDetails: {
-            exam_name: examCode,
-            duration_minutes: Math.round(startPayload.duration_seconds / 60),
-            total_questions: 15,
-          },
-        };
-        localStorage.setItem('logicwhilelire_attempt', JSON.stringify(attemptData));
-        localStorage.setItem('lw_attempt', JSON.stringify(attemptData));
-      } catch {}
-      const timer = setTimeout(() => {
-        navigate(`/instructions/${examCode}`, {
-          state: {
-            serverStartTime: startPayload.server_start_time,
-            durationSeconds: startPayload.duration_seconds,
-            examCode,
-            hallTicket,
-            attemptId: (location.state as any)?.attemptId,
-            isReleased: true,
-          },
-        });
-      }, 900);
-      return () => clearTimeout(timer);
+      navigateToInstructions({
+        serverStartTime: startPayload.server_start_time,
+        durationSeconds: startPayload.duration_seconds,
+      });
     }
-  }, [examStarted, startPayload, contestId, candidate, location.state, navigate, displayName]);
+  }, [examStarted, startPayload]);
 
   const handleManualStart = () => {
-    const examCode = startPayload?.exam_id || contestId;
-    const hallTicket = candidate?.roll_number || (candidate as any)?.hall_ticket || (location.state as any)?.hallTicket || "";
-    try {
-      sessionStorage.setItem(`lw_camera_consented_${examCode}`, 'true');
-      sessionStorage.setItem('lw_camera_consented', 'true');
-    } catch {}
-    navigate(`/instructions/${examCode}`, {
-      state: {
-        examCode,
-        serverStartTime: startPayload?.server_start_time,
-        durationSeconds: startPayload?.duration_seconds,
-        hallTicket,
-        attemptId: (location.state as any)?.attemptId,
-        isReleased: true,
-      },
+    navigateToInstructions({
+      serverStartTime: startPayload?.server_start_time,
+      durationSeconds: startPayload?.duration_seconds,
     });
   };
 
@@ -812,45 +769,50 @@ export default function WaitingLobbyPage() {
             {/* Assessment Timer Box */}
             <div
               style={{
-                padding: "18px 22px",
+                padding: "24px 22px",
                 textAlign: "center",
                 background: "#0E1A2E",
-                border: "1px solid rgba(234, 168, 18, 0.25)",
-                borderRadius: 10,
+                border: examStarted ? "1.5px solid rgba(16, 185, 129, 0.45)" : "1.5px solid rgba(234, 168, 18, 0.35)",
+                borderRadius: 14,
+                boxShadow: examStarted ? "0 8px 30px rgba(16,185,129,0.15)" : "0 8px 30px rgba(234,168,18,0.12)",
               }}
             >
               <div
                 style={{
-                  fontSize: "0.72rem",
+                  fontSize: "0.78rem",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
-                  color: "#94A3B8",
-                  fontWeight: 700,
-                  marginBottom: 6,
+                  color: examStarted ? "#34D399" : "#EAA812",
+                  fontWeight: 800,
+                  marginBottom: 10,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: 6,
+                  gap: 8,
                 }}
               >
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: examStarted ? "#10B981" : "#EAA812", display: "inline-block" }} />
-                <span>{examStarted ? "Exam In Progress" : "Global Synchronous Timer Sync"}</span>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: examStarted ? "#10B981" : "#EAA812", display: "inline-block", boxShadow: examStarted ? "0 0 8px #10B981" : "0 0 8px #EAA812" }} />
+                <span>{examStarted ? "Live Exam Clock Active" : "Authoritative Server Synchronous Window"}</span>
               </div>
               <div
+                id="waiting-lobby-timer-display"
                 style={{
-                  fontSize: "2.5rem",
+                  fontSize: "3.6rem",
                   fontWeight: 900,
-                  fontFamily: "monospace",
+                  fontFamily: "var(--font-mono, monospace)",
                   color: examStarted ? "#34D399" : "#EAA812",
-                  letterSpacing: "0.04em",
+                  letterSpacing: "0.05em",
+                  lineHeight: 1,
+                  margin: "8px 0 12px",
+                  textShadow: examStarted ? "0 0 20px rgba(52,211,153,0.35)" : "0 0 20px rgba(234,168,18,0.35)",
                 }}
               >
-                {examStarted ? "00:00" : timeFormatted}
+                {examStarted ? "LIVE NOW" : timeFormatted}
               </div>
-              <div style={{ fontSize: "0.76rem", color: "#94A3B8", marginTop: 4 }}>
+              <div style={{ fontSize: "0.82rem", color: "#94A3B8", marginTop: 4, lineHeight: 1.5 }}>
                 {examStarted
-                  ? "Assessment active — auto-saving answers in real-time"
-                  : "All enrolled candidates will start simultaneously upon dispatch"}
+                  ? "Assessment is live on authoritative server • Synchronized dispatch active"
+                  : "Expected Launch Window: Within 5 Minutes • All candidates start simultaneously upon dispatch"}
               </div>
             </div>
           </div>
