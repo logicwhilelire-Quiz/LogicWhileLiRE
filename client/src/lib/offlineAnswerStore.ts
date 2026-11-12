@@ -168,7 +168,7 @@ export async function markAnswersSynced(ids: string[]): Promise<void> {
 
   try {
     const db = await openDB();
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
 

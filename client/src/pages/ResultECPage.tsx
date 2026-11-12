@@ -12,6 +12,14 @@ import ShimmerText from '../components/3d/ShimmerText'
 import Confetti from '../components/Confetti'
 import LogicWhileLiRELoader from '../components/LogicWhileLiRELoader'
 import SectorRadar3D from '../components/3d/SectorRadar3D'
+import {
+  IconClipboard,
+  IconProhibit,
+  IconAnalytics,
+  IconFileText,
+  IconShield,
+  IconPrinter,
+} from '../components/icons/HumanIcons'
 
 const RadarChart3D  = lazy(() => import('../components/3d/RadarChart3D'))
 const StarField     = lazy(() => import('../components/3d/StarField'))
@@ -272,7 +280,9 @@ export default function ResultECPage() {
               boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)',
             }}
           >
-            <div style={{ fontSize: '3rem', marginBottom: 16 }}>📋</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <IconClipboard size={48} color="#94A3B8" />
+            </div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#F8FAFC', marginBottom: 8 }}>
               No Assessment Record Found
             </h2>
@@ -380,7 +390,9 @@ export default function ResultECPage() {
               boxShadow: '0 4px 20px rgba(239, 68, 68, 0.2)',
             }}
           >
-            <div style={{ fontSize: '2rem' }}>🚫</div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <IconProhibit size={32} color="#EF4444" />
+            </div>
             <div>
               <div style={{ fontWeight: 800, color: '#EF4444', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Attempt Terminated &amp; Disqualified
@@ -421,7 +433,7 @@ export default function ResultECPage() {
                 letterSpacing: '0.08em',
                 marginBottom: 8,
               }}>
-                <span>📊</span>
+                <IconAnalytics size={14} color="#38BDF8" />
                 <span>Sectional Evaluation Ledger</span>
               </div>
               <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 800, letterSpacing: '-0.03em' }}>
@@ -590,7 +602,7 @@ export default function ResultECPage() {
                                 gap: 5,
                                 whiteSpace: 'nowrap',
                               }}>
-                                <span>📝</span>
+                                <IconFileText size={14} color="#38BDF8" />
                                 <span>Submitted, pending manual review</span>
                               </span>
                             ) : (
@@ -959,7 +971,9 @@ export default function ResultECPage() {
                   GR-{(examCode || 'EXAM').toUpperCase()}-{(hallTicket || '0000').slice(-4)}
                 </div>
               </div>
-              <div style={{ fontSize: '1.4rem' }}>🛡️</div>
+              <div>
+                <IconShield size={24} color="#34D399" />
+              </div>
             </div>
           </div>
         </div>
@@ -1001,7 +1015,7 @@ export default function ResultECPage() {
                         <tr key={entry.rank} style={{ background: entry.hall_ticket === hallTicket ? 'rgba(37,99,235,0.06)' : undefined }}>
                           <td>
                             <div className={`rank-badge ${['rank-1','rank-2','rank-3'][entry.rank - 1] || 'rank-other'}`}>
-                              {entry.rank <= 3 ? ['🥇','🥈','🥉'][entry.rank - 1] : entry.rank}
+                              {entry.rank <= 3 ? ['1st', '2nd', '3rd'][entry.rank - 1] : entry.rank}
                             </div>
                           </td>
                           <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
@@ -1070,7 +1084,7 @@ export default function ResultECPage() {
             }}
             title="Print or save verified official score report as PDF"
           >
-            <span>🖨️</span>
+            <IconPrinter size={18} color="#000000" />
             <span>Print Verified Scorecard</span>
           </button>
           <Link to={`/reports/student/${hallTicket || '22R1KA0584'}`} style={{ textDecoration: 'none' }}>
@@ -1083,9 +1097,13 @@ export default function ResultECPage() {
                 padding: '14px 28px',
                 border: 'none',
                 boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
               }}
             >
-              📑 Institutional Performance Report
+              <IconFileText size={18} color="#FFFFFF" />
+              <span>Institutional Performance Report</span>
             </MagneticButton>
           </Link>
           <Link to={`/leaderboard-ec/${examCode}`} style={{ textDecoration: 'none' }}>

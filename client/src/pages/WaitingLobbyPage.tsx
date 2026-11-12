@@ -6,7 +6,7 @@ import AnimatedPage from "../components/AnimatedPage";
 import { getAssessmentSystemCheck, authLogout, getExamLobbyStats, getAttemptStatus } from "../lib/api";
 import { SOCKET_URL } from "../lib/config";
 import HoloProctorDeskModal from "../components/HoloProctorDeskModal";
-import { IconClock, IconLaunch, IconCheck, IconShield, IconPulse, IconAlert } from "../components/icons/HumanIcons";
+import { IconClock, IconLaunch, IconCheck, IconShield, IconPulse, IconAlert, IconFlash } from "../components/icons/HumanIcons";
 
 
 interface CandidateProfile {
@@ -51,7 +51,33 @@ export default function WaitingLobbyPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [candidate, setCandidate] = useState<CandidateProfile | null>(null);
+  const [candidate, setCandidate] = useState<CandidateProfile | null>(() => {
+    const locState = (location.state as any) || {};
+    if (locState.hallTicket || locState.roll_number || locState.candidate) {
+      return {
+        name: locState.studentName || locState.candidate?.name || 'Student Candidate',
+        roll_number: locState.hallTicket || locState.candidate?.roll_number || '',
+        hall_ticket: locState.hallTicket || locState.candidate?.hall_ticket || '',
+        section: locState.section || locState.candidate?.section || 'General',
+      } as CandidateProfile;
+    }
+    const stored = localStorage.getItem("student_user") || localStorage.getItem("logicwhilelire_attempt") || localStorage.getItem("lw_attempt");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        const cand = parsed.student || parsed;
+        if (cand.hall_ticket || cand.roll_number || cand.hallTicket) {
+          return {
+            name: cand.name || cand.studentName || 'Student Candidate',
+            roll_number: cand.roll_number || cand.hallTicket || cand.hall_ticket || '',
+            hall_ticket: cand.hall_ticket || cand.hallTicket || cand.roll_number || '',
+            section: cand.section || 'General',
+          } as CandidateProfile;
+        }
+      } catch {}
+    }
+    return null;
+  });
   const [connected, setConnected] = useState(false);
   const [latency, setLatency] = useState<number | null>(null);
   const [lobbyMeta, setLobbyMeta] = useState<LobbyMeta>({ enrolled: 0, connected: 0, pending: 0 });
@@ -154,7 +180,7 @@ export default function WaitingLobbyPage() {
             duration_seconds: durationSec,
             allow_late_join: false,
           });
-          addEvent('🚀 [ADMIN COMMAND] Administrator dispatched live start command! Launching assessment…', 'alert');
+          addEvent('[START] Administrator dispatched live start command! Launching assessment…', 'alert');
         }
       } catch {}
     };
@@ -293,7 +319,7 @@ export default function WaitingLobbyPage() {
         if (!data.hallTicket || data.hallTicket.toUpperCase() === myHt) {
           setIsBlocked(true);
           setBlockReason(data.reason || 'Blocked by supervisor');
-          addEvent(`🛑 Entry suspended: ${data.reason || 'Blocked by supervisor'}`, "alert");
+          addEvent(`[SUSPENDED] Entry suspended: ${data.reason || 'Blocked by supervisor'}`, "alert");
         }
       }
     });
@@ -304,7 +330,7 @@ export default function WaitingLobbyPage() {
         if (!data.hallTicket || data.hallTicket.toUpperCase() === myHt) {
           setIsRejected(true);
           setRejectReason(data.reason || 'Entry rejected by invigilator');
-          addEvent(`⚠️ Entry rejected: ${data.reason || 'Rejected by supervisor'}`, "alert");
+          addEvent(`[REJECTED] Entry rejected: ${data.reason || 'Rejected by supervisor'}`, "alert");
         }
       }
     });
@@ -420,6 +446,7 @@ export default function WaitingLobbyPage() {
           attemptId: (location.state as any)?.attemptId,
           serverStartTime: startPayload.server_start_time,
           durationSeconds: startPayload.duration_seconds,
+          isReleased: true,
           examDetails: {
             exam_name: examCode,
             duration_minutes: Math.round(startPayload.duration_seconds / 60),
@@ -437,6 +464,7 @@ export default function WaitingLobbyPage() {
             examCode,
             hallTicket,
             attemptId: (location.state as any)?.attemptId,
+            isReleased: true,
           },
         });
       }, 900);
@@ -517,7 +545,9 @@ export default function WaitingLobbyPage() {
                 boxShadow: "0 24px 60px rgba(0,0,0,0.7)",
               }}
             >
-              <div style={{ fontSize: "3.5rem", marginBottom: 12 }}>🚀</div>
+              <div style={{ display: "inline-flex", padding: 18, borderRadius: "50%", background: "rgba(234, 168, 18, 0.15)", border: "2px solid rgba(234, 168, 18, 0.4)", marginBottom: 16 }}>
+                <IconFlash size={44} color="#EAA812" />
+              </div>
               <div
                 style={{
                   fontSize: "1.8rem",
@@ -679,9 +709,13 @@ export default function WaitingLobbyPage() {
                     borderRadius: 4,
                     fontSize: "0.72rem",
                     fontWeight: 800,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
                   }}
                 >
-                  VERIFIED CLAIM ✔
+                  <IconCheck size={12} color="#34D399" />
+                  <span>VERIFIED CLAIM</span>
                 </div>
               </div>
 
@@ -770,7 +804,8 @@ export default function WaitingLobbyPage() {
                   transition: "all 0.2s ease",
                 }}
               >
-                <span>✋ Report Issue / Contact Proctor</span>
+                <IconAlert size={14} color="#EAA812" />
+                <span>Report Issue / Contact Proctor</span>
               </button>
             </div>
 
@@ -792,9 +827,14 @@ export default function WaitingLobbyPage() {
                   color: "#94A3B8",
                   fontWeight: 700,
                   marginBottom: 6,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
                 }}
               >
-                {examStarted ? "🟢 Exam In Progress" : "Global Synchronous Timer Sync"}
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: examStarted ? "#10B981" : "#EAA812", display: "inline-block" }} />
+                <span>{examStarted ? "Exam In Progress" : "Global Synchronous Timer Sync"}</span>
               </div>
               <div
                 style={{
@@ -871,8 +911,8 @@ export default function WaitingLobbyPage() {
                   { ok: true, label: "Dynamic question & option SWAP randomized" },
                 ].map((item, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.82rem" }}>
-                    <span style={{ color: item.ok ? "#34D399" : "#F59E0B", fontWeight: 800 }}>
-                      {item.ok ? "✔" : "⏳"}
+                    <span style={{ color: item.ok ? "#34D399" : "#F59E0B", fontWeight: 800, display: "inline-flex", alignItems: "center" }}>
+                      {item.ok ? <IconCheck size={14} color="#34D399" /> : <IconClock size={14} color="#F59E0B" />}
                     </span>
                     <span style={{ color: "#E2E8F0" }}>{item.label}</span>
                   </div>

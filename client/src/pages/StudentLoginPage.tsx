@@ -6,6 +6,7 @@ import { API_BASE_URL } from '../lib/config';
 import BrandLogo from '../components/BrandLogo';
 import ServerWakeupModal from '../components/ServerWakeupModal';
 import { findAdminRosterStudent, type AdminRosterStudent } from '../lib/adminRosterStore';
+import { IconUsers, IconAward, IconShield, IconRadio, IconEye, IconKey } from '../components/icons/HumanIcons';
 
 /* ── Animated background ── */
 function GridBackground() {
@@ -25,7 +26,7 @@ const PORTAL_COLORS: Record<PortalKey, { text: string; bg: string; border: strin
   Admin:     { text: '#FBBF24', bg: 'rgba(245,158,11,0.18)', border: 'rgba(245,158,11,0.5)', glow: 'rgba(245,158,11,0.3)' },
   Inspector: { text: '#A78BFA', bg: 'rgba(139,92,246,0.18)', border: 'rgba(139,92,246,0.5)', glow: 'rgba(139,92,246,0.3)' },
 };
-function PortalTab({ label, icon, active, to }: { label: PortalKey; icon: string; active?: boolean; to: string }) {
+function PortalTab({ label, icon, active, to }: { label: PortalKey; icon: React.ReactNode; active?: boolean; to: string }) {
   const [hov, setHov] = useState(false);
   const c = PORTAL_COLORS[label];
   return (
@@ -36,10 +37,10 @@ function PortalTab({ label, icon, active, to }: { label: PortalKey; icon: string
       border: `1px solid ${active ? c.border : 'transparent'}`,
       boxShadow: active ? `0 0 12px ${c.glow}` : 'none',
       textDecoration: 'none', transition: 'all 0.2s ease',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
       cursor: active ? 'default' : 'pointer',
     }}>
-      <span>{icon}</span><span>{label}</span>
+      <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icon}</span><span>{label}</span>
     </Link>
   );
 }
@@ -179,10 +180,10 @@ export default function StudentLoginPage() {
 
           {/* Portal Switcher */}
           <div style={{ display: 'flex', background: 'rgba(9,14,31,0.8)', padding: 4, borderRadius: 12, border: '1px solid rgba(255,255,255,0.07)', marginBottom: 18, gap: 3, backdropFilter: 'blur(12px)' }}>
-            <PortalTab label="Student" icon="🎓" active to="/login" />
-            <PortalTab label="Faculty" icon="👨‍🏫" to="/faculty/login" />
-            <PortalTab label="Admin" icon="👑" to="/admin" />
-            <PortalTab label="Inspector" icon="🛡️" to="/inspector" />
+            <PortalTab label="Student" icon={<IconUsers size={13} color="currentColor" />} active to="/login" />
+            <PortalTab label="Faculty" icon={<IconAward size={13} color="currentColor" />} to="/faculty/login" />
+            <PortalTab label="Admin" icon={<IconShield size={13} color="currentColor" />} to="/admin" />
+            <PortalTab label="Inspector" icon={<IconRadio size={13} color="currentColor" />} to="/inspector" />
           </div>
 
           {/* Glass Login Card */}
@@ -224,18 +225,20 @@ export default function StudentLoginPage() {
 
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: 18 }}>
-                <label style={{ display: 'block', fontSize: '0.71rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 7 }}>🎫 Hall Ticket / Email</label>
+                <label style={{ display: 'block', fontSize: '0.71rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 7 }}>Hall Ticket / Email</label>
                 <input id="student-login-input" type="text" required placeholder="e.g. 22B91A0501" value={form.login} onChange={(e) => setForm({ ...form, login: e.target.value })} onFocus={() => setFocused('login')} onBlur={() => setFocused(null)} autoComplete="username" autoFocus style={inputStyle('login')} />
               </div>
               <div style={{ marginBottom: 22 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
-                  <label style={{ fontSize: '0.71rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>🔑 Password</label>
+                  <label style={{ fontSize: '0.71rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <IconKey size={13} color="#38BDF8" /> Password
+                  </label>
                   <Link to="/forgot-password" style={{ fontSize: '0.74rem', color: '#FBBF24', textDecoration: 'none', fontWeight: 700 }}>Forgot password?</Link>
                 </div>
                 <div style={{ position: 'relative' }}>
                   <input id="student-password-input" type={showPassword ? 'text' : 'password'} required placeholder="Enter your password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} onFocus={() => setFocused('password')} onBlur={() => setFocused(null)} autoComplete="current-password" style={{ ...inputStyle('password'), paddingRight: 44 }} />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '1rem', padding: 4 }}>
-                    {showPassword ? '👁️' : '👁️\u200d🗨️'}
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 4 }}>
+                    <IconEye size={16} color={showPassword ? '#38BDF8' : '#475569'} />
                   </button>
                 </div>
               </div>
@@ -243,7 +246,7 @@ export default function StudentLoginPage() {
                 onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(37,99,235,0.65)'; } }}
                 onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = loading ? 'none' : '0 4px 24px rgba(37,99,235,0.5)'; }}
               >
-                {loading ? (<><span style={{ display: 'inline-block', width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'slSpin 0.7s linear infinite' }} /><span>Signing in{dots}</span></>) : (<><span>🎓</span><span>Sign In as Student</span></>)}
+                {loading ? (<><span style={{ display: 'inline-block', width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'slSpin 0.7s linear infinite' }} /><span>Signing in{dots}</span></>) : (<><IconUsers size={16} color="#FFFFFF" /><span>Sign In as Student</span></>)}
               </button>
             </form>
 
@@ -253,7 +256,7 @@ export default function StudentLoginPage() {
               </div>
               <div style={{ textAlign: 'center' }}>
                 <Link to="/enter-exam" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#FBBF24', fontWeight: 700, textDecoration: 'none', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 8, padding: '7px 14px', fontSize: '0.8rem', transition: 'all 0.2s ease' }}>
-                  🎟️ Have an exam code? Enter directly
+                  Have an exam code? Enter directly &rarr;
                 </Link>
               </div>
             </div>

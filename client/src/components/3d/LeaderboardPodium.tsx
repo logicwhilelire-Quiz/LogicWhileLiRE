@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { IconTrophy, IconAward } from '../icons/HumanIcons'
 
 export interface LeaderboardEntry {
   rank: number
@@ -15,7 +16,7 @@ interface LeaderboardPodiumProps {
   examName?: string
 }
 
-const MEDALS = ['🥇', '🥈', '🥉']
+const MEDALS = ['1st', '2nd', '3rd']
 const PODIUM_HEIGHTS = [180, 140, 110] // px heights for 1st, 2nd, 3rd
 
 export default function LeaderboardPodium({ entries = [], examName = 'Exam' }: LeaderboardPodiumProps) {
@@ -32,8 +33,10 @@ export default function LeaderboardPodium({ entries = [], examName = 'Exam' }: L
         fontSize: '1.1rem', fontWeight: 700,
         color: 'var(--color-text-muted)',
         marginBottom: 40, letterSpacing: '0.06em', textTransform: 'uppercase',
+        display: 'inline-flex', alignItems: 'center', gap: 8,
       }}>
-        🏆 Top Performers — {examName}
+        <IconTrophy size={18} color="#F59E0B" />
+        <span>Top Performers — {examName}</span>
       </h3>
 
       {/* Podium display */}
@@ -71,10 +74,11 @@ export default function LeaderboardPodium({ entries = [], examName = 'Exam' }: L
               >
                 {rank === 1 && (
                   <div style={{
-                    position: 'absolute', top: -24, left: '50%', transform: 'translateX(-50%)',
-                    fontSize: '1.4rem', filter: 'drop-shadow(0 2px 6px rgba(251,191,36,0.6))',
+                    position: 'absolute', top: -22, left: '50%', transform: 'translateX(-50%)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    filter: 'drop-shadow(0 2px 6px rgba(251,191,36,0.6))',
                   }}>
-                    👑
+                    <IconAward size={20} color="#FBBF24" />
                   </div>
                 )}
 

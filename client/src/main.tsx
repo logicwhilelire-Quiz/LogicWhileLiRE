@@ -16,7 +16,7 @@ window.addEventListener('vite:preloadError', async (event) => {
       try {
         const names = await caches.keys();
         await Promise.all(names.map((name) => caches.delete(name)));
-      } catch (_) {}
+      } catch {}
     }
     if ('serviceWorker' in navigator) {
       try {
@@ -24,7 +24,7 @@ window.addEventListener('vite:preloadError', async (event) => {
         for (const reg of regs) {
           await reg.update();
         }
-      } catch (_) {}
+      } catch {}
     }
     window.location.href = window.location.pathname + '?_t=' + now;
   }

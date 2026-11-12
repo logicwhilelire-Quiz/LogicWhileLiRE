@@ -8,6 +8,19 @@ import AnimatedPage from '../components/AnimatedPage';
 import SectorRadar3D, { type SectorScore } from '../components/3d/SectorRadar3D';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import { sound } from '../lib/soundService';
+import {
+  IconLaunch,
+  IconBuilding,
+  IconFileText,
+  IconTrophy,
+  IconAnalytics,
+  IconRadio,
+  IconKey,
+  IconClock,
+  IconMail,
+  IconRadar,
+  IconFlash,
+} from '../components/icons/HumanIcons';
 
 const SectorsUniverse3D = lazy(() => import('../components/3d/SectorsUniverse3D'));
 
@@ -461,14 +474,16 @@ export default function StudentDashboardPage() {
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 8, fontSize: '0.88rem', color: '#94a3b8' }}>
                   <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#FFBE00', background: 'rgba(255, 190, 0, 0.1)', border: '1px solid rgba(255, 190, 0, 0.3)', padding: '2px 8px', borderRadius: 4 }}>
-                    🎓 Hall Ticket / Roll: {student.roll_number}
+                    Roll: {student.roll_number}
                   </span>
                   <span>•</span>
                   <span>{student.email}</span>
                   {student.college_name && (
                     <>
                       <span>•</span>
-                      <span style={{ color: '#cbd5e1' }}>🏛️ {student.college_name}</span>
+                      <span style={{ color: '#cbd5e1', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <IconBuilding size={14} color="#cbd5e1" /> {student.college_name}
+                      </span>
                     </>
                   )}
                   {student.section && (
@@ -492,20 +507,20 @@ export default function StudentDashboardPage() {
                   className="btn btn-outline text-xs"
                   style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px' }}
                 >
-                  📄 View PDF Performance Card
+                  <IconFileText size={14} /> View PDF Performance Card
                 </Link>
                 <Link
                   to="/practice"
                   className="btn btn-outline text-xs"
                   style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderColor: 'rgba(255, 190, 0, 0.4)', color: '#FFBE00' }}
                 >
-                  🪐 5-Sector Practice Arena
+                  <IconRadar size={14} color="#FFBE00" /> 5-Sector Practice Arena
                 </Link>
               </div>
             </div>
           </section>
 
-          {/* 🚀 Dedicated Examination Launchpad Station (Prominent & Seamless) */}
+          {/* Dedicated Examination Launchpad Station (Prominent & Seamless) */}
           <section
             style={{
               background: 'linear-gradient(135deg, rgba(255, 122, 0, 0.08) 0%, rgba(15, 23, 42, 0.9) 100%)',
@@ -519,9 +534,9 @@ export default function StudentDashboardPage() {
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: '1.25rem' }}>🚀</span>
+                  <IconLaunch size={20} color="#FFBE00" />
                   <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#f8fafc' }}>
-                    Live Assessment Station & Exam Launcher
+                    Live Assessment Station &amp; Exam Launcher
                   </h2>
                 </div>
                 <p style={{ margin: 0, fontSize: '0.86rem', color: '#94a3b8' }}>
@@ -593,9 +608,13 @@ export default function StudentDashboardPage() {
                   cursor: 'pointer',
                   boxShadow: '0 4px 16px rgba(255, 122, 0, 0.4)',
                   whiteSpace: 'nowrap',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
                 }}
               >
-                🚀 Launch Examination Station &rarr;
+                <IconLaunch size={16} />
+                <span>Launch Examination Station &rarr;</span>
               </button>
             </div>
 
@@ -656,7 +675,7 @@ export default function StudentDashboardPage() {
                   <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fef08a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Institutional Rank
                   </span>
-                  <span style={{ fontSize: '1.3rem' }}>🏆</span>
+                  <IconTrophy size={20} color="#facc15" />
                 </div>
                 <div style={{ fontSize: '2rem', fontWeight: 900, color: '#facc15' }}>
                   {pastResults.length > 0 && rank?.college_rank ? `#${rank.college_rank}` : '—'}
@@ -679,7 +698,7 @@ export default function StudentDashboardPage() {
                   <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Global Standing
                   </span>
-                  <span style={{ fontSize: '1.3rem' }}>🌐</span>
+                  <IconRadio size={20} color="#60a5fa" />
                 </div>
                 <div style={{ fontSize: '2rem', fontWeight: 900, color: '#60a5fa' }}>
                   {pastResults.length > 0 && rank?.overall_rank ? `#${rank.overall_rank}` : '—'}
@@ -702,7 +721,7 @@ export default function StudentDashboardPage() {
                   <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#d8b4fe', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Average Score
                   </span>
-                  <span style={{ fontSize: '1.3rem' }}>📊</span>
+                  <IconAnalytics size={20} color="#c084fc" />
                 </div>
                 <div style={{ fontSize: '2rem', fontWeight: 900, color: '#c084fc' }}>
                   {pastResults.length > 0 && rank?.average_score !== undefined && rank?.average_score !== null ? `${rank.average_score}%` : '—'}
@@ -725,7 +744,7 @@ export default function StudentDashboardPage() {
                   <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#86efac', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Assessments Taken
                   </span>
-                  <span style={{ fontSize: '1.3rem' }}>🎯</span>
+                  <IconRadar size={20} color="#4ade80" />
                 </div>
                 <div style={{ fontSize: '2rem', fontWeight: 900, color: '#4ade80' }}>
                   {pastResults.length}
@@ -737,12 +756,12 @@ export default function StudentDashboardPage() {
             </div>
           </section>
 
-          {/* 🌌 5-Sector Competency Matrix & Holographic Radar */}
+          {/* 5-Sector Competency Matrix & Holographic Radar */}
           <section style={{ marginBottom: 36 }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16 }}>
               <div>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#f8fafc' }}>
-                  🌌 5-Sector Competency Matrix &amp; 3D Interactive Universe
+                  5-Sector Competency Matrix &amp; 3D Interactive Universe
                 </h2>
                 <p style={{ margin: '4px 0 0 0', fontSize: '0.84rem', color: '#94a3b8' }}>
                   Live candidate mastery across the 5 technical sectors of LogicWhileLiRE.
@@ -761,9 +780,12 @@ export default function StudentDashboardPage() {
                     border: sectorViewMode === 'galaxy' ? '1px solid #38BDF8' : '1px solid rgba(255,255,255,0.1)',
                     background: sectorViewMode === 'galaxy' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(15, 23, 42, 0.6)',
                     color: sectorViewMode === 'galaxy' ? '#38BDF8' : '#94a3b8',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
                   }}
                 >
-                  🪐 3D Sectors Galaxy
+                  <IconRadar size={14} /> 3D Sectors Galaxy
                 </button>
                 <button
                   type="button"
@@ -777,16 +799,19 @@ export default function StudentDashboardPage() {
                     border: sectorViewMode === 'matrix' ? '1px solid #FFBE00' : '1px solid rgba(255,255,255,0.1)',
                     background: sectorViewMode === 'matrix' ? 'rgba(255, 190, 0, 0.15)' : 'rgba(15, 23, 42, 0.6)',
                     color: sectorViewMode === 'matrix' ? '#FFBE00' : '#94a3b8',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
                   }}
                 >
-                  📊 Radar &amp; Breakdown
+                  <IconAnalytics size={14} /> Radar &amp; Breakdown
                 </button>
                 <Link
                   to="/practice"
                   className="btn btn-outline text-xs"
-                  style={{ padding: '6px 14px', borderRadius: 6, borderColor: 'rgba(56, 189, 248, 0.4)', color: '#38BDF8' }}
+                  style={{ padding: '6px 14px', borderRadius: 6, borderColor: 'rgba(56, 189, 248, 0.4)', color: '#38BDF8', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
-                  ⚡ Open Sector Arena
+                  <IconFlash size={14} /> Open Sector Arena
                 </Link>
               </div>
             </div>
@@ -946,7 +971,9 @@ export default function StudentDashboardPage() {
                   textAlign: 'center',
                 }}
               >
-                <div style={{ fontSize: '2rem', marginBottom: 8 }}>📭</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                  <IconMail size={32} color="#94A3B8" />
+                </div>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
                   No exam available
                 </h3>
@@ -993,10 +1020,14 @@ export default function StudentDashboardPage() {
 
                       <div style={{ fontSize: '0.82rem', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 18 }}>
                         {exam.code && (
-                          <div>🔑 Exam Code: <strong style={{ color: '#FFBE00', fontFamily: 'monospace' }}>{exam.code}</strong></div>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <IconKey size={14} color="#FFBE00" /> Exam Code: <strong style={{ color: '#FFBE00', fontFamily: 'monospace' }}>{exam.code}</strong>
+                          </div>
                         )}
-                        <div>⏱ Duration: <strong>{exam.duration_minutes} Minutes</strong></div>
-                        <div>📅 Valid until: {new Date(exam.end_time).toLocaleDateString()}</div>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <IconClock size={14} color="#94a3b8" /> Duration: <strong>{exam.duration_minutes} Minutes</strong>
+                        </div>
+                        <div>Valid until: {new Date(exam.end_time).toLocaleDateString()}</div>
                       </div>
                     </div>
 
@@ -1004,9 +1035,9 @@ export default function StudentDashboardPage() {
                       type="button"
                       onClick={() => handleLaunchExam(exam.code || '')}
                       className="btn btn-primary w-full text-xs"
-                      style={{ padding: '10px', fontWeight: 700, textAlign: 'center', background: 'linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)' }}
+                      style={{ padding: '10px', fontWeight: 700, textAlign: 'center', background: 'linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                     >
-                      🚀 Launch Assessment &rarr;
+                      <IconLaunch size={14} /> Launch Assessment &rarr;
                     </button>
                   </div>
                 ))}

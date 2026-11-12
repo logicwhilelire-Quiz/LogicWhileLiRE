@@ -31,7 +31,7 @@ export async function getBrowserFingerprint(): Promise<string> {
           components.push(`gpu:${vendor}~${renderer}`);
         }
       }
-    } catch (_) {}
+    } catch {}
 
     // 5. Canvas 2D Text & Geometry Hash
     try {
@@ -50,7 +50,7 @@ export async function getBrowserFingerprint(): Promise<string> {
         ctx.fillText('LogicWhileLiRE-FP-2026', 4, 17);
         components.push(`canvas:${canvas.toDataURL().slice(-50)}`);
       }
-    } catch (_) {}
+    } catch {}
 
     const rawString = components.join('|');
 

@@ -444,6 +444,19 @@ export function initSocketIO(httpServer: HttpServer): IOServer {
       scheduleThrottledRoomUpdate(code);
     });
 
+    // Admin config updates (e.g. max violations / tab strikes policy)
+    socket.on('admin:exam_config', async (data: { examCode: string; maxViolations: number }) => {
+      if (!data?.examCode) return;
+      const code = data.examCode.toUpperCase();
+      const limit = Number(data.maxViolations) || 3;
+      try {
+        await supabase.from('exam_codes').update({ max_violations: limit }).eq('exam_code', code);
+      } catch {}
+      io?.to(`lobby:${code}`).emit('exam:config', { examCode: code, maxViolations: limit });
+      io?.to(`monitor:${code}`).emit('exam:config', { examCode: code, maxViolations: limit });
+      io?.to(`exam:${code}`).emit('exam:config', { examCode: code, maxViolations: limit });
+    });
+
     socket.on('disconnect', () => {
       console.log(`[Socket.io] Client disconnected: ${socket.id}`);
       const student = socketStudents.get(socket.id);

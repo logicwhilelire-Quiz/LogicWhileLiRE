@@ -31,7 +31,7 @@ class SoundService {
         this.ctx = new AudioCtx({ latencyHint: 'interactive' });
         this.initialized = true;
       }
-    } catch (_) {
+    } catch {
       // AudioContext unavailable or blocked by policy
     }
   }
@@ -77,7 +77,7 @@ class SoundService {
 
       osc.start(t);
       osc.stop(t + 0.025);
-    } catch (_) {}
+    } catch {}
   }
 
   /**
@@ -105,7 +105,7 @@ class SoundService {
 
       osc.start(t);
       osc.stop(t + 0.035);
-    } catch (_) {}
+    } catch {}
   }
 
   /**
@@ -136,7 +136,7 @@ class SoundService {
 
       osc.start(t);
       osc.stop(t + 0.35);
-    } catch (_) {}
+    } catch {}
   }
 
   /**
@@ -165,7 +165,7 @@ class SoundService {
 
       osc.start(t);
       osc.stop(t + 0.45);
-    } catch (_) {}
+    } catch {}
   }
 }
 

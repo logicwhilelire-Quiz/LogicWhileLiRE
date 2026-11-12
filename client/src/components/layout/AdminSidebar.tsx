@@ -2,6 +2,26 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import BrandLogo from '../BrandLogo';
 import ThemeToggle from '../ui/ThemeToggle';
+import {
+  IconDashboard,
+  IconBuilding,
+  IconHierarchy,
+  IconUsers,
+  IconSettings,
+  IconPlus,
+  IconKey,
+  IconBook,
+  IconDownload,
+  IconRadio,
+  IconEye,
+  IconAnalytics,
+  IconCpu,
+  IconFileText,
+  IconMail,
+  IconShield,
+  IconLock,
+  IconLogout,
+} from '../icons/HumanIcons';
 
 interface AdminSidebarProps {
   activeTab?: string;
@@ -48,31 +68,31 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
 
   const allNavItems = [
     // 0. Dashboard
-    { id: 'dashboard', label: 'Admin Dashboard', path: '/admin/dashboard', icon: '📊', roles: ['super_admin', 'admin'] },
+    { id: 'dashboard', label: 'Admin Dashboard', path: '/admin/dashboard', icon: <IconDashboard size={16} />, roles: ['super_admin', 'admin'] },
 
     // Data Flow: 1. College -> 2. Branch/Year/Section -> 3. Students -> 4. Exams -> 5. Questions
-    { id: 'colleges', label: '1. Colleges & Institutions', path: '/admin/colleges', icon: '🏛️', roles: ['super_admin', 'admin'] },
-    { id: 'hierarchy', label: '2. Structure (Branch/Year/Sec)', path: '/admin/hierarchy', icon: '🌳', roles: ['super_admin', 'admin'] },
-    { id: 'students', label: '3. Student Management', path: '/admin/students', icon: '👥', roles: ['super_admin', 'admin'] },
-    { id: 'exams', label: '4. Exam Control', path: '/admin/exams', icon: '⚙️', roles: ['super_admin', 'admin'] },
-    { id: 'create', label: 'Create Exam', path: '/admin/create-exam', icon: '➕', roles: ['super_admin', 'admin'] },
-    { id: 'exam-codes', label: 'Exam Codes', path: '/admin/exam-codes', icon: '🔑', roles: ['super_admin', 'admin'] },
-    { id: 'questions', label: '5. Question Bank', path: '/admin/questions', icon: '📝', roles: ['super_admin', 'admin'] },
-    { id: 'import', label: 'Import Questions (Excel)', path: '/admin/import', icon: '📥', roles: ['super_admin', 'admin'] },
+    { id: 'colleges', label: '1. Colleges & Institutions', path: '/admin/colleges', icon: <IconBuilding size={16} />, roles: ['super_admin', 'admin'] },
+    { id: 'hierarchy', label: '2. Structure (Branch/Year/Sec)', path: '/admin/hierarchy', icon: <IconHierarchy size={16} />, roles: ['super_admin', 'admin'] },
+    { id: 'students', label: '3. Student Management', path: '/admin/students', icon: <IconUsers size={16} />, roles: ['super_admin', 'admin'] },
+    { id: 'exams', label: '4. Exam Control', path: '/admin/exams', icon: <IconSettings size={16} />, roles: ['super_admin', 'admin'] },
+    { id: 'create', label: 'Create Exam', path: '/admin/create-exam', icon: <IconPlus size={16} />, roles: ['super_admin', 'admin'] },
+    { id: 'exam-codes', label: 'Exam Codes', path: '/admin/exam-codes', icon: <IconKey size={16} />, roles: ['super_admin', 'admin'] },
+    { id: 'questions', label: '5. Question Bank', path: '/admin/questions', icon: <IconBook size={16} />, roles: ['super_admin', 'admin'] },
+    { id: 'import', label: 'Import Questions (Excel)', path: '/admin/import', icon: <IconDownload size={16} />, roles: ['super_admin', 'admin'] },
 
     // Telemetry & Invigilation
-    { id: 'inspector', label: 'Inspector Live Console', path: '/admin/inspector', icon: '📡', roles: ['super_admin', 'admin', 'inspector'] },
-    { id: 'monitor', label: 'Live Monitor Console', path: '/admin/monitor', icon: '👁️', roles: ['super_admin', 'admin', 'inspector'] },
+    { id: 'inspector', label: 'Inspector Live Console', path: '/admin/inspector', icon: <IconRadio size={16} />, roles: ['super_admin', 'admin', 'inspector'] },
+    { id: 'monitor', label: 'Live Monitor Console', path: '/admin/monitor', icon: <IconEye size={16} />, roles: ['super_admin', 'admin', 'inspector'] },
 
     // Results, Analytics & Audits
-    { id: 'results', label: 'Results & Reports', path: '/admin/results', icon: '📈', roles: ['super_admin', 'admin', 'inspector', 'faculty'] },
-    { id: 'analytics', label: 'Exam Analytics', path: '/admin/analytics', icon: '🔬', roles: ['super_admin', 'admin'] },
-    { id: 'activity', label: 'Activity & Audit Logs', path: '/admin/activity', icon: '📜', roles: ['super_admin', 'admin'] },
-    { id: 'mail-logs', label: 'Email Dispatch Logs', path: '/admin/mail-logs', icon: '📬', roles: ['super_admin', 'admin'] },
+    { id: 'results', label: 'Results & Reports', path: '/admin/results', icon: <IconAnalytics size={16} />, roles: ['super_admin', 'admin', 'inspector', 'faculty'] },
+    { id: 'analytics', label: 'Exam Analytics', path: '/admin/analytics', icon: <IconCpu size={16} />, roles: ['super_admin', 'admin'] },
+    { id: 'activity', label: 'Activity & Audit Logs', path: '/admin/activity', icon: <IconFileText size={16} />, roles: ['super_admin', 'admin'] },
+    { id: 'mail-logs', label: 'Email Dispatch Logs', path: '/admin/mail-logs', icon: <IconMail size={16} />, roles: ['super_admin', 'admin'] },
 
     // Master Governance
-    { id: 'staff', label: 'Staff & Permissions', path: '/admin/staff', icon: '🛡️', roles: ['super_admin', 'admin'] },
-    { id: 'settings', label: 'System & Backups', path: '/admin/settings', icon: '🔒', roles: ['super_admin', 'admin'] },
+    { id: 'staff', label: 'Staff & Permissions', path: '/admin/staff', icon: <IconShield size={16} />, roles: ['super_admin', 'admin'] },
+    { id: 'settings', label: 'System & Backups', path: '/admin/settings', icon: <IconLock size={16} />, roles: ['super_admin', 'admin'] },
   ];
 
   const navItems = allNavItems.filter((item) => item.roles.includes(role));
@@ -187,7 +207,7 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
             fontWeight: 600,
           }}
         >
-          <span>🚪</span>
+          <IconLogout size={16} />
           <span>Logout Portal</span>
         </button>
         <div style={{ fontSize: '0.68rem', color: 'var(--color-text-faint, #64748b)', textAlign: 'center', marginTop: 12, lineHeight: 1.4 }}>

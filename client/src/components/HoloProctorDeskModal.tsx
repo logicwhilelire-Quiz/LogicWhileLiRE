@@ -2,7 +2,19 @@ import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
 import { API_BASE_URL } from '../lib/config'
-import { IconChat, IconRadio, IconShield, IconAlert } from './icons/HumanIcons'
+import {
+  IconChat,
+  IconRadio,
+  IconShield,
+  IconAlert,
+  IconCheck,
+  IconClock,
+  IconLock,
+  IconEye,
+  IconFlash,
+  IconFileText,
+  IconLaunch,
+} from './icons/HumanIcons'
 
 export interface ProctorCommsMessage {
   id: string
@@ -138,7 +150,7 @@ export default function HoloProctorDeskModal({
                   animation: 'pulse 2s infinite',
                 }}
               >
-                <span style={{ fontSize: '1.1rem' }}>🛡️</span>
+                <IconShield size={18} color="#FFFFFF" />
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -269,9 +281,32 @@ export default function HoloProctorDeskModal({
                               textTransform: 'uppercase',
                               color: borderColor,
                               letterSpacing: '0.05em',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
                             }}
                           >
-                            {isWhisper ? '💬 Direct Invigilator Reprimand' : isExtension ? '⏳ Time Extension' : isBroadcast ? '📢 Room Broadcast' : '🛡️ System Notice'}
+                            {isWhisper ? (
+                              <>
+                                <IconChat size={12} color={borderColor} />
+                                <span>Direct Invigilator Reprimand</span>
+                              </>
+                            ) : isExtension ? (
+                              <>
+                                <IconClock size={12} color={borderColor} />
+                                <span>Time Extension</span>
+                              </>
+                            ) : isBroadcast ? (
+                              <>
+                                <IconRadio size={12} color={borderColor} />
+                                <span>Room Broadcast</span>
+                              </>
+                            ) : (
+                              <>
+                                <IconShield size={12} color={borderColor} />
+                                <span>System Notice</span>
+                              </>
+                            )}
                           </span>
                           <span style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'monospace' }}>
                             {new Date(msg.timestamp).toLocaleTimeString()}
@@ -313,7 +348,7 @@ export default function HoloProctorDeskModal({
                       gap: 8,
                     }}
                   >
-                    <span>✓</span>
+                    <IconCheck size={14} color="#34D399" />
                     <span><strong>Signal Transmitted:</strong> The invigilator has received your query and notification.</span>
                   </motion.div>
                 )}
@@ -324,10 +359,10 @@ export default function HoloProctorDeskModal({
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
                     {[
-                      { id: 'question_clarification', label: '❓ Question Clarification' },
-                      { id: 'network_lag', label: '📶 Question / Network Lag' },
-                      { id: 'camera_hardware', label: '📷 Camera / Mic Environment' },
-                      { id: 'urgent_help', label: '🚨 Urgent Technical Help' },
+                      { id: 'question_clarification', label: 'Question Clarification' },
+                      { id: 'network_lag', label: 'Question / Network Lag' },
+                      { id: 'camera_hardware', label: 'Camera / Hardware Env' },
+                      { id: 'urgent_help', label: 'Urgent Technical Help' },
                     ].map(opt => (
                       <button
                         key={opt.id}
@@ -395,7 +430,8 @@ export default function HoloProctorDeskModal({
                     boxShadow: '0 4px 15px rgba(37, 99, 235, 0.4)',
                   }}
                 >
-                  {isSending ? 'Transmitting...' : '🚀 Transmit Signal to Invigilator'}
+                  <IconLaunch size={14} color="#FFFFFF" />
+                  <span>{isSending ? 'Transmitting...' : 'Transmit Signal to Invigilator'}</span>
                 </button>
               </form>
             )}
@@ -409,10 +445,10 @@ export default function HoloProctorDeskModal({
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
                   {[
-                    { label: 'Screen Lockdown', val: 'ENFORCED', desc: 'DevTools, F12, Shortcuts Intercepted', icon: '🔒', color: '#10B981' },
-                    { label: 'Anti-Leak Watermark', val: 'ACTIVE', desc: 'Holographic Session ID Embedded', icon: '🛡️', color: '#38BDF8' },
-                    { label: 'Biometric Face Enclave', val: 'MONITORING', desc: 'Single-face Gaze Geometry Locked', icon: '👁️', color: '#818CF8' },
-                    { label: 'Proctor Heartbeat', val: 'HEALTHY (22ms)', desc: 'Websocket & Supabase Synchronized', icon: '⚡', color: '#34D399' },
+                    { label: 'Screen Lockdown', val: 'ENFORCED', desc: 'DevTools, F12, Shortcuts Intercepted', icon: <IconLock size={16} color="#10B981" />, color: '#10B981' },
+                    { label: 'Anti-Leak Watermark', val: 'ACTIVE', desc: 'Holographic Session ID Embedded', icon: <IconShield size={16} color="#38BDF8" />, color: '#38BDF8' },
+                    { label: 'Biometric Face Enclave', val: 'MONITORING', desc: 'Single-face Gaze Geometry Locked', icon: <IconEye size={16} color="#818CF8" />, color: '#818CF8' },
+                    { label: 'Proctor Heartbeat', val: 'HEALTHY (22ms)', desc: 'Websocket & Supabase Synchronized', icon: <IconFlash size={16} color="#34D399" />, color: '#34D399' },
                   ].map((sensor, i) => (
                     <div
                       key={i}
@@ -424,7 +460,7 @@ export default function HoloProctorDeskModal({
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span style={{ fontSize: '1.1rem' }}>{sensor.icon}</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center' }}>{sensor.icon}</span>
                         <span style={{ fontSize: '0.65rem', fontWeight: 800, color: sensor.color, textTransform: 'uppercase' }}>
                           ● {sensor.val}
                         </span>
@@ -448,7 +484,7 @@ export default function HoloProctorDeskModal({
                     gap: 10,
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem' }}>📜</span>
+                  <IconFileText size={18} color="#38BDF8" />
                   <div>
                     <strong style={{ color: '#E2E8F0' }}>Zero-False-Positive Guarantee:</strong> All proctoring events are flagged with micro-timestamps and reviewed by human invigilators before any score adjustments.
                   </div>

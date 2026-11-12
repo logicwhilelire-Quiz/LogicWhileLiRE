@@ -27,9 +27,6 @@ import {
   IconClock,
   IconShield,
   IconAlert,
-  IconCheck,
-  IconLock,
-  IconLaunch,
   IconTerminal,
 } from '../components/icons/HumanIcons'
 
@@ -128,7 +125,7 @@ export default function QuizPage() {
   const [showProctoringAlert, setShowProctoringAlert] = useState(false)
   const [adminWarningMsg, setAdminWarningMsg] = useState('')
   const [showAdminWarning, setShowAdminWarning] = useState(false)
-  const [runResult, setRunResult] = useState<{ output: string; error?: string } | null>(null)
+  const [_runResult, setRunResult] = useState<{ output: string; error?: string } | null>(null)
   const [showFullscreenOverlay, setShowFullscreenOverlay] = useState(false)
   const [fullscreenExitCount, setFullscreenExitCount] = useState(0)
   const fullscreenExitCountRef = useRef(0)
@@ -586,6 +583,12 @@ export default function QuizPage() {
         triggerLaunch()
       })
 
+      socket.on('exam:config', (data: any) => {
+        if (data?.maxViolations) {
+          setSession((prev) => prev ? { ...prev, violationThreshold: Number(data.maxViolations) } : prev)
+        }
+      })
+
       socket.on('lobby:stats', (data: any) => {
         if (data?.exam_started) triggerLaunch()
       })
@@ -672,7 +675,7 @@ export default function QuizPage() {
           submitSuccess = true
           setIsRetryingSubmit(false)
           setSubmitNetworkErrorNotice('')
-        } catch (postErr: any) {
+        } catch {
           attempt++
           if (attempt >= maxRetries) {
             if (examCode?.toUpperCase().includes('DEMO')) {
@@ -895,7 +898,7 @@ export default function QuizPage() {
     } catch { /* non-blocking */ }
 
     const isSevere = metadata?.isSevere === true
-    const maxStrikes = session?.violationThreshold || 2
+    const maxStrikes = session?.violationThreshold || 3
 
     if (count < maxStrikes && !isSevere) {
       // VIOLATION WARNING: Show reminder to the student
@@ -2051,7 +2054,7 @@ export default function QuizPage() {
               <span>{violationCount > 0 ? 'Tab Strikes Logged' : 'Proctor Guard Active'}</span>
             </div>
             <div style={{ fontSize: '0.88rem', fontWeight: 900, color: violationCount > 0 ? '#EF4444' : '#F1F5F9', fontFamily: 'monospace', marginTop: 1 }}>
-              {violationCount} / {session?.violationThreshold || 5} Max
+              {violationCount} / {session?.violationThreshold || 3} Max Strikes
             </div>
           </div>
         </div>
@@ -2782,10 +2785,10 @@ export default function QuizPage() {
               style={{ padding: 16, borderColor: 'rgba(239,68,68,0.3)' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-danger)' }}>
-                <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                <IconAlert size={16} color="#EF4444" />
                 <div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{violationCount} Violation{violationCount > 1 ? 's' : ''}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)'}}>{session?.violationThreshold || 2} max — exam terminates on breach</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)'}}>{session?.violationThreshold || 3} max strikes — exam terminates on breach</div>
                 </div>
               </div>
             </motion.div>

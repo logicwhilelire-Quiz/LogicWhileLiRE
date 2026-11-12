@@ -44,7 +44,14 @@ export default function InstructionsPage() {
   const durationSeconds = routerState.durationSeconds || stored.durationSeconds || 3600;
   const canonicalHt = routerState.hallTicket || stored.hallTicket || stored.roll_number || 'CANDIDATE';
   const canonicalAttemptId = routerState.attemptId || stored.attemptId || stored.attempt_id;
-  const maxViolations = Number(stored.max_violations || routerState.maxViolations || 5);
+  const adminSetViolations = (() => {
+    try {
+      const v = localStorage.getItem(`admin_max_violations_${examCode?.toUpperCase()}`);
+      if (v) return Number(v);
+    } catch {}
+    return null;
+  })();
+  const maxViolations = Number(adminSetViolations || stored.max_violations || routerState.maxViolations || 3);
 
   // Strict Waiting Hall release verification on mount
   useEffect(() => {
@@ -62,7 +69,12 @@ export default function InstructionsPage() {
       }
       try {
         const res = await getAttemptStatus(examCode, { attemptId, hallTicket });
-        if (res.data && res.data.is_released === false) {
+        if (res.data?.is_released) {
+          try {
+            const updated = { ...stored, isReleased: true };
+            localStorage.setItem('logicwhilelire_attempt', JSON.stringify(updated));
+          } catch {}
+        } else if (res.data && res.data.is_released === false) {
           navigate(`/waiting-lobby/${examCode}`, {
             replace: true,
             state: { hallTicket, attemptId, status: res.data?.status },

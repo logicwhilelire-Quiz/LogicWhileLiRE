@@ -12,7 +12,6 @@
  */
 
 import { spawn } from 'child_process';
-import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';

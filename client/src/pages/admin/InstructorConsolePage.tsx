@@ -25,6 +25,7 @@ import {
   resetStudentAttempt,
 } from "../../lib/api";
 import { SOCKET_URL, API_BASE_URL } from "../../lib/config";
+import { supabase } from "../../lib/supabaseClient";
 import {
   IconLaunch,
   IconStop,
@@ -131,6 +132,13 @@ export default function InstructorConsolePage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [serverRemainingSeconds, setServerRemainingSeconds] = useState<number | null>(null);
   const [events, setEvents] = useState<Array<{ id: string; time: string; text: string }>>([]);
+  const [maxTabViolations, setMaxTabViolations] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem(`admin_max_violations_${routeExamCode || ''}`);
+      if (stored) return Number(stored);
+    } catch {}
+    return 3;
+  });
 
   const socketRef = useRef<Socket | null>(null);
   const adminToken = localStorage.getItem("admin_token") || localStorage.getItem("inspector_token") || "";
@@ -140,6 +148,19 @@ export default function InstructorConsolePage() {
       { id: Date.now().toString(), time: new Date().toLocaleTimeString(), text },
       ...prev.slice(0, 19),
     ]);
+  };
+
+  const handleUpdateTabViolationLimit = async (newLimit: number) => {
+    setMaxTabViolations(newLimit);
+    if (!currentCode) return;
+    try {
+      localStorage.setItem(`admin_max_violations_${currentCode}`, String(newLimit));
+      await supabase.from('exam_codes').update({ max_violations: newLimit }).eq('exam_code', currentCode);
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('admin:exam_config', { examCode: currentCode, maxViolations: newLimit });
+      }
+      addLog(`[POLICY] Tab violation limit adjusted to ${newLimit} strikes for ${currentCode}`);
+    } catch {}
   };
 
   // 1. Fetch Inspector College & Exams (Strict Auth Protected)
@@ -302,7 +323,7 @@ export default function InstructorConsolePage() {
     // Exam started broadcast confirmation
     socket.on("EXAM_STARTED", (data: any) => {
       setExamStarted(true);
-      addLog(`🚀 EXAM_STARTED broadcast confirmed for ${currentCode}!`);
+      addLog(`[START] EXAM_STARTED broadcast confirmed for ${currentCode}!`);
     });
 
     // Real-time proctor violation telemetry
@@ -317,7 +338,7 @@ export default function InstructorConsolePage() {
         details: data.details || data.message || "DevTools / Focus deviation / Audio threshold",
       };
       setViolationsList((prev) => [v, ...prev.slice(0, 49)]);
-      addLog(`🚨 VIOLATION [${v.violationType}] — ${v.studentName} (${v.hallTicket}) - Strike ${v.strikeCount}`);
+      addLog(`[VIOLATION] [${v.violationType}] — ${v.studentName} (${v.hallTicket}) - Strike ${v.strikeCount}`);
     };
 
     socket.on("proctor:violation", handleIncomingViolation);
@@ -339,6 +360,25 @@ export default function InstructorConsolePage() {
     };
   }, [currentCode, adminToken]);
 
+  useEffect(() => {
+    if (!currentCode) return;
+    try {
+      const stored = localStorage.getItem(`admin_max_violations_${currentCode}`);
+      if (stored) {
+        setMaxTabViolations(Number(stored));
+      } else {
+        supabase
+          .from('exam_codes')
+          .select('max_violations')
+          .eq('exam_code', currentCode)
+          .maybeSingle()
+          .then(({ data }: { data: any }) => {
+            if (data?.max_violations) setMaxTabViolations(Number(data.max_violations));
+          });
+      }
+    } catch {}
+  }, [currentCode]);
+
   const [stopping, setStopping] = useState(false);
 
   // Handle Inspector Push to Start
@@ -357,12 +397,12 @@ export default function InstructorConsolePage() {
         setExamStarted(true);
         setConfirmOpen(false);
         setActiveTab("leaderboard");
-        addLog(`EXAM_STARTED broadcast confirmed for ${currentCode}!`);
+        addLog(`[DISPATCH] EXAM_STARTED broadcast confirmed for ${currentCode}!`);
       }
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.message || "Exam start failed";
       setStartError(msg);
-      addLog(`START ERROR: ${msg}`);
+      addLog(`[START ERROR] ${msg}`);
     } finally {
       setStarting(false);
     }
@@ -379,9 +419,9 @@ export default function InstructorConsolePage() {
         headers: { Authorization: `Bearer ${adminToken}` },
       });
       setExamStarted(false);
-      addLog(`🛑 EXAM STOPPED by Inspector for ${currentCode}.`);
+      addLog(`[STOPPED] EXAM STOPPED by Inspector for ${currentCode}.`);
     } catch (err: any) {
-      addLog(`❌ STOP ERROR: ${err?.message}`);
+      addLog(`[STOP ERROR] ${err?.message}`);
     } finally {
       setStopping(false);
     }
@@ -395,9 +435,9 @@ export default function InstructorConsolePage() {
     setActionLoading(true);
     try {
       await releaseStudentForExam(currentCode, { hallTicket });
-      addLog(`✓ Released student ${hallTicket} for exam`);
+      addLog(`[RELEASE] Released student ${hallTicket} for exam`);
     } catch (err: any) {
-      addLog(`⚠️ Failed to release ${hallTicket}: ${err?.response?.data?.error || err.message}`);
+      addLog(`[NOTICE] Failed to release ${hallTicket}: ${err?.response?.data?.error || err.message}`);
     } finally {
       setActionLoading(false);
     }
@@ -408,9 +448,9 @@ export default function InstructorConsolePage() {
     setActionLoading(true);
     try {
       const res = await releaseStudentForExam(currentCode, { all: true });
-      addLog(`⚡ Released ${res.data?.count || 'all'} waiting students for exam`);
+      addLog(`[RELEASE ALL] Released ${res.data?.count || 'all'} waiting students for exam`);
     } catch (err: any) {
-      addLog(`⚠️ Release all failed: ${err?.response?.data?.error || err.message}`);
+      addLog(`[NOTICE] Release all failed: ${err?.response?.data?.error || err.message}`);
     } finally {
       setActionLoading(false);
     }
@@ -423,9 +463,9 @@ export default function InstructorConsolePage() {
     setActionLoading(true);
     try {
       await rejectStudentEntry(currentCode, { hallTicket, reason });
-      addLog(`⚠️ Rejected student ${hallTicket} entry`);
+      addLog(`[REJECT] Rejected student ${hallTicket} entry`);
     } catch (err: any) {
-      addLog(`Error rejecting ${hallTicket}: ${err?.response?.data?.error || err.message}`);
+      addLog(`[REJECT ERROR] ${err?.response?.data?.error || err.message}`);
     } finally {
       setActionLoading(false);
     }
@@ -437,9 +477,9 @@ export default function InstructorConsolePage() {
     setActionLoading(true);
     try {
       await blockStudentEntry(currentCode, { hallTicket, reason: 'Suspended by supervisor' });
-      addLog(`🛑 Blocked candidate ${hallTicket}`);
+      addLog(`[BLOCK] Blocked candidate ${hallTicket}`);
     } catch (err: any) {
-      addLog(`Error blocking ${hallTicket}: ${err?.response?.data?.error || err.message}`);
+      addLog(`[BLOCK ERROR] ${err?.response?.data?.error || err.message}`);
     } finally {
       setActionLoading(false);
     }
@@ -451,7 +491,7 @@ export default function InstructorConsolePage() {
     setActionLoading(true);
     try {
       await resetStudentAttempt(currentCode, { hallTicket });
-      addLog(`🔄 Reset exam attempt for candidate ${hallTicket}`);
+      addLog(`[RESET] Reset exam attempt for candidate ${hallTicket}`);
     } catch (err: any) {
       addLog(`Error resetting attempt for ${hallTicket}: ${err?.response?.data?.error || err.message}`);
     } finally {
@@ -618,9 +658,13 @@ export default function InstructorConsolePage() {
                       fontSize: '0.82rem',
                       fontWeight: 600,
                       cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
                     }}
                   >
-                    🏆 Live Leaderboard →
+                    <IconTrophy size={14} color="#38BDF8" />
+                    <span>Live Leaderboard →</span>
                   </button>
                 );
               })()}
@@ -707,6 +751,35 @@ export default function InstructorConsolePage() {
               </select>
             </div>
 
+            {/* Tab Strike Policy Control */}
+            <div>
+              <label style={{ display: "block", fontSize: "0.74rem", fontWeight: 700, color: "#94A3B8", marginBottom: 6, textTransform: "uppercase" }}>
+                Tab Strike Policy
+              </label>
+              <select
+                id="inspector-violation-limit-select"
+                value={maxTabViolations}
+                onChange={(e) => handleUpdateTabViolationLimit(Number(e.target.value))}
+                style={{
+                  width: "100%",
+                  padding: "9px 12px",
+                  borderRadius: 8,
+                  background: "#0B1226",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  color: "#FFFFFF",
+                  fontSize: "0.88rem",
+                  fontWeight: 600,
+                  outline: "none",
+                }}
+              >
+                <option value={1}>1 Strike (Zero Tolerance)</option>
+                <option value={2}>2 Strikes (Strict)</option>
+                <option value={3}>3 Strikes (Standard)</option>
+                <option value={5}>5 Strikes (Institutional)</option>
+                <option value={10}>10 Strikes (Relaxed)</option>
+              </select>
+            </div>
+
             {/* Server Authoritative Clock State */}
             <div>
               <label style={{ display: "block", fontSize: "0.74rem", fontWeight: 700, color: "#94A3B8", marginBottom: 6, textTransform: "uppercase" }}>
@@ -755,7 +828,10 @@ export default function InstructorConsolePage() {
                       fontSize: "0.85rem",
                     }}
                   >
-                    ✓ Live Active
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <IconCheck size={14} color="#10B981" />
+                      <span>Live Active</span>
+                    </span>
                   </div>
                   <button
                     id="inspector-stop-exam-btn"
@@ -809,8 +885,9 @@ export default function InstructorConsolePage() {
           </div>
 
           {startError && (
-            <div style={{ padding: "12px 16px", borderRadius: 8, background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.35)", color: "#F87171", marginBottom: 20, fontSize: "0.85rem" }}>
-              ⚠️ {startError}
+            <div style={{ padding: "12px 16px", borderRadius: 8, background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.35)", color: "#F87171", marginBottom: 20, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: 8 }}>
+              <IconAlert size={15} color="#F87171" />
+              <span>{startError}</span>
             </div>
           )}
 
@@ -1050,12 +1127,14 @@ export default function InstructorConsolePage() {
                                     </td>
                                     <td style={{ padding: "10px 14px", textAlign: "right" }}>
                                       {isPresent ? (
-                                        <span style={{ color: "#34D399", fontWeight: 700, fontSize: "0.72rem", background: "rgba(16,185,129,0.15)", padding: "2px 7px", borderRadius: 4 }}>
-                                          🟢 IN LOBBY
+                                        <span style={{ color: "#34D399", fontWeight: 700, fontSize: "0.72rem", background: "rgba(16,185,129,0.15)", padding: "2px 7px", borderRadius: 4, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10B981" }} />
+                                          <span>IN LOBBY</span>
                                         </span>
                                       ) : (
-                                        <span style={{ color: "#94A3B8", fontSize: "0.72rem", background: "rgba(255,255,255,0.05)", padding: "2px 7px", borderRadius: 4 }}>
-                                          ⚪ Awaiting
+                                        <span style={{ color: "#94A3B8", fontSize: "0.72rem", background: "rgba(255,255,255,0.05)", padding: "2px 7px", borderRadius: 4, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#64748B" }} />
+                                          <span>Awaiting</span>
                                         </span>
                                       )}
                                     </td>
@@ -1329,7 +1408,7 @@ export default function InstructorConsolePage() {
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <span style={{ fontSize: "1.6rem" }}>📷</span>
+                      <IconEye size={24} color="#34D399" />
                       <div>
                         <div style={{ fontSize: "0.92rem", fontWeight: 800, color: "#34D399" }}>
                           3rd-Party Optical Inspection Telemetry
@@ -1408,7 +1487,7 @@ export default function InstructorConsolePage() {
                           >
                             <span style={{ fontSize: "0.70rem", color: "#34D399", fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
                               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10B981" }} />
-                              📷 Cam: ACTIVE
+                              <span>Cam: ACTIVE</span>
                             </span>
                             <span style={{ fontSize: "0.68rem", color: "#64748B", fontFamily: "monospace" }}>
                               30 FPS
@@ -1430,7 +1509,7 @@ export default function InstructorConsolePage() {
                                 textAlign: "center",
                               }}
                             >
-                              {latestStrike >= 2 ? "🛑 Strike 2: Auto-Terminated" : "⚠️ Strike 1: Warning Active"}
+                              {latestStrike >= 2 ? "Strike 2: Auto-Terminated" : "Strike 1: Warning Active"}
                             </div>
                           )}
 
@@ -1676,8 +1755,9 @@ export default function InstructorConsolePage() {
               <strong style={{ color: "#A78BFA" }}>{currentCode}</strong> and activate the server-authoritative timer.
             </p>
             {startError && (
-              <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.4)", color: "#F87171", marginBottom: 16, fontSize: "0.84rem" }}>
-                ⚠️ {startError}
+              <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.4)", color: "#F87171", marginBottom: 16, fontSize: "0.84rem", display: "flex", alignItems: "center", gap: 8 }}>
+                <IconAlert size={14} color="#F87171" />
+                <span>{startError}</span>
               </div>
             )}
             <div style={{ display: "flex", gap: 12 }}>
@@ -1691,9 +1771,10 @@ export default function InstructorConsolePage() {
                 id="confirm-start-exam-btn"
                 onClick={handleStartExam}
                 disabled={starting}
-                style={{ flex: 1, padding: "10px", borderRadius: 8, background: "linear-gradient(135deg, #10B981, #059669)", border: "none", color: "#FFFFFF", fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 16px rgba(16,185,129,0.4)" }}
+                style={{ flex: 1, padding: "10px", borderRadius: 8, background: "linear-gradient(135deg, #10B981, #059669)", border: "none", color: "#FFFFFF", fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 16px rgba(16,185,129,0.4)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
               >
-                {starting ? "Dispatched..." : "✓ Confirm Start"}
+                <IconCheck size={16} color="#FFFFFF" />
+                <span>{starting ? "Dispatched..." : "Confirm Start"}</span>
               </button>
             </div>
           </div>

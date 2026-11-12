@@ -6,6 +6,22 @@ import AdminSidebar from '../../components/layout/AdminSidebar';
 import BrandLogo from '../../components/BrandLogo';
 import { API_BASE_URL } from '../../lib/config';
 import {
+  IconBuilding,
+  IconUsers,
+  IconDownload,
+  IconFileText,
+  IconPlus,
+  IconFlash,
+  IconLock,
+  IconCheck,
+  IconAlert,
+  IconMail,
+  IconClipboard,
+  IconRefresh,
+  IconShield,
+  IconKey,
+} from '../../components/icons/HumanIcons';
+import {
   getAdminRosterStudents,
   saveAdminRosterStudents,
   clearAllAdminStudents,
@@ -92,10 +108,10 @@ export default function StudentControl() {
     setRegistrationEnabled(mode !== 'ADMIN_ONLY');
     setUploadMsg(
       mode === 'ADMIN_ONLY'
-        ? '🔒 Authority Mode: STRICT ADMIN ENTRY ONLY. Candidate self-registration is closed.'
+        ? '[POLICY] Authority Mode: STRICT ADMIN ENTRY ONLY. Candidate self-registration is closed.'
         : mode === 'CLEARANCE_REQUIRED'
-        ? '⏳ Authority Mode: CLEARANCE REQUIRED. New candidates require explicit Administrator Approval.'
-        : '🟢 Authority Mode: ACTIVE AUTO-CLEARANCE. Candidates are automatically approved.'
+        ? '[POLICY] Authority Mode: CLEARANCE REQUIRED. New candidates require explicit Administrator Approval.'
+        : '[POLICY] Authority Mode: ACTIVE AUTO-CLEARANCE. Candidates are automatically approved.'
     );
     setTimeout(() => setUploadMsg(''), 5000);
   };
@@ -105,7 +121,7 @@ export default function StudentControl() {
     setStudents((prev) =>
       prev.map((s) => (s.id === student.id ? { ...s, is_verified: true, status: 'approved' } : s))
     );
-    setUploadMsg(`✓ Examination clearance granted for ${student.name} (${student.hall_ticket}).`);
+    setUploadMsg(`[APPROVED] Examination clearance granted for ${student.name} (${student.hall_ticket}).`);
     setTimeout(() => setUploadMsg(''), 4000);
   };
 
@@ -114,7 +130,7 @@ export default function StudentControl() {
     setStudents((prev) =>
       prev.map((s) => (s.is_verified === false || (s as any).status === 'pending_clearance' ? { ...s, is_verified: true, status: 'approved' } : s))
     );
-    setUploadMsg(`⚡ Successfully approved and cleared ${approvedCount} candidate(s) for examination!`);
+    setUploadMsg(`[APPROVED] Successfully approved and cleared ${approvedCount} candidate(s) for examination!`);
     setTimeout(() => setUploadMsg(''), 5000);
   };
 
@@ -129,7 +145,7 @@ export default function StudentControl() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setUploadMsg('💾 Full System Candidate Data Backup successfully downloaded!');
+    setUploadMsg('[BACKUP] Full System Candidate Data Backup successfully downloaded!');
     setTimeout(() => setUploadMsg(''), 5000);
   };
 
@@ -144,12 +160,12 @@ export default function StudentControl() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setUploadMsg('📊 Student roster exported to CSV spreadsheet!');
+    setUploadMsg('[EXPORT] Student roster exported to CSV spreadsheet!');
     setTimeout(() => setUploadMsg(''), 5000);
   };
 
   const handleClearRosterFresh = async () => {
-    if (!window.confirm('⚠️ Reset Student Roster to Fresh State?\n\nThis will remove all student entries from both database and local storage so you can start 100% fresh with new institutional imports. Exam attempts are preserved separately.\n\nAre you sure you want to proceed?')) {
+    if (!window.confirm('[WARNING] Reset Student Roster to Fresh State?\n\nThis will remove all student entries from both database and local storage so you can start 100% fresh with new institutional imports. Exam attempts are preserved separately.\n\nAre you sure you want to proceed?')) {
       return;
     }
     const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
@@ -164,12 +180,12 @@ export default function StudentControl() {
     }
     clearAllAdminStudents();
     setStudents([]);
-    setUploadMsg('🧹 All candidate roster records cleared from database and storage. Platform is now in a 100% fresh state.');
+    setUploadMsg('[CLEARED] All candidate roster records cleared from database and storage. Platform is now in a 100% fresh state.');
     setTimeout(() => setUploadMsg(''), 5000);
   };
 
   const handleFlushAttemptsFresh = async () => {
-    if (!window.confirm('⚠️ Flush All Previous Exam Attempts & Test History?\n\nThis will remove all test attempts, mock runs, answers, and violation logs from the database while keeping your student roster and colleges intact.\n\nAre you sure you want to proceed?')) {
+    if (!window.confirm('[WARNING] Flush All Previous Exam Attempts & Test History?\n\nThis will remove all test attempts, mock runs, answers, and violation logs from the database while keeping your student roster and colleges intact.\n\nAre you sure you want to proceed?')) {
       return;
     }
     const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
@@ -179,9 +195,9 @@ export default function StudentControl() {
         {},
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
-      setUploadMsg('🧹 All previous exam attempts, session logs, and scores flushed from database. Fresh exam run ready.');
+      setUploadMsg('[PURGED] All previous exam attempts, session logs, and scores flushed from database. Fresh exam run ready.');
     } catch (err: any) {
-      setUploadMsg(`⚠️ Notice: ${err?.response?.data?.error || err.message}`);
+      setUploadMsg(`[NOTICE] ${err?.response?.data?.error || err.message}`);
     }
     setTimeout(() => setUploadMsg(''), 5000);
   };
@@ -195,8 +211,8 @@ export default function StudentControl() {
     setRegistrationAuthorityMode(newMode);
     setUploadMsg(
       next
-        ? '✅ Student Registration Gate is now ACTIVE under Administrator Clearance Mode.'
-        : '⏸️ Student Registration Gate has been PAUSED by Administrator.'
+        ? '[ACTIVE] Student Registration Gate is now ACTIVE under Administrator Clearance Mode.'
+        : '[PAUSED] Student Registration Gate has been PAUSED by Administrator.'
     );
     setTimeout(() => setUploadMsg(''), 5000);
   };
@@ -243,7 +259,7 @@ export default function StudentControl() {
       is_verified: s.is_verified,
       is_blocked: !!s.is_blocked,
       block_reason: s.block_reason,
-      live_status: s.live_status || { state: s.is_verified ? 'cleared' : 'pending', label: s.is_verified ? '✓ Cleared & Ready' : '⏳ Pending Admin Clearance' },
+      live_status: s.live_status || { state: s.is_verified ? 'cleared' : 'pending', label: s.is_verified ? 'Cleared & Ready' : 'Pending Clearance' },
       attempts_used: s.attempts_used || 0,
       allowed_attempts: s.allowed_attempts || 1,
       extra_time_mins: s.extra_time_mins || 0,
@@ -302,7 +318,7 @@ export default function StudentControl() {
             block_reason: s.block_reason,
             live_status: s.live_status || {
               state: s.is_verified !== false ? 'cleared' : 'pending',
-              label: s.is_verified !== false ? '✓ Cleared & Ready' : '⏳ Pending Admin Clearance',
+              label: s.is_verified !== false ? 'Cleared & Ready' : 'Pending Clearance',
             },
             attempts_used: s.attempts_used || 0,
             allowed_attempts: s.allowed_attempts || 1,
@@ -367,12 +383,12 @@ export default function StudentControl() {
         setStudents((prev) =>
           prev.map((s) => (selectedStudentIds.has(s.id) ? { ...s, is_verified: true } : s))
         );
-        setBulkFeedback(`✅ Successfully verified ${selectedStudentIds.size} selected student(s)!`);
+        setBulkFeedback(`[SUCCESS] Successfully verified ${selectedStudentIds.size} selected student(s)!`);
         setSelectedStudentIds(new Set());
         setTimeout(() => setBulkFeedback(null), 5000);
       }
     } catch (err: any) {
-      setBulkFeedback(`❌ Bulk verification failed: ${err.response?.data?.error || err.message}`);
+      setBulkFeedback(`[ERROR] Bulk verification failed: ${err.response?.data?.error || err.message}`);
       setTimeout(() => setBulkFeedback(null), 5000);
     } finally {
       setBulkLoading(false);
@@ -399,11 +415,11 @@ export default function StudentControl() {
               : s
           )
         );
-        setBulkFeedback(`✅ ${res.data.message || `Successfully verified all students in section ${currentSec}!`}`);
+        setBulkFeedback(`[SUCCESS] ${res.data.message || `Successfully verified all students in section ${currentSec}!`}`);
         setTimeout(() => setBulkFeedback(null), 5000);
       }
     } catch (err: any) {
-      setBulkFeedback(`❌ Section verification failed: ${err.response?.data?.error || err.message}`);
+      setBulkFeedback(`[ERROR] Section verification failed: ${err.response?.data?.error || err.message}`);
       setTimeout(() => setBulkFeedback(null), 5000);
     } finally {
       setBulkLoading(false);
@@ -448,19 +464,19 @@ export default function StudentControl() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setUploadMsg(`⚡ Reading & parsing student roster from "${file.name}"...`);
+    setUploadMsg(`[READING] Reading & parsing student roster from "${file.name}"...`);
     try {
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'array' });
       const firstSheetName = workbook.SheetNames[0];
       if (!firstSheetName) {
-        setUploadMsg('❌ Empty file: No sheets found.');
+        setUploadMsg('[ERROR] Empty file: No sheets found.');
         return;
       }
       const rawRows: Record<string, any>[] = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName]);
 
       if (!rawRows || rawRows.length === 0) {
-        setUploadMsg('❌ Uploaded sheet contains no data rows.');
+        setUploadMsg('[ERROR] Uploaded sheet contains no data rows.');
         return;
       }
 
@@ -537,11 +553,11 @@ export default function StudentControl() {
       });
 
       setUploadMsg(
-        `✅ Successfully loaded ${parsedRoster.length} candidate(s) from "${file.name}"! Auto-reply credentials emails dispatched with Login ID, Hall Ticket, and Password.`
+        `[SUCCESS] Successfully loaded ${parsedRoster.length} candidate(s) from "${file.name}"! Auto-reply credentials emails dispatched with Login ID, Hall Ticket, and Password.`
       );
       setTimeout(() => setUploadMsg(''), 8000);
     } catch (err: any) {
-      setUploadMsg(`❌ Error parsing file: ${err?.message || 'Invalid spreadsheet format'}`);
+      setUploadMsg(`[ERROR] Error parsing file: ${err?.message || 'Invalid spreadsheet format'}`);
     } finally {
       if (e.target) e.target.value = '';
     }
@@ -569,7 +585,7 @@ export default function StudentControl() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setUploadMsg('📊 Bulk Credentials list (with Login ID, Hall Ticket & Passwords) downloaded successfully!');
+    setUploadMsg('[EXPORT] Bulk Credentials list (with Login ID, Hall Ticket & Passwords) downloaded successfully!');
     setTimeout(() => setUploadMsg(''), 4000);
   };
 
@@ -584,7 +600,7 @@ export default function StudentControl() {
     setStudents((prev) =>
       prev.map((item) => (item.id === s.id ? { ...item, email_dispatched: true, email_dispatched_at: new Date().toLocaleTimeString() } : item))
     );
-    setUploadMsg(`✉️ Auto-reply credentials email re-dispatched to ${s.email} with Login ID, Hall Ticket, and Password!`);
+    setUploadMsg(`[DISPATCHED] Auto-reply credentials email re-dispatched to ${s.email} with Login ID, Hall Ticket, and Password!`);
     setTimeout(() => setUploadMsg(''), 4000);
   };
 
@@ -704,7 +720,8 @@ export default function StudentControl() {
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
               {!isSuperAdmin ? (
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#38BDF8', fontSize: '0.82rem', fontWeight: 700 }}>
-                  <span>🔒</span> Faculty Read-Only Mode
+                  <IconLock size={14} color="#38BDF8" />
+                  <span>Faculty Read-Only Mode</span>
                 </div>
               ) : (
                 <>
@@ -713,7 +730,8 @@ export default function StudentControl() {
                     className="btn btn-secondary"
                     style={{ padding: '10px 18px', fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
                   >
-                    <span>📥</span> Upload Student Excel / CSV
+                    <IconDownload size={14} color="currentColor" />
+                    <span>Upload Student Excel / CSV</span>
                   </button>
                   <input
                     ref={fileRef}
@@ -738,7 +756,8 @@ export default function StudentControl() {
                     }}
                     title="Export all students with Login ID, Hall Ticket, and Passwords as CSV"
                   >
-                    <span>📊</span> Export Credentials (CSV)
+                    <IconFileText size={14} color="#FBBF24" />
+                    <span>Export Credentials (CSV)</span>
                   </button>
 
                   <button
@@ -757,7 +776,7 @@ export default function StudentControl() {
                     }}
                     title="Toggle student self-registration portal on or off"
                   >
-                    <span>{registrationEnabled ? '🟢' : '⏸️'}</span>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: registrationEnabled ? '#34d399' : '#f87171', display: 'inline-block' }} />
                     <span>Registration: {registrationEnabled ? 'ACTIVE' : 'PAUSED'}</span>
                   </button>
 
@@ -779,7 +798,8 @@ export default function StudentControl() {
                     }}
                     title="Open the 4-step Student Registration Wizard"
                   >
-                    <span>⚡</span> Register Wizard
+                    <IconFlash size={14} color="#38bdf8" />
+                    <span>Register Wizard</span>
                   </a>
 
                   <button
@@ -787,7 +807,8 @@ export default function StudentControl() {
                     className="btn btn-primary"
                     style={{ padding: '10px 20px', fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
                   >
-                    <span>➕</span> Add Candidate
+                    <IconPlus size={14} color="#FFFFFF" />
+                    <span>Add Candidate</span>
                   </button>
                 </>
               )}
@@ -811,7 +832,7 @@ export default function StudentControl() {
                 boxShadow: '0 8px 24px rgba(16, 185, 129, 0.25)',
               }}
             >
-              <span style={{ fontSize: '1.3rem' }}>⚡</span>
+              <IconFlash size={18} color="#10B981" />
               <div style={{ flex: 1, fontSize: '0.92rem' }}>{uploadMsg}</div>
               <button
                 type="button"
@@ -861,9 +882,9 @@ export default function StudentControl() {
                     <span style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: 700 }}>Registration Authority Mode:</span>
                     <div style={{ display: 'flex', gap: 6, background: 'rgba(0, 0, 0, 0.4)', padding: 4, borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                       {[
-                        { mode: 'ADMIN_ONLY' as const, label: '🔒 Admin Entry Only', desc: 'Portal closed' },
-                        { mode: 'CLEARANCE_REQUIRED' as const, label: '⏳ Clearance Required', desc: 'Admin approves' },
-                        { mode: 'ACTIVE' as const, label: '🟢 Auto-Clear Active', desc: 'Instant pass' },
+                        { mode: 'ADMIN_ONLY' as const, label: 'Admin Entry Only', desc: 'Portal closed' },
+                        { mode: 'CLEARANCE_REQUIRED' as const, label: 'Clearance Required', desc: 'Admin approves' },
+                        { mode: 'ACTIVE' as const, label: 'Auto-Clear Active', desc: 'Instant pass' },
                       ].map((item) => (
                         <button
                           key={item.mode}
@@ -939,7 +960,8 @@ export default function StudentControl() {
                         opacity: pendingTotal > 0 ? 1 : 0.5,
                       }}
                     >
-                      <span>⚡</span> 1-Click Approve All Pending ({pendingTotal})
+                      <IconFlash size={14} color="#FFFFFF" />
+                      <span>1-Click Approve All Pending ({pendingTotal})</span>
                     </button>
 
                     <button
@@ -952,9 +974,12 @@ export default function StudentControl() {
                         borderRadius: 8,
                         color: verificationFilter === 'UNVERIFIED' ? '#FBBF24' : '#CBD5E1',
                         border: verificationFilter === 'UNVERIFIED' ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid rgba(255, 255, 255, 0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
                       }}
                     >
-                      🔍 Filter: {verificationFilter === 'UNVERIFIED' ? 'Showing Pending Only' : 'Show Pending Queue'}
+                      <span>Filter: {verificationFilter === 'UNVERIFIED' ? 'Showing Pending Only' : 'Show Pending Queue'}</span>
                     </button>
                   </div>
 
@@ -977,7 +1002,8 @@ export default function StudentControl() {
                       }}
                       title="Download complete timestamped JSON backup archive of all students"
                     >
-                      <span>💾</span> 1-Click Full System Backup (.JSON)
+                      <IconDownload size={14} color="#FFFFFF" />
+                      <span>1-Click Full System Backup (.JSON)</span>
                     </button>
 
                     <button
@@ -996,7 +1022,8 @@ export default function StudentControl() {
                       }}
                       title="Export student roster spreadsheet"
                     >
-                      <span>📊</span> Export Roster (.CSV)
+                      <IconFileText size={14} color="#E2E8F0" />
+                      <span>Export Roster (.CSV)</span>
                     </button>
 
                     <button
@@ -1017,7 +1044,8 @@ export default function StudentControl() {
                       }}
                       title="Clear all student records for a clean fresh institutional deployment"
                     >
-                      <span>🧹</span> Clear Roster (Start Fresh)
+                      <IconRefresh size={14} color="#FFFFFF" />
+                      <span>Clear Roster (Start Fresh)</span>
                     </button>
 
                     <button
@@ -1038,7 +1066,8 @@ export default function StudentControl() {
                       }}
                       title="Flush all previous test attempts and session scores from database"
                     >
-                      <span>⚡</span> Flush Exam Attempts
+                      <IconFlash size={14} color="#FFFFFF" />
+                      <span>Flush Exam Attempts</span>
                     </button>
                   </div>
                 </div>
@@ -1061,7 +1090,7 @@ export default function StudentControl() {
               gap: 10,
             }}
           >
-            <span style={{ fontSize: '1.2rem' }}>🏛️</span>
+            <IconBuilding size={18} color="#FDE68A" />
             <div>
               <strong>Strict Administrator Governance Active:</strong> Candidate registration is 100% responsible only to the Administrator. Candidates cannot log in or participate in exams until cleared by the Administrator. All data is backed up with 1-click redundant exports.
             </div>
@@ -1247,11 +1276,11 @@ export default function StudentControl() {
                 onChange={(e) => setLiveStatusFilter(e.target.value)}
               >
                 <option value="ALL">All Live Statuses</option>
-                <option value="IN_EXAM">🟢 Live in Exam</option>
-                <option value="CLEARED">✓ Cleared &amp; Ready</option>
-                <option value="PENDING">⏳ Pending Clearance</option>
-                <option value="COMPLETED">🏁 Exam Completed</option>
-                <option value="BLOCKED">🛑 Blocked by Admin</option>
+                <option value="IN_EXAM">Live in Exam</option>
+                <option value="CLEARED">Cleared &amp; Ready</option>
+                <option value="PENDING">Pending Clearance</option>
+                <option value="COMPLETED">Exam Completed</option>
+                <option value="BLOCKED">Blocked by Admin</option>
               </select>
             </div>
 
@@ -1265,8 +1294,8 @@ export default function StudentControl() {
                 onChange={(e) => setVerificationFilter(e.target.value as any)}
               >
                 <option value="ALL">All Accounts</option>
-                <option value="VERIFIED">Verified Only (✓)</option>
-                <option value="UNVERIFIED">Pending Verification (⏳)</option>
+                <option value="VERIFIED">Verified Only</option>
+                <option value="UNVERIFIED">Pending Verification</option>
               </select>
             </div>
           </div>
@@ -1298,11 +1327,11 @@ export default function StudentControl() {
               style={{
                 padding: '12px 18px',
                 borderRadius: 8,
-                background: bulkFeedback.startsWith('✅') ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                border: `1px solid ${bulkFeedback.startsWith('✅') ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+                background: bulkFeedback.startsWith('[SUCCESS]') ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                border: `1px solid ${bulkFeedback.startsWith('[SUCCESS]') ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
                 marginBottom: 16,
                 fontSize: '0.88rem',
-                color: bulkFeedback.startsWith('✅') ? '#6EE7B7' : '#FCA5A5',
+                color: bulkFeedback.startsWith('[SUCCESS]') ? '#6EE7B7' : '#FCA5A5',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -1363,7 +1392,7 @@ export default function StudentControl() {
                     opacity: selectedStudentIds.size > 0 ? 1 : 0.5,
                   }}
                 >
-                  {bulkLoading ? 'Verifying...' : `✓ Verify Selected (${selectedStudentIds.size})`}
+                  {bulkLoading ? 'Verifying...' : `Verify Selected (${selectedStudentIds.size})`}
                 </button>
 
                 <button
@@ -1378,7 +1407,7 @@ export default function StudentControl() {
                     fontWeight: 700,
                   }}
                 >
-                  ⚡ Verify All in this Section ({sectionFilter === 'ALL' ? 'Sec A' : sectionFilter})
+                  Verify All in this Section ({sectionFilter === 'ALL' ? 'Sec A' : sectionFilter})
                 </button>
               </div>
             </div>
@@ -1422,7 +1451,9 @@ export default function StudentControl() {
                 {filtered.length === 0 && (
                   <tr>
                     <td colSpan={isSuperAdmin ? 9 : 8} style={{ padding: '60px 24px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🏛️</div>
+                      <div style={{ display: 'inline-flex', padding: 16, borderRadius: 14, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 14 }}>
+                        <IconBuilding size={34} color="#64748B" />
+                      </div>
                       <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', marginBottom: 6 }}>
                         {!isSuperAdmin ? 'No Academic Sections Allocated' : 'No Candidate Records Found'}
                       </div>
@@ -1474,7 +1505,7 @@ export default function StudentControl() {
                       <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)' }}>{s.email}</div>
                       {(s.contact_number || s.mobile) && (
                         <div style={{ fontSize: '0.74rem', color: '#38BDF8', fontFamily: 'monospace', marginTop: 2 }}>
-                          📞 {(s.contact_number || s.mobile || '').startsWith('+91') ? (s.contact_number || s.mobile) : `+91 ${s.contact_number || s.mobile}`}
+                          Tel: {(s.contact_number || s.mobile || '').startsWith('+91') ? (s.contact_number || s.mobile) : `+91 ${s.contact_number || s.mobile}`}
                         </div>
                       )}
                     </td>
@@ -1499,7 +1530,7 @@ export default function StudentControl() {
                           gap: 4,
                         }}
                       >
-                        🎓 {s.passout_year || 2028}
+                        Class of {s.passout_year || 2028}
                       </span>
                       <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: 3 }}>
                         {s.batch || `Batch ${s.passout_year || 2028}`}
@@ -1508,7 +1539,7 @@ export default function StudentControl() {
                     <td style={{ padding: '14px 16px' }}>
                       {s.is_blocked ? (
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, background: 'rgba(239, 68, 68, 0.15)', color: '#F87171', border: '1px solid rgba(239, 68, 68, 0.3)', fontSize: '0.74rem', fontWeight: 800 }}>
-                          🛑 BLOCKED
+                          BLOCKED
                         </span>
                       ) : s.live_status?.state === 'in_exam' ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -1525,20 +1556,20 @@ export default function StudentControl() {
                         </span>
                       ) : s.is_verified !== false ? (
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, background: 'rgba(16, 185, 129, 0.12)', color: '#34D399', border: '1px solid rgba(16, 185, 129, 0.3)', fontSize: '0.74rem', fontWeight: 700 }}>
-                          ✓ Cleared &amp; Ready
+                          Cleared &amp; Ready
                         </span>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, background: 'rgba(245, 158, 11, 0.18)', color: '#FBBF24', border: '1px solid rgba(245, 158, 11, 0.4)', fontSize: '0.72rem', fontWeight: 800 }}>
-                            ⏳ Pending Clearance
+                            Pending Clearance
                           </span>
                           {isSuperAdmin && (
                             <button
                               onClick={() => handleApproveClearance(s)}
                               className="btn btn-sm"
-                              style={{ background: 'linear-gradient(135deg, #10B981, #059669)', color: '#FFFFFF', border: 'none', fontSize: '0.70rem', fontWeight: 800, padding: '3px 8px', borderRadius: 4, cursor: 'pointer' }}
+                              style={{ background: 'linear-gradient(135deg, #10B981, #059669)', color: '#FFFFFF', border: 'none', fontSize: '0.70rem', fontWeight: 800, padding: '3px 8px', borderRadius: 4, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                             >
-                              ⚡ Clear &amp; Approve
+                              <IconFlash size={12} color="#FFFFFF" /> Clear &amp; Approve
                             </button>
                           )}
                         </div>
@@ -1562,7 +1593,7 @@ export default function StudentControl() {
                                 border: '1px solid rgba(239, 68, 68, 0.3)',
                               }}
                             >
-                              🛑 BLOCKED
+                              BLOCKED
                             </span>
                           ) : (
                             <span
@@ -1579,7 +1610,7 @@ export default function StudentControl() {
                                 border: '1px solid rgba(16, 185, 129, 0.3)',
                               }}
                             >
-                              🛡️ GATE PASS ACTIVE
+                              <IconShield size={12} color="#34D399" /> GATE PASS ACTIVE
                             </span>
                           )}
                         </div>
@@ -1605,7 +1636,7 @@ export default function StudentControl() {
                               style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', fontSize: '0.72rem', padding: 0 }}
                               title="Copy Student Gate Pass"
                             >
-                              {copiedPass === s.student_gate_pass ? '✓' : '📋'}
+                              {copiedPass === s.student_gate_pass ? <IconCheck size={12} color="#34D399" /> : <IconClipboard size={12} />}
                             </button>
                           </div>
                         )}
@@ -1631,7 +1662,7 @@ export default function StudentControl() {
                               style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', fontSize: '0.72rem', padding: 0 }}
                               title="Copy Candidate Gate Pass"
                             >
-                              {copiedPass === s.candidate_gate_pass ? '✓' : '📋'}
+                              {copiedPass === s.candidate_gate_pass ? <IconCheck size={12} color="#34D399" /> : <IconClipboard size={12} />}
                             </button>
                           </div>
                         )}
@@ -1653,7 +1684,7 @@ export default function StudentControl() {
                             border: '1px solid rgba(16, 185, 129, 0.3)',
                           }}
                         >
-                          ✓ CLEARED &amp; VERIFIED
+                          CLEARED &amp; VERIFIED
                         </span>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
@@ -1671,7 +1702,7 @@ export default function StudentControl() {
                               border: '1px solid rgba(245, 158, 11, 0.4)',
                             }}
                           >
-                            ⏳ PENDING CLEARANCE
+                            PENDING CLEARANCE
                           </span>
                           {isSuperAdmin && (
                             <button
@@ -1686,10 +1717,13 @@ export default function StudentControl() {
                                 padding: '3px 8px',
                                 borderRadius: 4,
                                 cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
                               }}
                               title="Approve candidate and issue exam gate pass clearance"
                             >
-                              ⚡ Clear &amp; Approve
+                              <IconFlash size={12} color="#FFFFFF" /> Clear &amp; Approve
                             </button>
                           )}
                         </div>
@@ -1726,9 +1760,12 @@ export default function StudentControl() {
                               fontSize: '0.72rem',
                               fontWeight: 700,
                               cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
                             }}
                           >
-                            {copiedCreds === s.id ? '✓ Copied' : '🔑 Creds'}
+                            <IconKey size={12} /> {copiedCreds === s.id ? 'Copied' : 'Creds'}
                           </button>
 
                           <button
@@ -1743,9 +1780,12 @@ export default function StudentControl() {
                               fontSize: '0.72rem',
                               fontWeight: 700,
                               cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
                             }}
                           >
-                            ✉️ Mail
+                            <IconMail size={12} /> Mail
                           </button>
 
                           <button
@@ -1760,9 +1800,12 @@ export default function StudentControl() {
                               fontSize: '0.72rem',
                               fontWeight: 700,
                               cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
                             }}
                           >
-                            📨 Resend
+                            <IconMail size={12} /> Resend
                           </button>
 
                           <button
@@ -1836,8 +1879,8 @@ export default function StudentControl() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#FFFFFF' }}>
-                    👥 Register Candidate to Institution
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <IconUsers size={20} color="#38BDF8" /> Register Candidate to Institution
                   </h2>
                   <button
                     onClick={() => setIsAddModalOpen(false)}
@@ -1994,8 +2037,8 @@ export default function StudentControl() {
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                        🛡️ Auto-Generated Institutional Gate Passes
+                      <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <IconShield size={14} color="#38BDF8" /> Auto-Generated Institutional Gate Passes
                       </span>
                       <button
                         type="button"
@@ -2016,9 +2059,12 @@ export default function StudentControl() {
                           cursor: 'pointer',
                           padding: 0,
                           textDecoration: 'underline',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
                         }}
                       >
-                        🔄 Regenerate
+                        <IconRefresh size={12} color="#38BDF8" /> Regenerate
                       </button>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -2209,7 +2255,7 @@ export default function StudentControl() {
                         marginTop: 12,
                       }}
                     >
-                      🔒 <strong>Exam Gate Instruction:</strong> You may authenticate at the live gate using either your Hall Ticket Number or Login ID along with your access password.
+                      <strong>Exam Gate Instruction:</strong> You may authenticate at the live gate using either your Hall Ticket Number or Login ID along with your access password.
                     </div>
                   </div>
 
@@ -2232,9 +2278,9 @@ export default function StudentControl() {
                   <button
                     onClick={() => handleCopyCredentials(previewEmailStudent)}
                     className="btn btn-secondary btn-sm"
-                    style={{ fontWeight: 700, padding: '8px 16px', border: '1px solid #CBD5E1', color: '#002147' }}
+                    style={{ fontWeight: 700, padding: '8px 16px', border: '1px solid #CBD5E1', color: '#002147', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   >
-                    📋 Copy All Credentials
+                    <IconClipboard size={14} /> Copy All Credentials
                   </button>
 
                   <div style={{ display: 'flex', gap: 10 }}>
@@ -2244,9 +2290,9 @@ export default function StudentControl() {
                         setPreviewEmailStudent(null);
                       }}
                       className="btn btn-primary btn-sm"
-                      style={{ background: '#002147', color: '#FFFFFF', fontWeight: 800, padding: '8px 18px', border: 'none', borderRadius: 6 }}
+                      style={{ background: '#002147', color: '#FFFFFF', fontWeight: 800, padding: '8px 18px', border: 'none', borderRadius: 6, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
-                      📨 Re-Send to Candidate Email
+                      <IconMail size={14} /> Re-Send to Candidate Email
                     </button>
                     <button
                       onClick={() => setPreviewEmailStudent(null)}

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
 import { adminLogin } from '../../lib/api';
 import { API_BASE_URL } from '../../lib/config';
 import BrandLogo from '../../components/BrandLogo';
 import ServerWakeupModal from '../../components/ServerWakeupModal';
+import { IconShield, IconAward, IconRadio, IconUsers } from '../../components/icons/HumanIcons';
 
 function AdminGridBg() {
   return (
@@ -23,7 +23,7 @@ const AG_PORTAL_COLORS: Record<AGPortalKey, {text:string;bg:string;border:string
   Inspector: { text: '#A78BFA', bg: 'rgba(139,92,246,0.18)',  border: 'rgba(139,92,246,0.5)' },
   Student:   { text: '#60A5FA', bg: 'rgba(59,130,246,0.18)',  border: 'rgba(59,130,246,0.5)' },
 };
-function AGPortalTab({ label, icon, active, to }: { label: AGPortalKey; icon: string; active?: boolean; to: string }) {
+function AGPortalTab({ label, icon, active, to }: { label: AGPortalKey; icon: React.ReactNode; active?: boolean; to: string }) {
   const [hov, setHov] = useState(false);
   const c = AG_PORTAL_COLORS[label];
   return (
@@ -34,10 +34,10 @@ function AGPortalTab({ label, icon, active, to }: { label: AGPortalKey; icon: st
       border: `1px solid ${active ? c.border : 'transparent'}`,
       boxShadow: active ? `0 0 14px ${c.bg}` : 'none',
       textDecoration: 'none', transition: 'all 0.2s ease',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
       cursor: active ? 'default' : 'pointer',
     }}>
-      <span>{icon}</span><span>{label}</span>
+      <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icon}</span><span>{label}</span>
     </Link>
   );
 }
@@ -169,10 +169,10 @@ export default function AdminLoginPage() {
 
           {/* Portal Switcher */}
           <div style={{ display: 'flex', background: 'rgba(9,14,31,0.8)', padding: 4, borderRadius: 12, border: '1px solid rgba(255,255,255,0.07)', marginBottom: 18, gap: 3, backdropFilter: 'blur(12px)' }}>
-            <AGPortalTab label="Admin" icon="👑" active to="/admin" />
-            <AGPortalTab label="Faculty" icon="👨‍🏫" to="/faculty/login" />
-            <AGPortalTab label="Inspector" icon="🛡️" to="/inspector" />
-            <AGPortalTab label="Student" icon="🎓" to="/login" />
+            <AGPortalTab label="Admin" icon={<IconAward size={14} color="#FBBF24" />} active to="/admin" />
+            <AGPortalTab label="Faculty" icon={<IconShield size={14} color="#34D399" />} to="/faculty/login" />
+            <AGPortalTab label="Inspector" icon={<IconRadio size={14} color="#A78BFA" />} to="/inspector" />
+            <AGPortalTab label="Student" icon={<IconUsers size={14} color="#60A5FA" />} to="/login" />
           </div>
 
           {/* Glass Card */}

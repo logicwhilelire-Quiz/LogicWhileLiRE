@@ -10,6 +10,7 @@ import PageTransition from '../components/3d/PageTransition';
 import FlightPathLines from '../components/3d/FlightPathLines';
 import LogicWhileLiRELoader from '../components/LogicWhileLiRELoader';
 import { supabase } from '../lib/supabaseClient';
+import { IconTrophy, IconAward } from '../components/icons/HumanIcons';
 
 const BASE_URL = API_BASE_URL;
 
@@ -35,10 +36,10 @@ function formatTime(secs?: number) {
   return `${m}m ${s}s`;
 }
 
-const MEDAL: Record<number, { bg: string; text: string; icon: string }> = {
-  1: { bg: 'linear-gradient(135deg, #FFD700, #FFA500)', text: '#7a4a00', icon: '🥇' },
-  2: { bg: 'linear-gradient(135deg, #C0C0C0, #A0A0A0)', text: '#fff', icon: '🥈' },
-  3: { bg: 'linear-gradient(135deg, #CD7F32, #A0522D)', text: '#fff', icon: '🥉' },
+const MEDAL: Record<number, { bg: string; text: string; label: string }> = {
+  1: { bg: 'linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(234, 179, 8, 0.08))', text: '#FACC15', label: '1st' },
+  2: { bg: 'linear-gradient(135deg, rgba(148, 163, 184, 0.25), rgba(148, 163, 184, 0.08))', text: '#E2E8F0', label: '2nd' },
+  3: { bg: 'linear-gradient(135deg, rgba(217, 119, 6, 0.25), rgba(217, 119, 6, 0.08))', text: '#F59E0B', label: '3rd' },
 };
 
 export default function LeaderboardECPage() {
@@ -347,7 +348,9 @@ export default function LeaderboardECPage() {
           </div>
         ) : displayRows.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '64px 24px', color: 'rgba(255,255,255,0.4)' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🏆</div>
+            <div style={{ display: 'inline-flex', padding: 14, borderRadius: 12, background: 'rgba(255,255,255,0.03)', marginBottom: 12 }}>
+              <IconTrophy size={36} color="#64748B" />
+            </div>
             <p>{rows.length === 0 ? 'Awaiting candidate submissions for this examination.' : 'No results match your search filter.'}</p>
           </div>
         ) : (
@@ -384,13 +387,14 @@ export default function LeaderboardECPage() {
                     justifyContent: 'center',
                     flexShrink: 0,
                     background: medal ? medal.bg : 'rgba(255, 255, 255, 0.08)',
-                    fontSize: medal ? '1.25rem' : '0.95rem',
+                    border: medal ? `1px solid ${medal.text}` : '1px solid rgba(255,255,255,0.1)',
+                    fontSize: '0.85rem',
                     fontWeight: 800,
                     color: medal ? medal.text : 'rgba(255, 255, 255, 0.8)',
                     fontFamily: "'Space Grotesk', sans-serif",
                     boxShadow: medal ? '0 4px 12px rgba(0, 0, 0, 0.3)' : 'none',
                   }}>
-                    {medal ? medal.icon : `#${row.rank}`}
+                    {medal ? medal.label : `#${row.rank}`}
                   </div>
 
                   {/* Candidate Identity */}

@@ -5,6 +5,7 @@ import { adminLogin } from '../lib/api';
 import { API_BASE_URL } from '../lib/config';
 import BrandLogo from '../components/BrandLogo';
 import ServerWakeupModal from '../components/ServerWakeupModal';
+import { IconShield, IconAward, IconRadio, IconUsers } from '../components/icons/HumanIcons';
 
 function InspectorGridBg() {
   return (
@@ -22,7 +23,7 @@ const IG_PORTAL_COLORS: Record<IGPortalKey, {text:string;bg:string;border:string
   Inspector: { text: '#38BDF8', bg: 'rgba(0,180,216,0.2)',    border: 'rgba(0,180,216,0.55)' },
   Student:   { text: '#60A5FA', bg: 'rgba(59,130,246,0.18)',  border: 'rgba(59,130,246,0.5)' },
 };
-function IGPortalTab({ label, icon, active, to }: { label: IGPortalKey; icon: string; active?: boolean; to: string }) {
+function IGPortalTab({ label, icon, active, to }: { label: IGPortalKey; icon: React.ReactNode; active?: boolean; to: string }) {
   const [hov, setHov] = useState(false);
   const c = IG_PORTAL_COLORS[label];
   return (
@@ -33,10 +34,10 @@ function IGPortalTab({ label, icon, active, to }: { label: IGPortalKey; icon: st
       border: `1px solid ${active ? c.border : 'transparent'}`,
       boxShadow: active ? `0 0 14px ${c.bg}` : 'none',
       textDecoration: 'none', transition: 'all 0.2s ease',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
       cursor: active ? 'default' : 'pointer',
     }}>
-      <span>{icon}</span><span>{label}</span>
+      <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icon}</span><span>{label}</span>
     </Link>
   );
 }
@@ -159,10 +160,10 @@ export default function InspectorLoginPage() {
 
           {/* Portal Switcher */}
           <div style={{ display: 'flex', background: 'rgba(9,14,31,0.8)', padding: 4, borderRadius: 12, border: '1px solid rgba(255,255,255,0.07)', marginBottom: 18, gap: 3, backdropFilter: 'blur(12px)' }}>
-            <IGPortalTab label="Admin" icon="👑" to="/admin" />
-            <IGPortalTab label="Faculty" icon="👨‍🏫" to="/faculty/login" />
-            <IGPortalTab label="Inspector" icon="🛡️" active to="/inspector" />
-            <IGPortalTab label="Student" icon="🎓" to="/login" />
+            <IGPortalTab label="Admin" icon={<IconAward size={14} color="#FBBF24" />} to="/admin" />
+            <IGPortalTab label="Faculty" icon={<IconShield size={14} color="#34D399" />} to="/faculty/login" />
+            <IGPortalTab label="Inspector" icon={<IconRadio size={14} color="#38BDF8" />} active to="/inspector" />
+            <IGPortalTab label="Student" icon={<IconUsers size={14} color="#60A5FA" />} to="/login" />
           </div>
 
           {/* Glass Card */}
