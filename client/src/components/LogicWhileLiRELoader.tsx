@@ -79,6 +79,75 @@ export default function LogicWhileLiRELoaderDefault({
       role="status"
       aria-live="polite"
     >
+      {/* ── ELEVATED OFFICIAL BRAND EMBLEM IMAGE WITH HOLOGRAPHIC HALO ── */}
+      <div
+        style={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 4,
+        }}
+      >
+        {/* Orbital holographic circuit ring */}
+        {!shouldReduceMotion && (
+          <motion.div
+            style={{
+              position: 'absolute',
+              width: (size === 'sm' ? 68 : size === 'lg' ? 104 : 86) * scale,
+              height: (size === 'sm' ? 68 : size === 'lg' ? 104 : 86) * scale,
+              borderRadius: '50%',
+              border: '1.5px dashed rgba(234, 168, 18, 0.55)',
+              pointerEvents: 'none',
+            }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
+          />
+        )}
+
+        {/* Counter-rotating subtle cyan ring */}
+        {!shouldReduceMotion && (
+          <motion.div
+            style={{
+              position: 'absolute',
+              width: (size === 'sm' ? 78 : size === 'lg' ? 116 : 98) * scale,
+              height: (size === 'sm' ? 78 : size === 'lg' ? 116 : 98) * scale,
+              borderRadius: '50%',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              pointerEvents: 'none',
+            }}
+            animate={{ rotate: -360 }}
+            transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
+          />
+        )}
+
+        {/* Official Brand Emblem Image with Golden Circuit Glow */}
+        <div
+          style={{
+            position: 'relative',
+            borderRadius: 16,
+            padding: 3,
+            background: 'linear-gradient(135deg, rgba(234, 168, 18, 0.7) 0%, rgba(56, 189, 248, 0.4) 50%, rgba(234, 168, 18, 0.8) 100%)',
+            boxShadow: '0 0 24px rgba(234, 168, 18, 0.4), 0 8px 24px rgba(0, 0, 0, 0.6)',
+            zIndex: 2,
+          }}
+        >
+          <img
+            src="/brand/logicwhilelire-official.png"
+            alt="LogicWhile LiRE"
+            style={{
+              height: (size === 'sm' ? 44 : size === 'lg' ? 72 : 56) * scale,
+              width: (size === 'sm' ? 44 : size === 'lg' ? 72 : 56) * scale,
+              objectFit: 'contain',
+              borderRadius: 13,
+              background: '#FFFFFF',
+              padding: 3,
+              display: 'block',
+            }}
+          />
+        </div>
+      </div>
+
       {/* ── INNOVATIVE LIGHT-TRACING BRAND LOGO ANIMATION ── */}
       <div
         style={{

@@ -1290,9 +1290,16 @@ const LOBBY_CACHE_TTL_MS = 2500;
 router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response) => {
   try {
     const code = ((req.params.examCode as string) || '').toUpperCase();
-    const { getLobbyStats, getExamStartedState } = await import('../services/socketService');
+    const { getLobbyStats, getExamStartedState, getWaitingStudents } = await import('../services/socketService');
     // Socket stats are 100% in-memory and real-time
     const stats = getLobbyStats(code);
+    const waitingList = getWaitingStudents(code).map((s) => ({
+      hall_ticket_no: s.hallTicket,
+      student_name: s.studentName,
+      section: s.section,
+      joined_at: new Date(s.joinedAt).toISOString(),
+      status: 'waiting',
+    }));
 
     // Real-time started state from memory (used to auto-unblock students who refreshed)
     const startedState = getExamStartedState(code);
@@ -1358,6 +1365,7 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
       queue_count: stats.queue_count ?? stats.connected,
       pending: Math.max(0, enrolledCount - stats.connected),
       duration_seconds: durationSec,
+      waiting_students: waitingList,
       // Exam started state — null if not yet started
       exam_started: startedState
         ? {

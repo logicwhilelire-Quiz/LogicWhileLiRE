@@ -1362,6 +1362,33 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
         .eq('id', existing.id);
 
       const isRel = Boolean(isExamStarted || memoryReleased || existing.status === 'released' || existing.override_reason === 'status:released');
+      if (!isDemoExam && !isRel) {
+        res.status(403).json({
+          success: false,
+          valid: false,
+          error: 'The inspector has not started this examination yet. Please wait in the waiting lobby.',
+          code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
+          waiting_list: true,
+          attempt_id: existing.id,
+          session_token: freshToken,
+          server_time: Date.now(),
+          hallTicket: canonicalRoll,
+          studentName: candidateDisplayName,
+          student_gate_pass: studentGatePass,
+          candidate_gate_pass: candidateGatePass,
+          examDetails: {
+            exam_code: exam.exam_code,
+            exam_name: exam.exam_name,
+            subject: exam.subject,
+            duration_minutes: exam.duration_minutes,
+            total_questions: exam.total_questions,
+            end_time: exam.end_time,
+            college: exam.college,
+          },
+        });
+        return;
+      }
+
       res.json({
         success: true,
         resumed: true,
@@ -1384,9 +1411,7 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
           end_time: exam.end_time,
           college: exam.college,
         },
-        message: isRel
-          ? 'You have been released by your exam supervisor. You may proceed to instructions.'
-          : 'You are registered in the Waiting Hall. Please wait for your exam supervisor to release you.',
+        message: 'You have been released by your exam supervisor. You may proceed to instructions.',
       });
       return;
     }
@@ -1508,12 +1533,40 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
     return;
   }
 
+  const isReleasedNow = Boolean(isExamStarted || memoryReleased);
+  if (!isDemoExam && !isReleasedNow) {
+    res.status(403).json({
+      success: false,
+      valid: false,
+      error: 'The inspector has not started this examination yet. Please wait in the waiting lobby.',
+      code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
+      waiting_list: true,
+      attempt_id: attempt.id,
+      session_token: newToken,
+      server_time: Date.now(),
+      hallTicket: canonicalRoll,
+      studentName: candidateDisplayName,
+      student_gate_pass: studentGatePass,
+      candidate_gate_pass: candidateGatePass,
+      examDetails: {
+        exam_code: exam.exam_code,
+        exam_name: exam.exam_name,
+        subject: exam.subject,
+        duration_minutes: exam.duration_minutes,
+        total_questions: exam.total_questions,
+        end_time: exam.end_time,
+        college: exam.college,
+      },
+    });
+    return;
+  }
+
   res.json({
     success: true,
     valid: true,
     resumed: false,
     status: isExamStarted ? 'in_progress' : 'waiting_verification',
-    is_released: Boolean(isExamStarted || memoryReleased),
+    is_released: isReleasedNow,
     attempt_id: attempt.id,
     session_token: newToken,
     server_time: Date.now(),
@@ -1531,7 +1584,9 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
       end_time: exam.end_time,
       college: exam.college,
     },
-    message: 'Registered in Waiting Hall. Please wait for an administrator or inspector to release you.',
+    message: isReleasedNow
+      ? 'You have been released by your exam supervisor. You may proceed to instructions.'
+      : 'Registered in Waiting Hall. Please wait for an administrator or inspector to release you.',
   });
 }
 

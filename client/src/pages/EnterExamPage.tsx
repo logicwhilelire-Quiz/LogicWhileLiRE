@@ -150,6 +150,56 @@ export default function EnterExamPage() {
       } else {
         setIsWarmingUp(false)
         const resData = (err as any)?.response?.data
+        const errCode = resData?.code
+
+        // Registered in Waiting Hall but inspector has not started examination yet:
+        if (errCode === 'EXAM_NOT_STARTED_BY_INSPECTOR' || errCode === 'EXAM_NOT_STARTED' || resData?.waiting_list) {
+          const canonicalHt = resData.hallTicket || form.hallTicket.trim()
+          const candidateName = resData.studentName || canonicalHt
+          const attemptData = JSON.stringify({
+            attemptId: resData.attempt_id || `att_${Date.now()}`,
+            examCode: form.examCode.trim().toUpperCase(),
+            hallTicket: canonicalHt,
+            studentName: candidateName,
+            student_gate_pass: resData.student_gate_pass,
+            candidate_gate_pass: resData.candidate_gate_pass,
+            session_token: resData.session_token,
+            examDetails: resData.examDetails || {
+              exam_name: form.examCode.trim().toUpperCase(),
+              duration_minutes: 45,
+              total_questions: 15,
+            },
+          })
+          localStorage.setItem('logicwhilelire_attempt', attemptData)
+          localStorage.setItem('lw_attempt', attemptData)
+          if (resData.candidate_gate_pass) {
+            localStorage.setItem('candidate_gate_pass', resData.candidate_gate_pass)
+          }
+          if (resData.student_gate_pass) {
+            localStorage.setItem('student_gate_pass', resData.student_gate_pass)
+          }
+          const candidateProfile = {
+            name: candidateName,
+            roll_number: canonicalHt,
+            hall_ticket: canonicalHt,
+            section: resData.section || 'General',
+            gate_pass: resData.student_gate_pass || resData.candidate_gate_pass,
+          }
+          localStorage.setItem('student_user', JSON.stringify(candidateProfile))
+
+          navigate(`/contest/${encodeURIComponent(form.examCode.trim().toUpperCase())}/waiting-lobby`, {
+            state: {
+              candidate: candidateProfile,
+              hallTicket: canonicalHt,
+              studentName: candidateName,
+              gatePass: resData.student_gate_pass || resData.candidate_gate_pass,
+              attemptId: resData.attempt_id,
+              isReleased: false,
+            }
+          })
+          return
+        }
+
         const msg = resData?.error || resData?.message || (err instanceof Error ? err.message : 'Entry failed. Please check your credentials.')
         setError(msg)
         if (resData?.code === 'EMAIL_NOT_VERIFIED' && resData?.email) {
