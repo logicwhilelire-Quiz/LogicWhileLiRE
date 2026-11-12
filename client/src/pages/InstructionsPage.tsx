@@ -144,6 +144,18 @@ export default function InstructionsPage() {
             const updated = { ...stored, isReleased: true };
             localStorage.setItem('logicwhilelire_attempt', JSON.stringify(updated));
           } catch {}
+        } else if (res.data?.status === 'waiting_verification' || res.data?.status === 'in_lobby') {
+          // If supervisor has not released the candidate yet, route to Waiting Lobby
+          navigate(`/contest/${encodeURIComponent(examCode)}/waiting-lobby`, {
+            replace: true,
+            state: {
+              hallTicket,
+              attemptId,
+              candidate: stored,
+              examCode,
+              isReleased: false,
+            },
+          });
         }
       } catch {
         // Non-blocking fallback

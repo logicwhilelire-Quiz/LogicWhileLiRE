@@ -230,9 +230,30 @@ export default function StudentDashboardPage() {
         localStorage.setItem('logicwhilelire_attempt', attemptData);
         localStorage.setItem('lw_attempt', attemptData);
 
-        navigate(`/instructions/${encodeURIComponent(targetCode)}`, {
-          state: { hallTicket },
-        });
+        const isReleased = Boolean(data.is_released || data.status === 'released' || data.status === 'in_progress');
+        if (isReleased) {
+          navigate(`/instructions/${encodeURIComponent(targetCode)}`, {
+            state: {
+              hallTicket,
+              isReleased: true,
+              attemptId: data.attempt_id,
+              serverStartTime: data.server_start_time,
+              durationSeconds: data.examDetails?.duration_minutes ? data.examDetails.duration_minutes * 60 : 3600,
+            },
+          });
+        } else {
+          navigate(`/contest/${encodeURIComponent(targetCode)}/waiting-lobby`, {
+            state: {
+              candidate: student,
+              hallTicket,
+              studentName: student?.name || hallTicket,
+              attemptId: data.attempt_id,
+              examCode: targetCode,
+              isReleased: false,
+            },
+          });
+        }
+        return;
       }
     } catch (err: any) {
       const errCode = err.response?.data?.code;
@@ -306,11 +327,41 @@ export default function StudentDashboardPage() {
 
   if (loading && !student) {
     return (
-      <div className="page-center" style={{ minHeight: '80vh', flexDirection: 'column', gap: 16 }}>
-        <div className="btn-spinner" style={{ width: 44, height: 44, borderWidth: 3 }} />
-        <p className="text-muted" style={{ fontSize: '0.95rem' }}>
-          Loading LogicWhileLiRE candidate portal & telemetry records...
-        </p>
+      <div className="page-center" style={{ minHeight: '85vh', flexDirection: 'column', gap: 20 }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div
+            style={{
+              position: 'absolute',
+              width: 140,
+              height: 140,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(234, 168, 18, 0.22) 0%, rgba(56, 189, 248, 0.12) 50%, transparent 70%)',
+              animation: 'pulseGlow 2s infinite ease-in-out',
+            }}
+          />
+          <div style={{ transform: 'scale(1.15)', position: 'relative', zIndex: 1 }}>
+            <BrandLogo size="md" variant="mark" />
+          </div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#F8FAFC', letterSpacing: '0.04em', marginBottom: 6 }}>
+            LOGICWHILE LiRE ASSESSMENT PORTAL
+          </div>
+          <p className="text-muted" style={{ fontSize: '0.84rem', margin: 0 }}>
+            Synchronizing institutional clearance, sector benchmarks &amp; scheduled exams...
+          </p>
+        </div>
+        <div style={{ width: 180, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+          <div
+            style={{
+              width: '60%',
+              height: '100%',
+              background: 'linear-gradient(90deg, #EAA812, #38BDF8)',
+              borderRadius: 2,
+              animation: 'scanlineMove 1.4s infinite ease-in-out',
+            }}
+          />
+        </div>
       </div>
     );
   }

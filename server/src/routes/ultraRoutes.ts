@@ -1198,6 +1198,8 @@ router.post(
         .from('exam_codes')
         .update({
           is_active: true,
+          is_launched: true,
+          started_at: new Date(serverStartTime).toISOString(),
           start_time: new Date(serverStartTime).toISOString(),
           end_time: endTimeIso,
         })
@@ -1313,7 +1315,7 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
             .eq('exam_code', code),
           supabase
             .from('exam_codes')
-            .select('duration_minutes, start_time, is_active')
+            .select('duration_minutes, start_time, is_active, is_launched, started_at')
             .eq('exam_code', code)
             .maybeSingle(),
         ]);
@@ -1322,8 +1324,12 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
         durationSec = ((examRow.data as any)?.duration_minutes || 60) * 60;
 
         // If exam was started in DB but memory cache was empty (e.g. server restart), restore startedState
-        if (!startedState && examRow.data?.is_active && examRow.data?.start_time) {
-          const dbStartMs = new Date(examRow.data.start_time).getTime();
+        const wasStartedInDb = Boolean(
+          examRow.data?.is_active &&
+          (examRow.data?.is_launched || examRow.data?.started_at)
+        );
+        if (!startedState && wasStartedInDb && examRow.data) {
+          const dbStartMs = examRow.data.started_at ? new Date(examRow.data.started_at).getTime() : new Date(examRow.data.start_time).getTime();
           const { broadcastExamStarted } = await import('../services/socketService');
           await broadcastExamStarted({
             examCode: code,
