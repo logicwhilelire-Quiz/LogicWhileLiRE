@@ -19,6 +19,10 @@ import {
   IconFileText,
   IconShield,
   IconPrinter,
+  IconCheck,
+  IconCross,
+  IconClock,
+  IconCode,
 } from '../components/icons/HumanIcons'
 
 const RadarChart3D  = lazy(() => import('../components/3d/RadarChart3D'))
@@ -222,8 +226,8 @@ export default function ResultECPage() {
       ? initialCodingQuestions
       : hasCodingQuestions
       ? [
-          { id: `${(examCode || 'cs2026').toLowerCase()}-code-01`, title: '⚡ CODING CHALLENGE: Two Sum', marks: 10 },
-          { id: `${(examCode || 'cs2026').toLowerCase()}-code-02`, title: '⚡ CODING CHALLENGE: Valid Anagram', marks: 10 },
+          { id: `${(examCode || 'cs2026').toLowerCase()}-code-01`, title: 'CODING CHALLENGE: Two Sum', marks: 10 },
+          { id: `${(examCode || 'cs2026').toLowerCase()}-code-02`, title: 'CODING CHALLENGE: Valid Anagram', marks: 10 },
         ]
       : []
 
@@ -619,7 +623,7 @@ export default function ResultECPage() {
                                 gap: 5,
                                 whiteSpace: 'nowrap',
                               }}>
-                                <span>⚪</span>
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#94A3B8', display: 'inline-block' }} />
                                 <span>Not attempted</span>
                               </span>
                             )}
@@ -755,12 +759,12 @@ export default function ResultECPage() {
         {/* ─── STATS CARDS (Solid Surfaces) ─── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 48 }}>
           {[
-            { icon: '✅', label: hasCodingQuestions ? 'Correct (MCQ)' : 'Correct', value: activeResult.correctAnswers !== undefined ? Math.round(animatedCorrect) : '-', color: '#10B981' },
-            { icon: '❌', label: hasCodingQuestions ? 'Wrong (MCQ)' : 'Wrong',   value: activeResult.wrongAnswers !== undefined ? Math.round(animatedWrong) : '-',   color: '#EF4444' },
-            { icon: '⬜', label: 'Skipped', value: activeResult.unanswered ?? '-',     color: '#F59E0B' },
-            { icon: '⏱️', label: 'Time Taken',
+            { icon: <IconCheck size={28} color="#10B981" />, label: hasCodingQuestions ? 'Correct (MCQ)' : 'Correct', value: activeResult.correctAnswers !== undefined ? Math.round(animatedCorrect) : '-', color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)' },
+            { icon: <IconCross size={28} color="#EF4444" />, label: hasCodingQuestions ? 'Wrong (MCQ)' : 'Wrong',   value: activeResult.wrongAnswers !== undefined ? Math.round(animatedWrong) : '-',   color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)' },
+            { icon: <span style={{ width: 22, height: 22, border: '2px solid #F59E0B', borderRadius: 4, display: 'inline-block' }} />, label: 'Skipped', value: activeResult.unanswered ?? '-',     color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)' },
+            { icon: <IconClock size={28} color="#2563EB" />, label: 'Time Taken',
               value: activeResult.timeTaken ? `${Math.floor(activeResult.timeTaken / 60)}m` : '-',
-              color: '#2563EB' },
+              color: '#2563EB', bg: 'rgba(37, 99, 235, 0.12)' },
           ].map((s, i) => (
             <motion.div key={i}
               initial={{ opacity: 0, y: 20 }}
@@ -775,7 +779,9 @@ export default function ResultECPage() {
                 textAlign: 'center',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
               }}>
-                <div style={{ fontSize: '1.8rem', marginBottom: 6 }}>{s.icon}</div>
+                <div style={{ marginBottom: 8, display: 'inline-flex', padding: 10, borderRadius: 12, background: s.bg, alignItems: 'center', justifyContent: 'center' }}>
+                  {s.icon}
+                </div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, color: s.color }}>
                   {s.value}
                 </div>

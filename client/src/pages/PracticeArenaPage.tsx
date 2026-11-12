@@ -11,6 +11,25 @@ import CodeEditorHolo from '../components/3d/CodeEditorHolo';
 import SectorRadar3D, { type SectorScore } from '../components/3d/SectorRadar3D';
 import SectorsUniverse3D from '../components/3d/SectorsUniverse3D';
 import { sound } from '../lib/soundService';
+import {
+  IconTarget,
+  IconCpu,
+  IconGlobe,
+  IconFlash,
+  IconCode,
+  IconFlame,
+  IconSearch,
+  IconTrophy,
+  IconClock,
+  IconDashboard,
+  IconGraduation,
+  IconCheck,
+  IconAlert,
+  IconCross,
+  IconLaunch,
+  IconSpeedometer,
+  IconShare,
+} from '../components/icons/HumanIcons';
 
 interface Challenge {
   id: string;
@@ -34,12 +53,12 @@ interface Challenge {
 }
 
 const SECTOR_CATEGORIES = [
-  { id: 'all', label: 'All 5 Sectors', icon: '🪐' },
-  { id: 'sector-quant', label: 'Sector 1: Quant', icon: '📐', color: '#F59E0B' },
-  { id: 'sector-logic', label: 'Sector 2: Logic', icon: '🧩', color: '#8B5CF6' },
-  { id: 'sector-core-cs', label: 'Sector 3: Core CS', icon: '💻', color: '#10B981' },
-  { id: 'sector-dsa', label: 'Sector 4: DSA', icon: '⚡', color: '#38BDF8' },
-  { id: 'sector-fullstack', label: 'Sector 5: Full-Stack', icon: '🌐', color: '#F43F5E' },
+  { id: 'all', label: 'All 5 Sectors', code: 'ALL' },
+  { id: 'sector-quant', label: 'Sector 1: Quant', code: 'S1', color: '#F59E0B' },
+  { id: 'sector-logic', label: 'Sector 2: Logic', code: 'S2', color: '#8B5CF6' },
+  { id: 'sector-core-cs', label: 'Sector 3: Core CS', code: 'S3', color: '#10B981' },
+  { id: 'sector-dsa', label: 'Sector 4: DSA', code: 'S4', color: '#38BDF8' },
+  { id: 'sector-fullstack', label: 'Sector 5: Full-Stack', code: 'S5', color: '#F43F5E' },
 ];
 
 const DAILY_CHALLENGES: Challenge[] = [
@@ -52,7 +71,7 @@ const DAILY_CHALLENGES: Challenge[] = [
     topic: 'Quantitative Aptitude (Relative Speed & Rate)',
     sectorId: 'sector-quant',
     sectorName: 'Quantitative Aptitude & Velocity',
-    sectorBadge: '📐 Sector 1 · Set A',
+    sectorBadge: 'Sector 1 · Set A',
     sectorColor: '#F59E0B',
     description: `A spacecraft engine consumes fuel at a rate inversely proportional to thruster efficiency. Given two integers: fuel mass M (kg) and burn rate R (kg/s), calculate and print the total burn duration in integer seconds.\n\nInput format:\nLine 1: Two space-separated integers M and R\n\nExample:\nInput:\n1200 40\nOutput:\n30`,
     starterCode: `import sys
@@ -81,7 +100,7 @@ if __name__ == '__main__':
     topic: 'Quantitative Aptitude (Angular Velocity & Geometry)',
     sectorId: 'sector-quant',
     sectorName: 'Quantitative Aptitude & Velocity',
-    sectorBadge: '📐 Sector 1 · Set B',
+    sectorBadge: 'Sector 1 · Set B',
     sectorColor: '#F59E0B',
     description: `Calculate the acute angle (in degrees, rounded to the nearest integer) between the hour hand and minute hand of an analog celestial chronometer for a given time H hours and M minutes (12-hour format).\n\nInput:\nH M\n\nExample:\nInput:\n3 30\nOutput:\n75`,
     starterCode: `import sys
@@ -115,7 +134,7 @@ if __name__ == '__main__':
     topic: 'Quantitative Aptitude (Permutations & Probability)',
     sectorId: 'sector-quant',
     sectorName: 'Quantitative Aptitude & Velocity',
-    sectorBadge: '📐 Sector 1 · Set C',
+    sectorBadge: 'Sector 1 · Set C',
     sectorColor: '#F59E0B',
     description: `Given N redundant transmission packets where at least K packets must arrive safely for message reconstruction. If each packet arrives independently with probability 1/2, compute the number of successful combinations out of the 2^N possible transmission outcomes.\n\nInput:\nN K\n\nExample:\nInput:\n4 3\nOutput:\n5`,
     starterCode: `import sys
@@ -148,7 +167,7 @@ if __name__ == '__main__':
     topic: 'Logical Reasoning (Pattern Decoders)',
     sectorId: 'sector-logic',
     sectorName: 'Logical Reasoning & Deduction',
-    sectorBadge: '🧩 Sector 2 · Set A',
+    sectorBadge: 'Sector 2 · Set A',
     sectorColor: '#8B5CF6',
     description: `The LogicWhileLiRE platform encodes transmission packets by shifting uppercase letters by +1 then +2 alternately (A->B, B->D). Write a program that takes an encrypted uppercase string from stdin and prints the deciphered word.\n\nExample:\nInput:\nMQHKE\nOutput:\nLOGIC`,
     starterCode: `import sys
@@ -181,7 +200,7 @@ if __name__ == '__main__':
     topic: 'Logical Reasoning (Constraint Networks & Seating)',
     sectorId: 'sector-logic',
     sectorName: 'Logical Reasoning & Deduction',
-    sectorBadge: '🧩 Sector 2 · Set B',
+    sectorBadge: 'Sector 2 · Set B',
     sectorColor: '#8B5CF6',
     description: `N persons (even integer, N >= 4) sit uniformly around a circular console numbered 1 to N clockwise. Given person X, determine who sits diametrically opposite to person X.\n\nInput:\nN X\n\nExample:\nInput:\n8 3\nOutput:\n7`,
     starterCode: `import sys
@@ -212,7 +231,7 @@ if __name__ == '__main__':
     topic: 'Logical Reasoning (Syllogisms & Constraint Networks)',
     sectorId: 'sector-logic',
     sectorName: 'Logical Reasoning & Deduction',
-    sectorBadge: '🧩 Sector 2 · Set C',
+    sectorBadge: 'Sector 2 · Set C',
     sectorColor: '#8B5CF6',
     description: `Given N deductive premise implications of format "A->B" and a query "X->Y", output "VALID" if X implies Y by transitive syllogism, otherwise output "INVALID".\n\nInput:\nLine 1: N\nNext N lines: Pairs of characters separated by space representing A B (A implies B)\nLine N+2: Query X Y\n\nExample:\nInput:\n2\nA B\nB C\nA C\nOutput:\nVALID`,
     starterCode: `import sys
@@ -262,7 +281,7 @@ if __name__ == '__main__':
     topic: 'Operating Systems (Virtual Memory)',
     sectorId: 'sector-core-cs',
     sectorName: 'Core Computer Science Systems',
-    sectorBadge: '💻 Sector 3 · Set A',
+    sectorBadge: 'Sector 3 · Set A',
     sectorColor: '#10B981',
     description: `Given a page reference string and number of physical memory frames K, compute the total number of page faults using the FIFO page replacement algorithm.\n\nInput:\nLine 1: Integer K (frame capacity)\nLine 2: Space-separated page requests\n\nExample:\nInput:\n3\n7 0 1 2 0 3 0 4 2 3 0 3 2\nOutput:\n12`,
     starterCode: `import sys
@@ -300,7 +319,7 @@ if __name__ == '__main__':
     topic: 'Operating Systems (Deadlock Avoidance)',
     sectorId: 'sector-core-cs',
     sectorName: 'Core Computer Science Systems',
-    sectorBadge: '💻 Sector 3 · Set B',
+    sectorBadge: 'Sector 3 · Set B',
     sectorColor: '#10B981',
     description: `Given 1 resource type with Available units A, and N processes with Current Allocation and Maximum Need, determine if the system is in a SAFE state. Output SAFE or UNSAFE.\n\nInput:\nLine 1: Available A\nLine 2: N (number of processes)\nLine 3: N space-separated allocated integers\nLine 4: N space-separated max need integers\n\nExample:\nInput:\n3\n3\n1 2 3\n3 4 5\nOutput:\nSAFE`,
     starterCode: `import sys
@@ -348,7 +367,7 @@ if __name__ == '__main__':
     topic: 'Computer Networks (Sliding Window & Flow Control)',
     sectorId: 'sector-core-cs',
     sectorName: 'Core Computer Science Systems',
-    sectorBadge: '💻 Sector 3 · Set C',
+    sectorBadge: 'Sector 3 · Set C',
     sectorColor: '#10B981',
     description: `A TCP sender has a congestion window of W packets and base sequence number B. Given cumulative ACK packet sequence A from receiver, output the new window base and number of packets newly acknowledged.\n\nInput:\nB W A\n\nExample:\nInput:\n100 5 103\nOutput:\n103 3`,
     starterCode: `import sys
@@ -381,7 +400,7 @@ if __name__ == '__main__':
     topic: 'Data Structures & Algorithms (LIS)',
     sectorId: 'sector-dsa',
     sectorName: 'Data Structures & Algorithms',
-    sectorBadge: '⚡ Sector 4 · Set A',
+    sectorBadge: 'Sector 4 · Set A',
     sectorColor: '#38BDF8',
     description: `A spacecraft's altitude readings are captured across consecutive sensor intervals. Write a program to read N altitude values from stdin and output the length of the longest strictly increasing sub-sequence of sensor values.\n\nInput:\n10 9 2 5 3 7 101 18\nOutput:\n4`,
     starterCode: `import sys
@@ -420,7 +439,7 @@ if __name__ == '__main__':
     topic: 'Data Structures & Algorithms (Monotonic Stack)',
     sectorId: 'sector-dsa',
     sectorName: 'Data Structures & Algorithms',
-    sectorBadge: '⚡ Sector 4 · Set B',
+    sectorBadge: 'Sector 4 · Set B',
     sectorColor: '#38BDF8',
     description: `Given a sequence of sensor temperature readings, for each position, find the next strictly greater reading that appears to its right. If none exists, output -1.\n\nInput:\n4 5 2 25\nOutput:\n5 25 25 -1`,
     starterCode: `import sys
@@ -459,7 +478,7 @@ if __name__ == '__main__':
     topic: 'Data Structures & Algorithms (Kruskal & Disjoint Set)',
     sectorId: 'sector-dsa',
     sectorName: 'Data Structures & Algorithms',
-    sectorBadge: '⚡ Sector 4 · Set C',
+    sectorBadge: 'Sector 4 · Set C',
     sectorColor: '#38BDF8',
     description: `Connect V space probes with minimum cost using bidirectional quantum links. Given V, E and E triplets (u v weight), compute the minimal total weight required to connect all probes.\n\nInput:\nLine 1: V E\nNext E lines: u v w\n\nExample:\nInput:\n3 3\n0 1 1\n1 2 2\n0 2 5\nOutput:\n3`,
     starterCode: `import sys
@@ -513,7 +532,7 @@ if __name__ == '__main__':
     topic: 'Full-Stack Architecture (Rate Limiting)',
     sectorId: 'sector-fullstack',
     sectorName: 'Full-Stack & Distributed Architecture',
-    sectorBadge: '🌐 Sector 5 · Set A',
+    sectorBadge: 'Sector 5 · Set A',
     sectorColor: '#F43F5E',
     description: `Simulate a token bucket rate limiter with burst capacity C and refill rate R (tokens per second). Given arrival timestamps of request packet arrivals, output 1 if packet is accepted, 0 if rate-limited.\n\nInput:\nLine 1: Capacity C and Refill Rate R\nLine 2: Integer N (number of arrivals)\nLine 3: N space-separated arrival seconds (strictly increasing integers)\n\nExample:\nInput:\n2 1\n3\n0 0 1\nOutput:\n1 1 1`,
     starterCode: `import sys
@@ -556,7 +575,7 @@ if __name__ == '__main__':
     topic: 'Full-Stack Systems (Async Event Loop)',
     sectorId: 'sector-fullstack',
     sectorName: 'Full-Stack & Distributed Architecture',
-    sectorBadge: '🌐 Sector 5 · Set B',
+    sectorBadge: 'Sector 5 · Set B',
     sectorColor: '#F43F5E',
     description: `Given a sequence of task declarations: S (synchronous execution), M (microtask promise), and T (macrotask timer), output the execution ordering IDs according to modern JavaScript/Node.js event loop semantics.\n\nInput:\nLine 1: N\nNext N lines: TYPE ID (e.g., T 1, S 2, M 3)\n\nExample:\nInput:\n3\nT 1\nS 2\nM 3\nOutput:\n2 3 1`,
     starterCode: `import sys
@@ -595,7 +614,7 @@ if __name__ == '__main__':
     topic: 'Full-Stack Systems (In-Memory Key-Value Eviction)',
     sectorId: 'sector-fullstack',
     sectorName: 'Full-Stack & Distributed Architecture',
-    sectorBadge: '🌐 Sector 5 · Set C',
+    sectorBadge: 'Sector 5 · Set C',
     sectorColor: '#F43F5E',
     description: `Given cache capacity C and a sequence of key GET / PUT operations, output the value returned by each GET operation (or -1 if missing).\n\nInput:\nLine 1: Capacity C and total Ops Q\nNext Q lines: 'PUT K V' or 'GET K'\n\nExample:\nInput:\n2 4\nPUT 1 10\nPUT 2 20\nGET 1\nGET 3\nOutput:\n10 -1`,
     starterCode: `import sys
@@ -766,7 +785,7 @@ export default function PracticeArenaPage() {
       sound.playChime(4);
       setXp((prev) => prev + selectedChallenge.xp);
       setSolvedCount((prev) => prev + 1);
-      setXpBanner(`🎉 Sector Challenge Solved! +${selectedChallenge.xp} XP credited to your ${selectedChallenge.sectorName} mastery profile!`);
+      setXpBanner(`Sector Challenge Solved: +${selectedChallenge.xp} XP credited to your ${selectedChallenge.sectorName} mastery profile!`);
       setTimeout(() => setXpBanner(null), 5000);
     } else {
       sound.playKeyThock();
@@ -788,7 +807,7 @@ export default function PracticeArenaPage() {
       setBlitzActive(false);
       sound.playSwell();
       setXp((p) => p + blitzScore + 50);
-      setXpBanner(`⚡ Blitz Completed! Final Score: ${blitzScore + (idx === BLITZ_QUESTIONS[blitzIndex].ans ? 20 : 0)}/100 (+50 Bonus XP)`);
+      setXpBanner(`Blitz Completed: Final Score: ${blitzScore + (idx === BLITZ_QUESTIONS[blitzIndex].ans ? 20 : 0)}/100 (+50 Bonus XP)`);
       setTimeout(() => setXpBanner(null), 5000);
     }
   };
@@ -853,7 +872,9 @@ export default function PracticeArenaPage() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: '1.4rem' }}>🎓</span>
+              <span style={{ display: 'inline-flex', padding: 8, background: 'rgba(16, 185, 129, 0.2)', borderRadius: 10 }}>
+                <IconGraduation size={22} color="#34D399" />
+              </span>
               <div>
                 <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.04em' }}>
                   STUDENT PORTAL CLEARANCE VERIFIED: 5 SECTORS ACTIVE
@@ -880,7 +901,7 @@ export default function PracticeArenaPage() {
                   gap: 6,
                 }}
               >
-                <span>📊</span> My Dashboard
+                <IconDashboard size={14} color="#94A3B8" /> My Dashboard
               </button>
             </div>
           </div>
@@ -914,11 +935,10 @@ export default function PracticeArenaPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.8rem',
                 boxShadow: '0 0 20px rgba(239, 68, 68, 0.3)',
               }}
             >
-              🔥
+              <IconFlame size={24} color="#F87171" />
             </div>
             <div>
               <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#F87171', fontFamily: "'Space Grotesk', sans-serif" }}>
@@ -942,11 +962,10 @@ export default function PracticeArenaPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.8rem',
                 boxShadow: '0 0 20px rgba(43, 127, 255, 0.3)',
               }}
             >
-              ⚡
+              <IconFlash size={24} color="#60A5FA" />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -991,7 +1010,7 @@ export default function PracticeArenaPage() {
                 transition: 'all 0.2s ease',
               }}
             >
-              <span>📱</span> Install PWA App
+              <span><IconShare size={15} color="#60A5FA" /></span> Install PWA App
             </button>
           </div>
         </div>
@@ -1015,7 +1034,7 @@ export default function PracticeArenaPage() {
               fontFamily: "'Space Grotesk', sans-serif",
             }}
           >
-            <span>💻</span> Sector Code Sprints
+            <IconCode size={16} color={activeTab === 'coding' ? '#60A5FA' : '#94A3B8'} /> Sector Code Sprints
           </button>
 
           <button
@@ -1035,7 +1054,7 @@ export default function PracticeArenaPage() {
               fontFamily: "'Space Grotesk', sans-serif",
             }}
           >
-            <span>🪐</span> 3D Technical Sectors Hub
+            <IconGlobe size={16} color={activeTab === 'sectors' ? '#38BDF8' : '#94A3B8'} /> 3D Technical Sectors Hub
           </button>
 
           <button
@@ -1055,7 +1074,7 @@ export default function PracticeArenaPage() {
               fontFamily: "'Space Grotesk', sans-serif",
             }}
           >
-            <span>⚡</span> 60-Sec Quiz Blitz
+            <IconSpeedometer size={16} color={activeTab === 'blitz' ? '#F87171' : '#94A3B8'} /> 60-Sec Quiz Blitz
           </button>
         </div>
 
@@ -1092,7 +1111,7 @@ export default function PracticeArenaPage() {
                       boxShadow: isActive ? `0 0 16px ${sec.color || '#38BDF8'}33` : 'none',
                     }}
                   >
-                    <span>{sec.icon}</span>
+                    <span style={{ fontSize: '0.72rem', padding: '1px 6px', borderRadius: 4, background: isActive ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)', fontWeight: 800 }}>{sec.code}</span>
                     <span>{sec.label}</span>
                   </button>
                 );
@@ -1102,14 +1121,17 @@ export default function PracticeArenaPage() {
             {/* Keyword Search & Difficulty Filter Toolbar */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div style={{ flex: '1 1 260px', position: 'relative' }}>
+                <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
+                  <IconSearch size={15} color="#64748B" />
+                </span>
                 <input
                   type="text"
-                  placeholder="🔍 Search sector challenges by keyword, topic, or system..."
+                  placeholder="Search sector challenges by keyword, topic, or system..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '9px 36px 9px 14px',
+                    padding: '9px 36px 9px 36px',
                     borderRadius: 10,
                     background: 'rgba(15, 23, 42, 0.65)',
                     border: '1px solid rgba(56, 189, 248, 0.3)',
@@ -1194,7 +1216,9 @@ export default function PracticeArenaPage() {
 
                   {filteredChallenges.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '32px 16px', color: '#94A3B8' }}>
-                      <div style={{ fontSize: '1.8rem', marginBottom: 8 }}>🔍</div>
+                      <div style={{ marginBottom: 8, display: 'inline-flex', padding: 10, background: 'rgba(255, 255, 255, 0.05)', borderRadius: 12 }}>
+                        <IconSearch size={24} color="#64748B" />
+                      </div>
                       <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#E2E8F0', marginBottom: 4 }}>
                         No challenges match your filters
                       </div>
@@ -1314,7 +1338,9 @@ export default function PracticeArenaPage() {
           <div style={{ maxWidth: 640, margin: '0 auto', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 20, padding: '36px 32px', textAlign: 'center' }}>
             {!blitzActive && blitzScore === 0 ? (
               <div>
-                <div style={{ fontSize: '3.5rem', marginBottom: 16 }}>⚡</div>
+                <div style={{ marginBottom: 16, display: 'inline-flex', padding: 16, background: 'rgba(239, 68, 68, 0.15)', borderRadius: 20 }}>
+                  <IconFlash size={36} color="#EF4444" />
+                </div>
                 <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff', margin: '0 0 10px', fontFamily: "'Space Grotesk', sans-serif" }}>
                   60-Second Sector Rapid Sprint
                 </h2>
@@ -1340,7 +1366,9 @@ export default function PracticeArenaPage() {
                     boxShadow: '0 8px 24px rgba(239, 68, 68, 0.4)',
                   }}
                 >
-                  🚀 Start 45-Sec Sprint
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <IconLaunch size={18} color="#fff" /> Start 45-Sec Sprint
+                  </span>
                 </button>
               </div>
             ) : blitzActive ? (
@@ -1356,8 +1384,8 @@ export default function PracticeArenaPage() {
                       </span>
                     )}
                   </div>
-                  <span style={{ fontSize: '1.2rem', fontWeight: 900, color: blitzTimer <= 10 ? '#EF4444' : '#F59E0B', fontFamily: 'monospace' }}>
-                    ⏱ {blitzTimer}s
+                  <span style={{ fontSize: '1.2rem', fontWeight: 900, color: blitzTimer <= 10 ? '#EF4444' : '#F59E0B', fontFamily: 'monospace', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <IconClock size={16} /> {blitzTimer}s
                   </span>
                 </div>
 
@@ -1390,7 +1418,9 @@ export default function PracticeArenaPage() {
               </div>
             ) : (
               <div>
-                <div style={{ fontSize: '3rem', marginBottom: 12 }}>🏆</div>
+                <div style={{ marginBottom: 12, display: 'inline-flex', padding: 14, background: 'rgba(234, 179, 8, 0.15)', borderRadius: 16 }}>
+                  <IconTrophy size={40} color="#FACC15" />
+                </div>
                 <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fff', margin: '0 0 8px', fontFamily: "'Space Grotesk', sans-serif" }}>
                   Sector Sprint Complete!
                 </h2>

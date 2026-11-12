@@ -20,6 +20,10 @@ import {
   IconMail,
   IconRadar,
   IconFlash,
+  IconAlert,
+  IconTarget,
+  IconShield,
+  IconCheck,
 } from '../components/icons/HumanIcons';
 
 const SectorsUniverse3D = lazy(() => import('../components/3d/SectorsUniverse3D'));
@@ -74,7 +78,7 @@ const SECTOR_BENCHMARKS = [
     id: 'sector-quant',
     name: 'Sector 1: Quantitative Velocity',
     short: 'Quant',
-    badge: '📐 Math & Speed',
+    badge: 'Sector 1 · Math & Speed',
     color: '#F59E0B',
     benchmark: 74,
     desc: 'Arithmetic acceleration, algebraic transformations, geometric logic, probabilistic models.',
@@ -83,7 +87,7 @@ const SECTOR_BENCHMARKS = [
     id: 'sector-logic',
     name: 'Sector 2: Deductive Logic',
     short: 'Logic',
-    badge: '🧩 Logic Engine',
+    badge: 'Sector 2 · Logic Engine',
     color: '#8B5CF6',
     benchmark: 78,
     desc: 'Constraint satisfaction, inductive sequences, syllogistic deduction, Boolean matrices.',
@@ -92,7 +96,7 @@ const SECTOR_BENCHMARKS = [
     id: 'sector-core-cs',
     name: 'Sector 3: Core CS & Systems',
     short: 'Core CS',
-    badge: '💻 Systems Core',
+    badge: 'Sector 3 · Systems Core',
     color: '#10B981',
     benchmark: 70,
     desc: 'OS scheduling, paging, thread synchronization, TCP/IP handshake, SQL indexing.',
@@ -101,7 +105,7 @@ const SECTOR_BENCHMARKS = [
     id: 'sector-dsa',
     name: 'Sector 4: Data Structures & Algorithms',
     short: 'DSA',
-    badge: '⚡ Algorithms',
+    badge: 'Sector 4 · Algorithms',
     color: '#38BDF8',
     benchmark: 66,
     desc: 'Asymptotic complexity, DP transitions, graph traversals, segment trees, recursion.',
@@ -110,7 +114,7 @@ const SECTOR_BENCHMARKS = [
     id: 'sector-fullstack',
     name: 'Sector 5: Full-Stack Architecture',
     short: 'Full-Stack',
-    badge: '🌐 Web & Cloud',
+    badge: 'Sector 5 · Web & Cloud',
     color: '#F43F5E',
     benchmark: 72,
     desc: 'Reactive UI state, RESTful pipelines, WebSockets, microservices, containerization.',
@@ -316,7 +320,9 @@ export default function StudentDashboardPage() {
       <AnimatedPage>
         <div className="page-center" style={{ padding: 24 }}>
           <div className="card" style={{ maxWidth: 460, textAlign: 'center', padding: '36px 24px' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>⚠️</div>
+            <div style={{ marginBottom: 12, display: 'inline-flex', padding: 12, background: 'rgba(245, 158, 11, 0.15)', borderRadius: 16 }}>
+              <IconAlert size={36} color="#F59E0B" />
+            </div>
             <h3 style={{ marginBottom: 8 }}>Authentication Required</h3>
             <p className="text-muted text-sm mb-4">Please log in to your student account to access examination records.</p>
             <Link to="/login" className="btn btn-primary w-full">
@@ -559,8 +565,8 @@ export default function StudentDashboardPage() {
             </div>
 
             {launchError && (
-              <div style={{ padding: '8px 12px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 6, color: '#f87171', fontSize: '0.85rem', marginBottom: 12 }}>
-                ⚠️ {launchError}
+              <div style={{ padding: '8px 12px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 6, color: '#f87171', fontSize: '0.85rem', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <IconAlert size={14} color="#f87171" /> {launchError}
               </div>
             )}
 
@@ -640,9 +646,12 @@ export default function StudentDashboardPage() {
                       border: '1px solid rgba(255, 255, 255, 0.12)',
                       color: '#fbbf24',
                       cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
                     }}
                   >
-                    ⚡ {preset}
+                    <IconFlash size={12} color="#fbbf24" /> {preset}
                   </button>
                 ))}
               </div>
@@ -938,9 +947,9 @@ export default function StudentDashboardPage() {
                           navigate('/practice', { state: { selectedSectorId: sec.id } });
                         }}
                         className="btn btn-outline text-xs"
-                        style={{ padding: '6px 12px', borderColor: `${sec.color}50`, color: sec.color, cursor: 'pointer' }}
+                        style={{ padding: '6px 12px', borderColor: `${sec.color}50`, color: sec.color, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                       >
-                        ⚡ Launch Sprint
+                        <IconLaunch size={12} color={sec.color} /> Launch Sprint
                       </button>
                     </div>
                   </div>

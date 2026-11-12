@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
+import { IconLaunch, IconKey } from '../icons/HumanIcons';
 
 export interface Sector3DData {
   id: string;
@@ -31,7 +32,7 @@ export const SECTORS_3D_LIST: Sector3DData[] = [
     tagline: 'Numerical Velocity, Speed Maths & Probabilistic Reasoning',
     color: '#F59E0B',
     glow: 'rgba(245, 158, 11, 0.45)',
-    badge: '📐 Sector 1 · Set A',
+    badge: 'Sector 1 · Set A',
     questionCount: 15,
     accuracy: '74.2%',
     avgTime: '55s',
@@ -48,7 +49,7 @@ export const SECTORS_3D_LIST: Sector3DData[] = [
     tagline: 'Pattern Invariants, Syllogisms & Constraint Networks',
     color: '#8B5CF6',
     glow: 'rgba(139, 92, 246, 0.45)',
-    badge: '🧩 Sector 2 · Set B',
+    badge: 'Sector 2 · Set B',
     questionCount: 15,
     accuracy: '78.6%',
     avgTime: '60s',
@@ -65,7 +66,7 @@ export const SECTORS_3D_LIST: Sector3DData[] = [
     tagline: 'Operating Systems, Concurrency, ACID DBMS & Networking',
     color: '#10B981',
     glow: 'rgba(16, 185, 129, 0.45)',
-    badge: '💻 Sector 3 · Set C',
+    badge: 'Sector 3 · Set C',
     questionCount: 18,
     accuracy: '69.1%',
     avgTime: '45s',
@@ -82,7 +83,7 @@ export const SECTORS_3D_LIST: Sector3DData[] = [
     tagline: 'Trees, Graphs, DP Transitions & Big-O Complexity',
     color: '#38BDF8',
     glow: 'rgba(56, 189, 248, 0.45)',
-    badge: '⚡ Sector 4 · Set D',
+    badge: 'Sector 4 · Set D',
     questionCount: 20,
     accuracy: '64.8%',
     avgTime: '75s',
@@ -99,7 +100,7 @@ export const SECTORS_3D_LIST: Sector3DData[] = [
     tagline: 'Microservices, Event Loops, Redis Caching & Cloud',
     color: '#F43F5E',
     glow: 'rgba(244, 63, 94, 0.45)',
-    badge: '🌐 Sector 5 · Set E',
+    badge: 'Sector 5 · Set E',
     questionCount: 18,
     accuracy: '71.5%',
     avgTime: '50s',
@@ -776,7 +777,9 @@ export default function SectorsUniverse3D({ onSelectSector, className = '' }: Se
                 cursor: 'pointer',
               }}
             >
-              🚀 Launch Sector {selectedSector.num} Practice Sprint
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <IconLaunch size={16} color="#fff" /> Launch Sector {selectedSector.num} Practice Sprint
+              </span>
             </button>
 
             <button
@@ -792,7 +795,9 @@ export default function SectorsUniverse3D({ onSelectSector, className = '' }: Se
                 cursor: 'pointer',
               }}
             >
-              🔑 Take Full 5-Sector Assessment
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <IconKey size={15} color="#94A3B8" /> Take Full 5-Sector Assessment
+              </span>
             </button>
           </div>
         </motion.div>

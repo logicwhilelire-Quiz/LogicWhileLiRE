@@ -28,6 +28,15 @@ import {
   IconShield,
   IconAlert,
   IconTerminal,
+  IconLaunch,
+  IconCheck,
+  IconCross,
+  IconRadio,
+  IconChat,
+  IconSearch,
+  IconStop,
+  IconRefresh,
+  IconFileText,
 } from '../components/icons/HumanIcons'
 
 /* ── Types ── */
@@ -462,7 +471,7 @@ export default function QuizPage() {
             },
             {
               id: 'demo-code-01',
-              text: '⚡ LIVE CODING SANDBOX 1: Two Sum Vector Verification\n\nGiven integer N, followed by N space-separated integers, and target integer T, write a program that prints "True" if any two distinct elements sum to T, otherwise "False".\n\nInput:\n5\n2 7 11 15 20\n9\n\nExpected Output:\nTrue',
+              text: 'LIVE CODING SANDBOX 1: Two Sum Vector Verification\n\nGiven integer N, followed by N space-separated integers, and target integer T, write a program that prints "True" if any two distinct elements sum to T, otherwise "False".\n\nInput:\n5\n2 7 11 15 20\n9\n\nExpected Output:\nTrue',
               type: 'code',
               marks: 15,
               difficulty: 'Medium',
@@ -475,7 +484,7 @@ export default function QuizPage() {
             },
             {
               id: 'demo-code-02',
-              text: '⚡ LIVE CODING SANDBOX 2: Operating Systems FIFO Page Faults\n\nGiven capacity K on line 1 and page requests on line 2, compute and output total FIFO page faults.\n\nInput:\n3\n7 0 1 2 0 3 0 4 2 3 0 3 2\n\nExpected Output:\n12',
+              text: 'LIVE CODING SANDBOX 2: Operating Systems FIFO Page Faults\n\nGiven capacity K on line 1 and page requests on line 2, compute and output total FIFO page faults.\n\nInput:\n3\n7 0 1 2 0 3 0 4 2 3 0 3 2\n\nExpected Output:\n12',
               type: 'code',
               marks: 20,
               difficulty: 'Hard',
@@ -902,7 +911,7 @@ export default function QuizPage() {
 
     if (count < maxStrikes && !isSevere) {
       // VIOLATION WARNING: Show reminder to the student
-      setSecurityBlockNotice(`⚠️ INTEGRITY REMINDER (Warning ${count} of ${maxStrikes}): ${msg}`)
+      setSecurityBlockNotice(`INTEGRITY REMINDER (Warning ${count} of ${maxStrikes}): ${msg}`)
       setViolationMsg(`Warning ${count} of ${maxStrikes}: ${msg}. Attention: Exceeding ${maxStrikes} violations will immediately auto-terminate your exam and log you out.`)
       setShowViolationModal(true)
       soundFx.playSecurityAlertTone()
@@ -1277,7 +1286,7 @@ export default function QuizPage() {
         } else if (state === 'stopped') {
           if (!hasTerminatedRef.current && !submitting) {
             hasTerminatedRef.current = true
-            setBroadcastBanner('🛑 EXAM CONCLUDED BY CENTRAL COMMAND: Administrator has concluded this assessment session. All answers submitted.')
+            setBroadcastBanner('EXAM CONCLUDED BY CENTRAL COMMAND: Administrator has concluded this assessment session. All answers submitted.')
             handleSubmit()
           }
         }
@@ -1652,8 +1661,8 @@ export default function QuizPage() {
               transition: 'all 0.3s ease',
             }}
           >
-            <div style={{ fontSize: '2.6rem', marginBottom: 8 }}>
-              {waitingLaunchStarting ? '🚀' : '⏳'}
+            <div style={{ marginBottom: 12, display: 'inline-flex', padding: 16, background: 'rgba(56, 189, 248, 0.12)', borderRadius: 20 }}>
+              {waitingLaunchStarting ? <IconLaunch size={36} color="#38BDF8" /> : <IconClock size={36} color="#F59E0B" />}
             </div>
             <h2 style={{ fontSize: '1.38rem', fontWeight: 800, color: '#F1F5F9', marginBottom: 6 }}>
               {waitingLaunchStarting
@@ -1747,7 +1756,9 @@ export default function QuizPage() {
   if (error) return (
     <div className="page-center">
       <div className="card" style={{ maxWidth: 440, textAlign: 'center' }}>
-        <div style={{ fontSize: '3rem', marginBottom: 16 }}>⚠️</div>
+        <div style={{ marginBottom: 16, display: 'inline-flex', padding: 14, background: 'rgba(245, 158, 11, 0.15)', borderRadius: 16 }}>
+          <IconAlert size={36} color="#F59E0B" />
+        </div>
         <h2 style={{ fontFamily: 'var(--font-display)', marginBottom: 8 }}>Exam Load Error</h2>
         <p style={{ color: 'var(--color-text-muted)', marginBottom: 24 }}>{error}</p>
         <button className="btn btn-primary" onClick={() => navigate('/enter-exam')}>
@@ -1791,7 +1802,9 @@ export default function QuizPage() {
             backdropFilter: 'blur(20px)',
           }}
         >
-          <div style={{ fontSize: '3.5rem', marginBottom: 16 }}>🛑</div>
+          <div style={{ marginBottom: 16, display: 'inline-flex', padding: 16, background: 'rgba(239, 68, 68, 0.2)', borderRadius: 20 }}>
+            <IconStop size={42} color="#EF4444" />
+          </div>
           <span
             style={{
               display: 'inline-block',
@@ -1844,9 +1857,13 @@ export default function QuizPage() {
               fontFamily: 'monospace',
               textAlign: 'left',
               wordBreak: 'break-word',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
             }}
           >
-            ⚠️ Violation: {terminationReason || 'Window minimized, tab switched, or restricted system shortcut triggered.'}
+            <IconAlert size={16} color="#EF4444" />
+            <span>Violation: {terminationReason || 'Window minimized, tab switched, or restricted system shortcut triggered.'}</span>
           </div>
 
           <div
@@ -2135,7 +2152,7 @@ export default function QuizPage() {
               }}
               title={`Device Battery Level: ${batteryLevel}%`}
             >
-              <span>{batteryLevel <= 20 ? '🪫' : '🔋'}</span>
+              <span style={{ fontSize: '0.68rem', fontWeight: 800 }}>BAT</span>
               <span>{batteryLevel}%</span>
             </div>
           )}
@@ -2164,7 +2181,7 @@ export default function QuizPage() {
               }}
               title="Open Proctor Communication Desk & AI Sentinel Enclave"
             >
-              <span>💬</span>
+              <IconChat size={14} color={unreadCommsCount > 0 ? '#38BDF8' : 'var(--color-text-muted)'} />
               <span>Invigilator Desk</span>
               {unreadCommsCount > 0 && (
                 <span
@@ -2203,7 +2220,7 @@ export default function QuizPage() {
               }}
               title="Report Issue / Drop Box — Message the proctor without breaking proctoring"
             >
-              <span>📬</span>
+              <IconAlert size={14} color="#FBBF24" />
               <span>Report Issue</span>
             </button>
             <button
@@ -2219,12 +2236,13 @@ export default function QuizPage() {
                 color: soundEnabled ? '#34D399' : 'var(--color-text-faint)',
                 borderRadius: 8,
                 padding: '6px 10px',
-                fontSize: '0.82rem',
+                fontSize: '0.74rem',
+                fontWeight: 700,
                 cursor: 'pointer',
               }}
               title={soundEnabled ? 'Mute Proctor Chimes' : 'Unmute Proctor Chimes'}
             >
-              {soundEnabled ? '🔊' : '🔇'}
+              {soundEnabled ? 'AUDIO ON' : 'MUTED'}
             </button>
           </div>
 
@@ -2254,7 +2272,7 @@ export default function QuizPage() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                <span>{screenShareActive ? '🖥️ Screen Live' : '⚠️ Screen Off'}</span>
+                <span>{screenShareActive ? 'Screen Live' : 'Screen Off'}</span>
               </div>
             )}
             {isOffline ? (
@@ -2274,7 +2292,7 @@ export default function QuizPage() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                <span>📡 Offline (Buffered)</span>
+                <span>Offline (Buffered)</span>
               </div>
             ) : pendingSyncCount > 0 ? (
               <div
@@ -2293,7 +2311,8 @@ export default function QuizPage() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                <span>🔄 Syncing ({pendingSyncCount})</span>
+                <IconRefresh size={12} color="#C084FC" />
+                <span>Syncing ({pendingSyncCount})</span>
               </div>
             ) : null}
             <ExamFaceMonitor onStatusChange={handleFaceStatus} size={52} />
@@ -2317,7 +2336,8 @@ export default function QuizPage() {
               maxWidth: 480, fontSize: '0.9rem', fontWeight: 600, color: '#fff',
             }}
           >
-            ⚠️ VIOLATION #{violationCount}: {violationMsg}
+            <IconAlert size={16} color="#fff" />
+            <span>VIOLATION #{violationCount}: {violationMsg}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -2335,9 +2355,13 @@ export default function QuizPage() {
               borderRadius: 'var(--radius-md)', padding: '10px 16px',
               fontSize: '0.85rem', fontWeight: 600, color: '#fff',
               boxShadow: '0 0 20px rgba(239,68,68,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
             }}
           >
-            {faceStatus === 'multiple' ? '🚨 Multiple faces detected!' : '⚠️ Face not visible!'}
+            <IconAlert size={16} color="#fff" />
+            <span>{faceStatus === 'multiple' ? 'Multiple faces detected' : 'Face not visible'}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -2359,7 +2383,7 @@ export default function QuizPage() {
               color: '#fff', fontSize: '0.88rem', fontWeight: 600,
             }}
           >
-            <span style={{ fontSize: '1.4rem' }}>⚠️</span>
+            <IconAlert size={24} color="#fff" />
             <div>
               <div style={{ fontWeight: 800 }}>Network Disconnected</div>
               <div style={{ fontSize: '0.78rem', opacity: 0.95 }}>
@@ -2387,7 +2411,8 @@ export default function QuizPage() {
               color: '#fff', fontSize: '0.86rem', fontWeight: 700,
             }}
           >
-            <span>✅ Reconnected. All local answers synchronized with server.</span>
+            <IconCheck size={18} color="#fff" />
+            <span>Reconnected. All local answers synchronized with server.</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -2408,7 +2433,9 @@ export default function QuizPage() {
               color: '#fff', textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: '1.8rem', marginBottom: 4 }}>🚨 PROCTOR NOTICE</div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '1.2rem', fontWeight: 800, marginBottom: 4 }}>
+              <IconShield size={22} color="#fff" /> OFFICIAL PROCTOR NOTICE
+            </div>
             <div style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8 }}>
               {adminWarningMsg}
             </div>
@@ -2420,7 +2447,7 @@ export default function QuizPage() {
               style={{ background: '#fff', color: '#EF4444', fontWeight: 800 }}
               onClick={() => setShowAdminWarning(false)}
             >
-              ✓ I Understand & Acknowledge
+              I Understand &amp; Acknowledge
             </button>
           </motion.div>
         )}
@@ -2508,7 +2535,7 @@ export default function QuizPage() {
                   onClick={toggleFlag}
                   title="Flag this question for later review (Shortcut: F)"
                 >
-                  {isFlagged ? '🚩 Flagged' : '⚑ Flag'}
+                  {isFlagged ? 'Flagged' : 'Flag Question'}
                 </button>
 
                 {currentQ < session.questions.length - 1 && (
@@ -2530,8 +2557,7 @@ export default function QuizPage() {
                     }}
                     title="Mark for review and advance to next question"
                   >
-                    <span>🚩</span>
-                    <span>Review & Next</span>
+                    <span>Review &amp; Next</span>
                   </button>
                 )}
 
@@ -2550,7 +2576,7 @@ export default function QuizPage() {
                     onClick={() => setShowSubmitModal(true)}
                     style={{ fontWeight: 800, padding: '8px 22px' }}
                   >
-                    Review & Submit 🏁
+                    Review &amp; Submit
                   </button>
                 )}
               </div>
@@ -2575,7 +2601,7 @@ export default function QuizPage() {
                       onClick={() => setCurrentQ(i)}
                       style={{ width: 28, height: 28, fontSize: '0.72rem' }}
                     >
-                      {isFlag ? '⚑' : i + 1}
+                      {isFlag ? '•' : i + 1}
                     </button>
                   )
                 })}
@@ -2598,7 +2624,7 @@ export default function QuizPage() {
               alignItems: 'center',
               gap: 8,
             }}>
-              <span>ℹ️</span>
+              <IconFileText size={15} color="#38BDF8" />
               <span><strong>Manual Evaluation:</strong> Coding solutions are submitted for instructor manual review and are not included in the instant live MCQ auto-grade.</span>
             </div>
             <ExamCodeEditor
@@ -2631,7 +2657,7 @@ export default function QuizPage() {
                   style={{ color: isFlagged ? '#F59E0B' : undefined }}
                   onClick={toggleFlag}
                 >
-                  {isFlagged ? '🚩 Flagged' : '⚑ Flag'}
+                  {isFlagged ? 'Flagged' : 'Flag Question'}
                 </button>
                 {currentQ < session.questions.length - 1 ? (
                   <button
@@ -2645,7 +2671,7 @@ export default function QuizPage() {
                     className="btn btn-success"
                     onClick={() => setShowSubmitModal(true)}
                   >
-                    Submit Exam 🏁
+                    Submit Exam
                   </button>
                 )}
               </div>
@@ -2729,7 +2755,7 @@ export default function QuizPage() {
                     whileTap={{ scale: 0.95 }}
                     title={`Q${i+1}${isAns ? ' (Answered)' : ' (Not Answered)'}${isFlag ? ' (Flagged)' : ''}`}
                   >
-                    {isFlag ? '⚑' : i + 1}
+                    {isFlag ? '•' : i + 1}
                   </motion.button>
                 )
               })}
@@ -2820,7 +2846,9 @@ export default function QuizPage() {
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontSize: '2rem' }}>🏁</span>
+                  <div style={{ display: 'inline-flex', padding: 8, background: 'rgba(56, 189, 248, 0.15)', borderRadius: 10 }}>
+                    <IconShield size={24} color="#38BDF8" />
+                  </div>
                   <div>
                     <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#F0F4FC' }}>
                       Pre-Submission Audit
@@ -2868,8 +2896,9 @@ export default function QuizPage() {
                   justifyContent: 'space-between',
                   gap: 12,
                 }}>
-                  <div style={{ fontSize: '0.82rem', color: '#FCD34D', lineHeight: 1.4 }}>
-                    ⚠️ You still have <strong>{session.questions.length - answeredCount}</strong> unattempted question{session.questions.length - answeredCount > 1 ? 's' : ''}.
+                  <div style={{ fontSize: '0.82rem', color: '#FCD34D', lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <IconAlert size={15} color="#FCD34D" />
+                    <span>You still have <strong>{session.questions.length - answeredCount}</strong> unattempted question{session.questions.length - answeredCount > 1 ? 's' : ''}.</span>
                   </div>
                   <button
                     type="button"
@@ -2894,10 +2923,10 @@ export default function QuizPage() {
                       whiteSpace: 'nowrap',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 4,
+                      gap: 6,
                     }}
                   >
-                    <span>🔍</span>
+                    <IconSearch size={13} color="#FBBF24" />
                     <span>Review Unanswered</span>
                   </button>
                 </div>
@@ -2916,7 +2945,7 @@ export default function QuizPage() {
                   textAlign: 'left'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, marginBottom: 4 }}>
-                    <span>⚠️</span>
+                    <IconAlert size={15} color="#F87171" />
                     <span>Submission Network Alert</span>
                   </div>
                   <p style={{ margin: 0, color: '#FECACA' }}>{submitNetworkErrorNotice}</p>
@@ -2973,9 +3002,9 @@ export default function QuizPage() {
                   {submitting ? (
                     <><span className="btn-spinner" /> Sealing Answers...</>
                   ) : submitNetworkErrorNotice ? (
-                    '🔄 Retry Submission Now'
+                    'Retry Submission Now'
                   ) : (
-                    '✓ Yes, Final Submit'
+                    'Confirm Final Submission'
                   )}
                 </button>
               </div>
@@ -3021,7 +3050,7 @@ export default function QuizPage() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: '1.4rem' }}>📢</span>
+              <IconRadio size={22} color="#93C5FD" />
               <div>
                 <div style={{ fontWeight: 800, fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.9 }}>
                   Exam Invigilator Official Announcement
@@ -3057,7 +3086,9 @@ export default function QuizPage() {
                 boxShadow: '0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(245,158,11,0.2)',
               }}
             >
-              <div style={{ fontSize: '3rem', marginBottom: 12 }}>⏸️</div>
+              <div style={{ marginBottom: 12, display: 'inline-flex', padding: 14, background: 'rgba(245, 158, 11, 0.15)', borderRadius: 16 }}>
+                <IconClock size={36} color="#FBBF24" />
+              </div>
               <h2 style={{ fontFamily: 'var(--font-display)', margin: '0 0 8px', color: '#FBBF24', fontSize: '1.4rem' }}>
                 Examination Paused by Proctor
               </h2>
@@ -3092,7 +3123,7 @@ export default function QuizPage() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <span style={{ fontSize: '1.6rem' }}>💬</span>
+                <IconChat size={24} color="#60A5FA" />
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#60A5FA' }}>
                     Official Notice from {whisperNotice.inspectorName || 'Exam Proctor'}
@@ -3111,7 +3142,7 @@ export default function QuizPage() {
                 className="btn btn-primary w-full"
                 onClick={() => setWhisperNotice(null)}
               >
-                ✓ I Acknowledge & Understand
+                I Understand &amp; Acknowledge
               </button>
             </motion.div>
           </div>
@@ -3132,7 +3163,7 @@ export default function QuizPage() {
               boxShadow: '0 10px 30px rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', gap: 8,
             }}
           >
-            <span>⏱️</span>
+            <IconClock size={16} color="#A7F3D0" />
             <span>{timeExtensionNotice}</span>
           </motion.div>
         )}
@@ -3152,7 +3183,7 @@ export default function QuizPage() {
               boxShadow: '0 10px 30px rgba(239,68,68,0.4)', display: 'flex', alignItems: 'center', gap: 8,
             }}
           >
-            <span>🛡️</span>
+            <IconShield size={16} color="#FECACA" />
             <span>{securityBlockNotice}</span>
           </motion.div>
         )}
@@ -3193,7 +3224,9 @@ export default function QuizPage() {
             boxShadow: '0 25px 60px rgba(239, 68, 68, 0.35)',
             backdropFilter: 'blur(20px)',
           }}>
-            <div style={{ fontSize: '3.6rem', marginBottom: 14 }}>🚨</div>
+            <div style={{ marginBottom: 14, display: 'inline-flex', padding: 18, background: 'rgba(239, 68, 68, 0.2)', borderRadius: 24 }}>
+              <IconStop size={48} color="#EF4444" />
+            </div>
             <h2 style={{ fontSize: '1.85rem', fontWeight: 900, color: '#EF4444', margin: '0 0 10px 0' }}>
               EXAM TERMINATED
             </h2>

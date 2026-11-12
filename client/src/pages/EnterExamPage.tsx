@@ -7,6 +7,7 @@ import SiteHeader from '../components/SiteHeader'
 import SiteFooter from '../components/SiteFooter'
 import BrandLogo from '../components/BrandLogo'
 import ServerWakeupModal from '../components/ServerWakeupModal'
+import { IconLock, IconAlert, IconShield, IconFileText } from '../components/icons/HumanIcons'
 
 function ExamEntryBg() {
   return (
@@ -236,7 +237,7 @@ export default function EnterExamPage() {
                       style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 10, padding: '11px 14px', color: '#FCA5A5', fontSize: '0.82rem', fontWeight: 600, display: 'flex', flexDirection: 'column', gap: 6 }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ flexShrink: 0 }}>⚠️</span><span>{error}</span>
+                        <span style={{ flexShrink: 0 }}><IconAlert size={16} color="#FCA5A5" /></span><span>{error}</span>
                       </div>
                       {unverifiedEmail && (
                         <button
@@ -265,14 +266,14 @@ export default function EnterExamPage() {
                   {loading ? (
                     <><span style={{ display:'inline-block',width:16,height:16,borderRadius:'50%',border:'2px solid rgba(0,33,71,0.3)',borderTopColor:'#002147',animation:'spin 0.7s linear infinite' }} /><span>Verifying Credentials...</span></>
                   ) : (
-                    <><span>🔐</span><span>Authorize &amp; Enter Assessment Lobby →</span></>
+                    <><span><IconLock size={16} color="#002147" /></span><span>Authorize &amp; Enter Assessment Lobby →</span></>
                   )}
                 </button>
 
                 {/* Official Candidate Assistance & Instructions */}
                 <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'left' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    <span style={{ fontSize: '0.85rem' }}>ℹ️</span>
+                    <IconFileText size={15} color="#38BDF8" />
                     <span style={{ fontSize: '0.76rem', fontWeight: 800, color: '#38BDF8', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                       Candidate Examination Assistance
                     </span>
@@ -285,7 +286,7 @@ export default function EnterExamPage() {
 
               {/* Security Note */}
               <div style={{ marginTop: 20, fontSize: '0.74rem', color: '#475569', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                <span>🔒</span>
+                <IconShield size={14} color="#64748B" />
                 <span>Synchronous assessment engine • Zero OTP required • Exam code system</span>
               </div>
             </div>
