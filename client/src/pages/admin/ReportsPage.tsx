@@ -3,6 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { listExams, getExcelReportUrl, getPdfReportUrl } from '../../lib/api';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedPage from '../../components/AnimatedPage';
+import {
+  IconClipboard,
+  IconBook,
+  IconSettings,
+  IconBuilding,
+  IconChart,
+  IconFileText,
+  IconTrophy,
+  IconCheck,
+  IconShare,
+  IconShield,
+  IconAnalytics,
+} from '../../components/icons/HumanIcons';
+
 
 interface ExamItem {
   id: string;
@@ -52,7 +66,7 @@ export default function ReportsPage() {
 
   const handleCopyLink = (url: string, type: string) => {
     navigator.clipboard.writeText(url);
-    showToast(`📋 ${type} link copied to clipboard.`);
+    showToast(`${type} link copied to clipboard.`);
   };
 
   return (
@@ -81,7 +95,7 @@ export default function ReportsPage() {
                 className="btn btn-secondary"
                 style={{ padding: '9px 16px', fontWeight: 700, borderRadius: 8, fontSize: '0.84rem' }}
               >
-                📚 Question Bank
+                Question Bank
               </button>
               <button
                 onClick={() => navigate('/admin/exams')}
@@ -96,7 +110,7 @@ export default function ReportsPage() {
                   border: 'none',
                 }}
               >
-                ⚙️ Exam Management
+                Exam Management
               </button>
             </div>
           </div>
@@ -140,7 +154,7 @@ export default function ReportsPage() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: '1 1 320px' }}>
-              <span style={{ fontSize: '1.4rem' }}>🏛️</span>
+              <IconBuilding size={22} color="#38BDF8" />
               <div style={{ flex: 1 }}>
                 <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#38BDF8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>
                   Active Examination Assessment
@@ -311,7 +325,7 @@ export default function ReportsPage() {
                 >
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                      <span style={{ fontSize: '2.2rem' }}>📊</span>
+                      <IconChart size={32} color="#10B981" />
                       <span
                         style={{
                           background: 'rgba(16, 185, 129, 0.15)',
@@ -337,15 +351,15 @@ export default function ReportsPage() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#CBD5E1' }}>
-                        <span style={{ color: '#10B981', fontWeight: 800 }}>✓</span>
+                        <IconCheck size={14} color="#10B981" />
                         <span><strong>Sheet 1: Ranked Performance</strong> (Rank, Name, Hall Ticket, Score, Max, Graded At)</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#CBD5E1' }}>
-                        <span style={{ color: '#10B981', fontWeight: 800 }}>✓</span>
+                        <IconCheck size={14} color="#10B981" />
                         <span><strong>Sheet 2: Violations &amp; Telemetry</strong> (Session ID, Incident Type, Exact Timestamp, Notes)</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#CBD5E1' }}>
-                        <span style={{ color: '#10B981', fontWeight: 800 }}>✓</span>
+                        <IconCheck size={14} color="#10B981" />
                         <span><strong>Compliance:</strong> Faculty privacy PII masking enabled automatically</span>
                       </div>
                     </div>
@@ -397,7 +411,7 @@ export default function ReportsPage() {
                 >
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                      <span style={{ fontSize: '2.2rem' }}>📄</span>
+                      <IconFileText size={32} color="#0284c7" />
                       <span
                         style={{
                           background: 'rgba(2, 132, 199, 0.15)',
@@ -423,15 +437,15 @@ export default function ReportsPage() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#CBD5E1' }}>
-                        <span style={{ color: '#0284c7', fontWeight: 800 }}>✓</span>
+                        <IconCheck size={14} color="#0284c7" />
                         <span><strong>Official Seal &amp; Header:</strong> LogicWhile LiRE certified banner</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#CBD5E1' }}>
-                        <span style={{ color: '#0284c7', fontWeight: 800 }}>✓</span>
+                        <IconCheck size={14} color="#0284c7" />
                         <span><strong>Ranked Merit Roster:</strong> Individual student scores, accuracy, and honors</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#CBD5E1' }}>
-                        <span style={{ color: '#0284c7', fontWeight: 800 }}>✓</span>
+                        <IconCheck size={14} color="#0284c7" />
                         <span><strong>Sign-off Section:</strong> Dedicated Inspector &amp; Chief Examiner signatures</span>
                       </div>
                     </div>
@@ -483,7 +497,7 @@ export default function ReportsPage() {
                 >
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                      <span style={{ fontSize: '2.2rem' }}>🏆</span>
+                      <IconTrophy size={32} color="#EAA812" />
                       <span
                         style={{
                           background: 'rgba(234, 168, 18, 0.15)',
@@ -509,15 +523,15 @@ export default function ReportsPage() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#CBD5E1' }}>
-                        <span style={{ color: '#EAA812', fontWeight: 800 }}>✓</span>
+                        <IconCheck size={14} color="#EAA812" />
                         <span><strong>Zero Latency:</strong> Real-time rank animations on each submission</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#CBD5E1' }}>
-                        <span style={{ color: '#EAA812', fontWeight: 800 }}>✓</span>
+                        <IconCheck size={14} color="#EAA812" />
                         <span><strong>Projection Mode:</strong> High-contrast stage view for auditoriums</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#CBD5E1' }}>
-                        <span style={{ color: '#EAA812', fontWeight: 800 }}>✓</span>
+                        <IconCheck size={14} color="#EAA812" />
                         <span><strong>Direct Sharing:</strong> Public URL accessible without admin credentials</span>
                       </div>
                     </div>
@@ -545,7 +559,7 @@ export default function ReportsPage() {
                         transition: 'all 0.2s ease',
                       }}
                     >
-                      <span>🔗</span>
+                      <IconShare size={14} />
                       <span>Launch Board</span>
                     </button>
                     <button
@@ -562,7 +576,7 @@ export default function ReportsPage() {
                         fontSize: '0.84rem',
                       }}
                     >
-                      📋 Copy Link
+                      Copy Link
                     </button>
                   </div>
                 </div>
@@ -580,7 +594,7 @@ export default function ReportsPage() {
                   gap: 16,
                 }}
               >
-                <span style={{ fontSize: '1.6rem' }}>🛡️</span>
+                <IconShield size={24} color="#38BDF8" />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#38BDF8', letterSpacing: '0.02em' }}>
                     Institutional Compliance &amp; Audit Trail Guarantee
@@ -595,7 +609,7 @@ export default function ReportsPage() {
 
           {!selectedExam && !loading && (
             <div className="card text-center" style={{ padding: 60, maxWidth: 540, margin: '40px auto' }}>
-              <div style={{ fontSize: '3rem', marginBottom: 16 }}>📈</div>
+              <div style={{ display: 'inline-flex', padding: 16, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.1)', marginBottom: 16 }}><IconAnalytics size={40} color="#38BDF8" /></div>
               <h2 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: 8, color: '#FFF' }}>
                 Select an Assessment to Begin
               </h2>

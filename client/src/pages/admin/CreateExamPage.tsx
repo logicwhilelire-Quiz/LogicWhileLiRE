@@ -9,6 +9,31 @@ import FlightPathLines from '../../components/3d/FlightPathLines'
 import TypingDots from '../../components/3d/TypingDots'
 import AdminSidebar from '../../components/layout/AdminSidebar'
 import { API_BASE_URL } from '../../lib/config'
+import {
+  IconBuilding,
+  IconGraduation,
+  IconCalendar,
+  IconUsers,
+  IconFileText,
+  IconRocket,
+  IconCode,
+  IconCpu,
+  IconChart,
+  IconGlobe,
+  IconRadio,
+  IconFlash,
+  IconSliders,
+  IconCheck,
+  IconCross,
+  IconAlert,
+  IconDownload,
+  IconEye,
+  IconKey,
+  IconPlus,
+  IconShield,
+  IconTarget,
+} from '../../components/icons/HumanIcons';
+
 
 const BASE = API_BASE_URL
 
@@ -99,28 +124,28 @@ interface StaffOption {
 
 /* ── Wizard Steps (Strict Flow: College > Branch > Passout Year > Section/Batch > Question Paper) ── */
 const STEPS = [
-  { id: 1, label: 'Target College', icon: '🏛️' },
-  { id: 2, label: 'Target Branch',  icon: '🎓' },
-  { id: 3, label: 'Passout Year',   icon: '📅' },
-  { id: 4, label: 'Section & Batch',icon: '👥' },
-  { id: 5, label: 'Question Paper', icon: '📝' },
-  { id: 6, label: 'Review & Launch',icon: '🚀' },
+  { id: 1, label: 'Target College', icon: <IconBuilding size={16} /> },
+  { id: 2, label: 'Target Branch',  icon: <IconGraduation size={16} /> },
+  { id: 3, label: 'Passout Year',   icon: <IconCalendar size={16} /> },
+  { id: 4, label: 'Section & Batch',icon: <IconUsers size={16} /> },
+  { id: 5, label: 'Question Paper', icon: <IconFileText size={16} /> },
+  { id: 6, label: 'Review & Launch',icon: <IconRocket size={16} /> },
 ]
 
 const STANDARD_BRANCHES = [
-  { code: 'CSE', name: 'Computer Science & Engineering', icon: '💻' },
-  { code: 'CSM', name: 'Artificial Intelligence & Machine Learning', icon: '🤖' },
-  { code: 'CSD', name: 'Data Science & Analytics', icon: '📊' },
-  { code: 'CSBS', name: 'Computer Science & Business Systems', icon: '💼' },
-  { code: 'IT',  name: 'Information Technology', icon: '🌐' },
-  { code: 'AIDS', name: 'Artificial Intelligence & Data Science', icon: '🧠' },
-  { code: 'ECE', name: 'Electronics & Communication', icon: '📡' },
-  { code: 'EEE', name: 'Electrical & Electronics', icon: '⚡' },
-  { code: 'MECH', name: 'Mechanical Engineering', icon: '⚙️' },
-  { code: 'CIVIL', name: 'Civil Engineering', icon: '🏗️' },
-  { code: 'CSIT', name: 'Computer Science & Info Tech', icon: '🖥️' },
-  { code: 'MCA', name: 'Master of Computer Applications', icon: '🎓' },
-  { code: 'MBA', name: 'Master of Business Administration', icon: '📈' },
+  { code: 'CSE', name: 'Computer Science & Engineering', icon: <IconCode size={18} color="#38BDF8" /> },
+  { code: 'CSM', name: 'Artificial Intelligence & Machine Learning', icon: <IconCpu size={18} color="#A855F7" /> },
+  { code: 'CSD', name: 'Data Science & Analytics', icon: <IconChart size={18} color="#10B981" /> },
+  { code: 'CSBS', name: 'Computer Science & Business Systems', icon: <IconBuilding size={18} color="#6366F1" /> },
+  { code: 'IT',  name: 'Information Technology', icon: <IconGlobe size={18} color="#06B6D4" /> },
+  { code: 'AIDS', name: 'Artificial Intelligence & Data Science', icon: <IconCpu size={18} color="#EC4899" /> },
+  { code: 'ECE', name: 'Electronics & Communication', icon: <IconRadio size={18} color="#F59E0B" /> },
+  { code: 'EEE', name: 'Electrical & Electronics', icon: <IconFlash size={18} color="#EAB308" /> },
+  { code: 'MECH', name: 'Mechanical Engineering', icon: <IconSliders size={18} color="#64748B" /> },
+  { code: 'CIVIL', name: 'Civil Engineering', icon: <IconBuilding size={18} color="#D97706" /> },
+  { code: 'CSIT', name: 'Computer Science & Info Tech', icon: <IconCode size={18} color="#0284C7" /> },
+  { code: 'MCA', name: 'Master of Computer Applications', icon: <IconGraduation size={18} color="#8B5CF6" /> },
+  { code: 'MBA', name: 'Master of Business Administration', icon: <IconChart size={18} color="#14B8A6" /> },
 ]
 
 const STANDARD_SECTIONS = ['A', 'B', 'C', 'D', 'E']
@@ -152,7 +177,7 @@ function WizardSteps({ current }: { current: number }) {
               flexShrink: 0, transition: 'all 0.3s ease', marginRight: 10,
             }}
           >
-            {current > step.id ? '✓' : step.icon}
+            {current > step.id ? <IconCheck size={14} color="#10B981" /> : step.icon}
           </motion.div>
           <div style={{ flex: 1, minWidth: 70 }}>
             <div style={{
@@ -199,7 +224,7 @@ function Step1College({
     <div>
       <div style={{ marginBottom: 18 }}>
         <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
-          🏛️ Step 1: Select Target College
+          Step 1: Select Target College
         </h3>
         <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.86rem', margin: 0 }}>
           This assessment will only be visible to verified students enrolled in the selected institution.
@@ -219,7 +244,7 @@ function Step1College({
 
       {colleges.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '48px 24px', background: 'rgba(30,41,59,0.3)', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 12 }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🏛️</div>
+          <div style={{ display: 'inline-flex', padding: 14, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.1)', marginBottom: 12 }}><IconBuilding size={36} color="#38BDF8" /></div>
           <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f8fafc', marginBottom: 6 }}>No Colleges Found in Database</div>
           <p style={{ color: '#94a3b8', fontSize: '0.86rem', maxWidth: 440, margin: '0 auto 20px', lineHeight: 1.5 }}>
             The exam targeting wizard requires at least one registered institutional campus. No colleges have been created yet. Please create your college in the Colleges portal first.
@@ -237,7 +262,7 @@ function Step1College({
               fontSize: '0.88rem',
             }}
           >
-            🏛️ Go to Colleges &amp; Institutions &rarr;
+            Go to Colleges &amp; Institutions &rarr;
           </a>
         </div>
       ) : (
@@ -269,14 +294,14 @@ function Step1College({
                   }}>
                     {c.college_code}
                   </span>
-                  {isSelected && <span style={{ color: '#10B981', fontWeight: 800, fontSize: '0.85rem' }}>✓ Selected</span>}
+                  {isSelected && <span style={{ color: '#10B981', fontWeight: 800, fontSize: '0.85rem' }}>Selected</span>}
                 </div>
                 <div style={{ fontSize: '0.98rem', fontWeight: 700, color: '#f8fafc', marginBottom: 4 }}>
                   {c.college_name}
                 </div>
                 {c.city && (
                   <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint, #64748b)' }}>
-                    📍 {c.city}
+                    {c.city}
                   </div>
                 )}
               </motion.div>
@@ -302,7 +327,7 @@ function Step2Branch({
     <div>
       <div style={{ marginBottom: 20 }}>
         <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
-          🎓 Step 2: Select Academic Branch
+          Step 2: Select Academic Branch
         </h3>
         <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.86rem', margin: 0 }}>
           Only students belonging to this branch can discover or access this examination.
@@ -336,7 +361,7 @@ function Step2Branch({
                 }}>
                   {b.code}
                 </span>
-                {isSelected && <span style={{ marginLeft: 'auto', color: '#10B981', fontWeight: 800 }}>✓</span>}
+                {isSelected && <span style={{ marginLeft: 'auto', color: '#10B981', display: 'inline-flex' }}><IconCheck size={16} color="#10B981" /></span>}
               </div>
               <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted, #94a3b8)', lineHeight: 1.4 }}>
                 {b.name}
@@ -394,7 +419,7 @@ function Step3PassoutYear({
     <div>
       <div style={{ marginBottom: 20 }}>
         <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
-          📅 Step 3: Passout Year &amp; Dynamic Study Year
+          Step 3: Passout Year &amp; Dynamic Study Year
         </h3>
         <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.86rem', margin: 0 }}>
           The study year is derived automatically from passout_year and the current date. Nothing is stored hard-coded.
@@ -443,7 +468,7 @@ function Step3PassoutYear({
         borderRadius: 12,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <span style={{ fontSize: '1.3rem' }}>⚡</span>
+          <IconFlash size={20} color="#F59E0B" />
           <span style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#10B981' }}>
             Automated Academic Year Derivation Engine
           </span>
@@ -480,7 +505,7 @@ function Step4SectionBatch({
     <div>
       <div style={{ marginBottom: 20 }}>
         <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
-          👥 Step 4: Section &amp; Batch Eligibility
+          Step 4: Section &amp; Batch Eligibility
         </h3>
         <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.86rem', margin: 0 }}>
           Target specific sections or batches. Students outside this target will receive an HTTP 404 Not Found response and cannot tell this exam exists.
@@ -556,7 +581,7 @@ function Step4SectionBatch({
                   transition: 'all 0.2s ease',
                 }}
               >
-                {isSelected ? '✓ ' : ''}{b}
+                {isSelected && <IconCheck size={12} color="#38BDF8" style={{ marginRight: 4 }} />}{b}
               </button>
             )
           })}
@@ -573,7 +598,7 @@ function Step4SectionBatch({
         color: '#f8fafc',
         lineHeight: 1.5,
       }}>
-        🛡️ <strong>Zero-Leakage Secrecy Rule:</strong> Students outside Sections [{selectedSections.join(', ')}] will see an empty state (<em>"No exam available"</em>). Any attempt to probe this exam code directly via REST or Socket will return an indistinguishable <strong>HTTP 404 Not Found</strong>.
+        <IconShield size={16} color="#38BDF8" style={{ marginRight: 6 }} /><strong>Zero-Leakage Secrecy Rule:</strong> Students outside Sections [{selectedSections.join(', ')}] will see an empty state (<em>"No exam available"</em>). Any attempt to probe this exam code directly via REST or Socket will return an indistinguishable <strong>HTTP 404 Not Found</strong>.
       </div>
     </div>
   )
@@ -683,7 +708,7 @@ function Step5QuestionPaper({
     <div>
       <div style={{ marginBottom: 20 }}>
         <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
-          📝 Step 5: Question Paper &amp; Staff Allocation
+          Step 5: Question Paper &amp; Staff Allocation
         </h3>
         <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.86rem', margin: 0 }}>
           Configure assessment parameters, allocate question paper to section faculty, assign an inspector, and prepare questions.
@@ -712,7 +737,7 @@ function Step5QuestionPaper({
               onClick={generateRandomCode}
               style={{ background: 'none', border: 'none', color: 'var(--color-primary, #2b7fff)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
             >
-              🎲 Auto Generate
+              Auto Generate
             </button>
           </div>
           <input
@@ -779,7 +804,7 @@ function Step5QuestionPaper({
         marginBottom: 24,
       }}>
         <h4 style={{ fontSize: '0.96rem', fontWeight: 800, margin: '0 0 12px 0', color: '#f8fafc' }}>
-          🛡️ Role &amp; Permission Allocation (RBAC Scoped)
+          Role &amp; Permission Allocation (RBAC Scoped)
         </h4>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div>
@@ -833,7 +858,7 @@ function Step5QuestionPaper({
             onClick={downloadSampleTemplate}
             style={{ background: 'none', border: 'none', color: '#10B981', fontSize: '0.76rem', fontWeight: 700, cursor: 'pointer' }}
           >
-            📥 Download Sample Template (.csv)
+            Download Sample Template (.csv)
           </button>
         </div>
 
@@ -865,7 +890,7 @@ function Step5QuestionPaper({
               if (e.target.files?.[0]) handleFileUpload(e.target.files[0])
             }}
           />
-          <div style={{ fontSize: '2rem', marginBottom: 6 }}>📥</div>
+          <div style={{ display: 'inline-flex', padding: 10, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.1)', marginBottom: 6 }}><IconDownload size={24} color="#38BDF8" /></div>
           <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#f8fafc', marginBottom: 4 }}>
             Click or drag &amp; drop Question Paper CSV / Excel
           </div>
@@ -964,7 +989,7 @@ function Step6Review({
     <div>
       <div style={{ marginBottom: 20 }}>
         <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
-          🚀 Step 6: Review &amp; Launch Section-Targeted Exam
+          Step 6: Review &amp; Launch Section-Targeted Exam
         </h3>
         <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.86rem', margin: 0 }}>
           Verify the hierarchy targeting and security parameters before publishing.
@@ -985,7 +1010,7 @@ function Step6Review({
               Target College
             </div>
             <div style={{ fontSize: '0.96rem', fontWeight: 800, color: '#f8fafc', marginTop: 2 }}>
-              🏛️ {selectedCollege?.college_name || 'All Institutional Units'} ({selectedCollege?.college_code || 'ALL'})
+              <IconBuilding size={14} color="#38BDF8" style={{ marginRight: 6 }} />{selectedCollege?.college_name || 'All Institutional Units'} ({selectedCollege?.college_code || 'ALL'})
             </div>
           </div>
 
@@ -994,7 +1019,7 @@ function Step6Review({
               Academic Target
             </div>
             <div style={{ fontSize: '0.96rem', fontWeight: 800, color: '#38BDF8', marginTop: 2 }}>
-              🎓 {form.branch} · Passout {form.passout_year}
+              <IconGraduation size={14} color="#A855F7" style={{ marginRight: 6 }} />{form.branch} · Passout {form.passout_year}
             </div>
             <div style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 600 }}>
               Derived Study Year: {derived.label}
@@ -1006,7 +1031,7 @@ function Step6Review({
               Sections &amp; Batches
             </div>
             <div style={{ fontSize: '0.96rem', fontWeight: 800, color: '#F59E0B', marginTop: 2 }}>
-              👥 Section(s): {form.section_ids.join(', ') || 'A'}
+              <IconUsers size={14} color="#F59E0B" style={{ marginRight: 6 }} />Section(s): {form.section_ids.join(', ') || 'A'}
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted, #94a3b8)' }}>
               Batch: {form.batch_id || 'All Batches'}
@@ -1062,7 +1087,7 @@ function Step6Review({
               border: `1px solid ${ok ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`,
             }}
           >
-            <span>{ok ? '✅' : '❌'}</span>
+            <span>{ok ? <IconCheck size={16} color="#10B981" /> : <IconCross size={16} color="#EF4444" />}</span>
             <span style={{ color: ok ? '#f8fafc' : '#f87171', fontWeight: 600 }}>{label}</span>
           </div>
         ))}
@@ -1216,7 +1241,7 @@ export default function CreateExamPage() {
             style={{ maxWidth: 540, width: '100%', margin: '0 auto' }}
           >
             <GlowCard glowColor="rgba(16,185,129,0.4)" style={{ textAlign: 'center', padding: 40 }}>
-              <div style={{ fontSize: '3.6rem', marginBottom: 12 }}>🚀</div>
+              <div style={{ display: 'inline-flex', padding: 18, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', marginBottom: 16 }}><IconRocket size={48} color="#10B981" /></div>
               <h2 style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: '1.8rem', fontWeight: 800, marginBottom: 6, color: '#f8fafc' }}>
                 Section Exam Launched!
               </h2>
@@ -1244,13 +1269,13 @@ export default function CreateExamPage() {
                   className="btn btn-primary"
                   onClick={() => navigate(`/admin/monitor/${success.code}`)}
                 >
-                  👁️ Monitor Live
+                  Monitor Live
                 </MagneticButton>
                 <MagneticButton
                   className="btn btn-secondary"
                   onClick={() => navigate('/admin/exam-codes')}
                 >
-                  🔑 All Exam Codes
+                  All Exam Codes
                 </MagneticButton>
                 <MagneticButton
                   className="btn btn-ghost"
@@ -1261,7 +1286,7 @@ export default function CreateExamPage() {
                     setForm(p => ({ ...p, exam_name: '', code: '' }))
                   }}
                 >
-                  ➕ Create Another
+                  Create Another
                 </MagneticButton>
               </div>
             </GlowCard>
@@ -1301,7 +1326,7 @@ export default function CreateExamPage() {
                 initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="alert alert-error" style={{ marginBottom: 16 }}
               >
-                ⚠️ {error}
+                {error}
               </motion.div>
             )}
           </AnimatePresence>
@@ -1415,7 +1440,7 @@ export default function CreateExamPage() {
                 >
                   {submitting
                     ? <><span className="btn-spinner" /> Launching Exam<TypingDots /></>
-                    : '🚀 Launch Section-Targeted Exam'}
+                    : 'Launch Section-Targeted Exam'}
                 </MagneticButton>
               )}
             </div>

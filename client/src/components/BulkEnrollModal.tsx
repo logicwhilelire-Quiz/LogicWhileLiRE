@@ -122,13 +122,7 @@ export default function BulkEnrollModal({
               Target Assessment: <strong style={{ color: 'var(--color-primary)' }}>{examTitle}</strong>
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="btn btn-ghost btn-sm"
-            style={{ padding: '4px 8px', fontSize: '1.1rem' }}
-          >
-            ✕
-          </button>
+          <button onClick={onClose} className="btn-ghost" style={{ padding: 4, cursor: "pointer", display: "inline-flex", alignItems: "center" }} aria-label="Close"><IconCross size={18} color="#94A3B8" /></button>
         </div>
 
         {/* Instructions & Template Link */}

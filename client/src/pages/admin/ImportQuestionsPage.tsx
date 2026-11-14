@@ -3,6 +3,17 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { validateAndPreviewQuestions, confirmImportQuestions, listExams } from '../../lib/api';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedPage from '../../components/AnimatedPage';
+import {
+  IconDownload,
+  IconCheck,
+  IconAlert,
+  IconClipboard,
+  IconChart,
+  IconFileText,
+  IconSearch,
+  IconCross,
+} from '../../components/icons/HumanIcons';
+
 
 interface PreviewItem {
   row_number: number;
@@ -193,7 +204,7 @@ export default function ImportQuestionsPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                <span style={{ fontSize: '1.4rem' }}>📥</span>
+                <IconDownload size={22} color="#38BDF8" />
                 <h1 style={{ fontSize: '1.6rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>
                   Faculty Question Uploader
                 </h1>
@@ -215,7 +226,7 @@ export default function ImportQuestionsPage() {
           {/* Feedback Alerts */}
           {importSuccess && (
             <div className="alert alert-success mb-3 animate-slide-up" role="alert" style={{ fontSize: '0.92rem' }}>
-              <span style={{ fontSize: '1.3rem' }}>🎉</span>
+              <IconCheck size={20} color="#10B981" />
               <div>
                 <strong>Import Complete!</strong> {importSuccess}
                 <div style={{ marginTop: 6 }}>
@@ -233,7 +244,7 @@ export default function ImportQuestionsPage() {
 
           {generalError && (
             <div className="alert alert-error mb-3 animate-slide-up" role="alert" style={{ fontSize: '0.92rem' }}>
-              <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+              <IconAlert size={20} color="#EF4444" />
               <div>{generalError}</div>
             </div>
           )}
@@ -280,7 +291,7 @@ export default function ImportQuestionsPage() {
               {/* Supported Columns Summary */}
               <div style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: 8, padding: '12px 16px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
                 <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#93c5fd', marginBottom: 4 }}>
-                  📋 5-Column Excel Standard
+                  5-Column Excel Standard
                 </div>
                 <div style={{ fontSize: '0.78rem', color: '#cbd5e1', lineHeight: 1.5 }}>
                   Col 1: <strong>Question</strong> &bull; Col 2: <strong>Option A</strong> &bull; Col 3: <strong>Option B</strong> &bull; Col 4: <strong>Option C</strong> &bull; Col 5: <strong>Option D</strong>
@@ -312,11 +323,11 @@ export default function ImportQuestionsPage() {
                 transition: 'all 0.2s',
               }}
             >
-              <div style={{ fontSize: '2.5rem', marginBottom: 10 }}>📊</div>
+              <div style={{ display: 'inline-flex', padding: 12, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.1)', marginBottom: 10 }}><IconChart size={36} color="#38BDF8" /></div>
               {file ? (
                 <>
                   <div style={{ fontSize: '1rem', fontWeight: 700, color: '#4ade80', marginBottom: 4 }}>
-                    ✅ {file.name}
+                    {file.name}
                   </div>
                   <div className="text-muted text-xs">
                     {(file.size / 1024).toFixed(1)} KB &bull; Click or drop another file to replace
@@ -354,7 +365,7 @@ export default function ImportQuestionsPage() {
                   className="btn btn-secondary text-xs"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
                 >
-                  📥 Download 2-Sheet Excel Template (.xlsx)
+                  Download 2-Sheet Excel Template (.xlsx)
                 </button>
                 <button
                   type="button"
@@ -363,7 +374,7 @@ export default function ImportQuestionsPage() {
                   className="btn btn-outline text-xs"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
-                  📄 Legacy CSV (.csv)
+                  Legacy CSV (.csv)
                 </button>
               </div>
 
@@ -393,7 +404,7 @@ export default function ImportQuestionsPage() {
                   </>
                 ) : (
                   <>
-                    🔍 Validate &amp; Preview Questions
+                    Validate &amp; Preview Questions
                   </>
                 )}
               </button>
@@ -405,7 +416,7 @@ export default function ImportQuestionsPage() {
           {skippedRows.length > 0 && (
             <div className="card mb-4 animate-slide-up" style={{ padding: '18px 22px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.35)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#f87171', fontWeight: 800, fontSize: '0.96rem', marginBottom: 6 }}>
-                <span>⚠️</span>
+                <IconAlert size={14} color="#F59E0B" />
                 <span>{skippedRows.length} Invalid Question{skippedRows.length > 1 ? 's' : ''} Skipped During Import:</span>
               </div>
               <p className="text-muted text-xs" style={{ margin: '0 0 10px 0' }}>
@@ -505,7 +516,7 @@ export default function ImportQuestionsPage() {
                     </>
                   ) : (
                     <>
-                      ✅ Confirm &amp; Import ({previewData.valid_count} Valid Questions) &rarr;
+                      Confirm &amp; Import ({previewData.valid_count} Valid Questions) &rarr;
                     </>
                   )}
                 </button>
@@ -527,7 +538,7 @@ export default function ImportQuestionsPage() {
                   className={`btn text-xs ${filterTab === 'valid' ? 'btn-primary' : 'btn-outline'}`}
                   style={{ padding: '6px 14px', borderRadius: 20 }}
                 >
-                  ✅ Valid Only ({previewData.valid_count})
+                  Valid Only ({previewData.valid_count})
                 </button>
                 <button
                   type="button"
@@ -535,7 +546,7 @@ export default function ImportQuestionsPage() {
                   className={`btn text-xs ${filterTab === 'invalid' ? 'btn-primary' : 'btn-outline'}`}
                   style={{ padding: '6px 14px', borderRadius: 20 }}
                 >
-                  ❌ Errors Only ({previewData.invalid_count})
+                  Errors Only ({previewData.invalid_count})
                 </button>
               </div>
 
@@ -630,7 +641,7 @@ export default function ImportQuestionsPage() {
                               {q.errors && q.errors.length > 0 && (
                                 <div style={{ marginTop: 8, padding: '6px 10px', background: 'rgba(239, 68, 68, 0.15)', borderRadius: 6, border: '1px solid rgba(239, 68, 68, 0.35)' }}>
                                   <div style={{ color: '#fca5a5', fontWeight: 700, fontSize: '0.74rem', marginBottom: 2 }}>
-                                    ⚠️ VALIDATION ERROR{q.errors.length > 1 ? 'S' : ''}:
+                                    VALIDATION ERROR{q.errors.length > 1 ? 'S' : ''}:
                                   </div>
                                   {q.errors.map((err, eIdx) => (
                                     <div key={eIdx} style={{ color: '#fee2e2', fontSize: '0.73rem', fontFamily: 'monospace' }}>
@@ -645,7 +656,7 @@ export default function ImportQuestionsPage() {
                               {q.type === 'Coding' ? (
                                 <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                                   <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#c084fc', marginBottom: 2 }}>
-                                    🧪 Test Cases Specification:
+                                    Test Cases Specification:
                                   </div>
                                   <div style={{ fontSize: '0.72rem', color: '#cbd5e1', fontFamily: 'monospace', maxHeight: 60, overflowY: 'auto' }}>
                                     {q.test_cases || '(No test cases provided)'}
@@ -655,7 +666,7 @@ export default function ImportQuestionsPage() {
                                 <>
                                   {q.diagram_url && (
                                     <div style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.74rem', color: '#fbbf24' }}>
-                                      <span>🖼️</span>
+                                      <IconFileText size={14} />
                                       <a href={q.diagram_url} target="_blank" rel="noreferrer" style={{ color: '#fbbf24', textDecoration: 'underline' }}>
                                         View Diagram Image
                                       </a>

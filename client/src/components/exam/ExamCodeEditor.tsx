@@ -550,7 +550,7 @@ export default function ExamCodeEditor({
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: r.input ? 4 : 0 }}>
                           <span style={{ color: r.passed ? '#10B981' : '#EF4444', fontWeight: 700 }}>
-                            {r.passed ? '✓' : '✗'} Test {i + 1}
+                            {r.passed ? 'Passed' : 'Failed'} · Test {i + 1}
                           </span>
                           {r.marks !== undefined && (
                             <span style={{ color: r.passed ? '#10B981' : 'var(--color-text-faint)', fontSize: '0.72rem' }}>

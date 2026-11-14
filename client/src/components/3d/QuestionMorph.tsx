@@ -1,3 +1,4 @@
+import { IconCheck } from '../icons/HumanIcons'
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -208,7 +209,7 @@ export default function QuestionMorph({
                           boxShadow: isSelected ? '0 2px 10px rgba(43, 127, 255, 0.5)' : 'none',
                         }}
                       >
-                        {isSelected ? '✓' : LABELS[idx]}
+                        {isSelected ? <IconCheck size={14} color="#FFFFFF" /> : LABELS[idx]}
                       </motion.div>
 
                       <span className="option-text" style={{

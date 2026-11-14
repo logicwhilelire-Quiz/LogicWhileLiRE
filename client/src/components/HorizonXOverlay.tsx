@@ -538,7 +538,7 @@ export default function HorizonXOverlay() {
                     }}
                     title="Close HorizonX Mode (Key: H)"
                   >
-                    ✕
+                    <IconCross size={13} color="#94A3B8" />
                   </button>
                 </div>
               </div>

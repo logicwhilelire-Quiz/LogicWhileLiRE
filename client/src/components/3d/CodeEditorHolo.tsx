@@ -198,7 +198,7 @@ export default function CodeEditorHolo({
             passed: isPassed,
             input: tc.is_hidden ? '[Hidden Test Case]' : tc.input_text,
             expected: tc.is_hidden ? '[Hidden Ground Truth]' : expected,
-            actual: tc.is_hidden ? (isPassed ? '✓ Matches Expected Ground Truth' : '✗ Execution Mismatch') : (isPassed ? expected : 'Runtime Output Mismatch'),
+            actual: tc.is_hidden ? (isPassed ? 'Matches Expected Ground Truth' : 'Execution Mismatch') : (isPassed ? expected : 'Runtime Output Mismatch'),
             marks: isPassed ? (tc.marks || 10) : 0,
           }
         })
@@ -208,7 +208,7 @@ export default function CodeEditorHolo({
         const isAllPassed = passedCount === testCases.length
 
         const simulated: RunResult = {
-          output: `⚡ [Client Sandbox Resilient Runner]\nExecution Time: 14ms | Memory Footprint: 12.8 MB\nTest Evaluation: Passed ${passedCount}/${testCases.length} Test Cases.\nVerdict: ${isAllPassed ? 'Accepted' : 'Partial'}`,
+          output: `[Client Sandbox Resilient Runner]\nExecution Time: 14ms | Memory Footprint: 12.8 MB\nTest Evaluation: Passed ${passedCount}/${testCases.length} Test Cases.\nVerdict: ${isAllPassed ? 'Accepted' : 'Partial'}`,
           hasError: false,
           verdict: isAllPassed ? 'Accepted' : passedCount > 0 ? 'Partial' : 'Wrong Answer',
           results: simResults,
@@ -530,7 +530,7 @@ export default function CodeEditorHolo({
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: r.input ? 4 : 0 }}>
                           <span style={{ color: r.passed ? '#10B981' : '#EF4444', fontWeight: 700 }}>
-                            {r.passed ? '✓' : '✗'} Test {i + 1}
+                            {r.passed ? 'Passed' : 'Failed'} · Test {i + 1}
                           </span>
                           {r.marks !== undefined && (
                             <span style={{ color: r.passed ? '#10B981' : 'var(--color-text-faint)', fontSize: '0.72rem' }}>

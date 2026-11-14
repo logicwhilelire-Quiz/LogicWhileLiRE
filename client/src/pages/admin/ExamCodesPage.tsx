@@ -4,6 +4,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import { API_BASE_URL } from '../../lib/config';
+import {
+  IconKey,
+  IconFlash,
+  IconQrCode,
+  IconDownload,
+  IconTrophy,
+  IconAlert,
+  IconClock,
+  IconClipboard,
+  IconChart,
+  IconFileText,
+  IconCross,
+  IconCheck,
+  IconPlus,
+} from '../../components/icons/HumanIcons';
 
 const BASE_URL = API_BASE_URL;
 
@@ -179,10 +194,10 @@ export default function ExamCodesPage() {
 
   function getStatus(ec: ExamCode): { label: string; color: string } {
     const now = new Date();
-    if (!ec.is_active) return { label: '○ Inactive', color: '#64748b' };
-    if (now < new Date(ec.start_time)) return { label: '⏳ Upcoming', color: '#FDCB6E' };
-    if (now > new Date(ec.end_time)) return { label: '✖ Expired', color: '#ef4444' };
-    return { label: '● Live', color: '#00B894' };
+    if (!ec.is_active) return { label: 'Inactive', color: '#64748b' };
+    if (now < new Date(ec.start_time)) return { label: 'Upcoming', color: '#FDCB6E' };
+    if (now > new Date(ec.end_time)) return { label: 'Expired', color: '#ef4444' };
+    return { label: 'Live', color: '#00B894' };
   }
 
   const defaultStartTime = () => {
@@ -203,7 +218,10 @@ export default function ExamCodesPage() {
       <main className="admin-content">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontSize: '1.7rem', fontWeight: 800, marginBottom: 4 }}>🔑 Exam Codes</h1>
+            <h1 style={{ fontSize: '1.7rem', fontWeight: 800, marginBottom: 4, display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+              <IconKey size={26} color="#A29BFE" />
+              <span>Exam Codes</span>
+            </h1>
             <p className="text-muted text-sm">Generate and manage unique exam codes (GR-COLLEGE-XXXXXX or legacy LW-) for each college's assessment.</p>
           </div>
           <button id="generate-exam-code-btn" className="btn btn-primary"
@@ -211,8 +229,11 @@ export default function ExamCodesPage() {
               setForm(p => ({ ...p, start_time: defaultStartTime(), end_time: defaultEndTime() }));
               setShowForm(true);
               setError('');
-            }}>
-            ⚡ Generate Exam Code
+            }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+          >
+            <IconFlash size={15} color="#FFFFFF" />
+            <span>Generate Exam Code</span>
           </button>
         </div>
 
@@ -242,10 +263,15 @@ export default function ExamCodesPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 60, borderRadius: 10 }} />)}</div>
         ) : examCodes.length === 0 ? (
           <div className="card text-center" style={{ padding: 60 }}>
-            <div style={{ fontSize: '3rem', marginBottom: 12 }}>🔑</div>
+            <div style={{ display: 'inline-flex', padding: 16, borderRadius: '50%', background: 'rgba(162, 155, 254, 0.1)', marginBottom: 16 }}>
+              <IconKey size={40} color="#A29BFE" />
+            </div>
             <p className="font-bold mb-1">No exam codes yet</p>
             <p className="text-muted text-sm mb-2">Generate your first exam code to start an assessment.</p>
-            <button className="btn btn-primary" onClick={() => setShowForm(true)}>⚡ Generate First Code</button>
+            <button className="btn btn-primary" onClick={() => setShowForm(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <IconFlash size={15} color="#FFFFFF" />
+              <span>Generate First Code</span>
+            </button>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -287,9 +313,17 @@ export default function ExamCodesPage() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          <button id={`qr-${ec.id}`} className="btn btn-secondary btn-sm" onClick={() => openQR(ec)} title="View QR & Share">📷 QR</button>
-                          <button id={`import-q-${ec.id}`} className="btn btn-ghost btn-sm" onClick={() => { setImportModal(ec); setImportFile(null); }} title="Upload Questions">📥 Qs</button>
-                          <button id={`leaderboard-ec-${ec.id}`} className="btn btn-ghost btn-sm" onClick={() => navigate(`/leaderboard-ec/${ec.exam_code}`)} title="Leaderboard">🏆</button>
+                          <button id={`qr-${ec.id}`} className="btn btn-secondary btn-sm" onClick={() => openQR(ec)} title="View QR & Share" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <IconQrCode size={13} />
+                            <span>QR</span>
+                          </button>
+                          <button id={`import-q-${ec.id}`} className="btn btn-ghost btn-sm" onClick={() => { setImportModal(ec); setImportFile(null); }} title="Upload Questions" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <IconDownload size={13} />
+                            <span>Qs</span>
+                          </button>
+                          <button id={`leaderboard-ec-${ec.id}`} className="btn btn-ghost btn-sm" onClick={() => navigate(`/leaderboard-ec/${ec.exam_code}`)} title="Leaderboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <IconTrophy size={13} color="#F59E0B" />
+                          </button>
                           <button id={`toggle-ec-${ec.id}`} className={`btn btn-sm ${ec.is_active ? 'btn-danger' : 'btn-primary'}`} onClick={() => handleToggle(ec)}>
                             {ec.is_active ? 'Off' : 'On'}
                           </button>
@@ -309,7 +343,10 @@ export default function ExamCodesPage() {
         {showForm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="modal-overlay" onClick={() => setShowForm(false)}>
             <motion.div initial={{ opacity: 0, scale: 0.94, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.94, y: 20 }} transition={{ duration: 0.3 }} className="modal" style={{ maxWidth: 540 }} onClick={e => e.stopPropagation()}>
-              <h3 style={{ fontWeight: 800, fontSize: '1.2rem', marginBottom: 6 }}>⚡ Generate Exam Code</h3>
+              <h3 style={{ fontWeight: 800, fontSize: '1.2rem', marginBottom: 6, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <IconFlash size={18} color="#F59E0B" />
+                <span>Generate Exam Code</span>
+              </h3>
               <p className="text-muted text-sm" style={{ marginBottom: 20 }}>A unique GR-COLLEGE-XXXXXX code will be auto-generated (legacy LW- codes remain fully supported).</p>
 
               {error && <div className="alert alert-error mb-2" style={{ fontSize: '0.88rem' }}>{error}</div>}
@@ -322,7 +359,13 @@ export default function ExamCodesPage() {
                     <option value="">Select College</option>
                     {colleges.map(c => <option key={c.id} value={c.id}>{c.college_name} ({c.college_code})</option>)}
                   </select>
-                  {colleges.length === 0 && <div className="text-xs" style={{ marginTop: 4, color: '#FDCB6E' }}>⚠️ No colleges found. <button type="button" className="btn-ghost" style={{ color: '#a29bfe', cursor: 'pointer', border: 'none', background: 'transparent', fontSize: '0.78rem', padding: 0, textDecoration: 'underline' }} onClick={() => { setShowForm(false); navigate('/admin/colleges'); }}>Add College first</button></div>}
+                  {colleges.length === 0 && (
+                    <div className="text-xs" style={{ marginTop: 4, color: '#FDCB6E', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <IconAlert size={13} color="#FDCB6E" />
+                      <span>No colleges found.</span>
+                      <button type="button" className="btn-ghost" style={{ color: '#a29bfe', cursor: 'pointer', border: 'none', background: 'transparent', fontSize: '0.78rem', padding: 0, textDecoration: 'underline' }} onClick={() => { setShowForm(false); navigate('/admin/colleges'); }}>Add College first</button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group" style={{ margin: 0 }}>
@@ -358,14 +401,14 @@ export default function ExamCodesPage() {
                 </div>
 
                 <div style={{ background: 'rgba(108,92,231,0.08)', border: '1px solid rgba(108,92,231,0.2)', borderRadius: 10, padding: '12px 16px', fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
-                  💡 Code preview: <strong style={{ color: '#a29bfe', fontFamily: 'monospace' }}>GR-{form.college_id ? (colleges.find(c => String(c.id) === form.college_id)?.college_code || 'CODE') : 'CODE'}-XXXXXX</strong>
+                  Code preview: <strong style={{ color: '#a29bfe', fontFamily: 'monospace' }}>GR-{form.college_id ? (colleges.find(c => String(c.id) === form.college_id)?.college_code || 'CODE') : 'CODE'}-XXXXXX</strong>
                   <br />Share this code with your entire college batch. Existing LW- and new GR- codes are accepted seamlessly.
                 </div>
 
                 <div style={{ display: 'flex', gap: 12 }}>
                   <button id="exam-code-form-cancel" type="button" className="btn btn-ghost btn-full" onClick={() => setShowForm(false)}>Cancel</button>
-                  <button id="exam-code-form-generate" type="submit" className="btn btn-primary btn-full" disabled={saving || colleges.length === 0}>
-                    {saving ? <><div className="btn-spinner" /> Generating...</> : '⚡ Generate Code'}
+                  <button id="exam-code-form-generate" type="submit" className="btn btn-primary btn-full" disabled={saving || colleges.length === 0} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    {saving ? <><div className="btn-spinner" /> Generating...</> : <><IconFlash size={15} /><span>Generate Code</span></>}
                   </button>
                 </div>
               </form>
@@ -379,7 +422,10 @@ export default function ExamCodesPage() {
         {qrModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="modal-overlay" onClick={() => setQrModal(null)}>
             <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.94 }} className="modal" style={{ maxWidth: 420, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-              <h3 style={{ fontWeight: 800, fontSize: '1.2rem', marginBottom: 4 }}>📷 Exam Code QR</h3>
+              <h3 style={{ fontWeight: 800, fontSize: '1.2rem', marginBottom: 4, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <IconQrCode size={18} color="#A29BFE" />
+                <span>Exam Code QR</span>
+              </h3>
               <p className="text-muted text-sm" style={{ marginBottom: 16 }}>Share this QR or code with your college batch</p>
 
               <div style={{ display: 'inline-block', background: '#fff', borderRadius: 12, padding: 16, marginBottom: 16 }}>
@@ -390,11 +436,17 @@ export default function ExamCodesPage() {
                 {qrModal.code.exam_code}
               </div>
 
-              <div style={{ background: 'rgba(108,92,231,0.08)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
-                <div style={{ marginBottom: 4 }}>📝 {qrModal.code.exam_name}</div>
-                <div>⏱️ {qrModal.code.duration_minutes} min | ❓ {qrModal.code.total_questions} questions</div>
+              <div style={{ background: 'rgba(108,92,231,0.08)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: '0.82rem', color: 'var(--color-text-muted)', textAlign: 'left' }}>
+                <div style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <IconFileText size={13} color="#A29BFE" />
+                  <span>{qrModal.code.exam_name}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <IconClock size={13} color="#94A3B8" />
+                  <span>{qrModal.code.duration_minutes} min | {qrModal.code.total_questions} questions</span>
+                </div>
                 <div style={{ marginTop: 8, wordBreak: 'break-all', color: '#a29bfe', fontSize: '0.78rem' }}>
-                  🔗 {qrModal.entryUrl}
+                  {qrModal.entryUrl}
                 </div>
               </div>
 
@@ -403,11 +455,14 @@ export default function ExamCodesPage() {
                   href={qrModal.qrUrl}
                   download={`${qrModal.code.exam_code}-qr.png`}
                   className="btn btn-primary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
-                  ⬇️ Download QR
+                  <IconDownload size={13} />
+                  <span>Download QR</span>
                 </a>
-                <button onClick={() => navigator.clipboard.writeText(qrModal.code.exam_code)} className="btn btn-secondary btn-sm">
-                  📋 Copy Code
+                <button onClick={() => navigator.clipboard.writeText(qrModal.code.exam_code)} className="btn btn-secondary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <IconClipboard size={13} />
+                  <span>Copy Code</span>
                 </button>
                 <button id="close-qr-modal" onClick={() => setQrModal(null)} className="btn btn-ghost btn-sm">Close</button>
               </div>
@@ -421,7 +476,10 @@ export default function ExamCodesPage() {
         {importModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="modal-overlay" onClick={() => setImportModal(null)}>
             <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.94 }} className="modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
-              <h3 style={{ fontWeight: 800, fontSize: '1.2rem', marginBottom: 4 }}>📥 Import Questions</h3>
+              <h3 style={{ fontWeight: 800, fontSize: '1.2rem', marginBottom: 4, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <IconDownload size={18} color="#38BDF8" />
+                <span>Import Questions</span>
+              </h3>
               <p className="text-muted text-sm" style={{ marginBottom: 4 }}>for exam code: <strong style={{ color: '#a29bfe', fontFamily: 'monospace' }}>{importModal.exam_code}</strong></p>
               <p className="text-muted text-xs" style={{ marginBottom: 20 }}>Upload an .xlsx file. Supports 1-Click format (question_text, type, option1 | option2 | option3 | option4, correct_index, marks) or multi-column format.</p>
 
@@ -432,7 +490,9 @@ export default function ExamCodesPage() {
                 onClick={() => fileRef.current?.click()}
                 style={{ marginBottom: 16, cursor: 'pointer' }}
               >
-                <div className="upload-icon">📊</div>
+                <div className="upload-icon" style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                  <IconChart size={32} color="#38BDF8" />
+                </div>
                 <div className="upload-text">{importFile ? importFile.name : 'Click to select Excel file (.xlsx)'}</div>
                 <div className="upload-hint">Max 5MB</div>
                 <input ref={fileRef} type="file" accept=".xlsx" style={{ display: 'none' }} onChange={e => setImportFile(e.target.files?.[0] || null)} />
@@ -440,8 +500,8 @@ export default function ExamCodesPage() {
 
               <div style={{ display: 'flex', gap: 10 }}>
                 <button type="button" className="btn btn-ghost btn-full" onClick={() => setImportModal(null)}>Cancel</button>
-                <button id="import-questions-submit" type="button" className="btn btn-primary btn-full" disabled={!importFile || importing} onClick={handleImport}>
-                  {importing ? <><div className="btn-spinner" /> Importing...</> : '📥 Import Questions'}
+                <button id="import-questions-submit" type="button" className="btn btn-primary btn-full" disabled={!importFile || importing} onClick={handleImport} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  {importing ? <><div className="btn-spinner" /> Importing...</> : <><IconDownload size={14} /><span>Import Questions</span></>}
                 </button>
               </div>
             </motion.div>

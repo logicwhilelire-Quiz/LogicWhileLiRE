@@ -183,7 +183,7 @@ export default function CandidateViolationTimelineModal({
       if (action === 'resume') setIsPaused(false)
       if (action === 'whisper') setWhisperInput('')
 
-      setActionFeedback(`✓ Action "${action.toUpperCase()}" successfully dispatched`)
+      setActionFeedback(`Action "${action.toUpperCase()}" successfully dispatched`)
       setTimeout(() => setActionFeedback(''), 4000)
 
       // Add to timeline locally
@@ -217,10 +217,10 @@ export default function CandidateViolationTimelineModal({
         examCode,
         examTitle: `Exam ${examCode}`,
       })
-      setActionFeedback(`✓ Formal incident reprimand emailed to ${targetEmail}`)
+      setActionFeedback(`Formal incident reprimand emailed to ${targetEmail}`)
       setTimeout(() => setActionFeedback(''), 4000)
     } catch {
-      setActionFeedback(`✓ Formal reprimand logged to outbound dispatch ledger`)
+      setActionFeedback(`Formal reprimand logged to outbound dispatch ledger`)
       setTimeout(() => setActionFeedback(''), 4000)
     } finally {
       setActionLoading(false)
@@ -345,12 +345,7 @@ export default function CandidateViolationTimelineModal({
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
-            >
-              ✕
-            </button>
+            <button onClick={onClose} style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", display: "inline-flex", alignItems: "center" }} aria-label="Close"><IconCross size={18} color="#94A3B8" /></button>
           </div>
 
           {/* Biometric Telemetry Strip */}
@@ -617,7 +612,7 @@ export default function CandidateViolationTimelineModal({
                           </span>
                           {item.is_false_positive && (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                              ✓ False Positive (Overridden)
+                              False Positive (Overridden)
                             </span>
                           )}
                         </div>

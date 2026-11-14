@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { IconCode, IconLock } from '../icons/HumanIcons'
+import { IconCode, IconLock, IconTarget, IconCross, IconCheck } from '../icons/HumanIcons'
 
 interface Question {
   id: string | number
@@ -434,7 +434,7 @@ export default function ExamQuestionCard({
                       boxShadow: `0 0 10px ${sector.color}20`,
                     }}
                   >
-                    <span>🪐</span>
+                    <IconTarget size={13} color={sector.color} />
                     <span>{sector.name}</span>
                   </span>
                 )}
@@ -483,7 +483,7 @@ export default function ExamQuestionCard({
                     }}
                     title="Clear selected option for this question"
                   >
-                    <span>✕</span>
+                    <IconCross size={11} color="#F87171" />
                     <span>Clear Selection</span>
                   </button>
                 )}
@@ -571,7 +571,7 @@ export default function ExamQuestionCard({
                           boxShadow: isSelected ? '0 2px 10px rgba(234, 168, 18, 0.5)' : 'none',
                         }}
                       >
-                        {isSelected ? '✓' : LABELS[idx]}
+                        {isSelected ? <IconCheck size={13} color="#002147" /> : LABELS[idx]}
                       </div>
 
                       <span

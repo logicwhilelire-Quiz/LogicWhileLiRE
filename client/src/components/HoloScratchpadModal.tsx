@@ -139,12 +139,7 @@ export const HoloScratchpadModal: React.FC<HoloScratchpadModalProps> = ({
                 </button>
               </div>
 
-              <button
-                onClick={onClose}
-                style={{ background: 'none', border: 'none', color: 'var(--color-text-faint)', fontSize: '1.2rem', cursor: 'pointer' }}
-              >
-                ✕
-              </button>
+              <button onClick={onClose} style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", display: "inline-flex", alignItems: "center" }} aria-label="Close"><IconCross size={18} color="#94A3B8" /></button>
             </div>
 
             {/* Content Body */}
@@ -207,7 +202,7 @@ export const HoloScratchpadModal: React.FC<HoloScratchpadModalProps> = ({
             {/* Footer */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
               <span style={{ fontSize: '0.72rem', color: '#10B981' }}>
-                ✓ Encrypted in active terminal memory
+                Encrypted in active terminal memory
               </span>
               <button
                 type="button"

@@ -2522,7 +2522,7 @@ export default function QuizPage() {
                     }}
                     title="Clear selected option for this question"
                   >
-                    <span>✕</span>
+                    <IconCross size={11} color="#F87171" />
                     <span>Clear Response</span>
                   </button>
                 )}
@@ -2861,9 +2861,10 @@ export default function QuizPage() {
                 <button
                   type="button"
                   onClick={() => setShowSubmitModal(false)}
-                  style={{ background: 'transparent', border: 'none', color: '#94A3B8', fontSize: '1.3rem', cursor: 'pointer', padding: 4 }}
+                  style={{ background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 4, display: 'inline-flex', alignItems: 'center' }}
+                  aria-label="Close modal"
                 >
-                  ✕
+                  <IconCross size={18} color="#94A3B8" />
                 </button>
               </div>
 

@@ -1678,7 +1678,7 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
   } else {
     const { data, error } = await supabase
       .from('questions_ec')
-      .select('id, question, option_a, option_b, option_c, option_d, marks, penalty, negative_marks, difficulty, topic, section, tags, display_order, starter_code')
+      .select('id, question, option_a, option_b, option_c, option_d, marks, penalty, negative_marks, difficulty, topic, section, tags, display_order, starter_code, question_type, test_cases')
       .eq('exam_code', effectiveCode)
       .order('display_order', { ascending: true, nullsFirst: false })
       .order('created_at');
@@ -1706,8 +1706,24 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
 
     const shuffledOpts = deterministicShuffle(opts, studentSeed);
     const { correct_answer, correct_option, explanation, ...safeQ } = q;
+    const rawType = q.question_type || (q.test_cases?.length || q.starter_code ? 'code' : 'mcq');
+
+    // Mask expected_output on hidden test cases to protect problem integrity
+    const candidateTestCases = Array.isArray(q.test_cases)
+      ? q.test_cases.map((tc: any, tcIdx: number) => ({
+          id: tc.id || `tc_${tcIdx + 1}`,
+          input_text: tc.input_text ?? tc.input ?? '',
+          expected_output: tc.is_hidden ? undefined : (tc.expected_output ?? tc.output ?? ''),
+          is_hidden: Boolean(tc.is_hidden),
+          marks: Number(tc.marks || 1),
+        }))
+      : [];
+
     return {
       ...safeQ,
+      question_type: rawType,
+      type: rawType,
+      test_cases: candidateTestCases,
       options: shuffledOpts.map((o) => o.text),
       option_a: shuffledOpts[0]?.text ?? null,
       option_b: shuffledOpts[1]?.text ?? null,

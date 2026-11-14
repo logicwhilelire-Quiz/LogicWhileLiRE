@@ -20,6 +20,7 @@ import {
   IconRefresh,
   IconShield,
   IconKey,
+  IconCross,
 } from '../../components/icons/HumanIcons';
 import {
   getAdminRosterStudents,
@@ -834,13 +835,7 @@ export default function StudentControl() {
             >
               <IconFlash size={18} color="#10B981" />
               <div style={{ flex: 1, fontSize: '0.92rem' }}>{uploadMsg}</div>
-              <button
-                type="button"
-                onClick={() => setUploadMsg('')}
-                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1.1rem' }}
-              >
-                ✕
-              </button>
+              <button type="button" onClick={() => setUploadMsg('')} style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", display: "inline-flex", alignItems: "center" }} aria-label="Close"><IconCross size={15} color="#94A3B8" /></button>
             </div>
           )}
 
@@ -1109,7 +1104,7 @@ export default function StudentControl() {
                 marginBottom: 20,
               }}
             >
-              ✓ {uploadMsg}
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconCheck size={14} color="#34D399" /><span>{uploadMsg}</span></span>
             </div>
           )}
 
@@ -1882,12 +1877,7 @@ export default function StudentControl() {
                   <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 8 }}>
                     <IconUsers size={20} color="#38BDF8" /> Register Candidate to Institution
                   </h2>
-                  <button
-                    onClick={() => setIsAddModalOpen(false)}
-                    style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
-                  >
-                    ✕
-                  </button>
+                  <button onClick={() => setIsAddModalOpen(false)} style={{ background: "none", border: "none", color: "var(--color-text-muted)", cursor: "pointer", display: "inline-flex", alignItems: "center" }} aria-label="Close"><IconCross size={18} color="#94A3B8" /></button>
                 </div>
 
                 <form onSubmit={handleManualAdd} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -2159,12 +2149,7 @@ export default function StudentControl() {
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setPreviewEmailStudent(null)}
-                    style={{ background: 'none', border: 'none', color: '#CBD5E1', fontSize: '1.4rem', cursor: 'pointer' }}
-                  >
-                    ✕
-                  </button>
+                  <button onClick={() => setPreviewEmailStudent(null)} style={{ background: "none", border: "none", color: "#CBD5E1", cursor: "pointer", display: "inline-flex", alignItems: "center" }} aria-label="Close"><IconCross size={20} color="#CBD5E1" /></button>
                 </div>
 
                 {/* Email Headers Meta */}

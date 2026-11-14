@@ -1158,7 +1158,7 @@ export default function PracticeArenaPage() {
                       fontSize: '0.85rem',
                     }}
                   >
-                    ✕
+                    <IconCross size={12} color="#94A3B8" />
                   </button>
                 )}
               </div>

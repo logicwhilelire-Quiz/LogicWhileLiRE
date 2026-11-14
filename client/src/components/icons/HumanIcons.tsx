@@ -453,6 +453,36 @@ export const IconLayers: React.FC<IconProps> = ({ size = 18, color = 'currentCol
   </svg>
 );
 
+export const IconQrCode: React.FC<IconProps> = ({ size = 18, color = 'currentColor', strokeWidth = 1.8, style, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" style={style} className={className} aria-hidden="true">
+    <rect x="3" y="3" width="7" height="7" />
+    <rect x="14" y="3" width="7" height="7" />
+    <rect x="14" y="14" width="7" height="7" />
+    <rect x="3" y="14" width="7" height="7" />
+    <line x1="7" y1="7" x2="7.01" y2="7" strokeWidth={strokeWidth + 1} />
+    <line x1="17" y1="7" x2="17.01" y2="7" strokeWidth={strokeWidth + 1} />
+    <line x1="7" y1="17" x2="7.01" y2="17" strokeWidth={strokeWidth + 1} />
+  </svg>
+);
+
+export const IconCalendar: React.FC<IconProps> = ({ size = 18, color = 'currentColor', strokeWidth = 1.8, style, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" style={style} className={className} aria-hidden="true">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+);
+
+export const IconRocket: React.FC<IconProps> = ({ size = 18, color = 'currentColor', strokeWidth = 1.8, style, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" style={style} className={className} aria-hidden="true">
+    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+    <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+    <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+  </svg>
+);
+
 
 
 

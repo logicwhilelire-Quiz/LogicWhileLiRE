@@ -34,6 +34,21 @@ import {
 import AnimatedPage from '../../components/AnimatedPage';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import BrandLogo from '../../components/BrandLogo';
+import {
+  IconCheck,
+  IconCross,
+  IconShield,
+  IconDownload,
+  IconBuilding,
+  IconUsers,
+  IconKey,
+  IconFlash,
+  IconFileText,
+  IconSearch,
+  IconAlert,
+  IconRefresh,
+} from '../../components/icons/HumanIcons';
+
 
 export default function HierarchyManagementPage() {
   const currentUser = (() => {
@@ -458,7 +473,7 @@ export default function HierarchyManagementPage() {
     }
     try {
       await verifyAndEnable2FA(totpCode.trim());
-      setTwoFaStatus('✅ 2FA Successfully Enabled! Your account is now protected with TOTP.');
+      setTwoFaStatus('2FA Successfully Enabled! Your account is now protected with TOTP.');
       setTotpCode('');
     } catch (err: any) {
       setTwoFaStatus(err.response?.data?.error || 'Invalid TOTP code. Please try again.');
@@ -523,7 +538,7 @@ export default function HierarchyManagementPage() {
                 Hierarchy & Student Roster
               </h1>
               <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem', margin: '4px 0 0 0' }}>
-                College ➔ Academic Year ➔ Cohort (YOP) ➔ Section ➔ Batch (Single section & batch assignment model)
+                College &rarr; Academic Year &rarr; Cohort (YOP) &rarr; Section &rarr; Batch (Single section &amp; batch assignment model)
               </p>
             </div>
 
@@ -533,7 +548,7 @@ export default function HierarchyManagementPage() {
                 className="btn btn-secondary"
                 style={{ padding: '8px 16px', borderRadius: 8, fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: 6 }}
               >
-                <span>🛡️</span> 2FA Security
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconShield size={14} /><span>2FA Security</span></span>
               </button>
 
               {isSuperAdmin && (
@@ -543,7 +558,7 @@ export default function HierarchyManagementPage() {
                   className="btn btn-secondary"
                   style={{ padding: '8px 16px', borderRadius: 8, fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: 6 }}
                 >
-                  <span>💾</span> Download backup now
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconDownload size={14} /><span>Download backup now</span></span>
                 </button>
               )}
             </div>
@@ -582,12 +597,7 @@ export default function HierarchyManagementPage() {
               }}
             >
               <span>{message.text}</span>
-              <button
-                onClick={() => setMessage(null)}
-                style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1rem' }}
-              >
-                ✕
-              </button>
+              <button onClick={() => setMessage(null)} style={{ background: "transparent", border: "none", color: "inherit", cursor: "pointer", display: "inline-flex", alignItems: "center" }} aria-label="Close"><IconCross size={14} /></button>
             </div>
           )}
 
@@ -608,7 +618,7 @@ export default function HierarchyManagementPage() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ fontSize: '1.8rem' }}>🏫</div>
+              <div style={{ display: 'inline-flex', padding: 10, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.1)' }}><IconBuilding size={28} color="#38BDF8" /></div>
               <div>
                 <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary)', fontWeight: 800 }}>
                   Active College Scope
@@ -662,7 +672,7 @@ export default function HierarchyManagementPage() {
                     gap: 6,
                   }}
                 >
-                  🏫 Manage Colleges
+                  Manage Colleges
                 </Link>
               </div>
             )}
@@ -952,7 +962,7 @@ export default function HierarchyManagementPage() {
                   className="btn btn-primary"
                   style={{ padding: '8px 16px', borderRadius: 8, fontSize: '0.84rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
                 >
-                  <span>👤</span> Add Student
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconUsers size={14} /><span>Add Student</span></span>
                 </button>
 
                 <button
@@ -961,7 +971,7 @@ export default function HierarchyManagementPage() {
                   className="btn btn-secondary"
                   style={{ padding: '8px 16px', borderRadius: 8, fontSize: '0.84rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
                 >
-                  <span>📤</span> Bulk Import (CSV/Excel)
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconDownload size={14} /><span>Bulk Import (CSV/Excel)</span></span>
                 </button>
 
                 {selectedBatchId && (
@@ -972,7 +982,7 @@ export default function HierarchyManagementPage() {
                     className="btn btn-secondary"
                     style={{ padding: '8px 16px', borderRadius: 8, fontSize: '0.84rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
                   >
-                    <span>📥</span> Export Batch (Excel)
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconFileText size={14} /><span>Export Batch (Excel)</span></span>
                   </a>
                 )}
               </div>
@@ -1010,11 +1020,11 @@ export default function HierarchyManagementPage() {
                       <td style={{ padding: '12px 14px' }}>
                         {st.must_change_password ? (
                           <span style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#FACC15', padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700 }}>
-                            🔑 Pending Password Change
+                            Pending Password Change
                           </span>
                         ) : (
                           <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34D399', padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700 }}>
-                            ✅ Password Set
+                            Password Set
                           </span>
                         )}
                       </td>
@@ -1058,7 +1068,7 @@ export default function HierarchyManagementPage() {
                 {/* Quick Presets for 2026, 2021, etc. */}
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ display: 'block', fontSize: '0.78rem', color: '#EAA812', fontWeight: 700, marginBottom: 6 }}>
-                    ⚡ Quick Year Presets (2026, 2021, etc.):
+                    Quick Year Presets (2026, 2021, etc.):
                   </label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {['2026', '2021', '2025-2026', '2026-2027', '2020-2021', '2021-2022'].map((yr) => (
@@ -1163,7 +1173,7 @@ export default function HierarchyManagementPage() {
                 {/* Quick Presets for Sections A, B, C, D, E */}
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ display: 'block', fontSize: '0.78rem', color: '#EAA812', fontWeight: 700, marginBottom: 6 }}>
-                    ⚡ Quick Section Presets (A, B, C, D, E):
+                    Quick Section Presets (A, B, C, D, E):
                   </label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {['A', 'B', 'C', 'D', 'E'].map((s) => (
@@ -1307,7 +1317,7 @@ export default function HierarchyManagementPage() {
                     style={{ display: 'none' }}
                     onChange={(e) => setImportFile(e.target.files?.[0] || null)}
                   />
-                  <div style={{ fontSize: '2rem', marginBottom: 8 }}>📁</div>
+                  <div style={{ display: 'inline-flex', padding: 12, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.1)', marginBottom: 8 }}><IconFileText size={32} color="#38BDF8" /></div>
                   <div style={{ fontSize: '0.9rem', color: '#FFF', fontWeight: 600 }}>
                     {importFile ? importFile.name : 'Click to select spreadsheet (.xlsx, .csv)'}
                   </div>
@@ -1321,7 +1331,7 @@ export default function HierarchyManagementPage() {
                     className="btn btn-secondary"
                     style={{ flex: 1, padding: '9px 14px' }}
                   >
-                    {previewing ? 'Analyzing...' : '🔍 Preview & Validate Spreadsheet'}
+                    {previewing ? 'Analyzing...' : 'Preview & Validate Spreadsheet'}
                   </button>
                 </div>
 
@@ -1330,20 +1340,20 @@ export default function HierarchyManagementPage() {
                   <div style={{ padding: 14, background: 'rgba(30, 41, 59, 0.7)', border: '1px solid var(--color-border)', borderRadius: 10, marginBottom: 16 }}>
                     <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
                       <span style={{ padding: '3px 8px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.15)', color: '#34D399', fontSize: '0.78rem', fontWeight: 700 }}>
-                        ✓ {previewData.valid_count ?? previewData.preview?.length ?? 0} Valid Rows
+                        {previewData.valid_count ?? previewData.preview?.length ?? 0} Valid Rows
                       </span>
                       <span style={{ padding: '3px 8px', borderRadius: 4, background: 'rgba(245, 158, 11, 0.15)', color: '#FBBF24', fontSize: '0.78rem', fontWeight: 700 }}>
-                        🔁 {previewData.duplicate_count ?? previewData.duplicates?.length ?? 0} Duplicates (Idempotent update)
+                        {previewData.duplicate_count ?? previewData.duplicates?.length ?? 0} Duplicates (Idempotent update)
                       </span>
                       {previewData.error_count > 0 && (
                         <span style={{ padding: '3px 8px', borderRadius: 4, background: 'rgba(239, 68, 68, 0.15)', color: '#F87171', fontSize: '0.78rem', fontWeight: 700 }}>
-                          ⚠️ {previewData.error_count} Invalid
+                          {previewData.error_count} Invalid
                         </span>
                       )}
                     </div>
 
                     <div style={{ fontSize: '0.78rem', color: '#94A3B8', marginBottom: 8 }}>
-                      ✨ <em>Roster rows will auto-link students to the right section without manual assignment.</em>
+                      <em>Roster rows will auto-link students to the right section without manual assignment.</em>
                     </div>
 
                     {previewData.duplicates?.length > 0 && (
@@ -1389,7 +1399,7 @@ export default function HierarchyManagementPage() {
           {show2faModal && (
             <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
               <div className="card" style={{ width: 440, padding: 24, borderRadius: 12, background: '#0F172A', border: '1px solid var(--color-border)', textAlign: 'center' }}>
-                <h3 style={{ margin: '0 0 10px 0', fontSize: '1.25rem', color: '#FFF' }}>🛡️ Two-Factor Authentication (TOTP)</h3>
+                <h3 style={{ margin: '0 0 10px 0', fontSize: '1.25rem', color: '#FFF', display: 'flex', alignItems: 'center', gap: 8 }}><IconShield size={20} color='#38BDF8' /><span>Two-Factor Authentication (TOTP)</span></h3>
                 <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: '0 0 16px 0' }}>
                   Protect your Admin/Inspector account using standard Google Authenticator or Microsoft Authenticator (RFC 6238).
                 </p>
@@ -1431,7 +1441,7 @@ export default function HierarchyManagementPage() {
                 </div>
 
                 {twoFaStatus && (
-                  <div style={{ fontSize: '0.82rem', marginBottom: 14, color: twoFaStatus.startsWith('✅') ? '#34D399' : '#F87171' }}>
+                  <div style={{ fontSize: '0.82rem', marginBottom: 14, color: twoFaStatus.includes('Successfully') ? '#34D399' : '#F87171' }}>
                     {twoFaStatus}
                   </div>
                 )}

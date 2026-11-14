@@ -485,7 +485,7 @@ export default function StudentDashboardPage() {
                   boxShadow: '0 0 14px rgba(245, 158, 11, 0.2)',
                 }}
               >
-                <span>🪐</span>
+                <IconTarget size={14} color="#F59E0B" />
                 <span>5 Sectors 3D Arena</span>
               </Link>
 

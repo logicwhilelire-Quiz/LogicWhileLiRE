@@ -5,6 +5,31 @@ import AnimatedPage from '../../components/AnimatedPage';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import BrandLogo from '../../components/BrandLogo';
 import { generateSystemBackupArchive, exportRosterCsvString } from '../../lib/adminRosterStore';
+import {
+  IconLock,
+  IconPlus,
+  IconFlash,
+  IconRocket,
+  IconStop,
+  IconDownload,
+  IconChart,
+  IconEdit,
+  IconTrash,
+  IconRadio,
+  IconClipboard,
+  IconCamera,
+  IconShield,
+  IconProhibit,
+  IconRefresh,
+  IconTrophy,
+  IconKey,
+  IconTarget,
+  IconAlert,
+  IconCheck,
+  IconCross,
+  IconFileText,
+} from '../../components/icons/HumanIcons';
+
 
 interface ExamItem {
   id: string;
@@ -73,7 +98,7 @@ export default function ExamControl() {
   };
 
   const handleLaunchLobbyCommand = () => {
-    broadcastExamCommand(selectedControlCode, 'lobby', `🚀 Exam Lobby for [${selectedControlCode}] is now OPEN. Students can enter the waiting room.`);
+    broadcastExamCommand(selectedControlCode, 'lobby', `Exam Lobby for [${selectedControlCode}] is now OPEN. Students can enter the waiting room.`);
   };
 
   const handleStartExamCommand = async () => {
@@ -95,7 +120,7 @@ export default function ExamControl() {
 
   const handleStopExamCommand = () => {
     if (!window.confirm(`Are you sure you want to stop and terminate exam [${selectedControlCode}]? All active student exams will be force-submitted and locked.`)) return;
-    broadcastExamCommand(selectedControlCode, 'stopped', `🛑 EXAM TERMINATED: Central command has ended the assessment. All answers auto-submitted.`);
+    broadcastExamCommand(selectedControlCode, 'stopped', `EXAM TERMINATED: Central command has ended the assessment. All answers auto-submitted.`);
   };
 
   const handleBackupCompleteSystem = () => {
@@ -117,7 +142,7 @@ export default function ExamControl() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setCommandFeedback(`💾 Full System Data Backup successfully generated and downloaded!`);
+    setCommandFeedback(`Full System Data Backup successfully generated and downloaded!`);
     setTimeout(() => setCommandFeedback(null), 5000);
   };
 
@@ -132,7 +157,7 @@ export default function ExamControl() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setCommandFeedback(`📊 Student roster CSV successfully exported!`);
+    setCommandFeedback(`Student roster CSV successfully exported!`);
     setTimeout(() => setCommandFeedback(null), 5000);
   };
 
@@ -375,7 +400,7 @@ export default function ExamControl() {
 
             {!isSuperAdmin ? (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#38BDF8', fontSize: '0.82rem', fontWeight: 700 }}>
-                <span>🔒</span> Faculty Read-Only Mode
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconLock size={14} /><span>Faculty Read-Only Mode</span></span>
               </div>
             ) : (
               <button
@@ -392,7 +417,7 @@ export default function ExamControl() {
                   boxShadow: '0 4px 14px rgba(255, 122, 0, 0.4)',
                 }}
               >
-                <span>➕</span> Add New Exam
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconPlus size={14} /><span>Add New Exam</span></span>
               </button>
             )}
           </div>
@@ -414,14 +439,15 @@ export default function ExamControl() {
                 boxShadow: '0 8px 24px rgba(16, 185, 129, 0.25)',
               }}
             >
-              <span style={{ fontSize: '1.3rem' }}>⚡</span>
+              <IconFlash size={18} color="#FFC200" />
               <div style={{ flex: 1, fontSize: '0.92rem' }}>{commandFeedback}</div>
               <button
                 type="button"
                 onClick={() => setCommandFeedback(null)}
-                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1.1rem' }}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                aria-label="Close"
               >
-                ✕
+                <IconCross size={15} color="#94A3B8" />
               </button>
             </div>
           )}
@@ -525,16 +551,16 @@ export default function ExamControl() {
                   />
                   <span>
                     {!selectedControlCode || exams.length === 0
-                      ? '⚪ NO ACTIVE EXAM'
+                      ? 'NO ACTIVE EXAM'
                       : examLifeState === 'started'
-                      ? '🟢 EXAM IN PROGRESS (ACTIVE)'
+                      ? 'EXAM IN PROGRESS (ACTIVE)'
                       : examLifeState === 'paused'
                       ? '⏸️ EXAM PAUSED (SCREENS FROZEN)'
                       : examLifeState === 'lobby'
-                      ? '🟡 LOBBY LAUNCHED (WAITING FOR ADMIN)'
+                      ? 'LOBBY LAUNCHED (WAITING FOR ADMIN)'
                       : examLifeState === 'stopped'
-                      ? '🛑 EXAM STOPPED & SUBMITTED'
-                      : '⚪ READY / IDLE'}
+                      ? 'EXAM STOPPED & SUBMITTED'
+                      : 'READY / IDLE'}
                   </span>
                 </span>
               </div>
@@ -602,7 +628,7 @@ export default function ExamControl() {
                     }}
                     title="Open waiting lobby for students to join and wait"
                   >
-                    <span>🚀</span> 1. Launch Lobby
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconRocket size={14} /><span>1. Launch Lobby</span></span>
                   </button>
 
                   {/* 2. Start Exam */}
@@ -700,7 +726,7 @@ export default function ExamControl() {
                     }}
                     title="End exam and auto-submit all active student sessions"
                   >
-                    <span>🛑</span> 4. Stop &amp; Conclude
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconStop size={14} color="#EF4444" /><span>4. Stop &amp; Conclude</span></span>
                   </button>
                 </div>
               </div>
@@ -719,7 +745,7 @@ export default function ExamControl() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: '1.1rem' }}>💾</span>
+                <IconDownload size={16} />
                 <div>
                   <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF' }}>
                     Authoritative Data Redundancy &amp; Audit Vault
@@ -749,7 +775,7 @@ export default function ExamControl() {
                   }}
                   title="Download complete timestamped JSON backup archive"
                 >
-                  <span>💾</span> 1-Click Full System Backup (.JSON)
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconDownload size={14} /><span>1-Click Full System Backup (.JSON)</span></span>
                 </button>
 
                 <button
@@ -768,7 +794,7 @@ export default function ExamControl() {
                   }}
                   title="Export student roster spreadsheet"
                 >
-                  <span>📊</span> Export Roster (.CSV)
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconChart size={14} /><span>Export Roster (.CSV)</span></span>
                 </button>
               </div>
             </div>
@@ -789,10 +815,10 @@ export default function ExamControl() {
               gap: 12,
             }}
           >
-            <span style={{ fontSize: '1.2rem' }}>{isSuperAdmin ? '🔒' : 'ℹ️'}</span>
+            <span style={{ display: 'inline-flex' }}>{isSuperAdmin ? <IconLock size={18} color='#38BDF8' /> : <IconAlert size={18} color='#38BDF8' />}</span>
             <div>
               {isSuperAdmin ? (
-                <><strong>Administrator Authority:</strong> You have 100% control over all exam options and execution. The student exam will start <strong>only when you issue the start command</strong> above. Click <strong>✏️ Edit Options</strong> on any exam to customize codes, durations, pass criteria, or negative marking.</>
+                <><strong>Administrator Authority:</strong> You have 100% control over all exam options and execution. The student exam will start <strong>only when you issue the start command</strong> above. Click <strong>Edit Options</strong> on any exam to customize codes, durations, pass criteria, or negative marking.</>
               ) : (
                 <><strong>Faculty View (Read-Only):</strong> You can review exam configuration and view live telemetric sessions. Creating exams, modifying parameters, and launching attempts are reserved for the Administrator.</>
               )}
@@ -814,7 +840,7 @@ export default function ExamControl() {
                 borderRadius: 14,
               }}
             >
-              <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📋</div>
+              <div style={{ display: 'inline-flex', padding: 14, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.1)', marginBottom: 12 }}><IconFileText size={36} color="#38BDF8" /></div>
               <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#F8FAFC' }}>
                 No Exams Created Yet
               </div>
@@ -828,7 +854,7 @@ export default function ExamControl() {
                   className="btn btn-primary"
                   style={{ padding: '10px 22px', fontWeight: 800, borderRadius: 8 }}
                 >
-                  ➕ Create First Exam
+                  Create First Exam
                 </button>
               )}
             </div>
@@ -865,14 +891,14 @@ export default function ExamControl() {
                             border: `1px solid ${exam.is_active ? '#10B98150' : 'transparent'}`,
                           }}
                         >
-                          {exam.is_active ? '🟢 LIVE' : '⚪ DRAFT'}
+                          {exam.is_active ? 'LIVE' : 'DRAFT'}
                         </span>
                       </div>
                       <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: '0.82rem', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
-                        <span>🔑 Code: <strong style={{ color: '#FFC200' }}>{exam.exam_code}</strong></span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconKey size={13} color='#FFC200' /><span>Code: <strong style={{ color: '#FFC200' }}>{exam.exam_code}</strong></span></span>
                         <span>⏱️ Duration: <strong>{exam.duration_minutes} mins</strong></span>
-                        <span>🎯 Pass Criteria: <strong>{exam.passing_percentage}%</strong></span>
-                        <span>⚠️ Negative: <strong>{exam.negative_marking ? `-${exam.negative_marking}` : 'None'}</strong></span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconTarget size={13} color='#38BDF8' /><span>Pass Criteria: <strong>{exam.passing_percentage}%</strong></span></span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconAlert size={13} color='#F59E0B' /><span>Negative: <strong>{exam.negative_marking ? `-${exam.negative_marking}` : 'None'}</strong></span></span>
                       </div>
                     </div>
 
@@ -896,7 +922,7 @@ export default function ExamControl() {
                             }}
                             title="Edit All Options for this Exam"
                           >
-                            <span>✏️</span> Edit Options
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IconEdit size={13} /><span>Edit Options</span></span>
                           </button>
 
                           <button
@@ -910,7 +936,7 @@ export default function ExamControl() {
                               padding: '8px 14px',
                             }}
                           >
-                            {exam.is_active ? '🛑 Deactivate' : '🚀 Launch'}
+                            {exam.is_active ? 'Deactivate' : 'Launch'}
                           </button>
 
                           <button
@@ -925,7 +951,7 @@ export default function ExamControl() {
                             }}
                             title="Open Instructor Live Console"
                           >
-                            📡 Live
+                            Live
                           </button>
 
                           <button
@@ -934,7 +960,7 @@ export default function ExamControl() {
                             style={{ border: '1px solid var(--color-border)' }}
                             title="Duplicate Exam"
                           >
-                            📋 Copy
+                            Copy
                           </button>
 
                           <button
@@ -943,7 +969,7 @@ export default function ExamControl() {
                             style={{ color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)' }}
                             title="Delete Exam"
                           >
-                            🗑️ Delete
+                            Delete
                           </button>
                         </>
                       ) : (
@@ -960,7 +986,7 @@ export default function ExamControl() {
                             }}
                             title="Open Instructor Live Console"
                           >
-                            📡 View Live Telemetry
+                            View Live Telemetry
                           </button>
                           <span style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', fontStyle: 'italic', padding: '6px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: 6 }}>
                             Faculty Read-Only
@@ -983,12 +1009,12 @@ export default function ExamControl() {
                     }}
                   >
                     {[
-                      { key: 'proctoring_enabled', label: 'AI Proctoring Wall', icon: '📹' },
-                      { key: 'fullscreen_lock', label: 'Fullscreen Lockdown', icon: '🖥️' },
-                      { key: 'tab_switch_detection', label: 'Tab Switch Guard', icon: '🚫' },
-                      { key: 'shuffle_questions', label: 'Question Shuffle', icon: '🔀' },
-                      { key: 'leaderboard_enabled', label: 'Public Leaderboard', icon: '🏆' },
-                      { key: 'results_published', label: 'Results Visible', icon: '📊' },
+                      { key: 'proctoring_enabled', label: 'AI Proctoring Wall', icon: <IconCamera size={16} color='#38BDF8' /> },
+                      { key: 'fullscreen_lock', label: 'Fullscreen Lockdown', icon: <IconShield size={16} color='#F59E0B' /> },
+                      { key: 'tab_switch_detection', label: 'Tab Switch Guard', icon: <IconProhibit size={16} color='#EF4444' /> },
+                      { key: 'shuffle_questions', label: 'Question Shuffle', icon: <IconRefresh size={16} color='#A855F7' /> },
+                      { key: 'leaderboard_enabled', label: 'Public Leaderboard', icon: <IconTrophy size={16} color='#EAB308' /> },
+                      { key: 'results_published', label: 'Results Visible', icon: <IconChart size={16} color='#10B981' /> },
                     ].map((toggle) => {
                       const enabled = (exam as any)[toggle.key];
                       return (
@@ -1066,13 +1092,14 @@ export default function ExamControl() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                   <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: '#FFFFFF' }}>
-                    {editingExam ? '✏️ Edit Exam Options & Rules' : '➕ Add New Assessment'}
+                    {editingExam ? 'Edit Exam Options & Rules' : 'Add New Assessment'}
                   </h2>
                   <button
                     onClick={() => setIsModalOpen(false)}
-                    style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
+                    style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                    aria-label="Close"
                   >
-                    ✕
+                    <IconCross size={18} color="#94A3B8" />
                   </button>
                 </div>
 
@@ -1183,7 +1210,7 @@ export default function ExamControl() {
                         background: 'linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)',
                       }}
                     >
-                      {editingExam ? '💾 Save & Update Options' : '🚀 Create & Deploy Exam'}
+                      {editingExam ? 'Save & Update Options' : 'Create & Deploy Exam'}
                     </button>
                   </div>
                 </form>

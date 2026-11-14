@@ -5,6 +5,18 @@ import AnimatedPage from '../../components/AnimatedPage';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedCounter from '../../components/AnimatedCounter';
 import LogicWhileLiRELoader from '../../components/LogicWhileLiRELoader';
+import {
+  IconPlus,
+  IconRadio,
+  IconBuilding,
+  IconUsers,
+  IconChart,
+  IconFileText,
+  IconSettings,
+  IconShield,
+  IconRocket,
+} from '../../components/icons/HumanIcons';
+
 
 import axios from 'axios';
 import { API_BASE_URL } from '../../lib/config';
@@ -140,7 +152,7 @@ export default function Dashboard() {
                 className="btn btn-primary"
                 style={{ padding: '10px 20px', fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
               >
-                <span>➕</span> Create / Launch Exam
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconPlus size={15} /><span>Create / Launch Exam</span></span>
               </button>
               <button
                 id="dashboard-live-monitor-btn"
@@ -148,7 +160,7 @@ export default function Dashboard() {
                 className="btn btn-secondary"
                 style={{ padding: '10px 18px', fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
               >
-                <span>📡</span> Live Monitor (100-Tile Wall)
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconRadio size={15} /><span>Live Monitor (100-Tile Wall)</span></span>
               </button>
             </div>
           </div>
@@ -166,7 +178,7 @@ export default function Dashboard() {
                 <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#38BDF8', fontWeight: 800, letterSpacing: '0.05em' }}>
                   Colleges &amp; Campuses
                 </span>
-                <span style={{ fontSize: '1.1rem' }}>🏛️</span>
+                <IconBuilding size={20} color="#38BDF8" />
               </div>
               <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#FFFFFF', marginTop: 6, fontFamily: 'var(--font-display)' }}>
                 <AnimatedCounter value={collegesCount} />
@@ -186,7 +198,7 @@ export default function Dashboard() {
                 <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#818CF8', fontWeight: 800, letterSpacing: '0.05em' }}>
                   Authoritative Students
                 </span>
-                <span style={{ fontSize: '1.1rem' }}>👥</span>
+                <IconUsers size={20} color="#818CF8" />
               </div>
               <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#FFFFFF', marginTop: 6, fontFamily: 'var(--font-display)' }}>
                 <AnimatedCounter value={studentsCount} />
@@ -246,7 +258,7 @@ export default function Dashboard() {
                 <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#F59E0B', fontWeight: 800, letterSpacing: '0.05em' }}>
                   Evaluated Results
                 </span>
-                <span style={{ fontSize: '1.1rem' }}>📈</span>
+                <IconChart size={20} color="#F59E0B" />
               </div>
               <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#F59E0B', marginTop: 6, fontFamily: 'var(--font-display)' }}>
                 <AnimatedCounter value={resultsCount} />
@@ -282,7 +294,7 @@ export default function Dashboard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
               <div>
                 <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#FFFFFF', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>📜</span> Recent Faculty Activity Feed
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconFileText size={18} color="#38BDF8" /><span>Recent Faculty Activity Feed</span></span>
                 </h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '4px 0 0 0' }}>
                   Live surveillance of faculty operations, exam modifications, and content authoring
@@ -348,42 +360,42 @@ export default function Dashboard() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 36 }}>
             {[
               {
-                title: '⚙️ Exam Control',
+                title: 'Exam Control',
                 desc: 'Create, duplicate, edit, set duration, passing %, and toggles (Proctoring, Leaderboard, Fullscreen Lock).',
                 action: 'Manage Exams',
                 route: '/admin/exams',
                 color: '#2B7FFF',
               },
               {
-                title: '❓ Question Bank Control',
+                title: 'Question Bank Control',
                 desc: '1-Click Excel import, edit, reorder, marks, difficulty, and public/hidden coding test cases.',
                 action: 'Open Bank',
                 route: '/admin/questions',
                 color: '#8B5CF6',
               },
               {
-                title: '👥 Student Roster Control',
+                title: 'Student Roster Control',
                 desc: 'Upload student roster via Excel. Block/unblock candidates during exams. Set attempt limits.',
                 action: 'Manage Students',
                 route: '/admin/students',
                 color: '#10B981',
               },
               {
-                title: '📡 Live Monitor Wall (100 Tiles)',
+                title: 'Live Monitor Wall (100 Tiles)',
                 desc: 'Observe all active candidate screens, face mesh alerts, trigger warnings, or extend exam time +10m.',
                 action: 'Open Monitor Wall',
                 route: '/admin/monitor',
                 color: '#EC4899',
               },
               {
-                title: '📈 Result & Analytics Control',
+                title: 'Result & Analytics Control',
                 desc: 'View pass %, cheating flags, topic breakdown, recalculate scores, give grace marks, and publish results.',
                 action: 'Review Results',
                 route: '/admin/results',
                 color: '#F59E0B',
               },
               {
-                title: '🛡️ Platform & Engine Control',
+                title: 'Platform & Engine Control',
                 desc: 'Brand styling, allowed code runtimes (Python/JS/C++), timeout limits, and maintenance mode.',
                 action: 'Portal Settings',
                 route: '/admin/settings',
@@ -482,7 +494,7 @@ export default function Dashboard() {
                             border: `1px solid ${exam.is_active ? 'rgba(16, 185, 129, 0.3)' : 'transparent'}`,
                           }}
                         >
-                          {exam.is_active ? '🟢 LIVE' : '⚪ INACTIVE'}
+                          {exam.is_active ? 'LIVE' : 'INACTIVE'}
                         </span>
                       </td>
                       <td style={{ padding: '14px 18px', textAlign: 'right' }}>
@@ -498,7 +510,7 @@ export default function Dashboard() {
                               fontWeight: 700,
                             }}
                           >
-                            {exam.is_active ? 'Deactivate' : '🚀 Launch'}
+                            {exam.is_active ? 'Deactivate' : 'Launch'}
                           </button>
                           <button
                             onClick={() => navigate('/admin/monitor')}

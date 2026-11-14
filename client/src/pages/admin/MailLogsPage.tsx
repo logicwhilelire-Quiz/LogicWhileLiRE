@@ -2,6 +2,18 @@ import React, { useState, useEffect, useCallback } from 'react';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedPage from '../../components/AnimatedPage';
 import ParticleField from '../../components/3d/ParticleField';
+import {
+  IconMail,
+  IconRefresh,
+  IconCheck,
+  IconCross,
+  IconAlert,
+  IconEye,
+  IconShield,
+  IconRocket,
+  IconPlus,
+} from '../../components/icons/HumanIcons';
+
 import { listMailLogs, resendMailLog, type MailLog, extractErrorMessage } from '../../lib/api';
 import axios from 'axios';
 import { API_BASE_URL } from '../../lib/config';
@@ -68,7 +80,7 @@ export default function MailLogsPage() {
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
       if (res.data?.success) {
-        showToast('🚀 Official email dispatched successfully!', 'success');
+        showToast('Official email dispatched successfully!', 'success');
         setIsComposeOpen(false);
         setComposeTo('');
         fetchLogs();
@@ -209,7 +221,7 @@ export default function MailLogsPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
               <div>
                 <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span>📬 Outbound Email Dispatch Logs</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><IconMail size={22} color="#38BDF8" /><span>Outbound Email Dispatch Logs</span></span>
                   <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: 'rgba(56,189,248,0.15)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)' }}>
                     Resend API
                   </span>
@@ -225,7 +237,7 @@ export default function MailLogsPage() {
                   className="btn btn-sm btn-primary"
                   style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#0284c7', color: '#fff', fontWeight: 700 }}
                 >
-                  <span>✉️</span>
+                  <IconMail size={15} style={{ marginRight: 6 }} />
                   <span>Compose &amp; Dispatch Email</span>
                 </button>
 
@@ -235,7 +247,7 @@ export default function MailLogsPage() {
                   className="btn btn-sm btn-secondary"
                   style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                 >
-                  <span>🔄</span>
+                  <IconRefresh size={15} style={{ marginRight: 6 }} />
                   <span>{loading ? 'Refreshing...' : 'Refresh Logs'}</span>
                 </button>
               </div>
@@ -258,7 +270,7 @@ export default function MailLogsPage() {
                   gap: 10,
                 }}
               >
-                <span>{toast.type === 'success' ? '✅' : '❌'}</span>
+                <span>{toast.type === 'success' ? <IconCheck size={16} color='#10B981' /> : <IconCross size={16} color='#EF4444' />}</span>
                 <span>{toast.message}</span>
               </div>
             )}
@@ -385,7 +397,7 @@ export default function MailLogsPage() {
                     ) : logs.length === 0 ? (
                       <tr>
                         <td colSpan={7} style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>
-                          <div style={{ fontSize: '32px', marginBottom: 10 }}>📭</div>
+                          <div style={{ display: 'inline-flex', padding: 14, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.1)', marginBottom: 10 }}><IconMail size={32} color="#38BDF8" /></div>
                           <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--color-text)' }}>No Outbound Emails Found</div>
                           <div style={{ fontSize: '13px', color: '#64748b', marginTop: 4 }}>
                             {search || filterStatus !== 'all' || filterTemplate !== 'all'
@@ -441,7 +453,7 @@ export default function MailLogsPage() {
                             </div>
                             {item.error_message && (
                               <div style={{ fontSize: '11px', color: '#ef4444', marginTop: 2 }} title={item.error_message}>
-                                ⚠️ {item.error_message}
+                                {item.error_message}
                               </div>
                             )}
                           </td>
@@ -470,7 +482,7 @@ export default function MailLogsPage() {
                                   className="btn btn-xs btn-secondary"
                                   title="View rendered email preview"
                                 >
-                                  👁️ Preview
+                                  Preview
                                 </button>
                               )}
 
@@ -489,7 +501,7 @@ export default function MailLogsPage() {
                                   <span>⏳ Sending...</span>
                                 ) : (
                                   <>
-                                    <span>🔁</span>
+                                    <IconRefresh size={14} />
                                     <span>Resend</span>
                                   </>
                                 )}
@@ -598,15 +610,9 @@ export default function MailLogsPage() {
                   disabled={resendingId === previewLog.id}
                   className="btn btn-xs btn-primary"
                 >
-                  {resendingId === previewLog.id ? 'Sending...' : '🔁 Resend Now'}
+                  {resendingId === previewLog.id ? 'Sending...' : 'Resend Now'}
                 </button>
-                <button
-                  onClick={() => setPreviewLog(null)}
-                  className="btn btn-xs btn-secondary"
-                  style={{ fontSize: '16px', lineHeight: 1 }}
-                >
-                  ✕
-                </button>
+                <button onClick={() => setPreviewLog(null)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", display: "inline-flex", alignItems: "center" }} aria-label="Close"><IconCross size={18} color="#94A3B8" /></button>
               </div>
             </div>
 
@@ -669,19 +675,13 @@ export default function MailLogsPage() {
             >
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF' }}>
-                  ✉️ Compose &amp; Dispatch Official Email
+                  Compose &amp; Dispatch Official Email
                 </h3>
                 <p style={{ margin: '3px 0 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>
                   Targeted administrative dispatch with active anti-spam and fake recipient shielding.
                 </p>
               </div>
-              <button
-                onClick={() => setIsComposeOpen(false)}
-                className="btn btn-xs btn-secondary"
-                style={{ fontSize: '16px', lineHeight: 1 }}
-              >
-                ✕
-              </button>
+              <button onClick={() => setIsComposeOpen(false)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", display: "inline-flex", alignItems: "center" }} aria-label="Close"><IconCross size={18} color="#94A3B8" /></button>
             </div>
 
             <form onSubmit={handleDirectDispatch} style={{ padding: '20px 24px' }}>
@@ -729,7 +729,7 @@ export default function MailLogsPage() {
                   required
                 />
                 <span style={{ fontSize: '0.74rem', color: '#64748b', marginTop: 4, display: 'block' }}>
-                  🛡️ Anti-spam shield: Simulated/demo domains (@example.com, @test.com) are safely intercepted.
+                  <IconShield size={14} color="#38BDF8" style={{ marginRight: 6 }} />Anti-spam shield: Simulated/demo domains (@example.com, @test.com) are safely intercepted.
                 </span>
               </div>
 
@@ -776,7 +776,7 @@ export default function MailLogsPage() {
                   className="btn btn-primary"
                   style={{ padding: '10px 22px', borderRadius: 8, background: '#0284c7', color: '#fff', fontWeight: 800 }}
                 >
-                  {sendingEmail ? '🚀 Dispatching...' : '🚀 Dispatch Now'}
+                  {sendingEmail ? 'Dispatching...' : 'Dispatch Now'}
                 </button>
               </div>
             </form>

@@ -138,7 +138,7 @@ export default function ProctoringConsentModal({
               <div className="flex-1 space-y-2 text-xs text-slate-300">
                 <div className="flex items-center space-x-2">
                   <span className={cameraActive ? 'text-emerald-400' : 'text-amber-400'}>
-                    {cameraActive ? '✓' : <IconAlert size={13} color="#F59E0B" />}
+                    {cameraActive ? <IconCheck size={14} color="#10B981" /> : <IconAlert size={13} color="#F59E0B" />}
                   </span>
                   <span className="font-semibold text-slate-200">
                     {cameraActive ? 'Camera Connected & Verified' : 'Camera permission required'}

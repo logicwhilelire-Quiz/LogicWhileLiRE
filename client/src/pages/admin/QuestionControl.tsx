@@ -3,6 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import AnimatedPage from '../../components/AnimatedPage';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import {
+  IconCheck,
+  IconCross,
+  IconTrash,
+  IconChart,
+  IconPlus,
+  IconGlobe,
+  IconCpu,
+  IconCode,
+  IconFlash,
+  IconBuilding,
+  IconSearch,
+  IconBook,
+  IconEye,
+  IconEdit,
+  IconDownload,
+  IconAlert,
+} from '../../components/icons/HumanIcons';
+
+import {
   listQuestionBank,
   createQuestionBankItem,
   updateQuestionBankItem,
@@ -248,10 +267,10 @@ export default function QuestionControl() {
     try {
       if (editingQuestion) {
         await updateQuestionBankItem(editingQuestion.id, payload);
-        setActionMsg(`✅ Question updated successfully.`);
+        setActionMsg(`Question updated successfully.`);
       } else {
         await createQuestionBankItem(payload);
-        setActionMsg(`✅ Question created and added to master bank.`);
+        setActionMsg(`Question created and added to master bank.`);
       }
       setIsModalOpen(false);
       setEditingQuestion(null);
@@ -267,7 +286,7 @@ export default function QuestionControl() {
       }
       setIsModalOpen(false);
       setEditingQuestion(null);
-      setActionMsg(`✅ Question saved.`);
+      setActionMsg(`Question saved.`);
     }
 
     setTimeout(() => setActionMsg(''), 4000);
@@ -279,11 +298,11 @@ export default function QuestionControl() {
     }
     try {
       await deleteQuestionBankItem(id);
-      setActionMsg('🗑️ Question deleted from database.');
+      setActionMsg('Question deleted from database.');
       loadQuestions();
     } catch {
       setQuestions((prev) => prev.filter((q) => q.id !== id));
-      setActionMsg('🗑️ Question removed.');
+      setActionMsg('Question removed.');
     }
     setTimeout(() => setActionMsg(''), 4000);
   };
@@ -319,7 +338,7 @@ export default function QuestionControl() {
                 className="btn btn-secondary"
                 style={{ padding: '10px 18px', fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
               >
-                <span>📊</span> Excel Importer &amp; Validator
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconChart size={14} /><span>Excel Importer &amp; Validator</span></span>
               </button>
 
               <button
@@ -335,7 +354,7 @@ export default function QuestionControl() {
                   background: 'linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)',
                 }}
               >
-                <span>➕</span> Add Question
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconPlus size={14} /><span>Add Question</span></span>
               </button>
             </div>
           </div>
@@ -370,12 +389,12 @@ export default function QuestionControl() {
             }}
           >
             {[
-              { id: 'all', label: 'All Sectors (Full Bank)', icon: '🌐' },
-              { id: 'Sector 1', label: 'S1 · Quantitative Aptitude', icon: '📐' },
-              { id: 'Sector 2', label: 'S2 · Logical Reasoning', icon: '🧩' },
-              { id: 'Sector 3', label: 'S3 · Core CS Systems', icon: '💻' },
-              { id: 'Sector 4', label: 'S4 · Algorithms & DS', icon: '⚡' },
-              { id: 'Sector 5', label: 'S5 · Full-Stack Architecture', icon: '🏛️' },
+              { id: 'all', label: 'All Sectors (Full Bank)', icon: <IconGlobe size={15} color="#38BDF8" /> },
+              { id: 'Sector 1', label: 'S1 · Quantitative Aptitude', icon: <IconChart size={15} color="#10B981" /> },
+              { id: 'Sector 2', label: 'S2 · Logical Reasoning', icon: <IconCpu size={15} color="#A855F7" /> },
+              { id: 'Sector 3', label: 'S3 · Core CS Systems', icon: <IconCode size={15} color="#06B6D4" /> },
+              { id: 'Sector 4', label: 'S4 · Algorithms & DS', icon: <IconFlash size={15} color="#F59E0B" /> },
+              { id: 'Sector 5', label: 'S5 · Full-Stack Architecture', icon: <IconBuilding size={15} color="#EC4899" /> },
             ].map((s) => {
               const active = filterSector === s.id;
               return (
@@ -499,10 +518,10 @@ export default function QuestionControl() {
               <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#CBD5E1' }}>Question Type:</span>
               {[
                 { id: 'all', label: 'All Types' },
-                { id: 'mcq', label: '🔘 MCQs' },
-                { id: 'coding', label: '💻 Coding Challenges' },
-                { id: 'aptitude', label: '📐 Aptitude & Velocity' },
-                { id: 'diagram', label: '🖼️ Diagram & Visual' },
+                { id: 'mcq', label: 'MCQs' },
+                { id: 'coding', label: 'Coding Challenges' },
+                { id: 'aptitude', label: 'Aptitude & Velocity' },
+                { id: 'diagram', label: 'Diagram & Visual' },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -541,7 +560,7 @@ export default function QuestionControl() {
                   border: '1px dashed rgba(255, 255, 255, 0.15)',
                 }}
               >
-                <div style={{ fontSize: '2rem', marginBottom: 8 }}>🔍</div>
+                <div style={{ display: 'inline-flex', padding: 12, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.1)', marginBottom: 8 }}><IconSearch size={32} color="#38BDF8" /></div>
                 <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#F8FAFC' }}>
                   No Questions Found
                 </div>
@@ -612,12 +631,12 @@ export default function QuestionControl() {
                             }}
                           >
                             {rawType === 'coding'
-                              ? '💻 Coding Challenge'
+                              ? 'Coding Challenge'
                               : rawType === 'diagram'
-                              ? '🖼️ Diagram Question'
+                              ? 'Diagram Question'
                               : rawType === 'aptitude'
-                              ? '📐 Analytical Aptitude'
-                              : '🔘 MCQ'}
+                              ? 'Analytical Aptitude'
+                              : 'MCQ'}
                           </span>
 
                           {/* Difficulty Badge */}
@@ -656,11 +675,11 @@ export default function QuestionControl() {
 
                           {/* Topic / College */}
                           <span style={{ fontSize: '0.75rem', color: '#CBD5E1', fontWeight: 600 }}>
-                            📚 {q.topic}
+                            {q.topic}
                           </span>
                           {q.college_name && (
                             <span style={{ fontSize: '0.75rem', color: '#93C5FD', fontWeight: 600 }}>
-                              🏛️ {q.college_name}
+                              {q.college_name}
                             </span>
                           )}
                           {q.exam_code && (
@@ -732,7 +751,7 @@ export default function QuestionControl() {
                                   }}
                                 >
                                   <strong>{opt.label}:</strong> {opt.val || '-'}
-                                  {isCorrect && <span style={{ marginLeft: 'auto', fontSize: '0.72rem', fontWeight: 800 }}>✓ KEY</span>}
+                                  {isCorrect && <span style={{ marginLeft: 'auto', fontSize: '0.72rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 3 }}><IconCheck size={12} color='#10B981' /><span>KEY</span></span>}
                                 </div>
                               );
                             })}
@@ -743,7 +762,7 @@ export default function QuestionControl() {
                         {rawType === 'coding' && (
                           <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8, background: 'rgba(0, 0, 0, 0.35)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#A78BFA', textTransform: 'uppercase', marginBottom: 4 }}>
-                              🧪 Test Cases Specification:
+                              Test Cases Specification:
                             </div>
                             {Array.isArray(q.test_cases) && q.test_cases.length > 0 ? (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -783,7 +802,7 @@ export default function QuestionControl() {
                           }}
                           title="View Full Question Details"
                         >
-                          <span>👁️</span> View
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IconEye size={13} /><span>View</span></span>
                         </button>
 
                         <button
@@ -801,16 +820,17 @@ export default function QuestionControl() {
                           }}
                           title="Edit Question and Options"
                         >
-                          <span>✏️</span> Edit
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IconEdit size={13} /><span>Edit</span></span>
                         </button>
 
                         <button
                           onClick={() => handleDelete(q.id)}
                           className="btn btn-ghost btn-sm"
-                          style={{ color: '#EF4444', border: '1px solid rgba(239, 68, 68, 0.25)', padding: '6px 10px' }}
+                          style={{ color: '#EF4444', border: '1px solid rgba(239, 68, 68, 0.25)', padding: '6px 10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                           title="Delete Question"
+                          aria-label="Delete Question"
                         >
-                          🗑️
+                          <IconTrash size={14} color="#EF4444" />
                         </button>
                       </div>
                     </div>
@@ -853,17 +873,12 @@ export default function QuestionControl() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: '1.2rem' }}>👁️</span>
+                    <IconEye size={20} color="#38BDF8" />
                     <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#FFFFFF' }}>
                       Question Specification Details
                     </h2>
                   </div>
-                  <button
-                    onClick={() => setViewingQuestion(null)}
-                    style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.3rem', cursor: 'pointer' }}
-                  >
-                    ✕
-                  </button>
+                  <button onClick={() => setViewingQuestion(null)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", display: "inline-flex", alignItems: "center" }} aria-label="Close"><IconCross size={18} color="#94A3B8" /></button>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -924,7 +939,7 @@ export default function QuestionControl() {
                               }}
                             >
                               <strong>Option {k.toUpperCase()}:</strong> {v}
-                              {isCorrect && ' ✓ (Correct)'}
+                              {isCorrect && ' (Correct)'}
                             </div>
                           );
                         })}
@@ -975,14 +990,9 @@ export default function QuestionControl() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                   <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: '#FFFFFF' }}>
-                    {editingQuestion ? '✏️ Edit Question in Master Bank' : '➕ Add Question to Bank'}
+                    {editingQuestion ? 'Edit Question in Master Bank' : 'Add Question to Bank'}
                   </h2>
-                  <button
-                    onClick={() => setIsModalOpen(false)}
-                    style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
-                  >
-                    ✕
-                  </button>
+                  <button onClick={() => setIsModalOpen(false)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", display: "inline-flex", alignItems: "center" }} aria-label="Close"><IconCross size={18} color="#94A3B8" /></button>
                 </div>
 
                 <form onSubmit={handleSaveQuestion} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1188,7 +1198,7 @@ export default function QuestionControl() {
                         background: 'linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)',
                       }}
                     >
-                      {editingQuestion ? '💾 Save Question Changes' : '➕ Add to Master Bank'}
+                      {editingQuestion ? 'Save Question Changes' : 'Add to Master Bank'}
                     </button>
                   </div>
                 </form>

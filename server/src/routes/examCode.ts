@@ -230,13 +230,25 @@ const handleExamCodeStart = async (req: any, res: any) => {
       ].filter((o) => o.text !== undefined && o.text !== null && String(o.text).trim().length > 0);
       const shuffledOpts = deterministicShuffle(origOpts, studentSeed);
 
+      const rawType = q.question_type || (q.test_cases?.length || q.starter_code ? 'code' : 'mcq');
+      const candidateTestCases = Array.isArray(q.test_cases)
+        ? q.test_cases.map((tc: any, tcIdx: number) => ({
+            id: tc.id || `tc_${tcIdx + 1}`,
+            input_text: tc.input_text ?? tc.input ?? '',
+            expected_output: tc.is_hidden ? undefined : (tc.expected_output ?? tc.output ?? ''),
+            is_hidden: Boolean(tc.is_hidden),
+            marks: Number(tc.marks || 1),
+          }))
+        : [];
+
       return {
         id: q.id,
         question: q.question || q.question_text || 'Question',
         question_text: q.question || q.question_text || 'Question',
         text: q.question || q.question_text || 'Question',
         options: shuffledOpts.map((o) => o.text),
-        question_type: q.question_type || 'mcq',
+        question_type: rawType,
+        type: rawType,
         marks: q.marks || 1,
         penalty: Number(q.penalty ?? q.negative_marks ?? 0),
         difficulty: q.difficulty || 'Medium',
@@ -244,6 +256,7 @@ const handleExamCodeStart = async (req: any, res: any) => {
         section: q.section || 'General',
         starter_code: q.starter_code || null,
         code: q.starter_code || null,
+        test_cases: candidateTestCases,
       };
     });
 

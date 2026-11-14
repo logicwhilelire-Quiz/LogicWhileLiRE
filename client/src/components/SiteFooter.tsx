@@ -417,7 +417,7 @@ export default function SiteFooter() {
                     e.currentTarget.style.color = '#94a3b8';
                   }}
                 >
-                  ✕
+                  <IconCross size={16} color="#94A3B8" />
                 </button>
               </div>
 

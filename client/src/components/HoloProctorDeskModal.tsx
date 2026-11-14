@@ -178,24 +178,7 @@ export default function HoloProctorDeskModal({
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: 'none',
-                color: '#94A3B8',
-                borderRadius: 8,
-                width: 30,
-                height: 30,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                fontSize: '1rem',
-              }}
-            >
-              ✕
-            </button>
+            <button onClick={onClose} style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", display: "inline-flex", alignItems: "center" }} aria-label="Close"><IconCross size={18} color="#94A3B8" /></button>
           </div>
 
           {/* Navigation Tabs */}
