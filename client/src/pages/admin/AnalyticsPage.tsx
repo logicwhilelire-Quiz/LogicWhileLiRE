@@ -22,6 +22,13 @@ import {
 import BrandLogo from '../../components/BrandLogo';
 import AnimatedPage from '../../components/AnimatedPage';
 import AdminSidebar from '../../components/layout/AdminSidebar';
+import {
+  IconChart,
+  IconTarget,
+  IconAlert,
+  IconSearch,
+  IconCheck,
+} from '../../components/icons/HumanIcons';
 
 interface Exam {
   id: string;
@@ -328,8 +335,8 @@ export default function AnalyticsPage() {
           <div className="card" style={{ padding: 24, marginBottom: 36 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 4 }}>
-                  📊 Topic-Wise Accuracy Breakdown
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 4, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <IconChart size={18} color="#38BDF8" /> Topic-Wise Accuracy Breakdown
                 </h2>
                 <p className="text-muted text-xs">
                   Average score percentage per topic across all submitted sessions.
@@ -416,8 +423,8 @@ export default function AnalyticsPage() {
           <div style={{ marginBottom: 36 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 4 }}>
-                  🎯 Question-Level Analytics & Outlier Detection
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 4, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <IconTarget size={18} color="#FFBE00" /> Question-Level Analytics & Outlier Detection
                 </h2>
                 <p className="text-muted text-xs">
                   Sortable table with correct rates, average time spent, and skip rates. Outliers (&lt;30% or &gt;95%) are flagged for review.
@@ -429,7 +436,11 @@ export default function AnalyticsPage() {
                   className={`btn btn-sm ${filterFlaggedOnly ? 'btn-warning' : 'btn-secondary'}`}
                   onClick={() => setFilterFlaggedOnly((prev) => !prev)}
                 >
-                  {filterFlaggedOnly ? 'Show All Questions' : `⚠️ Show Review Flags Only (${flaggedCount})`}
+                  {filterFlaggedOnly ? 'Show All Questions' : (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <IconAlert size={14} color="#F59E0B" /> Show Review Flags Only ({flaggedCount})
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
@@ -550,12 +561,12 @@ export default function AnalyticsPage() {
                           </td>
                           <td>
                             {isTooHard ? (
-                              <span className="badge badge-danger text-xs" title="Correct rate < 30%">
-                                ⚠️ Review: Too Hard / Worded
+                              <span className="badge badge-danger text-xs" title="Correct rate < 30%" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <IconAlert size={11} color="#EF4444" /> Review: Too Hard / Worded
                               </span>
                             ) : isTooEasy ? (
-                              <span className="badge badge-warning text-xs" title="Correct rate > 95%">
-                                🔍 Review: Too Easy / Tell
+                              <span className="badge badge-warning text-xs" title="Correct rate > 95%" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <IconSearch size={11} color="#F59E0B" /> Review: Too Easy / Tell
                               </span>
                             ) : (
                               <span className="badge badge-neutral text-xs">Normal</span>
@@ -576,8 +587,8 @@ export default function AnalyticsPage() {
 
           {/* Participant Cross-Exam History View & Trend Line */}
           <div className="card" style={{ padding: 28 }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 8 }}>
-              🔍 Participant Cross-Exam History & Score Trend
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 8, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <IconSearch size={18} color="#38BDF8" /> Participant Cross-Exam History & Score Trend
             </h2>
             <p className="text-muted text-sm" style={{ marginBottom: 20 }}>
               Search any Hall Ticket to inspect multi-exam performance, progression trend over time, and violation track records.
@@ -630,8 +641,8 @@ export default function AnalyticsPage() {
                 {/* Score Trend Chart if participant took >= 2 exams */}
                 {participantResult.trend && participantResult.trend.length >= 2 && (
                   <div style={{ marginBottom: 24, padding: 16, background: 'var(--color-surface-2)', borderRadius: 10 }}>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: 12 }}>
-                      📈 Performance Trend Over Time
+                    <div style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <IconChart size={16} color="#10B981" /> Performance Trend Over Time
                     </div>
                     <div style={{ width: '100%', height: 200 }}>
                       <ResponsiveContainer width="100%" height="100%">

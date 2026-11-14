@@ -1,5 +1,16 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import {
+  IconSearch,
+  IconEye,
+  IconAlert,
+  IconClock,
+  IconStop,
+  IconFileText,
+  IconCheck,
+  IconRadio,
+  IconUsers,
+} from '../icons/HumanIcons'
 
 export interface StudentTile {
   id: string
@@ -146,8 +157,8 @@ export default function LiveGridWall({
                 outline: 'none',
               }}
             />
-            <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', opacity: 0.5, pointerEvents: 'none' }}>
-              🔍
+            <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', opacity: 0.6, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
+              <IconSearch size={12} color="var(--color-text-faint)" />
             </span>
             {search && (
               <button
@@ -169,10 +180,11 @@ export default function LiveGridWall({
                 background: viewMode === 'cams' ? 'rgba(0,242,254,0.3)' : 'transparent',
                 color: viewMode === 'cams' ? '#00F2FE' : 'var(--color-text-faint)',
                 cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700,
-                display: 'flex', alignItems: 'center', gap: 4,
+                display: 'flex', alignItems: 'center', gap: 6,
               }}
             >
-              <span>📷 Cams Grid</span>
+              <IconEye size={12} color={viewMode === 'cams' ? '#00F2FE' : 'currentColor'} />
+              <span>Cams Grid</span>
             </button>
             <button
               onClick={() => setViewMode('wall')}
@@ -276,9 +288,15 @@ export default function LiveGridWall({
                       justifyContent: 'center',
                       boxShadow: isCheating ? '0 0 16px rgba(239, 68, 68, 0.5)' : '0 0 12px rgba(0, 242, 254, 0.3)',
                     }}>
-                      <span style={{ fontSize: '1.6rem' }}>
-                        {isCheating ? '⚠️' : isIdle ? '👤' : '👨‍💻'}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {isCheating ? (
+                          <IconAlert size={28} color="#EF4444" />
+                        ) : isIdle ? (
+                          <IconClock size={28} color="#F59E0B" />
+                        ) : (
+                          <IconUsers size={28} color="#00F2FE" />
+                        )}
+                      </div>
                       <span style={{
                         position: 'absolute',
                         bottom: -15,
@@ -333,7 +351,7 @@ export default function LiveGridWall({
                       padding: '2px 6px', borderRadius: 4,
                       fontSize: '0.58rem', color: isCheating ? '#F87171' : '#94A3B8',
                     }}>
-                      <span>🎙️</span>
+                      <IconRadio size={11} color="currentColor" />
                       <span>{audioDb} dB</span>
                     </div>
 
@@ -341,13 +359,13 @@ export default function LiveGridWall({
                     <div style={{
                       position: 'absolute',
                       bottom: 6, right: 8,
-                      display: 'flex', alignItems: 'center', gap: 3,
+                      display: 'flex', alignItems: 'center', gap: 4,
                       background: 'rgba(0,0,0,0.65)',
                       padding: '2px 6px', borderRadius: 4,
                       fontSize: '0.56rem', fontWeight: 700,
                       color: isCheating ? '#FCA5A5' : '#34D399',
                     }}>
-                      <span>🖥️</span>
+                      <IconEye size={11} color="currentColor" />
                       <span>{student.status === 'offline' ? 'OFF' : 'SCREEN ON'}</span>
                     </div>
                   </div>
@@ -382,9 +400,11 @@ export default function LiveGridWall({
                         style={{
                           padding: '4px 2px', borderRadius: 4, border: '1px solid rgba(245, 158, 11, 0.4)',
                           background: 'rgba(245, 158, 11, 0.1)', color: '#FBBF24', fontSize: '0.62rem', fontWeight: 700, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
                         }}
                       >
-                        ⚠️ Warn
+                        <IconAlert size={10} color="#FBBF24" />
+                        <span>Warn</span>
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); onExtendTime?.(student) }}
@@ -392,9 +412,11 @@ export default function LiveGridWall({
                         style={{
                           padding: '4px 2px', borderRadius: 4, border: '1px solid rgba(56, 189, 248, 0.4)',
                           background: 'rgba(56, 189, 248, 0.1)', color: '#38BDF8', fontSize: '0.62rem', fontWeight: 700, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
                         }}
                       >
-                        ⏱️ +5m
+                        <IconClock size={10} color="#38BDF8" />
+                        <span>+5m</span>
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); onPauseResume?.(student) }}
@@ -402,9 +424,11 @@ export default function LiveGridWall({
                         style={{
                           padding: '4px 2px', borderRadius: 4, border: '1px solid rgba(168, 85, 247, 0.4)',
                           background: 'rgba(168, 85, 247, 0.1)', color: '#C084FC', fontSize: '0.62rem', fontWeight: 700, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
                         }}
                       >
-                        ⏸️ Pause
+                        <IconStop size={10} color="#C084FC" />
+                        <span>Pause</span>
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); onOpenDossier ? onOpenDossier(student) : handleSelect(student) }}
@@ -412,9 +436,11 @@ export default function LiveGridWall({
                         style={{
                           padding: '4px 2px', borderRadius: 4, border: '1px solid rgba(255, 255, 255, 0.2)',
                           background: 'rgba(255, 255, 255, 0.05)', color: '#E2E8F0', fontSize: '0.62rem', fontWeight: 700, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
                         }}
                       >
-                        📋 Dossier
+                        <IconFileText size={10} color="#E2E8F0" />
+                        <span>Dossier</span>
                       </button>
                     </div>
                   </div>
@@ -563,7 +589,15 @@ export default function LiveGridWall({
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '0.95rem',
                     }}>
-                      {isCheating ? '⚠️' : student.status === 'offline' ? '✅' : student.status === 'idle' ? '⏳' : '👤'}
+                      {isCheating ? (
+                        <IconAlert size={16} color="#EF4444" />
+                      ) : student.status === 'offline' ? (
+                        <IconCheck size={16} color="#10B981" />
+                      ) : student.status === 'idle' ? (
+                        <IconClock size={16} color="#F59E0B" />
+                      ) : (
+                        <IconUsers size={16} color={cfg.color} />
+                      )}
                     </div>
 
                     <div style={{

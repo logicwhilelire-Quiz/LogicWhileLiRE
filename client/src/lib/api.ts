@@ -32,7 +32,7 @@ const requestHandler = (config: any) => {
     url.startsWith('/api/admin') ||
     url.startsWith('/api/v1/exams') ||
     url.startsWith('/api/v1/inspector') ||
-    url.startsWith('/api/exam-code');
+    url.startsWith('/api/exam-codes');
 
   const adminToken =
     localStorage.getItem('admin_token') ||
@@ -42,14 +42,14 @@ const requestHandler = (config: any) => {
   const studentToken = localStorage.getItem('student_token') || sessionStorage.getItem('student_token');
   const sessionToken = localStorage.getItem('session_token') || sessionStorage.getItem('session_token');
 
-  if ((isAdminEndpoint || isAdminPath) && adminToken) {
-    config.headers.Authorization = `Bearer ${adminToken}`;
-  } else if (adminToken && !studentToken && !sessionToken) {
+  if ((isAdminPath || isAdminEndpoint) && adminToken) {
     config.headers.Authorization = `Bearer ${adminToken}`;
   } else if (studentToken) {
     config.headers.Authorization = `Bearer ${studentToken}`;
   } else if (sessionToken) {
     config.headers.Authorization = `Bearer ${sessionToken}`;
+  } else if (adminToken) {
+    config.headers.Authorization = `Bearer ${adminToken}`;
   }
 
   // Cross-domain CSRF cookie attachment

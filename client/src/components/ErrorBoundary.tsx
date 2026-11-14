@@ -1,5 +1,6 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react';
 import BrandLogo from './BrandLogo';
+import { IconAlert } from './icons/HumanIcons';
 
 interface Props {
   children: ReactNode;
@@ -66,7 +67,9 @@ export default class ErrorBoundary extends Component<Props, State> {
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
               <BrandLogo size="md" />
             </div>
-            <div style={{ fontSize: '3rem', marginBottom: 12 }}>⚠️</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+              <IconAlert size={44} color="#EF4444" />
+            </div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 8, color: 'var(--color-text)' }}>
               An Unexpected Error Occurred
             </h2>
@@ -96,10 +99,10 @@ export default class ErrorBoundary extends Component<Props, State> {
 
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
               <button className="btn btn-secondary" onClick={this.handleGoHome}>
-                🏠 Return Home
+                Return to Portal
               </button>
               <button className="btn btn-primary" onClick={this.handleReload}>
-                🔄 Reload Page
+                Reload Interface
               </button>
             </div>
 

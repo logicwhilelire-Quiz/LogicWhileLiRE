@@ -5,6 +5,7 @@ import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedPage from '../../components/AnimatedPage';
 import AnimatedCounter from '../../components/AnimatedCounter';
 import { API_BASE_URL } from '../../lib/config';
+import { IconShield, IconFileText, IconRefresh, IconAlert, IconEye } from '../../components/icons/HumanIcons';
 
 interface AuditLogItem {
   id: string;
@@ -81,7 +82,9 @@ export default function ActivityLogPage() {
       <AnimatedPage>
         <div className="page-center">
           <div className="card text-center" style={{ maxWidth: 440, padding: 36 }}>
-            <div style={{ fontSize: '2.8rem', marginBottom: 12 }}>🛡️</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+              <IconShield size={44} color="#f59e0b" />
+            </div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 8 }}>Access Restricted</h2>
             <p className="text-muted text-sm mb-3">
               The Forensic Activity & Monitoring Log is strictly restricted to Super Administrators.
@@ -119,19 +122,26 @@ export default function ActivityLogPage() {
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <h1 style={{ fontSize: '1.7rem', fontWeight: 800, marginBottom: 4 }}>
-                📜 Institutional Activity & Monitoring Trail
+              <h1 style={{ fontSize: '1.7rem', fontWeight: 800, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <IconFileText size={24} color="#38bdf8" />
+                <span>Institutional Activity &amp; Monitoring Trail</span>
               </h1>
               <p className="text-muted text-sm">
                 Immutable audit trail tracking logins, failed attempts, exam start/stops, question edits, exports, and permission changes.
               </p>
             </div>
-            <button className="btn btn-secondary" onClick={fetchLogs} disabled={loading}>
-              {loading ? 'Refreshing...' : '🔄 Refresh Log'}
+            <button className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={fetchLogs} disabled={loading}>
+              <IconRefresh size={14} color="currentColor" />
+              <span>{loading ? 'Refreshing...' : 'Refresh Log'}</span>
             </button>
           </div>
 
-          {error && <div className="alert alert-error mb-3">⚠️ {error}</div>}
+          {error && (
+            <div className="alert alert-error mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <IconAlert size={16} color="#ef4444" />
+              <span>{error}</span>
+            </div>
+          )}
 
           {/* Stats Bar */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
@@ -336,9 +346,10 @@ export default function ActivityLogPage() {
                               <button
                                 className="btn btn-xs btn-ghost"
                                 onClick={() => setSelectedPayload(item.payload)}
-                                style={{ fontSize: '0.72rem', padding: '2px 6px' }}
+                                style={{ fontSize: '0.72rem', padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                               >
-                                👁️ View
+                                <IconEye size={12} color="currentColor" />
+                                <span>View</span>
                               </button>
                             ) : (
                               <span className="text-muted text-xs">—</span>

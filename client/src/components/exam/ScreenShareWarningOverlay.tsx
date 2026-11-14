@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { IconEye, IconAlert, IconRefresh } from '../icons/HumanIcons';
 
 interface ScreenShareWarningOverlayProps {
   isOpen: boolean;
@@ -65,7 +66,7 @@ export default function ScreenShareWarningOverlay({
               margin: '0 auto 20px',
             }}
           >
-            🖥️
+            <IconEye size={36} color="#F59E0B" />
           </motion.div>
 
           <h2
@@ -107,7 +108,7 @@ export default function ScreenShareWarningOverlay({
               alignItems: 'center',
             }}
           >
-            <span>ℹ️</span>
+            <IconAlert size={18} color="#FDE68A" style={{ flexShrink: 0 }} />
             <span>Please select <strong>"Entire Screen"</strong> in the browser prompt to resume your examination without additional strikes.</span>
           </div>
 
@@ -126,9 +127,14 @@ export default function ScreenShareWarningOverlay({
               cursor: 'pointer',
               boxShadow: '0 6px 20px rgba(217, 119, 6, 0.4)',
               transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
             }}
           >
-            🔄 Reconnect Screen Share Now
+            <IconRefresh size={18} color="#FFFFFF" />
+            <span>Reconnect Screen Share Now</span>
           </button>
         </motion.div>
       </motion.div>

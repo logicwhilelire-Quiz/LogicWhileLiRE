@@ -290,8 +290,28 @@ export default function InspectorRadarMatrix3D({
             gap: 14,
           }}
         >
-          <div style={{ fontSize: '1.4rem' }}>
-            {hoveredCandidate.status === 'cheating' ? '🚨' : hoveredCandidate.status === 'idle' ? '🟡' : hoveredCandidate.status === 'offline' ? '🏁' : '🟢'}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                background:
+                  hoveredCandidate.status === 'cheating'
+                    ? '#EF4444'
+                    : hoveredCandidate.status === 'idle'
+                    ? '#F59E0B'
+                    : hoveredCandidate.status === 'offline'
+                    ? '#94A3B8'
+                    : '#10B981',
+                boxShadow:
+                  hoveredCandidate.status === 'cheating'
+                    ? '0 0 10px #EF4444'
+                    : hoveredCandidate.status === 'idle'
+                    ? '0 0 10px #F59E0B'
+                    : '0 0 10px #10B981',
+              }}
+            />
           </div>
           <div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.88rem', fontWeight: 800, color: '#f8fafc' }}>

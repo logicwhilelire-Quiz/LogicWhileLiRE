@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { IconAlert, IconRefresh } from '../icons/HumanIcons';
 
 interface ErrorStateProps {
   title?: string;
@@ -20,17 +21,18 @@ export default function ErrorState({
       animate={{ opacity: 1, scale: 1 }}
       className={`p-6 rounded-2xl border border-rose-500/30 bg-rose-500/10 text-center flex flex-col items-center justify-center my-6 ${className}`}
     >
-      <div className="w-12 h-12 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-2xl font-bold mb-3">
-        ⚠️
+      <div className="w-12 h-12 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center mb-3">
+        <IconAlert size={24} color="#f43f5e" />
       </div>
       <h4 className="text-sm font-bold text-rose-200 mb-1">{title}</h4>
       <p className="text-xs text-rose-300/80 max-w-sm mb-4 leading-relaxed">{message}</p>
       {onRetry && (
         <button
           onClick={onRetry}
-          className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 transition-colors"
+          className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 transition-colors inline-flex items-center gap-1.5"
         >
-          Try Again ↺
+          <IconRefresh size={13} color="currentColor" />
+          <span>Try Again</span>
         </button>
       )}
     </motion.div>

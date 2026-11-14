@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import { sound } from '../lib/soundService';
+import { IconHierarchy } from './icons/HumanIcons';
 
 interface Coordinate {
   x: number;
@@ -247,7 +248,9 @@ export default function HorizonXOverlay() {
             letterSpacing: '0.04em',
           }}
         >
-          <span style={{ fontSize: '0.95rem' }}>{active ? '📐' : '🏛️'}</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <IconHierarchy size={15} color={active ? '#38BDF8' : '#F59E0B'} />
+          </div>
           <span>{active ? 'HORIZONX ACTIVE' : 'HORIZONX BLUEPRINT'}</span>
           <span
             style={{

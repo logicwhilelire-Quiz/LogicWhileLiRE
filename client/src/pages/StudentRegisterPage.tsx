@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BrandLogo from '../components/BrandLogo';
 import AnimatedPage from '../components/AnimatedPage';
+import { IconLaunch, IconKey } from '../components/icons/HumanIcons';
 
 export default function StudentRegisterPage() {
   const navigate = useNavigate();
@@ -88,15 +89,16 @@ export default function StudentRegisterPage() {
             <button
               onClick={() => navigate('/gate', { replace: true })}
               className="btn btn-primary btn-full btn-lg"
-              style={{ fontWeight: 800 }}
+              style={{ fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
-              🚀 Go to Registration Gate Now
+              <IconLaunch size={18} color="currentColor" /> Go to Registration Gate Now
             </button>
             <button
               onClick={() => navigate('/login')}
               className="btn btn-secondary btn-full"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
-              🔑 Proceed to Student Login
+              <IconKey size={16} color="currentColor" /> Proceed to Student Login
             </button>
           </div>
 

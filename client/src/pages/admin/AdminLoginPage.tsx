@@ -5,7 +5,7 @@ import { adminLogin } from '../../lib/api';
 import { API_BASE_URL } from '../../lib/config';
 import BrandLogo from '../../components/BrandLogo';
 import ServerWakeupModal from '../../components/ServerWakeupModal';
-import { IconShield, IconAward, IconRadio, IconUsers } from '../../components/icons/HumanIcons';
+import { IconShield, IconAward, IconRadio, IconUsers, IconAlert, IconEye, IconFlash } from '../../components/icons/HumanIcons';
 
 function AdminGridBg() {
   return (
@@ -194,7 +194,7 @@ export default function AdminLoginPage() {
                   gap: 8,
                 }}
               >
-                <span>⚠️</span>
+                <IconAlert size={16} color="#FCA5A5" />
                 <span>{error}</span>
               </div>
             )}
@@ -309,11 +309,13 @@ export default function AdminLoginPage() {
                       border: 'none',
                       color: '#94A3B8',
                       cursor: 'pointer',
-                      fontSize: '1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       padding: 4,
                     }}
                   >
-                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                    <IconEye size={16} color={showPassword ? '#FBBF24' : '#94A3B8'} />
                   </button>
                 </div>
               </div>
@@ -371,7 +373,7 @@ export default function AdminLoginPage() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: '#FBBF24', fontWeight: 600 }}>
-                    <span>⚡</span>
+                    <IconFlash size={14} color="#FBBF24" />
                     <span>
                       {warmUpSeconds < 8
                         ? 'Connecting to secure server...'

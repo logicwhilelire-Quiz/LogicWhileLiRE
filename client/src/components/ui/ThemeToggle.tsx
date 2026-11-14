@@ -1,22 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sound } from '../../lib/soundService';
+import { IconEye, IconBuilding, IconFlash, IconShield, IconCheck } from '../icons/HumanIcons';
 
 export type ThemeMode = 'dark' | 'swarm' | 'emerald' | 'light';
 
 interface ThemeOption {
   id: ThemeMode;
   label: string;
-  icon: string;
+  icon: React.ReactNode;
   color: string;
   desc: string;
 }
 
 const THEMES: ThemeOption[] = [
-  { id: 'dark', label: 'LogicWhile Midnight', icon: '🌑', color: '#0284c7', desc: 'Executive Slate & Sapphire' },
-  { id: 'swarm', label: 'LogicWhile Enterprise', icon: '🏢', color: '#2563EB', desc: 'Institutional High-Contrast' },
-  { id: 'emerald', label: 'Academic Ivory', icon: '☀️', color: '#0D9488', desc: 'Daylight Proctored Testing' },
-  { id: 'light', label: 'LogicWhile Royal', icon: '🏛️', color: '#EAA812', desc: 'Navy & Official Gold Theme' },
+  { id: 'dark', label: 'LogicWhile Midnight', icon: <IconEye size={15} color="#0284c7" />, color: '#0284c7', desc: 'Executive Slate & Sapphire' },
+  { id: 'swarm', label: 'LogicWhile Enterprise', icon: <IconBuilding size={15} color="#2563EB" />, color: '#2563EB', desc: 'Institutional High-Contrast' },
+  { id: 'emerald', label: 'Academic Ivory', icon: <IconFlash size={15} color="#0D9488" />, color: '#0D9488', desc: 'Daylight Proctored Testing' },
+  { id: 'light', label: 'LogicWhile Royal', icon: <IconShield size={15} color="#EAA812" />, color: '#EAA812', desc: 'Navy & Official Gold Theme' },
 ];
 
 export default function ThemeToggle({ className = '' }: { className?: string }) {
@@ -79,7 +80,7 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
           boxShadow: `0 0 12px ${currentOption.color}25`,
         }}
       >
-        <span className="text-sm select-none">{currentOption.icon}</span>
+        <span className="text-sm select-none inline-flex items-center">{currentOption.icon}</span>
         <span className="hidden sm:inline-block font-mono tracking-tight" style={{ color: currentOption.color }}>
           {currentOption.label.split(' ')[0]}
         </span>
@@ -155,7 +156,7 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
                       }
                     }}
                   >
-                    <span style={{ fontSize: '15px' }}>{opt.icon}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center' }}>{opt.icon}</span>
                     <div style={{ flex: 1 }}>
                       <div
                         style={{
@@ -169,7 +170,7 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
                       <div style={{ fontSize: '10px', color: '#64748B' }}>{opt.desc}</div>
                     </div>
                     {isSelected && (
-                      <span style={{ fontSize: '12px', color: opt.color, fontWeight: 800 }}>✓</span>
+                      <IconCheck size={14} color={opt.color} strokeWidth={2.5} />
                     )}
                   </button>
                 );

@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { verifyOtp } from '../lib/api';
 import BrandLogo from '../components/BrandLogo';
 import AnimatedPage from '../components/AnimatedPage';
+import { IconCheck, IconAlert, IconLock, IconKey } from '../components/icons/HumanIcons';
 
 export default function OTPVerifyPage() {
   const { examId } = useParams<{ examId: string }>();
@@ -103,7 +104,11 @@ export default function OTPVerifyPage() {
         <div className="card">
           {success ? (
             <div className="text-center animate-fade-in">
-              <div style={{ fontSize: '4rem', marginBottom: '16px' }}>✅</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                  <IconCheck size={36} color="#10B981" strokeWidth={2.5} />
+                </div>
+              </div>
               <div className="font-bold" style={{ fontSize: '1.2rem' }}>Verification Successful!</div>
               <p className="text-muted mt-1">Redirecting to your exam...</p>
             </div>
@@ -112,7 +117,10 @@ export default function OTPVerifyPage() {
 
 
               {apiError && (
-                <div className="alert alert-error mb-2">⚠️ {apiError}</div>
+                <div className="alert alert-error mb-2" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <IconAlert size={16} color="#EF4444" />
+                  <span>{apiError}</span>
+                </div>
               )}
 
               <form onSubmit={handleSubmit} noValidate>
@@ -142,11 +150,15 @@ export default function OTPVerifyPage() {
                   type="submit"
                   className="btn btn-primary btn-full btn-lg mt-2"
                   disabled={loading || otp.join('').length < 6}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 >
                   {loading ? (
                     <><div className="btn-spinner" />Verifying...</>
                   ) : (
-                    <>🔓 Verify & Enter Exam</>
+                    <>
+                      <IconKey size={18} color="currentColor" />
+                      <span>Verify &amp; Enter Exam</span>
+                    </>
                   )}
                 </button>
               </form>
@@ -166,8 +178,9 @@ export default function OTPVerifyPage() {
           )}
         </div>
 
-        <p className="text-center text-muted text-xs mt-2">
-          🔒 This code expires in 10 minutes for security.
+        <p className="text-center text-muted text-xs mt-2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <IconLock size={13} color="currentColor" />
+          <span>This code expires in 10 minutes for security.</span>
         </p>
       </div>
     </div>

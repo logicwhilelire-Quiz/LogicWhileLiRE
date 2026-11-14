@@ -5,7 +5,7 @@ import { adminLogin } from '../lib/api';
 import { API_BASE_URL } from '../lib/config';
 import BrandLogo from '../components/BrandLogo';
 import ServerWakeupModal from '../components/ServerWakeupModal';
-import { IconShield, IconAward, IconRadio, IconUsers } from '../components/icons/HumanIcons';
+import { IconShield, IconAward, IconRadio, IconUsers, IconAlert, IconEye, IconFlash } from '../components/icons/HumanIcons';
 
 function InspectorGridBg() {
   return (
@@ -185,7 +185,7 @@ export default function InspectorLoginPage() {
                   gap: 8,
                 }}
               >
-                <span>⚠️</span>
+                <IconAlert size={16} color="#FCA5A5" />
                 <span>{error}</span>
               </div>
             )}
@@ -300,11 +300,13 @@ export default function InspectorLoginPage() {
                       border: 'none',
                       color: '#94A3B8',
                       cursor: 'pointer',
-                      fontSize: '1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       padding: 4,
                     }}
                   >
-                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                    <IconEye size={16} color={showPassword ? '#38BDF8' : '#94A3B8'} />
                   </button>
                 </div>
               </div>
@@ -321,7 +323,7 @@ export default function InspectorLoginPage() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: '#38BDF8', fontWeight: 600 }}>
-                    <span>⚡</span>
+                    <IconFlash size={14} color="#38BDF8" />
                     <span>
                       {warmUpSeconds < 8
                         ? 'Connecting to secure server...'

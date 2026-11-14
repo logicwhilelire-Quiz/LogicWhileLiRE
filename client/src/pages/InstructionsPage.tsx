@@ -407,9 +407,13 @@ export default function InstructionsPage() {
                       fontSize: '0.84rem',
                       color: item.ok ? '#10B981' : '#F59E0B',
                       fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
                     }}
                   >
-                    {item.label} {item.ok ? '✓' : '• Pending'}
+                    <span>{item.label}</span>
+                    {item.ok ? <IconCheck size={13} color="#10B981" /> : <span style={{ fontSize: '0.72rem', color: '#F59E0B' }}>• Pending</span>}
                   </span>
                 </div>
               ))}

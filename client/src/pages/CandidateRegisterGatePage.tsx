@@ -5,6 +5,7 @@ import BrandLogo from '../components/BrandLogo';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import { API_BASE_URL } from '../lib/config';
+import { IconBuilding, IconMail, IconAlert, IconCheck, IconCross } from '../components/icons/HumanIcons';
 
 interface DynamicCollege {
   id: string;
@@ -391,7 +392,7 @@ export default function CandidateRegisterGatePage() {
           if (idx !== -1) {
             list[idx].is_verified = true;
             list[idx].status = 'approved';
-            list[idx].live_status = { state: 'active', label: '✅ Active' };
+            list[idx].live_status = { state: 'active', label: 'Active' };
             localStorage.setItem('admin_roster_students', JSON.stringify(list));
           }
         } catch {}
@@ -505,7 +506,9 @@ export default function CandidateRegisterGatePage() {
             </div>
           ) : colleges.length === 0 ? (
             <div style={{ padding: '64px 32px', textAlign: 'center' }}>
-              <div style={{ fontSize: '3.2rem', marginBottom: 16 }}>🏛️</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                <IconBuilding size={48} color="#002147" />
+              </div>
               <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#002147', margin: '0 0 8px' }}>
                 Registration Currently Closed
               </h2>
@@ -546,7 +549,9 @@ export default function CandidateRegisterGatePage() {
             </div>
           ) : otpStep ? (
             <div style={{ padding: '40px 32px', maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📬</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+                <IconMail size={42} color="#0284C7" />
+              </div>
               <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#002147', margin: '0 0 8px' }}>
                 Verify Your Registration OTP
               </h2>
@@ -557,11 +562,9 @@ export default function CandidateRegisterGatePage() {
               </p>
 
               <div style={{ margin: '0 0 16px', padding: '10px 14px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, fontSize: '0.8rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left' }}>
-                <span style={{ fontSize: '1rem' }}>ℹ️</span>
+                <IconAlert size={16} color="#64748B" />
                 <span>Enter the 6-digit code received. Check your Spam folder if the message does not appear in your inbox within 60 seconds.</span>
               </div>
-
-
 
               {otpSuccessMsg && (
                 <div
@@ -574,9 +577,13 @@ export default function CandidateRegisterGatePage() {
                     fontSize: '0.88rem',
                     fontWeight: 700,
                     marginBottom: 20,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    justifyContent: 'center',
                   }}
                 >
-                  ✓ {otpSuccessMsg}
+                  <IconCheck size={16} color="#065F46" /> {otpSuccessMsg}
                 </div>
               )}
 
@@ -591,9 +598,13 @@ export default function CandidateRegisterGatePage() {
                     fontSize: '0.88rem',
                     fontWeight: 600,
                     marginBottom: 20,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    justifyContent: 'center',
                   }}
                 >
-                  ⚠️ {serverError}
+                  <IconAlert size={16} color="#991B1B" /> {serverError}
                 </div>
               )}
 
@@ -696,9 +707,12 @@ export default function CandidateRegisterGatePage() {
                     fontSize: '0.88rem',
                     fontWeight: 600,
                     marginBottom: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
                   }}
                 >
-                  ⚠️ {serverError}
+                  <IconAlert size={16} color="#991B1B" /> {serverError}
                 </div>
               )}
 
@@ -1085,27 +1099,31 @@ export default function CandidateRegisterGatePage() {
                     gap: 8,
                   }}
                 >
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <span style={{ color: passwordChecks.length ? '#166534' : '#94A3B8' }}>
-                      {passwordChecks.length ? '✔' : '○'} ≥8 Chars
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <span style={{ color: passwordChecks.length ? '#166534' : '#94A3B8', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      {passwordChecks.length ? <IconCheck size={11} color="#166534" /> : <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#94A3B8' }} />} ≥8 Chars
                     </span>
-                    <span style={{ color: passwordChecks.uppercase ? '#166534' : '#94A3B8' }}>
-                      {passwordChecks.uppercase ? '✔' : '○'} 1 Uppercase
+                    <span style={{ color: passwordChecks.uppercase ? '#166534' : '#94A3B8', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      {passwordChecks.uppercase ? <IconCheck size={11} color="#166534" /> : <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#94A3B8' }} />} 1 Uppercase
                     </span>
-                    <span style={{ color: passwordChecks.number ? '#166534' : '#94A3B8' }}>
-                      {passwordChecks.number ? '✔' : '○'} 1 Number
+                    <span style={{ color: passwordChecks.number ? '#166534' : '#94A3B8', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      {passwordChecks.number ? <IconCheck size={11} color="#166534" /> : <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#94A3B8' }} />} 1 Number
                     </span>
-                    <span style={{ color: passwordChecks.special ? '#166534' : '#94A3B8' }}>
-                      {passwordChecks.special ? '✔' : '○'} 1 Special
+                    <span style={{ color: passwordChecks.special ? '#166534' : '#94A3B8', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      {passwordChecks.special ? <IconCheck size={11} color="#166534" /> : <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#94A3B8' }} />} 1 Special
                     </span>
                   </div>
 
                   <div>
                     {form.confirm_password ? (
                       passwordChecks.match ? (
-                        <span style={{ color: '#166534', fontWeight: 800 }}>✔ PASSWORDS MATCH</span>
+                        <span style={{ color: '#166534', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <IconCheck size={12} color="#166534" /> PASSWORDS MATCH
+                        </span>
                       ) : (
-                        <span style={{ color: '#EF4444', fontWeight: 800 }}>✖ MISMATCH</span>
+                        <span style={{ color: '#EF4444', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <IconCross size={12} color="#EF4444" /> MISMATCH
+                        </span>
                       )
                     ) : (
                       <span style={{ color: '#94A3B8' }}>Match Pending</span>

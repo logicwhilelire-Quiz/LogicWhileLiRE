@@ -2,6 +2,15 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
 import { API_BASE_URL } from '../lib/config'
+import {
+  IconRadar,
+  IconMail,
+  IconProhibit,
+  IconDownload,
+  IconChat,
+  IconShield,
+  IconSearch,
+} from './icons/HumanIcons'
 
 interface ViolationEvent {
   id: string
@@ -309,7 +318,7 @@ export default function CandidateViolationTimelineModal({
                   fontSize: '1.3rem',
                 }}
               >
-                🔬
+                <IconRadar size={18} color="#38BDF8" />
               </div>
               <div>
                 <div className="flex items-center space-x-2">
@@ -437,9 +446,13 @@ export default function CandidateViolationTimelineModal({
                   fontSize: '0.72rem',
                   fontWeight: 700,
                   cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
                 }}
               >
-                📧 Email Warning
+                <IconMail size={12} color="currentColor" />
+                <span>Email Warning</span>
               </button>
               <button
                 type="button"
@@ -458,9 +471,13 @@ export default function CandidateViolationTimelineModal({
                   fontSize: '0.72rem',
                   fontWeight: 700,
                   cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
                 }}
               >
-                🚨 Disqualify
+                <IconProhibit size={12} color="#F87171" />
+                <span>Disqualify</span>
               </button>
             </div>
 
@@ -481,7 +498,8 @@ export default function CandidateViolationTimelineModal({
                 gap: 6,
               }}
             >
-              <span>💾</span> Export Dossier (JSON)
+              <IconDownload size={12} color="currentColor" />
+              <span>Export Dossier (JSON)</span>
             </button>
           </div>
 
@@ -514,7 +532,10 @@ export default function CandidateViolationTimelineModal({
               alignItems: 'center',
             }}
           >
-            <span style={{ fontSize: '0.72rem', color: '#94A3B8', fontWeight: 700 }}>💬 Whisper:</span>
+            <span style={{ fontSize: '0.72rem', color: '#94A3B8', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <IconChat size={12} color="#94A3B8" />
+              <span>Whisper:</span>
+            </span>
             <input
               type="text"
               placeholder={`Send instantaneous whisper banner to ${resolvedName}...`}
@@ -564,7 +585,9 @@ export default function CandidateViolationTimelineModal({
               </div>
             ) : timeline.length === 0 ? (
               <div className="text-center py-12 space-y-2">
-                <span className="text-3xl">🛡️</span>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                  <IconShield size={36} color="#10B981" />
+                </div>
                 <p className="text-slate-300 font-medium">No violations recorded for this candidate.</p>
                 <p className="text-xs text-slate-500">The session maintained 100% full biometric integrity.</p>
               </div>
@@ -617,8 +640,8 @@ export default function CandidateViolationTimelineModal({
                             alt="Evidence Snapshot"
                             className="w-full h-full object-cover"
                           />
-                          <span className="absolute inset-0 bg-black/40 group-hover:bg-black/10 flex items-center justify-center text-[10px] text-white">
-                            🔍
+                          <span className="absolute inset-0 bg-black/40 group-hover:bg-black/10 flex items-center justify-center text-white">
+                            <IconSearch size={14} color="#FFFFFF" />
                           </span>
                         </button>
                       )}

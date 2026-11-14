@@ -1,5 +1,13 @@
 import { useState, useRef } from 'react';
 import { bulkEnrollParticipants, getBulkEnrollTemplateUrl, type BulkEnrollResult } from '../lib/api';
+import {
+  IconUsers,
+  IconDownload,
+  IconAlert,
+  IconCheck,
+  IconCross,
+  IconFileText,
+} from './icons/HumanIcons';
 
 interface BulkEnrollModalProps {
   isOpen: boolean;
@@ -106,8 +114,9 @@ export default function BulkEnrollModal({
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
           <div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>
-              👥 Bulk Candidate Enrollment
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <IconUsers size={20} color="#38BDF8" />
+              <span>Bulk Candidate Enrollment</span>
             </h3>
             <p className="text-muted text-xs" style={{ marginTop: 4 }}>
               Target Assessment: <strong style={{ color: 'var(--color-primary)' }}>{examTitle}</strong>
@@ -145,9 +154,10 @@ export default function BulkEnrollModal({
               href={getBulkEnrollTemplateUrl()}
               download="logicwhilelire_enrollment_template.csv"
               className="btn btn-secondary btn-sm"
-              style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+              style={{ fontSize: '0.75rem', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
-              📥 Download Sample CSV
+              <IconDownload size={13} color="currentColor" />
+              <span>Download Sample CSV</span>
             </a>
           </div>
         </div>
@@ -163,9 +173,13 @@ export default function BulkEnrollModal({
               border: '1px solid var(--color-danger)',
               color: '#fca5a5',
               marginBottom: 16,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
             }}
           >
-            ⚠️ {error}
+            <IconAlert size={14} color="#EF4444" />
+            <span>{error}</span>
           </div>
         )}
 
@@ -183,12 +197,13 @@ export default function BulkEnrollModal({
                   fontSize: '0.85rem',
                 }}
               >
-                <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: 4 }}>
-                  🎉 {result.message}
+                <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <IconCheck size={16} color="#10B981" />
+                  <span>{result.message}</span>
                 </div>
                 <div style={{ display: 'flex', gap: 16, marginTop: 6, fontSize: '0.8rem' }}>
-                  <span>✅ Enrolled: <strong>{result.inserted_count}</strong></span>
-                  <span>⚠️ Skipped / Duplicates: <strong>{result.skipped_count}</strong></span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconCheck size={12} color="#10B981" /> Enrolled: <strong>{result.inserted_count}</strong></span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconAlert size={12} color="#F59E0B" /> Skipped / Duplicates: <strong>{result.skipped_count}</strong></span>
                 </div>
               </div>
             ) : (
@@ -202,7 +217,10 @@ export default function BulkEnrollModal({
                   fontSize: '0.85rem',
                 }}
               >
-                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>❌ Enrollment Incomplete</div>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <IconCross size={15} color="#EF4444" />
+                  <span>Enrollment Incomplete</span>
+                </div>
                 <div style={{ marginTop: 4 }}>{result.message}</div>
               </div>
             )}
@@ -283,7 +301,9 @@ export default function BulkEnrollModal({
               accept=".csv,.xlsx"
               style={{ display: 'none' }}
             />
-            <div style={{ fontSize: '2rem', marginBottom: 8 }}>📁</div>
+            <div style={{ display: 'inline-flex', marginBottom: 8, padding: 12, borderRadius: 12, background: 'rgba(56, 189, 248, 0.1)' }}>
+              <IconFileText size={32} color="#38BDF8" />
+            </div>
             {file ? (
               <div>
                 <p style={{ fontWeight: 700, color: 'var(--color-text)', margin: '0 0 4px 0' }}>

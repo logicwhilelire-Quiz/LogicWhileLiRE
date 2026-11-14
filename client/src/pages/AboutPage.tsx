@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import BrandLogo from '../components/BrandLogo';
+import { IconFlash, IconShield, IconTarget, IconBuilding, IconGraduation, IconLaunch } from '../components/icons/HumanIcons';
 
 export default function AboutPage() {
   return (
@@ -162,7 +163,9 @@ export default function AboutPage() {
                 borderTop: '4px solid #38BDF8',
               }}
             >
-              <div style={{ fontSize: '1.8rem', marginBottom: 12 }}>⚡</div>
+              <div style={{ marginBottom: 12 }}>
+                <IconFlash size={32} color="#0284C7" />
+              </div>
               <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8, color: '#0284C7' }}>
                 1. Li — Live Execution
               </h3>
@@ -181,7 +184,9 @@ export default function AboutPage() {
                 borderTop: '4px solid #EAA812',
               }}
             >
-              <div style={{ fontSize: '1.8rem', marginBottom: 12 }}>🛡️</div>
+              <div style={{ marginBottom: 12 }}>
+                <IconShield size={32} color="#B45309" />
+              </div>
               <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8, color: '#B45309' }}>
                 2. R — Real-Time Rank Engine
               </h3>
@@ -200,7 +205,9 @@ export default function AboutPage() {
                 borderTop: '4px solid #10B981',
               }}
             >
-              <div style={{ fontSize: '1.8rem', marginBottom: 12 }}>🪐</div>
+              <div style={{ marginBottom: 12 }}>
+                <IconTarget size={32} color="#059669" />
+              </div>
               <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8, color: '#059669' }}>
                 3. E — Assessment Engine
               </h3>
@@ -222,9 +229,12 @@ export default function AboutPage() {
                   color: '#EAA812',
                   fontWeight: 800,
                   borderRadius: 8,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
                 }}
               >
-                🏛️ Institutional Home
+                <IconBuilding size={16} color="#EAA812" /> Institutional Home
               </button>
             </Link>
             <Link to="/login" style={{ textDecoration: 'none' }}>
@@ -238,9 +248,12 @@ export default function AboutPage() {
                   fontWeight: 800,
                   borderRadius: 8,
                   boxShadow: '0 4px 14px rgba(234, 168, 18, 0.4)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
                 }}
               >
-                🎓 Student Login
+                <IconGraduation size={16} color="#002147" /> Student Login
               </button>
             </Link>
             <Link to="/enter-exam" style={{ textDecoration: 'none' }}>
@@ -253,9 +266,12 @@ export default function AboutPage() {
                   color: '#FFFFFF',
                   fontWeight: 800,
                   borderRadius: 8,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
                 }}
               >
-                ⚡ Enter Examination
+                <IconLaunch size={16} color="#FFFFFF" /> Enter Examination
               </button>
             </Link>
           </div>

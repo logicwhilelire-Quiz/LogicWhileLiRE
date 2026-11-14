@@ -6,7 +6,7 @@ import { API_BASE_URL } from '../lib/config';
 import BrandLogo from '../components/BrandLogo';
 import ServerWakeupModal from '../components/ServerWakeupModal';
 import { findAdminRosterStudent, type AdminRosterStudent } from '../lib/adminRosterStore';
-import { IconUsers, IconAward, IconShield, IconRadio, IconEye, IconKey } from '../components/icons/HumanIcons';
+import { IconUsers, IconAward, IconShield, IconRadio, IconEye, IconKey, IconCheck, IconAlert } from '../components/icons/HumanIcons';
 
 /* ── Animated background ── */
 function GridBackground() {
@@ -56,7 +56,7 @@ export default function StudentLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
-  const [notice, setNotice] = useState(registeredRoll ? '✓ Account verified! Enter your password to sign in.' : '');
+  const [notice, setNotice] = useState(registeredRoll ? 'Account verified! Enter your password to sign in.' : '');
   const [focused, setFocused] = useState<string | null>(null);
   const [dots, setDots] = useState('');
   const [isWarmingUp, setIsWarmingUp] = useState(false);
@@ -194,7 +194,7 @@ export default function StudentLoginPage() {
             <AnimatePresence>
               {notice && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.38)', color: '#6EE7B7', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: '0.81rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>✓</span><span>{notice}</span>
+                  <IconCheck size={14} color="#6EE7B7" /><span>{notice}</span>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -202,7 +202,7 @@ export default function StudentLoginPage() {
               {error && !isWarmingUp && (
                 <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.38)', color: '#FCA5A5', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: '0.81rem', fontWeight: 600, display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                    <span style={{ flexShrink: 0 }}>⚠️</span><span>{error}</span>
+                    <IconAlert size={14} color="#FCA5A5" style={{ flexShrink: 0, marginTop: 2 }} /><span>{error}</span>
                   </div>
                   {unverifiedEmail && (
                     <button

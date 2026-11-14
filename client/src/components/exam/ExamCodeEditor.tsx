@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
 import { API_BASE_URL } from '../../lib/config'
+import { IconShield, IconCheck, IconCross, IconFlash } from '../icons/HumanIcons'
 
 const BASE = API_BASE_URL
 
@@ -398,7 +399,7 @@ export default function ExamCodeEditor({
                 pointerEvents: 'none',
               }}
             >
-              <span>🛡️</span> Pasting code is blocked by exam strictness rules. Code must be written manually.
+              <IconShield size={14} color="#EF4444" /> Pasting code is blocked by exam strictness rules. Code must be written manually.
             </div>
           )}
         </div>
@@ -450,9 +451,19 @@ export default function ExamCodeEditor({
                 fontSize: '0.75rem',
                 fontWeight: 700,
                 letterSpacing: '0.04em',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
               }}
             >
-              {runResult.verdict === 'Accepted' ? '✅' : runResult.verdict === 'Partial' ? '⚡' : '❌'} {runResult.verdict}
+              {runResult.verdict === 'Accepted' ? (
+                <IconCheck size={12} color="#10B981" strokeWidth={2.5} />
+              ) : runResult.verdict === 'Partial' ? (
+                <IconFlash size={12} color="#FBBF24" />
+              ) : (
+                <IconCross size={12} color="#EF4444" strokeWidth={2.5} />
+              )}
+              <span>{runResult.verdict}</span>
             </div>
           )}
         </div>

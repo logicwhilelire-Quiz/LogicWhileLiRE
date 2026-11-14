@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { IconFileText } from './icons/HumanIcons'
 
 interface HoloScratchpadModalProps {
   isOpen: boolean
@@ -101,7 +102,7 @@ export const HoloScratchpadModal: React.FC<HoloScratchpadModalProps> = ({
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: '1.4rem' }}>📝</span>
+                <IconFileText size={22} color="#38BDF8" />
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-text)' }}>
                     In-Exam Secure Scratchpad

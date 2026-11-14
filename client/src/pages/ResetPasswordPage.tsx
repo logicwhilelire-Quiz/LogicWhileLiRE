@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { resetPassword } from '../lib/api';
 import BrandLogo from '../components/BrandLogo';
 import AnimatedPage from '../components/AnimatedPage';
+import { IconCheck, IconAlert } from '../components/icons/HumanIcons';
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -95,11 +96,10 @@ export default function ResetPasswordPage() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '1.6rem',
                     margin: '0 auto 16px',
                   }}
                 >
-                  ✅
+                  <IconCheck size={28} color="#10B981" strokeWidth={2.5} />
                 </div>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 8, color: 'var(--color-text)' }}>
                   Password Reset Successful!
@@ -118,14 +118,16 @@ export default function ResetPasswordPage() {
             ) : (
               <form onSubmit={handleSubmit} noValidate>
                 {(!form.token || !form.email) && (
-                  <div className="alert alert-warning mb-3">
-                    ⚠️ Invalid or incomplete reset link. If you arrived here directly, please request a link from the forgot password page.
+                  <div className="alert alert-warning mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <IconAlert size={16} color="#eab308" />
+                    <span>Invalid or incomplete reset link. If you arrived here directly, please request a link from the forgot password page.</span>
                   </div>
                 )}
 
                 {error && (
-                  <div className="alert alert-error mb-3" role="alert">
-                    ⚠️ {error}
+                  <div className="alert alert-error mb-3" role="alert" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <IconAlert size={16} color="#ef4444" />
+                    <span>{error}</span>
                   </div>
                 )}
 

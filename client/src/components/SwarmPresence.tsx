@@ -224,7 +224,7 @@ export default function SwarmPresence({ active = true, maxAgents = 5 }: { active
           }}
           title={soundMuted ? 'Unmute Tactile Sound FX' : 'Mute Tactile Sound FX'}
         >
-          {soundMuted ? '🔇' : '🔊'}
+          <span style={{ fontSize: '0.62rem', fontWeight: 800 }}>{soundMuted ? 'MUTE' : 'AUDIO'}</span>
         </button>
       </div>
 

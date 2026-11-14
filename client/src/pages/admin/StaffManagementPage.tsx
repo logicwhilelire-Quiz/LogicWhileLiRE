@@ -12,6 +12,18 @@ import {
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedPage from '../../components/AnimatedPage';
 import AnimatedCounter from '../../components/AnimatedCounter';
+import {
+  IconShield,
+  IconPlus,
+  IconAlert,
+  IconCheck,
+  IconCross,
+  IconBuilding,
+  IconUsers,
+  IconKey,
+  IconSliders,
+  IconTrash,
+} from '../../components/icons/HumanIcons';
 
 export const FACULTY_PERMISSIONS = [
   {
@@ -225,7 +237,9 @@ export default function StaffManagementPage() {
       <AnimatedPage>
         <div className="page-center">
           <div className="card text-center" style={{ maxWidth: 440, padding: 36 }}>
-            <div style={{ fontSize: '2.8rem', marginBottom: 12 }}>🛡️</div>
+            <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+              <IconShield size={48} color="#2B7FFF" />
+            </div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 8 }}>Access Restricted</h2>
             <p className="text-muted text-sm mb-3">
               Staff Management is restricted to Institutional Super Administrators.
@@ -262,13 +276,14 @@ export default function StaffManagementPage() {
               id="add-faculty-btn"
               className="btn btn-primary"
               onClick={() => setShowCreateModal(true)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
-              ➕ Add Staff / Inspector / Faculty
+              <IconPlus size={14} /> Add Staff / Inspector / Faculty
             </button>
           </div>
 
-          {error && <div className="alert alert-error mb-2">⚠️ {error}</div>}
-          {successMsg && <div className="alert alert-success mb-2">✅ {successMsg}</div>}
+          {error && <div className="alert alert-error mb-2" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IconAlert size={14} /> {error}</div>}
+          {successMsg && <div className="alert alert-success mb-2" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IconCheck size={14} color="#10B981" /> {successMsg}</div>}
 
           {/* Metric cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
@@ -337,10 +352,18 @@ export default function StaffManagementPage() {
                     const isSelf = member.id === currentUser.id;
                     const roleLabel =
                       member.role === 'super_admin' || member.role === 'admin'
-                        ? '🛡️ Super Admin'
+                        ? 'Super Admin'
                         : member.role === 'inspector' || member.role === 'college_admin'
-                        ? `🏛️ Inspector (College #${member.college_id || 1})`
-                        : '👨‍🏫 Faculty Member';
+                        ? `Inspector (College #${member.college_id || 1})`
+                        : 'Faculty Member';
+                    const roleIcon =
+                      member.role === 'super_admin' || member.role === 'admin' ? (
+                        <IconShield size={12} color="#93C5FD" />
+                      ) : member.role === 'inspector' || member.role === 'college_admin' ? (
+                        <IconBuilding size={12} color="#FDE047" />
+                      ) : (
+                        <IconUsers size={12} color="#6EE7B7" />
+                      );
 
                     return (
                       <tr key={member.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -355,6 +378,9 @@ export default function StaffManagementPage() {
                               borderRadius: 8,
                               fontSize: '0.74rem',
                               fontWeight: 700,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
                               background:
                                 member.role === 'super_admin' || member.role === 'admin'
                                   ? 'rgba(59, 130, 246, 0.2)'
@@ -369,13 +395,14 @@ export default function StaffManagementPage() {
                                   : '#6EE7B7',
                             }}
                           >
+                            {roleIcon}
                             {roleLabel}
                           </span>
                         </td>
                         <td style={{ padding: '12px' }}>
                           {member.two_factor_enabled ? (
-                            <span style={{ fontSize: '0.74rem', color: '#34D399', fontWeight: 700 }}>
-                              🔐 2FA Active (TOTP)
+                            <span style={{ fontSize: '0.74rem', color: '#34D399', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                              <IconKey size={12} color="#34D399" /> 2FA Active (TOTP)
                             </span>
                           ) : (
                             <span style={{ fontSize: '0.74rem', color: 'var(--color-text-faint)' }}>
@@ -397,11 +424,11 @@ export default function StaffManagementPage() {
                               <button
                                 id={`perms-btn-${member.id}`}
                                 className="btn btn-sm btn-secondary"
-                                style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+                                style={{ padding: '3px 8px', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                                 onClick={() => openPermissionsModal(member)}
                                 title="Configure Faculty Permission Matrix"
                               >
-                                ⚙️ Matrix ({member.permissions?.length ?? 2})
+                                <IconSliders size={12} /> Matrix ({member.permissions?.length ?? 2})
                               </button>
                             )}
                             <button
@@ -424,11 +451,11 @@ export default function StaffManagementPage() {
                                 <button
                                   id={`delete-staff-${member.id}`}
                                   className="btn btn-sm btn-ghost text-danger"
-                                  style={{ padding: '3px 8px', fontSize: '0.74rem', color: 'var(--color-danger)' }}
+                                  style={{ padding: '3px 8px', fontSize: '0.74rem', color: 'var(--color-danger)', display: 'inline-flex', alignItems: 'center' }}
                                   onClick={() => handleDeleteStaff(member)}
                                   title="Delete Staff Account"
                                 >
-                                  🗑️
+                                  <IconTrash size={13} color="var(--color-danger)" />
                                 </button>
                               </>
                             )}
@@ -558,8 +585,8 @@ export default function StaffManagementPage() {
               style={{ maxWidth: 580, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(59, 130, 246, 0.3)' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>
-                  ⚙️ Faculty Permission Matrix
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <IconSliders size={18} color="#60A5FA" /> Faculty Permission Matrix
                 </h3>
                 <span className="badge badge-primary font-mono text-xs">
                   {selectedStaffForPerms.name}
@@ -573,16 +600,18 @@ export default function StaffManagementPage() {
                 <button
                   type="button"
                   className="btn btn-xs btn-ghost"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   onClick={() => setActivePermissions(FACULTY_PERMISSIONS.map((p) => p.key))}
                 >
-                  ✓ Select All Permissions
+                  <IconCheck size={12} color="#10B981" /> Select All Permissions
                 </button>
                 <button
                   type="button"
                   className="btn btn-xs btn-ghost"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   onClick={() => setActivePermissions([])}
                 >
-                  ✕ Clear All
+                  <IconCross size={12} color="#EF4444" /> Clear All
                 </button>
               </div>
 

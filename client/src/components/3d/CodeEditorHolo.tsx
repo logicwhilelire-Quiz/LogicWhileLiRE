@@ -5,6 +5,7 @@ import { API_BASE_URL } from '../../lib/config'
 import HoloScan from './HoloScan'
 import MagneticButton from './MagneticButton'
 import TypingDots from './TypingDots'
+import { IconClipboard, IconCheck, IconCross, IconFlash } from '../icons/HumanIcons'
 
 const BASE = API_BASE_URL
 
@@ -266,7 +267,7 @@ export default function CodeEditorHolo({
         {/* Optional Challenge Title Badge */}
         {challengeTitle && (
           <div style={{ marginLeft: 10, fontSize: '0.74rem', fontWeight: 700, color: '#93C5FD', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span>⚡</span>
+            <IconFlash size={13} color="#93C5FD" />
             <span>{challengeTitle}</span>
           </div>
         )}
@@ -432,12 +433,16 @@ export default function CodeEditorHolo({
               border: '1px solid rgba(255,255,255,0.12)',
               color: 'var(--color-text-faint)',
               borderRadius: 6,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
               padding: '4px 10px',
               fontSize: '0.72rem',
               cursor: 'pointer',
             }}
           >
-            📋 Copy
+            <IconClipboard size={12} color="currentColor" />
+            <span>Copy</span>
           </button>
 
           <div style={{ flex: 1 }} />
@@ -453,9 +458,17 @@ export default function CodeEditorHolo({
                 border: `1px solid ${verdictColor(runResult.verdict)}44`,
                 color: verdictColor(runResult.verdict),
                 fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
               }}
             >
-              {runResult.verdict === 'Accepted' ? '✅' : runResult.verdict === 'Partial' ? '⚡' : '❌'} {runResult.verdict}
+              {runResult.verdict === 'Accepted' ? (
+                <IconCheck size={12} color="#10B981" />
+              ) : runResult.verdict === 'Partial' ? (
+                <IconFlash size={12} color="#F59E0B" />
+              ) : (
+                <IconCross size={12} color="#EF4444" />
+              )}
+              <span>{runResult.verdict}</span>
             </motion.div>
           )}
         </div>

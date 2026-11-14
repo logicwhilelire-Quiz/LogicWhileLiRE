@@ -1123,9 +1123,9 @@ export async function validateStudentEligibility(
  * PUBLIC – verifies hall ticket + exam code and allows entry
  */
 export async function verifyExamEntry(req: Request, res: Response): Promise<void> {
-  const hallTicket = req.body.hallTicket || req.body.hall_ticket;
-  const examCode = req.body.examCode || req.body.exam_code;
-  const studentName = req.body.studentName || req.body.candidateName || req.body.name;
+  const hallTicket = (req.body?.hallTicket || req.body?.hall_ticket || req.query?.hallTicket || req.query?.hall_ticket) as string | undefined;
+  const examCode = (req.body?.examCode || req.body?.exam_code || req.params?.code || req.query?.code || req.query?.examCode) as string | undefined;
+  const studentName = (req.body?.studentName || req.body?.candidateName || req.body?.name || req.query?.studentName || req.query?.name) as string | undefined;
 
   if (!hallTicket || !examCode) {
     res.status(400).json({ success: false, error: 'Hall ticket and exam code are required' });

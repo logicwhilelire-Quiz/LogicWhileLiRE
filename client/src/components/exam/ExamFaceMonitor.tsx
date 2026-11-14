@@ -25,13 +25,13 @@ export default function ExamFaceMonitor({ onStatusChange, size = 52, className =
   const getStatusConfig = (s: FaceStatus) => {
     switch (s) {
       case 'ok':
-        return { color: '#10B981', label: '1 Face ✓', glow: 'rgba(16,185,129,0.3)' }
+        return { color: '#10B981', label: '1 Face Verified', glow: 'rgba(16,185,129,0.3)' }
       case 'no_face':
-        return { color: '#F59E0B', label: 'No Face ⚠', glow: 'rgba(245,158,11,0.3)' }
+        return { color: '#F59E0B', label: 'No Face Detected', glow: 'rgba(245,158,11,0.3)' }
       case 'multiple':
-        return { color: '#EF4444', label: '2+ Faces ✗', glow: 'rgba(239,68,68,0.4)' }
+        return { color: '#EF4444', label: 'Multiple Faces', glow: 'rgba(239,68,68,0.4)' }
       case 'looking_away':
-        return { color: '#F97316', label: 'Looking Away ⚠', glow: 'rgba(249,115,22,0.3)' }
+        return { color: '#F97316', label: 'Gaze Deviation', glow: 'rgba(249,115,22,0.3)' }
       case 'loading':
       default:
         return { color: '#2B7FFF', label: 'Active', glow: 'rgba(43,127,255,0.3)' }

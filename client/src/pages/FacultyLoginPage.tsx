@@ -6,7 +6,7 @@ import { adminLogin } from '../lib/api';
 import { API_BASE_URL } from '../lib/config';
 import BrandLogo from '../components/BrandLogo';
 import ServerWakeupModal from '../components/ServerWakeupModal';
-import { IconUsers, IconAward, IconShield, IconRadio } from '../components/icons/HumanIcons';
+import { IconUsers, IconAward, IconShield, IconRadio, IconAlert, IconEye, IconFlash } from '../components/icons/HumanIcons';
 
 function FacultyGridBg() {
   return (
@@ -189,7 +189,7 @@ export default function FacultyLoginPage() {
                   gap: 8,
                 }}
               >
-                <span>⚠️</span>
+                <IconAlert size={16} color="#FCA5A5" />
                 <span>{error}</span>
               </div>
             )}
@@ -304,11 +304,13 @@ export default function FacultyLoginPage() {
                       border: 'none',
                       color: '#94A3B8',
                       cursor: 'pointer',
-                      fontSize: '1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       padding: 4,
                     }}
                   >
-                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                    <IconEye size={16} color={showPassword ? '#34D399' : '#94A3B8'} />
                   </button>
                 </div>
               </div>
@@ -325,7 +327,7 @@ export default function FacultyLoginPage() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: '#34D399', fontWeight: 600 }}>
-                    <span>⚡</span>
+                    <IconFlash size={14} color="#34D399" />
                     <span>
                       {warmUpSeconds < 8
                         ? 'Connecting to secure server...'

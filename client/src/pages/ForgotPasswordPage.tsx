@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { forgotPassword } from '../lib/api';
 import BrandLogo from '../components/BrandLogo';
 import AnimatedPage from '../components/AnimatedPage';
+import { IconMail, IconAlert } from '../components/icons/HumanIcons';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -66,7 +67,7 @@ export default function ForgotPasswordPage() {
                     margin: '0 auto 16px',
                   }}
                 >
-                  ✉️
+                  <IconMail size={24} color="#38bdf8" />
                 </div>
                 <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: 8, color: 'var(--color-text)' }}>
                   Check Your Inbox
@@ -91,8 +92,9 @@ export default function ForgotPasswordPage() {
             ) : (
               <form onSubmit={handleSubmit} noValidate>
                 {error && (
-                  <div className="alert alert-error mb-3" role="alert">
-                    ⚠️ {error}
+                  <div className="alert alert-error mb-3" role="alert" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <IconAlert size={16} color="#EF4444" />
+                    <span>{error}</span>
                   </div>
                 )}
 

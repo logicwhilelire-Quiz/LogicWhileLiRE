@@ -8,6 +8,7 @@ import AnimatedCounter from '../../components/AnimatedCounter';
 import BulkEnrollModal from '../../components/BulkEnrollModal';
 import LiquidBlob from '../../components/3d/LiquidBlob';
 import ParticleField from '../../components/3d/ParticleField';
+import { IconShield, IconLock, IconPlus, IconFileText, IconRadio, IconTrophy, IconDownload, IconUsers } from '../../components/icons/HumanIcons';
 
 interface Exam {
   id: string;
@@ -104,8 +105,18 @@ export default function AdminDashboardPage() {
             </div>
             <div className="card card-sm" style={{ borderLeft: '3px solid #f59e0b' }}>
               <div className="text-muted text-xs font-mono" style={{ textTransform: 'uppercase', marginBottom: 6 }}>Role Scope</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f59e0b', marginTop: 8 }}>
-                {isSuperAdmin ? '🛡️ Global Platform' : '🔒 Scoped to My Exams'}
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f59e0b', marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                {isSuperAdmin ? (
+                  <>
+                    <IconShield size={16} color="#f59e0b" />
+                    <span>Global Platform</span>
+                  </>
+                ) : (
+                  <>
+                    <IconLock size={16} color="#f59e0b" />
+                    <span>Scoped to My Exams</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -114,8 +125,9 @@ export default function AdminDashboardPage() {
             <h2 style={{ fontWeight: 700, fontSize: '1.1rem' }}>
               {isSuperAdmin ? 'All Assessment Exams' : 'My Assigned Exams'}
             </h2>
-            <button id="create-exam-quick-btn" className="btn btn-primary btn-sm" onClick={() => navigate('/admin/create-exam')}>
-              ➕ New Exam
+            <button id="create-exam-quick-btn" className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => navigate('/admin/create-exam')}>
+              <IconPlus size={14} color="currentColor" />
+              <span>New Exam</span>
             </button>
           </div>
 
@@ -125,7 +137,9 @@ export default function AdminDashboardPage() {
           </div>
         ) : exams.length === 0 ? (
           <div className="card text-center" style={{ padding: 48 }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📝</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+              <IconFileText size={40} color="#64748B" />
+            </div>
             <p className="font-bold mb-1">No exams found</p>
             <p className="text-muted text-sm mb-2">Create your first exam to get started.</p>
             <button className="btn btn-primary" onClick={() => navigate('/admin/create-exam')}>Create Exam</button>
@@ -168,31 +182,39 @@ export default function AdminDashboardPage() {
                       <button
                         id={`qr-exam-${exam.id}`}
                         className="btn btn-secondary btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                         onClick={() => setQrExamId(exam.id)}
                       >
-                        📷 QR
+                        <IconRadio size={14} color="currentColor" />
+                        <span>QR Pass</span>
                       </button>
                       <button
                         id={`leaderboard-exam-${exam.id}`}
                         className="btn btn-ghost btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                         onClick={() => navigate(`/leaderboard/${exam.id}`)}
                       >
-                        🏆 Leaderboard
+                        <IconTrophy size={14} color="currentColor" />
+                        <span>Leaderboard</span>
                       </button>
                       <button
                         id={`import-exam-${exam.id}`}
                         className="btn btn-ghost btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                         onClick={() => navigate(`/admin/import?examId=${exam.id}`)}
                       >
-                        📥 Import
+                        <IconDownload size={14} color="currentColor" />
+                        <span>Import</span>
                       </button>
                       <button
                         id={`bulk-enroll-exam-${exam.id}`}
                         className="btn btn-secondary btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                         onClick={() => setBulkEnrollExam(exam)}
                         title="Bulk Pre-Enroll Candidate Roster via CSV/Excel"
                       >
-                        👥 Bulk Enroll
+                        <IconUsers size={14} color="currentColor" />
+                        <span>Bulk Enroll</span>
                       </button>
                     </div>
                   </td>

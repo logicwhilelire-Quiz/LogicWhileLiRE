@@ -5,6 +5,30 @@ import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import BrandLogo from '../components/BrandLogo';
 import { sound } from '../lib/soundService';
+import {
+  IconClock,
+  IconShield,
+  IconTrophy,
+  IconRadio,
+  IconLaunch,
+  IconGraduation,
+  IconBuilding,
+  IconRadar,
+  IconHierarchy,
+  IconEye,
+  IconLock,
+  IconKey,
+  IconCode,
+  IconTarget,
+  IconFileText,
+  IconDownload,
+  IconSpeedometer,
+  IconGlobe,
+  IconMail,
+  IconPulse,
+  IconFlash,
+  IconCpu,
+} from '../components/icons/HumanIcons';
 
 /* ── Institutional Architectural Backdrop ── */
 function InstitutionalGridBackdrop() {
@@ -23,7 +47,7 @@ function InstitutionalGridBackdrop() {
   );
 }
 
-interface StatPillProps { icon: string; value: string; label: string }
+interface StatPillProps { icon: React.ReactNode; value: string; label: string }
 function StatPill({ icon, value, label }: StatPillProps) {
   return (
     <div style={{
@@ -33,7 +57,7 @@ function StatPill({ icon, value, label }: StatPillProps) {
       borderRadius: 12, padding: '10px 16px',
       backdropFilter: 'blur(12px)',
     }}>
-      <span style={{ fontSize: '1.25rem' }}>{icon}</span>
+      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
       <div>
         <div style={{ fontFamily: "'Rajdhani',sans-serif", fontWeight: 800, fontSize: '1.05rem', color: '#EAA812', lineHeight: 1 }}>{value}</div>
         <div style={{ fontSize: '0.68rem', color: '#94A3B8', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</div>
@@ -43,7 +67,7 @@ function StatPill({ icon, value, label }: StatPillProps) {
 }
 
 interface PortalCardProps {
-  icon: string; badge: string; badgeColor: string; badgeBg: string;
+  icon: React.ReactNode; badge: string; badgeColor: string; badgeBg: string;
   title: string; desc: string; href: string; btnId: string; btnLabel: string;
   btnGradient: string; glowColor: string; borderColor: string; delay?: number;
 }
@@ -73,7 +97,7 @@ function PortalCard({ icon, badge, badgeColor, badgeBg, title, desc, href, btnId
       }} />
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <span style={{ fontSize: '2.1rem', filter: `drop-shadow(0 0 10px ${glowColor}88)` }}>{icon}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
           <span style={{
             background: badgeBg, color: badgeColor, fontSize: '0.7rem', fontWeight: 800,
             padding: '4px 12px', borderRadius: 20, letterSpacing: '0.04em', textTransform: 'uppercase',
@@ -97,7 +121,7 @@ function PortalCard({ icon, badge, badgeColor, badgeBg, title, desc, href, btnId
 }
 
 interface SecurityCardProps {
-  icon: string;
+  icon: React.ReactNode;
   badge: string;
   title: string;
   desc: string;
@@ -128,7 +152,7 @@ function SecurityCard({ icon, badge, title, desc, glow, delay = 0 }: SecurityCar
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <span style={{ fontSize: '1.8rem' }}>{icon}</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
         <span
           style={{
             fontSize: '0.68rem',
@@ -189,21 +213,21 @@ function SectorCard({ sectorId, color, badge, name, desc, delay = 0 }: SectorCar
         <p style={{ fontSize: '0.77rem', color: '#64748B', lineHeight: 1.55, margin: 0 }}>{desc}</p>
       </div>
       <div style={{ marginTop: 14, fontSize: '0.74rem', fontWeight: 700, color, display: 'flex', alignItems: 'center', gap: 4 }}>
-        <span>⚡ Launch Sprint</span>
+        <span>Launch Sprint</span>
         <span>→</span>
       </div>
     </motion.div>
   );
 }
 
-function FeaturePill({ icon, text }: { icon: string; text: string }) {
+function FeaturePill({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
     <div style={{
       display: 'inline-flex', alignItems: 'center', gap: 7,
       background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
       borderRadius: 99, padding: '7px 14px', fontSize: '0.8rem', color: '#CBD5E1', fontWeight: 500,
     }}>
-      <span>{icon}</span> {text}
+      <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icon}</span> {text}
     </div>
   );
 }
@@ -323,7 +347,7 @@ export default function LandingPage() {
             onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 34px rgba(16,185,129,0.65)'; }}
             onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 26px rgba(16,185,129,0.45)'; }}
             >
-              🚀 Enter Exam Code
+              <IconLaunch size={18} color="#FFFFFF" /> Enter Exam Code
             </Link>
             <Link to="/login" id="hero-student-gate-btn" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -335,7 +359,7 @@ export default function LandingPage() {
             onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 34px rgba(2,132,199,0.65)'; }}
             onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 26px rgba(2,132,199,0.45)'; }}
             >
-              🎓 Student Gate
+              <IconGraduation size={18} color="#FFFFFF" /> Student Gate
             </Link>
             <Link to="/practice" id="hero-practice-btn" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -347,7 +371,7 @@ export default function LandingPage() {
             onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 32px rgba(139,92,246,0.55)'; }}
             onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 24px rgba(139,92,246,0.35)'; }}
             >
-              🪐 5 Sectors Arena
+              <IconTarget size={18} color="#FFFFFF" /> 5 Sectors Arena
             </Link>
             <Link to="/admin" id="hero-admin-btn" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -359,7 +383,7 @@ export default function LandingPage() {
             onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 32px rgba(234,168,18,0.55)'; }}
             onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 24px rgba(234,168,18,0.35)'; }}
             >
-              🏛️ Admin Console
+              <IconHierarchy size={18} color="#001A38" /> Admin Console
             </Link>
             <Link to="/inspector" id="hero-inspector-btn" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -371,7 +395,7 @@ export default function LandingPage() {
             onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(167,139,250,0.12)'; el.style.transform = 'translateY(-2px)'; }}
             onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.07)'; el.style.transform = ''; }}
             >
-              🔍 Inspector Console
+              <IconRadar size={18} color="#A78BFA" /> Inspector Console
             </Link>
           </motion.div>
 
@@ -393,7 +417,7 @@ export default function LandingPage() {
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: '1.1rem' }}>⚡</span>
+                <IconFlash size={18} color="#34D399" />
                 <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                   Exam Morning Express Gateway
                 </span>
@@ -459,7 +483,7 @@ export default function LandingPage() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                <span>🚀</span> Start Assessment
+                <IconLaunch size={16} color="#FFFFFF" /> Start Assessment
               </button>
             </form>
           </motion.div>
@@ -468,10 +492,10 @@ export default function LandingPage() {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }}
             style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}
           >
-            <StatPill icon="⚡" value="< 50ms" label="Timer Sync" />
-            <StatPill icon="🔒" value="5-Layer" label="Anti-Cheat" />
-            <StatPill icon="📡" value="Real-Time" label="Leaderboard" />
-            <StatPill icon="🛡️" value="Offline" label="Resilient" />
+            <StatPill icon={<IconClock size={20} color="#EAA812" />} value="< 50ms" label="Timer Sync" />
+            <StatPill icon={<IconShield size={20} color="#10B981" />} value="5-Layer" label="Anti-Cheat" />
+            <StatPill icon={<IconTrophy size={20} color="#38BDF8" />} value="Real-Time" label="Leaderboard" />
+            <StatPill icon={<IconRadio size={20} color="#A78BFA" />} value="Offline" label="Resilient" />
           </motion.div>
         </div>
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, background: 'linear-gradient(0deg,#060B1A,transparent)', pointerEvents: 'none' }} />
@@ -494,11 +518,11 @@ export default function LandingPage() {
           </motion.div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(230px,1fr))', gap: 20 }}>
-            <PortalCard icon="🚀" badge="Exam Entry" badgeColor="#10B981" badgeBg="rgba(16,185,129,0.12)" title="Exam Code Portal" desc="Direct candidate exam access using assigned Exam Code and Roll Number. Zero email/OTP required for pre-registered candidates." href="/enter-exam" btnId="landing-enter-exam-btn" btnLabel="Enter Exam Session" btnGradient="linear-gradient(135deg,#10B981 0%,#059669 100%)" glowColor="#10B981" borderColor="rgba(16,185,129,0.25)" delay={0.04} />
-            <PortalCard icon="🎓" badge="Candidate Gate" badgeColor="#38BDF8" badgeBg="rgba(56,189,248,0.12)" title="Student Portal" desc="Official examination portal for verified candidates. Sign in to view comprehensive performance analytics, scorecards, and ranking history." href="/login" btnId="landing-student-login-btn" btnLabel="Enter Candidate Gate" btnGradient="linear-gradient(135deg,#0284c7 0%,#1d4ed8 100%)" glowColor="#38BDF8" borderColor="rgba(56,189,248,0.25)" delay={0.08} />
-            <PortalCard icon="👨‍🏫" badge="Academic Staff" badgeColor="#F43F5E" badgeBg="rgba(244,63,94,0.12)" title="Faculty Portal" desc="Curriculum & question paper setting, section-scoped student management, and assessment creation for accredited trainers." href="/faculty" btnId="landing-faculty-login-btn" btnLabel="Sign In as Faculty" btnGradient="linear-gradient(135deg,#E11D48 0%,#F43F5E 100%)" glowColor="#F43F5E" borderColor="rgba(244,63,94,0.25)" delay={0.12} />
-            <PortalCard icon="🔍" badge="Invigilation" badgeColor="#A78BFA" badgeBg="rgba(167,139,250,0.12)" title="Inspector Console" desc="Live invigilation dashboard with real-time leaderboards, violation alerts, whisper messaging, and candidate communication." href="/inspector" btnId="landing-inspector-login-btn" btnLabel="Sign In as Inspector" btnGradient="linear-gradient(135deg,#7C3AED 0%,#8B5CF6 100%)" glowColor="#8B5CF6" borderColor="rgba(139,92,246,0.16)" delay={0.16} />
-            <PortalCard icon="🏛️" badge="Master Authority" badgeColor="#FBBF24" badgeBg="rgba(251,191,36,0.12)" title="Admin Console" desc="Complete administrative control — manage colleges, question papers, academic hierarchy, live exam orchestration, and backups." href="/admin" btnId="landing-admin-login-btn" btnLabel="Sign In as Admin" btnGradient="linear-gradient(135deg,#D97706 0%,#EAA812 100%)" glowColor="#EAA812" borderColor="rgba(234,168,18,0.18)" delay={0.20} />
+            <PortalCard icon={<IconLaunch size={32} color="#10B981" />} badge="Exam Entry" badgeColor="#10B981" badgeBg="rgba(16,185,129,0.12)" title="Exam Code Portal" desc="Direct candidate exam access using assigned Exam Code and Roll Number. Zero email/OTP required for pre-registered candidates." href="/enter-exam" btnId="landing-enter-exam-btn" btnLabel="Enter Exam Session" btnGradient="linear-gradient(135deg,#10B981 0%,#059669 100%)" glowColor="#10B981" borderColor="rgba(16,185,129,0.25)" delay={0.04} />
+            <PortalCard icon={<IconGraduation size={32} color="#38BDF8" />} badge="Candidate Gate" badgeColor="#38BDF8" badgeBg="rgba(56,189,248,0.12)" title="Student Portal" desc="Official examination portal for verified candidates. Sign in to view comprehensive performance analytics, scorecards, and ranking history." href="/login" btnId="landing-student-login-btn" btnLabel="Enter Candidate Gate" btnGradient="linear-gradient(135deg,#0284c7 0%,#1d4ed8 100%)" glowColor="#38BDF8" borderColor="rgba(56,189,248,0.25)" delay={0.08} />
+            <PortalCard icon={<IconBuilding size={32} color="#F43F5E" />} badge="Academic Staff" badgeColor="#F43F5E" badgeBg="rgba(244,63,94,0.12)" title="Faculty Portal" desc="Curriculum & question paper setting, section-scoped student management, and assessment creation for accredited trainers." href="/faculty" btnId="landing-faculty-login-btn" btnLabel="Sign In as Faculty" btnGradient="linear-gradient(135deg,#E11D48 0%,#F43F5E 100%)" glowColor="#F43F5E" borderColor="rgba(244,63,94,0.25)" delay={0.12} />
+            <PortalCard icon={<IconRadar size={32} color="#A78BFA" />} badge="Invigilation" badgeColor="#A78BFA" badgeBg="rgba(167,139,250,0.12)" title="Inspector Console" desc="Live invigilation dashboard with real-time leaderboards, violation alerts, whisper messaging, and candidate communication." href="/inspector" btnId="landing-inspector-login-btn" btnLabel="Sign In as Inspector" btnGradient="linear-gradient(135deg,#7C3AED 0%,#8B5CF6 100%)" glowColor="#8B5CF6" borderColor="rgba(139,92,246,0.16)" delay={0.16} />
+            <PortalCard icon={<IconHierarchy size={32} color="#FBBF24" />} badge="Master Authority" badgeColor="#FBBF24" badgeBg="rgba(251,191,36,0.12)" title="Admin Console" desc="Complete administrative control — manage colleges, question papers, academic hierarchy, live exam orchestration, and backups." href="/admin" btnId="landing-admin-login-btn" btnLabel="Sign In as Admin" btnGradient="linear-gradient(135deg,#D97706 0%,#EAA812 100%)" glowColor="#EAA812" borderColor="rgba(234,168,18,0.18)" delay={0.20} />
           </div>
         </div>
       </section>
@@ -512,16 +536,16 @@ export default function LandingPage() {
           }}>
             <div style={{ fontSize: '0.7rem', color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Platform Capabilities</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9 }}>
-              <FeaturePill icon="⚡" text="Server-Authoritative Timers" />
-              <FeaturePill icon="👁️" text="Webcam + Screen Proctoring" />
-              <FeaturePill icon="🔒" text="Strict Fullscreen Integrity" />
-              <FeaturePill icon="📡" text="Offline Answer Buffering" />
-              <FeaturePill icon="🏆" text="Real-Time Leaderboard" />
-              <FeaturePill icon="🔐" text="Multi-Role RBAC" />
-              <FeaturePill icon="💻" text="Live Code Execution" />
-              <FeaturePill icon="🛡️" text="Anti-Cheat Engine" />
-              <FeaturePill icon="📊" text="Radar Skill Analytics" />
-              <FeaturePill icon="📋" text="Hall Ticket Generation" />
+              <FeaturePill icon={<IconClock size={15} color="#38BDF8" />} text="Server-Authoritative Timers" />
+              <FeaturePill icon={<IconEye size={15} color="#A78BFA" />} text="Webcam + Screen Proctoring" />
+              <FeaturePill icon={<IconLock size={15} color="#FBBF24" />} text="Strict Fullscreen Integrity" />
+              <FeaturePill icon={<IconRadio size={15} color="#34D399" />} text="Offline Answer Buffering" />
+              <FeaturePill icon={<IconTrophy size={15} color="#F59E0B" />} text="Real-Time Leaderboard" />
+              <FeaturePill icon={<IconKey size={15} color="#38BDF8" />} text="Multi-Role RBAC" />
+              <FeaturePill icon={<IconCode size={15} color="#10B981" />} text="Live Code Execution" />
+              <FeaturePill icon={<IconShield size={15} color="#F43F5E" />} text="Anti-Cheat Engine" />
+              <FeaturePill icon={<IconTarget size={15} color="#8B5CF6" />} text="Radar Skill Analytics" />
+              <FeaturePill icon={<IconFileText size={15} color="#EAA812" />} text="Hall Ticket Generation" />
             </div>
           </div>
         </div>
@@ -699,7 +723,7 @@ export default function LandingPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 18 }}>
             <SecurityCard
-              icon="🕒"
+              icon={<IconClock size={28} color="#38BDF8" />}
               badge="Timing Protocol"
               title="Server-Authoritative Clock"
               desc="Centralized cluster timers dictate exam windows. Local workstation clock manipulation cannot bypass countdowns, start times, or automated submission locks."
@@ -707,7 +731,7 @@ export default function LandingPage() {
               delay={0.06}
             />
             <SecurityCard
-              icon="🔑"
+              icon={<IconKey size={28} color="#EAA812" />}
               badge="Session Concurrency"
               title="Cryptographic Single-Session Lock"
               desc="Every candidate attempt receives a high-entropy 32-hex session token. Simultaneous browser tabs or secondary device logins instantly evict prior sessions."
@@ -715,7 +739,7 @@ export default function LandingPage() {
               delay={0.12}
             />
             <SecurityCard
-              icon="👁️"
+              icon={<IconEye size={28} color="#F43F5E" />}
               badge="Proctoring"
               title="Multi-Vector Anti-Cheat Monitor"
               desc="Integrated tab-switch detection, fullscreen loss interception, copy-paste blocking, and automated strike counters trigger immediate proctor escalation."
@@ -723,7 +747,7 @@ export default function LandingPage() {
               delay={0.18}
             />
             <SecurityCard
-              icon="🛡️"
+              icon={<IconShield size={28} color="#10B981" />}
               badge="Access Control"
               title="Strict Multi-Role Isolation (RBAC)"
               desc="Cryptographic JWT tokens securely isolate Student, Faculty, College Inspector, and Admin scopes. Database queries strictly enforce college tenant boundaries."
@@ -731,7 +755,7 @@ export default function LandingPage() {
               delay={0.24}
             />
             <SecurityCard
-              icon="💾"
+              icon={<IconDownload size={28} color="#8B5CF6" />}
               badge="Network Resilience"
               title="Zero-Loss Offline Data Buffering"
               desc="Answers are buffered immediately in client IndexedDB storage with microsecond timestamps, synchronizing seamlessly during transient campus Wi-Fi drops."
@@ -739,7 +763,7 @@ export default function LandingPage() {
               delay={0.3}
             />
             <SecurityCard
-              icon="📜"
+              icon={<IconFileText size={28} color="#F59E0B" />}
               badge="Audit & Compliance"
               title="Immutable Audit Trails & Alerts"
               desc="Administrative modifications, test cancellations, score adjustments, and gate pass verifications are immutably logged with IP and role fingerprints."
@@ -769,11 +793,11 @@ export default function LandingPage() {
           </motion.div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 16 }}>
-            <SectorCard sectorId="sector-quant" color="#F59E0B" badge="📐 Quantitative Velocity" name="Sector 1: Quant" desc="Arithmetic acceleration, algebraic transformations, geometric logic, probabilistic models." delay={0} />
-            <SectorCard sectorId="sector-logic" color="#8B5CF6" badge="🧩 Deductive Logic" name="Sector 2: Logic" desc="Constraint satisfaction, inductive sequences, syllogistic deduction, Boolean matrices." delay={0.07} />
-            <SectorCard sectorId="sector-core-cs" color="#10B981" badge="💻 Core CS & Systems" name="Sector 3: Core CS" desc="OS scheduling, paging, thread synchronization, TCP/IP networking, SQL indexing." delay={0.14} />
-            <SectorCard sectorId="sector-dsa" color="#38BDF8" badge="⚡ Algorithms & DSA" name="Sector 4: DSA" desc="Dynamic programming, graph traversals, amortized complexity, algorithmic velocity." delay={0.21} />
-            <SectorCard sectorId="sector-fullstack" color="#F43F5E" badge="🌐 Full-Stack & Cloud" name="Sector 5: Cloud" desc="Distributed architectures, microservices, cloud scaling, concurrency, fault tolerance." delay={0.28} />
+            <SectorCard sectorId="sector-quant" color="#F59E0B" badge="Quantitative Velocity" name="Sector 1: Quant" desc="Arithmetic acceleration, algebraic transformations, geometric logic, probabilistic models." delay={0} />
+            <SectorCard sectorId="sector-logic" color="#8B5CF6" badge="Deductive Logic" name="Sector 2: Logic" desc="Constraint satisfaction, inductive sequences, syllogistic deduction, Boolean matrices." delay={0.07} />
+            <SectorCard sectorId="sector-core-cs" color="#10B981" badge="Core CS & Systems" name="Sector 3: Core CS" desc="OS scheduling, paging, thread synchronization, TCP/IP networking, SQL indexing." delay={0.14} />
+            <SectorCard sectorId="sector-dsa" color="#38BDF8" badge="Algorithms & DSA" name="Sector 4: DSA" desc="Dynamic programming, graph traversals, amortized complexity, algorithmic velocity." delay={0.21} />
+            <SectorCard sectorId="sector-fullstack" color="#F43F5E" badge="Full-Stack & Cloud" name="Sector 5: Cloud" desc="Distributed architectures, microservices, cloud scaling, concurrency, fault tolerance." delay={0.28} />
           </div>
 
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} style={{ textAlign: 'center', marginTop: 36 }}>
@@ -788,7 +812,7 @@ export default function LandingPage() {
             onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(234,168,18,0.18)'; el.style.transform = 'translateY(-2px)'; }}
             onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(234,168,18,0.10)'; el.style.transform = ''; }}
             >
-              <span>🪐</span> Explore 5-Sector Practice Arena →
+              <IconTarget size={18} color="#EAA812" /> Explore 5-Sector Practice Arena →
             </Link>
           </motion.div>
         </div>
@@ -817,7 +841,9 @@ export default function LandingPage() {
               background: 'rgba(10,16,35,0.7)', border: '1.5px solid rgba(234,168,18,0.25)',
               borderRadius: 16, padding: '24px 22px', backdropFilter: 'blur(16px)',
             }}>
-              <div style={{ fontSize: '1.8rem', marginBottom: 12 }}>🏛️</div>
+              <div style={{ marginBottom: 12 }}>
+                <IconBuilding size={32} color="#EAA812" />
+              </div>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px', fontFamily: "'Rajdhani',sans-serif" }}>
                 Hyderabad Campus Headquarters
               </h3>
@@ -826,8 +852,8 @@ export default function LandingPage() {
                 Madhapur, HITEC City, Hyderabad<br />
                 Telangana 500081, India
               </p>
-              <div style={{ fontSize: '0.78rem', color: '#EAA812', fontWeight: 700 }}>
-                📍 Main Technological Center
+              <div style={{ fontSize: '0.78rem', color: '#EAA812', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <IconTarget size={14} color="#EAA812" /> Main Technological Center
               </div>
             </div>
 
@@ -835,7 +861,9 @@ export default function LandingPage() {
               background: 'rgba(10,16,35,0.7)', border: '1.5px solid rgba(56,189,248,0.25)',
               borderRadius: 16, padding: '24px 22px', backdropFilter: 'blur(16px)',
             }}>
-              <div style={{ fontSize: '1.8rem', marginBottom: 12 }}>✉️</div>
+              <div style={{ marginBottom: 12 }}>
+                <IconMail size={32} color="#38BDF8" />
+              </div>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px', fontFamily: "'Rajdhani',sans-serif" }}>
                 Administrative &amp; Helpdesk Email
               </h3>
@@ -844,8 +872,8 @@ export default function LandingPage() {
                 Inspector Desk: inspector@logicwhilelire.com<br />
                 Inquiries: contact@logicwhile.com
               </p>
-              <div style={{ fontSize: '0.78rem', color: '#38BDF8', fontWeight: 700 }}>
-                ⚡ 24/7 Monitored Dispatch
+              <div style={{ fontSize: '0.78rem', color: '#38BDF8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <IconFlash size={14} color="#38BDF8" /> 24/7 Monitored Dispatch
               </div>
             </div>
 
@@ -853,7 +881,9 @@ export default function LandingPage() {
               background: 'rgba(10,16,35,0.7)', border: '1.5px solid rgba(16,185,129,0.25)',
               borderRadius: 16, padding: '24px 22px', backdropFilter: 'blur(16px)',
             }}>
-              <div style={{ fontSize: '1.8rem', marginBottom: 12 }}>📞</div>
+              <div style={{ marginBottom: 12 }}>
+                <IconPulse size={32} color="#10B981" />
+              </div>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px', fontFamily: "'Rajdhani',sans-serif" }}>
                 Institutional Exam Helpline
               </h3>
@@ -862,8 +892,8 @@ export default function LandingPage() {
                 Examination Technical Support Desk<br />
                 Operating: Mon–Sat 08:00 – 20:00 IST
               </p>
-              <div style={{ fontSize: '0.78rem', color: '#10B981', fontWeight: 700 }}>
-                🛡️ Live Invigilation Hotlines
+              <div style={{ fontSize: '0.78rem', color: '#10B981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <IconShield size={14} color="#10B981" /> Live Invigilation Hotlines
               </div>
             </div>
           </div>

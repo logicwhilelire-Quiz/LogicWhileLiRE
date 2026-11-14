@@ -3,6 +3,7 @@
  * Phase 1c: Visible "Reconnecting / Synced" status banner for exam page.
  */
 import { useOfflineStatus } from '../hooks/useOfflineStatus';
+import { IconAlert, IconCheck } from './icons/HumanIcons';
 
 export default function OfflineIndicator() {
   const { isOffline, justReconnected } = useOfflineStatus();
@@ -43,13 +44,13 @@ export default function OfflineIndicator() {
     >
       {isOffline ? (
         <>
-          <span style={{ fontSize: '1.1em' }}>⚠️</span>
-          Reconnecting… Your answers are saved locally
+          <IconAlert size={16} color="#ffffff" />
+          <span>Reconnecting… Your answers are saved locally</span>
         </>
       ) : (
         <>
-          <span style={{ fontSize: '1.1em' }}>✅</span>
-          Back online — answers synced
+          <IconCheck size={16} color="#ffffff" strokeWidth={2.5} />
+          <span>Back online — answers synced</span>
         </>
       )}
     </div>

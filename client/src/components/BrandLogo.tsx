@@ -207,7 +207,9 @@ export default function BrandLogo({
               <span style={{ fontSize: '0.72rem', fontWeight: 800, color: isDark ? '#38BDF8' : '#00127A', letterSpacing: '0.04em' }}>
                 ELEVATING CODING KNOWLEDGE
               </span>
-              <span style={{ color: '#FF7A00', fontSize: '0.7rem' }}>✦</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="#FF7A00" aria-hidden="true"><polygon points="12,2 15,9 22,12 15,15 12,22 9,15 2,12 9,9" /></svg>
+              </span>
               <span style={{ fontSize: '0.68rem', color: isDark ? '#94A3B8' : '#64748B', fontFamily: 'monospace' }}>
                 Li: Live • R: Real • E: Engine
               </span>

@@ -16,6 +16,16 @@ import {
   IconUsers,
   IconTerminal,
   IconSearch,
+  IconBook,
+  IconCode,
+  IconRadio,
+  IconEye,
+  IconSpeedometer,
+  IconBuilding,
+  IconKey,
+  IconFileText,
+  IconClipboard,
+  IconTarget,
 } from "../components/icons/HumanIcons";
 
 interface CandidateProfile {
@@ -72,10 +82,70 @@ const formatRelativeTime = (isoString?: string) => {
   }
 };
 
+const LOBBY_EXAM_SECTORS = [
+  {
+    id: 'sec-1',
+    code: 'SECTOR-01',
+    name: 'Quantitative Velocity',
+    subtitle: 'Arithmetic acceleration, algebraic transformations, geometric logic, probabilistic models',
+    color: '#F59E0B',
+    questions: '4 Questions',
+    marks: '4 Marks',
+    time: '~10 Mins',
+    format: 'MCQ Single Choice',
+  },
+  {
+    id: 'sec-2',
+    code: 'SECTOR-02',
+    name: 'Deductive Logic',
+    subtitle: 'Constraint satisfaction, inductive sequences, syllogistic deduction, Boolean matrices',
+    color: '#8B5CF6',
+    questions: '4 Questions',
+    marks: '4 Marks',
+    time: '~10 Mins',
+    format: 'MCQ Single Choice',
+  },
+  {
+    id: 'sec-3',
+    code: 'SECTOR-03',
+    name: 'Core CS & Systems',
+    subtitle: 'Operating Systems kernel scheduling, DBMS indexes, TCP/IP networks, Computer Architecture',
+    color: '#10B981',
+    questions: '4 Questions',
+    marks: '4 Marks',
+    time: '~10 Mins',
+    format: 'MCQ Single Choice',
+  },
+  {
+    id: 'sec-4',
+    code: 'SECTOR-04',
+    name: 'Advanced Algorithmic Coding',
+    subtitle: 'Dynamic programming, data structures, graph traversals, LiRE isolated code runtime execution',
+    color: '#38BDF8',
+    questions: '2 Challenges',
+    marks: '6 Marks',
+    time: '~20 Mins',
+    format: 'Python / C / Java / JS Sandbox',
+  },
+  {
+    id: 'sec-5',
+    code: 'SECTOR-05',
+    name: 'Spatial & Verbal Reasoning',
+    subtitle: 'Pattern symmetry, technical reading comprehension, critical analysis, deductive diagrams',
+    color: '#EC4899',
+    questions: '3 Questions',
+    marks: '3 Marks',
+    time: '~5 Mins',
+    format: 'MCQ Single Choice',
+  },
+];
+
 export default function WaitingLobbyPage() {
   const { contestId = "exam-session" } = useParams<{ contestId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [activeTab, setActiveTab] = useState<'sections' | 'syllabus' | 'security' | 'telemetry'>('sections');
 
   const [candidate, setCandidate] = useState<CandidateProfile | null>(() => {
     const locState = (location.state as any) || {};
@@ -104,7 +174,7 @@ export default function WaitingLobbyPage() {
             college_name: cand.college_name || 'Institutional Campus',
           } as CandidateProfile;
         }
-      } catch {}
+      } catch { }
     }
     return null;
   });
@@ -169,7 +239,7 @@ export default function WaitingLobbyPage() {
       sessionStorage.setItem('lw_camera_consented', 'true');
       localStorage.setItem('logicwhilelire_attempt', JSON.stringify(currentAttempt));
       localStorage.setItem('lw_attempt', JSON.stringify(currentAttempt));
-    } catch {}
+    } catch { }
 
     navigate(`/instructions/${contestId}`, {
       state: {
@@ -277,7 +347,7 @@ export default function WaitingLobbyPage() {
           });
           addEvent('[START] Administrator dispatched live start command! Launching assessment…', 'alert');
         }
-      } catch {}
+      } catch { }
     };
 
     checkAdminCommand();
@@ -295,7 +365,7 @@ export default function WaitingLobbyPage() {
             checkAdminCommand();
           }
         };
-      } catch {}
+      } catch { }
     }
 
     window.addEventListener('storage', checkAdminCommand);
@@ -332,7 +402,7 @@ export default function WaitingLobbyPage() {
     const effectiveSection = resolvedCandidate?.section || 'General';
     const effectiveAttemptId = (location.state as any)?.attemptId || resolvedCandidate?.attemptId;
 
-    getAssessmentSystemCheck().catch(() => {});
+    getAssessmentSystemCheck().catch(() => { });
 
     const socket = connectSocket(SOCKET_URL, {
       transports: ["websocket", "polling"],
@@ -472,7 +542,7 @@ export default function WaitingLobbyPage() {
         } else if (res.data?.status === 'rejected') {
           setIsRejected(true);
         }
-      } catch {}
+      } catch { }
     };
 
     const interval = setInterval(checkStatus, 3000);
@@ -932,8 +1002,8 @@ export default function WaitingLobbyPage() {
                   background: examStarted
                     ? "linear-gradient(135deg, #10B981, #059669)"
                     : isReleased
-                    ? "linear-gradient(135deg, #2563EB, #1D4ED8)"
-                    : "rgba(255,255,255,0.08)",
+                      ? "linear-gradient(135deg, #2563EB, #1D4ED8)"
+                      : "rgba(255,255,255,0.08)",
                   boxShadow: (examStarted || isReleased) ? "0 4px 16px rgba(16,185,129,0.35)" : "none",
                   fontSize: "0.88rem",
                   fontWeight: 800,
@@ -1087,12 +1157,13 @@ export default function WaitingLobbyPage() {
 
           {/* Column 2: Roster Stats, Academic Sections Breakdown, Filter Tabs, Live Table & Live Telemetry */}
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            {/* Visual Connection Counters */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+            {/* Visual Connection Counters & Sector Matrix Pills */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
               {[
-                { label: "In Lobby", value: lobbyMeta.connected || allParticipants.length, color: "#38BDF8" },
-                { label: "Enrolled", value: lobbyMeta.enrolled || Math.max(allParticipants.length, 1), color: "#EAA812" },
-                { label: "Pending", value: lobbyMeta.pending, color: "#F59E0B" },
+                { label: "In Lobby", value: lobbyMeta.connected || allParticipants.length, color: "#38BDF8", icon: <IconRadio size={14} color="#38BDF8" /> },
+                { label: "Enrolled", value: lobbyMeta.enrolled || Math.max(allParticipants.length, 1), color: "#EAA812", icon: <IconUsers size={14} color="#EAA812" /> },
+                { label: "Academic Secs", value: Object.keys(sectionCounts).length, color: "#10B981", icon: <IconBuilding size={14} color="#10B981" /> },
+                { label: "Exam Sectors", value: "5 Sectors", color: "#EC4899", icon: <IconTarget size={14} color="#EC4899" /> },
               ].map((s) => (
                 <div
                   key={s.label}
@@ -1100,309 +1171,517 @@ export default function WaitingLobbyPage() {
                     background: "#0E1A2E",
                     border: "1px solid rgba(255,255,255,0.1)",
                     borderRadius: 8,
-                    padding: "14px 10px",
+                    padding: "12px 8px",
                     textAlign: "center",
                   }}
                 >
-                  <div style={{ fontSize: "1.5rem", fontWeight: 800, color: s.color }}>{s.value}</div>
-                  <div style={{ fontSize: "0.68rem", textTransform: "uppercase", color: "#94A3B8", marginTop: 3, fontWeight: 700 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, marginBottom: 2 }}>
+                    {s.icon}
+                    <span style={{ fontSize: "1.3rem", fontWeight: 800, color: s.color }}>{s.value}</span>
+                  </div>
+                  <div style={{ fontSize: "0.66rem", textTransform: "uppercase", color: "#94A3B8", fontWeight: 700 }}>
                     {s.label}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Academic Sections Breakdown Overview */}
-            <div
-              style={{
-                background: "#0E1A2E",
-                border: "1px solid rgba(234, 168, 18, 0.25)",
-                borderRadius: 10,
-                padding: "14px 16px",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-              }}
-            >
+            {/* Lobby View Control Tabs */}
+            <div style={{ display: "flex", gap: 6, background: "#0E1A2E", padding: "6px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", flexWrap: "wrap" }}>
+              {[
+                { id: 'sections', label: 'Academic Sections & Roster', icon: <IconUsers size={14} /> },
+                { id: 'syllabus', label: '5-Sector Exam Syllabus', icon: <IconBook size={14} /> },
+                { id: 'security', label: 'Proctoring Protocols', icon: <IconShield size={14} /> },
+                { id: 'telemetry', label: 'Live Telemetry Stream', icon: <IconTerminal size={14} /> },
+              ].map((t) => {
+                const isTabActive = activeTab === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setActiveTab(t.id as any)}
+                    style={{
+                      flex: "1 1 140px",
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      border: isTabActive ? "1px solid #EAA812" : "1px solid transparent",
+                      background: isTabActive ? "rgba(234, 168, 18, 0.15)" : "rgba(255,255,255,0.03)",
+                      color: isTabActive ? "#EAA812" : "#94A3B8",
+                      fontWeight: 800,
+                      fontSize: "0.74rem",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    {t.icon}
+                    <span>{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* TAB 1: ACADEMIC SECTIONS & LIVE ROSTER */}
+            {activeTab === 'sections' && (
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 10,
-                }}
-              >
-                <div style={{ fontSize: "0.78rem", fontWeight: 800, textTransform: "uppercase", color: "#EAA812", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 6 }}>
-                  <IconUsers size={14} color="#EAA812" />
-                  <span>Academic Sections Distribution</span>
-                </div>
-                <div style={{ fontSize: "0.7rem", color: "#94A3B8" }}>
-                  {Object.keys(sectionCounts).length} active {Object.keys(sectionCounts).length === 1 ? 'section' : 'sections'}
-                </div>
-              </div>
-
-              {/* Section Overview Mini-Cards */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8, marginBottom: 14 }}>
-                {Object.entries(sectionCounts).map(([sec, count]) => {
-                  const isSelected = selectedSection === sec;
-                  return (
-                    <button
-                      key={sec}
-                      type="button"
-                      onClick={() => setSelectedSection(sec)}
-                      style={{
-                        background: isSelected ? "rgba(234, 168, 18, 0.15)" : "rgba(0, 33, 71, 0.3)",
-                        border: isSelected ? "1.5px solid #EAA812" : "1px solid rgba(255,255,255,0.08)",
-                        borderRadius: 8,
-                        padding: "8px 10px",
-                        textAlign: "left",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: "0.72rem", fontWeight: 800, color: isSelected ? "#EAA812" : "#CBD5E1" }}>
-                          {sec}
-                        </span>
-                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10B981" }} />
-                      </div>
-                      <div style={{ fontSize: "1.1rem", fontWeight: 900, color: "#FFFFFF", marginTop: 2 }}>
-                        {count} <span style={{ fontSize: "0.66rem", color: "#64748B", fontWeight: 600 }}>waiting</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Section Filter Tabs */}
-              <div style={{ display: "flex", alignItems: "center", gap: 6, overflowX: "auto", paddingBottom: 6, marginBottom: 12 }}>
-                {availableSections.map((sec) => {
-                  const isSelected = selectedSection === sec;
-                  const count = sec === 'ALL' ? allParticipants.length : (sectionCounts[sec] || 0);
-                  return (
-                    <button
-                      key={sec}
-                      type="button"
-                      onClick={() => setSelectedSection(sec)}
-                      style={{
-                        padding: "5px 12px",
-                        borderRadius: 6,
-                        background: isSelected ? "#EAA812" : "rgba(255,255,255,0.06)",
-                        color: isSelected ? "#002147" : "#CBD5E1",
-                        border: isSelected ? "1px solid #EAA812" : "1px solid rgba(255,255,255,0.12)",
-                        fontSize: "0.74rem",
-                        fontWeight: 800,
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 6,
-                        transition: "all 0.15s ease",
-                      }}
-                    >
-                      <span>{sec === 'ALL' ? 'ALL SECTIONS' : sec}</span>
-                      <span
-                        style={{
-                          background: isSelected ? "rgba(0, 33, 71, 0.25)" : "rgba(255,255,255,0.15)",
-                          color: isSelected ? "#002147" : "#EAA812",
-                          padding: "1px 5px",
-                          borderRadius: 10,
-                          fontSize: "0.64rem",
-                          fontWeight: 800,
-                        }}
-                      >
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Live Room Participants Table */}
-              <div
-                style={{
-                  background: "rgba(0, 15, 35, 0.5)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 8,
-                  overflow: "hidden",
+                  background: "#0E1A2E",
+                  border: "1px solid rgba(234, 168, 18, 0.25)",
+                  borderRadius: 10,
+                  padding: "14px 16px",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
                 }}
               >
                 <div
                   style={{
-                    padding: "10px 14px",
-                    borderBottom: "1px solid rgba(255,255,255,0.08)",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    background: "rgba(0, 33, 71, 0.3)",
+                    marginBottom: 10,
                   }}
                 >
-                  <div style={{ fontSize: "0.76rem", fontWeight: 800, color: "#FFFFFF", letterSpacing: "0.03em" }}>
-                    ROSTER ({filteredParticipants.length})
+                  <div style={{ fontSize: "0.78rem", fontWeight: 800, textTransform: "uppercase", color: "#EAA812", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 6 }}>
+                    <IconUsers size={14} color="#EAA812" />
+                    <span>Academic Sections Distribution</span>
                   </div>
-                  <div style={{ position: "relative", width: 180, maxWidth: "50%" }}>
-                    <input
-                      type="text"
-                      placeholder="Filter roll / name..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      style={{
-                        width: "100%",
-                        background: "rgba(0, 20, 45, 0.8)",
-                        border: "1px solid rgba(255,255,255,0.14)",
-                        borderRadius: 6,
-                        padding: "4px 8px 4px 26px",
-                        color: "#FFFFFF",
-                        fontSize: "0.72rem",
-                        outline: "none",
-                      }}
-                    />
-                    <span style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
-                      <IconSearch size={12} color="#64748B" />
-                    </span>
+                  <div style={{ fontSize: "0.7rem", color: "#94A3B8" }}>
+                    {Object.keys(sectionCounts).length} active {Object.keys(sectionCounts).length === 1 ? 'section' : 'sections'}
                   </div>
                 </div>
 
-                <div style={{ maxHeight: 220, overflowY: "auto" }}>
-                  {filteredParticipants.length === 0 ? (
-                    <div style={{ padding: "24px 16px", textAlign: "center", color: "#64748B" }}>
-                      <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#94A3B8" }}>
-                        No candidates found in this section filter
+                {/* Section Overview Mini-Cards */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8, marginBottom: 14 }}>
+                  {Object.entries(sectionCounts).map(([sec, count]) => {
+                    const isSelected = selectedSection === sec;
+                    return (
+                      <button
+                        key={sec}
+                        type="button"
+                        onClick={() => setSelectedSection(sec)}
+                        style={{
+                          background: isSelected ? "rgba(234, 168, 18, 0.15)" : "rgba(0, 33, 71, 0.3)",
+                          border: isSelected ? "1.5px solid #EAA812" : "1px solid rgba(255,255,255,0.08)",
+                          borderRadius: 8,
+                          padding: "8px 10px",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: "0.72rem", fontWeight: 800, color: isSelected ? "#EAA812" : "#CBD5E1" }}>
+                            {sec}
+                          </span>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10B981" }} />
+                        </div>
+                        <div style={{ fontSize: "1.1rem", fontWeight: 900, color: "#FFFFFF", marginTop: 2 }}>
+                          {count} <span style={{ fontSize: "0.66rem", color: "#64748B", fontWeight: 600 }}>waiting</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Section Filter Tabs */}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, overflowX: "auto", paddingBottom: 6, marginBottom: 12 }}>
+                  {availableSections.map((sec) => {
+                    const isSelected = selectedSection === sec;
+                    const count = sec === 'ALL' ? allParticipants.length : (sectionCounts[sec] || 0);
+                    return (
+                      <button
+                        key={sec}
+                        type="button"
+                        onClick={() => setSelectedSection(sec)}
+                        style={{
+                          padding: "5px 12px",
+                          borderRadius: 6,
+                          background: isSelected ? "#EAA812" : "rgba(255,255,255,0.06)",
+                          color: isSelected ? "#002147" : "#CBD5E1",
+                          border: isSelected ? "1px solid #EAA812" : "1px solid rgba(255,255,255,0.12)",
+                          fontSize: "0.74rem",
+                          fontWeight: 800,
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        <span>{sec === 'ALL' ? 'ALL SECTIONS' : sec}</span>
+                        <span
+                          style={{
+                            background: isSelected ? "rgba(0, 33, 71, 0.25)" : "rgba(255,255,255,0.15)",
+                            color: isSelected ? "#002147" : "#EAA812",
+                            padding: "1px 5px",
+                            borderRadius: 10,
+                            fontSize: "0.64rem",
+                            fontWeight: 800,
+                          }}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Live Room Participants Table */}
+                <div
+                  style={{
+                    background: "rgba(0, 15, 35, 0.5)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: 8,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "10px 14px",
+                      borderBottom: "1px solid rgba(255,255,255,0.08)",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      background: "rgba(0, 33, 71, 0.3)",
+                    }}
+                  >
+                    <div style={{ fontSize: "0.76rem", fontWeight: 800, color: "#FFFFFF", letterSpacing: "0.03em" }}>
+                      ROSTER ({filteredParticipants.length})
+                    </div>
+                    <div style={{ position: "relative", width: 180, maxWidth: "50%" }}>
+                      <input
+                        type="text"
+                        placeholder="Filter roll / name..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{
+                          width: "100%",
+                          background: "rgba(0, 20, 45, 0.8)",
+                          border: "1px solid rgba(255,255,255,0.14)",
+                          borderRadius: 6,
+                          padding: "4px 8px 4px 26px",
+                          color: "#FFFFFF",
+                          fontSize: "0.72rem",
+                          outline: "none",
+                        }}
+                      />
+                      <span style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
+                        <IconSearch size={12} color="#64748B" />
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ maxHeight: 220, overflowY: "auto" }}>
+                    {filteredParticipants.length === 0 ? (
+                      <div style={{ padding: "24px 16px", textAlign: "center", color: "#64748B" }}>
+                        <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#94A3B8" }}>
+                          No candidates found in this section filter
+                        </div>
+                        <div style={{ fontSize: "0.7rem", marginTop: 4 }}>
+                          Candidates joining room {contestId.toUpperCase()} appear in real time.
+                        </div>
                       </div>
-                      <div style={{ fontSize: "0.7rem", marginTop: 4 }}>
-                        Candidates joining room {contestId.toUpperCase()} appear in real time.
+                    ) : (
+                      <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.76rem" }}>
+                        <thead>
+                          <tr style={{ background: "rgba(255,255,255,0.03)", borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#94A3B8" }}>
+                            <th style={{ padding: "8px 10px", fontWeight: 700 }}>ROLL NO</th>
+                            <th style={{ padding: "8px 10px", fontWeight: 700 }}>NAME</th>
+                            <th style={{ padding: "8px 10px", fontWeight: 700 }}>SEC</th>
+                            <th style={{ padding: "8px 10px", fontWeight: 700 }}>TIME</th>
+                            <th style={{ padding: "8px 10px", fontWeight: 700 }}>STATUS</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredParticipants.map((p, idx) => {
+                            const myHt = String(
+                              candidate?.roll_number ||
+                              candidate?.hall_ticket ||
+                              (location.state as any)?.hallTicket ||
+                              ''
+                            ).toUpperCase().trim();
+                            const isMe = p.hall_ticket_no?.toUpperCase() === myHt;
+                            return (
+                              <tr
+                                key={`${p.hall_ticket_no}-${idx}`}
+                                style={{
+                                  borderBottom: "1px solid rgba(255,255,255,0.04)",
+                                  background: isMe ? "rgba(234, 168, 18, 0.08)" : "transparent",
+                                }}
+                              >
+                                <td style={{ padding: "7px 10px", fontFamily: "monospace", fontWeight: 700, color: isMe ? "#EAA812" : "#38BDF8" }}>
+                                  {p.hall_ticket_no}
+                                  {isMe && (
+                                    <span style={{ marginLeft: 6, background: "#EAA812", color: "#002147", padding: "1px 4px", borderRadius: 3, fontSize: "0.6rem", fontWeight: 900 }}>
+                                      YOU
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ padding: "7px 10px", fontWeight: 600, color: "#F1F5F9" }}>
+                                  {p.student_name}
+                                </td>
+                                <td style={{ padding: "7px 10px" }}>
+                                  <span style={{ background: "rgba(56, 189, 248, 0.12)", border: "1px solid rgba(56, 189, 248, 0.3)", color: "#38BDF8", padding: "1px 6px", borderRadius: 4, fontSize: "0.68rem", fontWeight: 700 }}>
+                                    {p.section || 'General'}
+                                  </span>
+                                </td>
+                                <td style={{ padding: "7px 10px", color: "#64748B", fontSize: "0.7rem" }}>
+                                  {formatRelativeTime(p.joined_at)}
+                                </td>
+                                <td style={{ padding: "7px 10px" }}>
+                                  <span
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: 4,
+                                      padding: "2px 6px",
+                                      borderRadius: 4,
+                                      fontSize: "0.66rem",
+                                      fontWeight: 800,
+                                      background: p.status === 'released' ? "rgba(16,185,129,0.15)" : "rgba(234,168,18,0.12)",
+                                      border: p.status === 'released' ? "1px solid rgba(16,185,129,0.35)" : "1px solid rgba(234,168,18,0.3)",
+                                      color: p.status === 'released' ? "#34D399" : "#EAA812",
+                                    }}
+                                  >
+                                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: p.status === 'released' ? "#10B981" : "#EAA812" }} />
+                                    <span>{p.status === 'released' ? 'Released' : 'Waiting Hall'}</span>
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: 5-SECTOR EXAM SYLLABUS & SCORING ARCHITECTURE */}
+            {activeTab === 'syllabus' && (
+              <div
+                style={{
+                  background: "#0E1A2E",
+                  border: "1px solid rgba(56, 189, 248, 0.25)",
+                  borderRadius: 10,
+                  padding: "16px",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 12,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontSize: "0.82rem", fontWeight: 800, textTransform: "uppercase", color: "#38BDF8", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 6 }}>
+                    <IconBook size={14} color="#38BDF8" />
+                    <span>5-Sector Technical Assessment Architecture</span>
+                  </div>
+                  <span style={{ fontSize: "0.7rem", color: "#94A3B8" }}>
+                    Standard 45-60 min Window
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {LOBBY_EXAM_SECTORS.map((sec) => (
+                    <div
+                      key={sec.id}
+                      style={{
+                        background: "rgba(0, 20, 45, 0.5)",
+                        border: `1px solid ${sec.color}35`,
+                        borderRadius: 8,
+                        padding: "10px 12px",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: "0.68rem", fontWeight: 800, color: sec.color, background: `${sec.color}18`, padding: "2px 6px", borderRadius: 4, border: `1px solid ${sec.color}40` }}>
+                            {sec.code}
+                          </span>
+                          <span style={{ fontSize: "0.84rem", fontWeight: 800, color: "#FFFFFF" }}>
+                            {sec.name}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <span style={{ fontSize: "0.68rem", color: "#CBD5E1", background: "rgba(255,255,255,0.06)", padding: "2px 6px", borderRadius: 4 }}>
+                            {sec.questions}
+                          </span>
+                          <span style={{ fontSize: "0.68rem", color: sec.color, fontWeight: 700, background: "rgba(255,255,255,0.06)", padding: "2px 6px", borderRadius: 4 }}>
+                            {sec.marks}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: "0.72rem", color: "#94A3B8", lineHeight: 1.4 }}>
+                        {sec.subtitle}
                       </div>
                     </div>
+                  ))}
+                </div>
+
+                {/* Marking & Sandbox Policies */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 4 }}>
+                  <div style={{ background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.25)", borderRadius: 6, padding: "8px 10px" }}>
+                    <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "#34D399", display: "flex", alignItems: "center", gap: 5 }}>
+                      <IconCheck size={12} color="#34D399" />
+                      <span>Marking & Penalty Policy</span>
+                    </div>
+                    <div style={{ fontSize: "0.68rem", color: "#CBD5E1", marginTop: 2 }}>
+                      +1.0 Correct MCQ • -0.25 Penalty for incorrect responses • Unanswered: 0
+                    </div>
+                  </div>
+                  <div style={{ background: "rgba(56, 189, 248, 0.08)", border: "1px solid rgba(56, 189, 248, 0.25)", borderRadius: 6, padding: "8px 10px" }}>
+                    <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "#38BDF8", display: "flex", alignItems: "center", gap: 5 }}>
+                      <IconCode size={12} color="#38BDF8" />
+                      <span>LiRE Live Code Sandbox</span>
+                    </div>
+                    <div style={{ fontSize: "0.68rem", color: "#CBD5E1", marginTop: 2 }}>
+                      Isolated runtime support for Python 3, C (GCC), C++, Java 17, and Node.js
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: PROCTORING & DEVICE PROTOCOLS */}
+            {activeTab === 'security' && (
+              <div
+                style={{
+                  background: "#0E1A2E",
+                  border: "1px solid rgba(239, 68, 68, 0.25)",
+                  borderRadius: 10,
+                  padding: "16px",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}
+              >
+                <div style={{ fontSize: "0.82rem", fontWeight: 800, textTransform: "uppercase", color: "#F87171", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 6 }}>
+                  <IconShield size={14} color="#F87171" />
+                  <span>Institutional Proctoring & Lockdown Perimeter</span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: "0.76rem" }}>
+                  {[
+                    { title: "Browser Mutex Lock", desc: "Only one active assessment tab is permitted per candidate. Opening additional tabs or windows automatically terminates previous sessions.", ok: true },
+                    { title: "Anti-Tab Switch Detection", desc: "Window blur, alt-tabbing, and developer console triggers are recorded in the authoritative server audit ledger.", ok: true },
+                    { title: "Clipboard & Hotkey Interception", desc: "Right-click context menu, Copy, Cut, Paste, and PrintScreen keystrokes are intercepted and prohibited.", ok: true },
+                    { title: "Dynamic Option Scrambling", desc: "Every candidate receives an independently randomized option shuffle to eliminate adjacent-screen copying.", ok: true },
+                  ].map((rule, idx) => (
+                    <div key={idx} style={{ background: "rgba(0, 20, 45, 0.4)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "8px 10px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 800, color: "#F1F5F9" }}>
+                        <IconCheck size={12} color="#10B981" />
+                        <span>{rule.title}</span>
+                      </div>
+                      <div style={{ fontSize: "0.7rem", color: "#94A3B8", marginTop: 2 }}>
+                        {rule.desc}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: LIVE TELEMETRY STREAM */}
+            {activeTab === 'telemetry' && (
+              <div
+                style={{
+                  background: "#07101E",
+                  border: "1px solid rgba(56, 189, 248, 0.25)",
+                  borderRadius: 10,
+                  padding: "16px",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingBottom: 8, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <IconTerminal size={14} color="#38BDF8" />
+                    <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#38BDF8", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                      Authoritative Telemetry & Synchronous Dispatch Stream
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.68rem", color: "#10B981", fontFamily: "monospace" }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10B981", boxShadow: "0 0 6px #10B981" }} />
+                    <span>SOCKET ONLINE</span>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    maxHeight: 280,
+                    overflowY: "auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                    fontFamily: "monospace",
+                    fontSize: "0.74rem",
+                  }}
+                >
+                  {events.length === 0 ? (
+                    <div style={{ color: "#475569", fontStyle: "italic", padding: "12px 0" }}>Listening for authoritative synchronization packets...</div>
                   ) : (
-                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.76rem" }}>
-                      <thead>
-                        <tr style={{ background: "rgba(255,255,255,0.03)", borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#94A3B8" }}>
-                          <th style={{ padding: "8px 10px", fontWeight: 700 }}>ROLL NO</th>
-                          <th style={{ padding: "8px 10px", fontWeight: 700 }}>NAME</th>
-                          <th style={{ padding: "8px 10px", fontWeight: 700 }}>SEC</th>
-                          <th style={{ padding: "8px 10px", fontWeight: 700 }}>TIME</th>
-                          <th style={{ padding: "8px 10px", fontWeight: 700 }}>STATUS</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredParticipants.map((p, idx) => {
-                          const myHt = String(
-                            candidate?.roll_number ||
-                            candidate?.hall_ticket ||
-                            (location.state as any)?.hallTicket ||
-                            ''
-                          ).toUpperCase().trim();
-                          const isMe = p.hall_ticket_no?.toUpperCase() === myHt;
-                          return (
-                            <tr
-                              key={`${p.hall_ticket_no}-${idx}`}
-                              style={{
-                                borderBottom: "1px solid rgba(255,255,255,0.04)",
-                                background: isMe ? "rgba(234, 168, 18, 0.08)" : "transparent",
-                              }}
-                            >
-                              <td style={{ padding: "7px 10px", fontFamily: "monospace", fontWeight: 700, color: isMe ? "#EAA812" : "#38BDF8" }}>
-                                {p.hall_ticket_no}
-                                {isMe && (
-                                  <span style={{ marginLeft: 6, background: "#EAA812", color: "#002147", padding: "1px 4px", borderRadius: 3, fontSize: "0.6rem", fontWeight: 900 }}>
-                                    YOU
-                                  </span>
-                                )}
-                              </td>
-                              <td style={{ padding: "7px 10px", fontWeight: 600, color: "#F1F5F9" }}>
-                                {p.student_name}
-                              </td>
-                              <td style={{ padding: "7px 10px" }}>
-                                <span style={{ background: "rgba(56, 189, 248, 0.12)", border: "1px solid rgba(56, 189, 248, 0.3)", color: "#38BDF8", padding: "1px 6px", borderRadius: 4, fontSize: "0.68rem", fontWeight: 700 }}>
-                                  {p.section || 'General'}
-                                </span>
-                              </td>
-                              <td style={{ padding: "7px 10px", color: "#64748B", fontSize: "0.7rem" }}>
-                                {formatRelativeTime(p.joined_at)}
-                              </td>
-                              <td style={{ padding: "7px 10px" }}>
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: 4,
-                                    padding: "2px 6px",
-                                    borderRadius: 4,
-                                    fontSize: "0.66rem",
-                                    fontWeight: 800,
-                                    background: p.status === 'released' ? "rgba(16,185,129,0.15)" : "rgba(234,168,18,0.12)",
-                                    border: p.status === 'released' ? "1px solid rgba(16,185,129,0.35)" : "1px solid rgba(234,168,18,0.3)",
-                                    color: p.status === 'released' ? "#34D399" : "#EAA812",
-                                  }}
-                                >
-                                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: p.status === 'released' ? "#10B981" : "#EAA812" }} />
-                                  <span>{p.status === 'released' ? 'Released' : 'Waiting Hall'}</span>
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                    events.map((ev) => {
+                      const colorMap = {
+                        success: "#34D399",
+                        alert: "#F87171",
+                        ping: "#FBBF24",
+                        info: "#38BDF8",
+                      };
+                      const badgeColor = colorMap[ev.type] || "#38BDF8";
+                      return (
+                        <div key={ev.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, lineHeight: 1.4 }}>
+                          <span style={{ color: "#64748B", flexShrink: 0 }}>[{ev.time}]</span>
+                          <span style={{ color: badgeColor, fontWeight: 700, flexShrink: 0 }}>[{ev.type.toUpperCase()}]</span>
+                          <span style={{ color: "#CBD5E1", wordBreak: "break-word" }}>{ev.text}</span>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Authoritative Redis & WebSocket Stream Telemetry Terminal */}
-            <div
-              style={{
-                background: "#07101E",
-                border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: 10,
-                padding: "14px 18px",
-                boxShadow: "0 6px 18px rgba(0,0,0,0.4)",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <IconTerminal size={14} color="#38BDF8" />
-                  <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#94A3B8", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                    Authoritative Telemetry & Synchronous Dispatch Stream
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.68rem", color: "#10B981", fontFamily: "monospace" }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10B981", boxShadow: "0 0 6px #10B981" }} />
-                  <span>STREAM ACTIVE</span>
-                </div>
-              </div>
-
+            {/* Persistent Compact Telemetry Status Strip */}
+            {activeTab !== 'telemetry' && (
               <div
                 style={{
-                  maxHeight: 140,
-                  overflowY: "auto",
+                  background: "#07101E",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 8,
+                  padding: "8px 12px",
                   display: "flex",
-                  flexDirection: "column",
-                  gap: 5,
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  fontSize: "0.7rem",
                   fontFamily: "monospace",
-                  fontSize: "0.72rem",
                 }}
               >
-                {events.length === 0 ? (
-                  <div style={{ color: "#475569", fontStyle: "italic" }}>Listening for authoritative synchronization packets...</div>
-                ) : (
-                  events.map((ev) => {
-                    const colorMap = {
-                      success: "#34D399",
-                      alert: "#F87171",
-                      ping: "#FBBF24",
-                      info: "#38BDF8",
-                    };
-                    const badgeColor = colorMap[ev.type] || "#38BDF8";
-                    return (
-                      <div key={ev.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, lineHeight: 1.4 }}>
-                        <span style={{ color: "#64748B", flexShrink: 0 }}>[{ev.time}]</span>
-                        <span style={{ color: badgeColor, fontWeight: 700, flexShrink: 0 }}>[{ev.type.toUpperCase()}]</span>
-                        <span style={{ color: "#CBD5E1", wordBreak: "break-word" }}>{ev.text}</span>
-                      </div>
-                    );
-                  })
-                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#94A3B8" }}>
+                  <IconRadio size={12} color={connected ? "#10B981" : "#F59E0B"} />
+                  <span>
+                    Gateway: {connected ? `Authoritative Sync (${latency ?? "-"}ms)` : "Reconnecting socket mesh..."}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('telemetry')}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#38BDF8",
+                    fontSize: "0.7rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                  }}
+                >
+                  View Terminal &rarr;
+                </button>
               </div>
-            </div>
+            )}
           </div>
         </div>
 

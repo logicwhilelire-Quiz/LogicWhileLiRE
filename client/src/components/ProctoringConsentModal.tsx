@@ -1,5 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  IconShield,
+  IconLock,
+  IconAlert,
+  IconEye,
+  IconFileText,
+  IconUsers,
+  IconSettings,
+} from './icons/HumanIcons';
 
 interface ProctoringConsentModalProps {
   isOpen: boolean;
@@ -72,8 +81,8 @@ export default function ProctoringConsentModal({
           {/* Header */}
           <div className="p-6 border-b border-slate-800 bg-slate-850/60 flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl font-bold border border-indigo-500/30">
-                🛡️
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+                <IconShield size={20} color="#818CF8" />
               </div>
               <div>
                 <h3 className="text-lg font-bold text-white tracking-wide">
@@ -92,7 +101,7 @@ export default function ProctoringConsentModal({
             {/* Privacy Guarantee Box */}
             <div className="p-4 rounded-xl bg-slate-800/60 border border-slate-700/50 space-y-2">
               <div className="flex items-center space-x-2 text-sm font-semibold text-emerald-400">
-                <span>🔒</span>
+                <IconLock size={16} color="#10B981" />
                 <h4>Zero Video Cloud Storage Guarantee</h4>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
@@ -129,7 +138,7 @@ export default function ProctoringConsentModal({
               <div className="flex-1 space-y-2 text-xs text-slate-300">
                 <div className="flex items-center space-x-2">
                   <span className={cameraActive ? 'text-emerald-400' : 'text-amber-400'}>
-                    {cameraActive ? '✓' : '⚠️'}
+                    {cameraActive ? '✓' : <IconAlert size={13} color="#F59E0B" />}
                   </span>
                   <span className="font-semibold text-slate-200">
                     {cameraActive ? 'Camera Connected & Verified' : 'Camera permission required'}
@@ -149,19 +158,19 @@ export default function ProctoringConsentModal({
             {/* Monitored Rules Summary */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="p-2.5 rounded-lg bg-slate-800/40 border border-slate-800 flex items-center space-x-2 text-slate-300">
-                <span className="text-base">🖥️</span>
+                <IconEye size={16} color="#38BDF8" />
                 <span>Fullscreen enforcement</span>
               </div>
               <div className="p-2.5 rounded-lg bg-slate-800/40 border border-slate-800 flex items-center space-x-2 text-slate-300">
-                <span className="text-base">📑</span>
+                <IconFileText size={16} color="#F59E0B" />
                 <span>Tab & blur detection</span>
               </div>
               <div className="p-2.5 rounded-lg bg-slate-800/40 border border-slate-800 flex items-center space-x-2 text-slate-300">
-                <span className="text-base">👤</span>
+                <IconUsers size={16} color="#818CF8" />
                 <span>Face count verification</span>
               </div>
               <div className="p-2.5 rounded-lg bg-slate-800/40 border border-slate-800 flex items-center space-x-2 text-slate-300">
-                <span className="text-base">⚙️</span>
+                <IconSettings size={16} color="#94A3B8" />
                 <span>Devtools blocking</span>
               </div>
             </div>

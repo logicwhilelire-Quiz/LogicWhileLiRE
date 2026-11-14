@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { IconCode, IconLock } from '../icons/HumanIcons'
 
 interface Question {
   id: string | number
@@ -243,7 +244,7 @@ function QuestionCodeSnippet({ code, language }: { code: string; language: strin
               gap: 4,
             }}
           >
-            <span>🐍</span>
+            <IconCode size={12} color="#38BDF8" />
             <span>{language}</span>
           </span>
         </div>
@@ -264,7 +265,7 @@ function QuestionCodeSnippet({ code, language }: { code: string; language: strin
               gap: 4,
             }}
           >
-            <span>🔒</span>
+            <IconLock size={12} color="#94A3B8" />
             <span>Anti-Tamper Locked</span>
           </span>
         </div>

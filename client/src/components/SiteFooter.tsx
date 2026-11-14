@@ -2,6 +2,25 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import BrandLogo from './BrandLogo';
+import {
+  IconBook,
+  IconFlash,
+  IconClock,
+  IconEye,
+  IconShield,
+  IconLock,
+  IconFileText,
+  IconLaunch,
+  IconGraduation,
+  IconBuilding,
+  IconRadio,
+  IconDownload,
+  IconRefresh,
+  IconUsers,
+  IconStop,
+  IconProhibit,
+  IconCpu,
+} from './icons/HumanIcons';
 
 type ModalType =
   | 'docs'
@@ -345,16 +364,15 @@ export default function SiteFooter() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '1.2rem',
                     }}
                   >
-                    {activeModal === 'docs' && '📖'}
-                    {activeModal === 'status' && '⚡'}
-                    {activeModal === 'timing' && '⏱️'}
-                    {activeModal === 'proctoring' && '👁️'}
-                    {activeModal === 'audit' && '🛡️'}
-                    {activeModal === 'privacy' && '🔒'}
-                    {activeModal === 'security' && '📜'}
+                    {activeModal === 'docs' && <IconBook size={20} color="#38bdf8" />}
+                    {activeModal === 'status' && <IconFlash size={20} color="#eab308" />}
+                    {activeModal === 'timing' && <IconClock size={20} color="#38bdf8" />}
+                    {activeModal === 'proctoring' && <IconEye size={20} color="#a78bfa" />}
+                    {activeModal === 'audit' && <IconShield size={20} color="#34d399" />}
+                    {activeModal === 'privacy' && <IconLock size={20} color="#38bdf8" />}
+                    {activeModal === 'security' && <IconFileText size={20} color="#f43f5e" />}
                   </div>
                   <div>
                     <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#f8fafc' }}>
@@ -420,10 +438,10 @@ export default function SiteFooter() {
                     {/* Doc Tabs */}
                     <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: 14, marginBottom: 20 }}>
                       {[
-                        { id: 'overview', label: '🚀 Overview' },
-                        { id: 'student', label: '🎓 Student Guide' },
-                        { id: 'faculty', label: '🏛️ Faculty & Admin' },
-                        { id: 'api', label: '📡 API Protocols' },
+                        { id: 'overview', label: 'Overview', icon: <IconLaunch size={14} /> },
+                        { id: 'student', label: 'Student Guide', icon: <IconGraduation size={14} /> },
+                        { id: 'faculty', label: 'Faculty & Admin', icon: <IconBuilding size={14} /> },
+                        { id: 'api', label: 'API Protocols', icon: <IconRadio size={14} /> },
                       ].map((tab) => (
                         <button
                           key={tab.id}
@@ -435,11 +453,15 @@ export default function SiteFooter() {
                             fontSize: '0.82rem',
                             fontWeight: 700,
                             cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
                             border: activeDocTab === tab.id ? '1px solid #38BDF8' : '1px solid transparent',
                             background: activeDocTab === tab.id ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.04)',
                             color: activeDocTab === tab.id ? '#38BDF8' : '#94a3b8',
                           }}
                         >
+                          {tab.icon}
                           {tab.label}
                         </button>
                       ))}
@@ -452,19 +474,27 @@ export default function SiteFooter() {
                         </p>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                           <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 10, padding: 14 }}>
-                            <h4 style={{ margin: '0 0 6px', color: '#38BDF8', fontSize: '0.95rem' }}>⏱️ Server-Authoritative Clock</h4>
+                            <h4 style={{ margin: '0 0 6px', color: '#38BDF8', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <IconClock size={16} color="#38BDF8" /> Server-Authoritative Clock
+                            </h4>
                             <p style={{ margin: 0, fontSize: '0.84rem', color: '#94a3b8' }}>Eliminates local system clock tampering. Time remaining is verified against high-precision backend time stamps on every submission.</p>
                           </div>
                           <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 10, padding: 14 }}>
-                            <h4 style={{ margin: '0 0 6px', color: '#34D399', fontSize: '0.95rem' }}>🔒 Single-Session Invariant</h4>
+                            <h4 style={{ margin: '0 0 6px', color: '#34D399', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <IconLock size={16} color="#34D399" /> Single-Session Invariant
+                            </h4>
                             <p style={{ margin: 0, fontSize: '0.84rem', color: '#94a3b8' }}>Cryptographic session tokens evict concurrent duplicate logins instantly, ensuring one test-taker per seat.</p>
                           </div>
                           <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 10, padding: 14 }}>
-                            <h4 style={{ margin: '0 0 6px', color: '#FBBF24', fontSize: '0.95rem' }}>🪐 5 Technical Sectors</h4>
+                            <h4 style={{ margin: '0 0 6px', color: '#FBBF24', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <IconCpu size={16} color="#FBBF24" /> 5 Technical Sectors
+                            </h4>
                             <p style={{ margin: 0, fontSize: '0.84rem', color: '#94a3b8' }}>Multi-dimensional skill taxonomy: Quant, Logic, Core CS, DSA, and Full-Stack Distributed Cloud Architecture.</p>
                           </div>
                           <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 10, padding: 14 }}>
-                            <h4 style={{ margin: '0 0 6px', color: '#F43F5E', fontSize: '0.95rem' }}>💾 Automated Cloud Backups</h4>
+                            <h4 style={{ margin: '0 0 6px', color: '#F43F5E', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <IconDownload size={16} color="#F43F5E" /> Automated Cloud Backups
+                            </h4>
                             <p style={{ margin: 0, fontSize: '0.84rem', color: '#94a3b8' }}>Every night at 02:00 AM, hierarchical snapshots sync to Google Drive in CSV, Excel, and institutional PDF formats.</p>
                           </div>
                         </div>
@@ -538,9 +568,13 @@ export default function SiteFooter() {
                           fontSize: '0.78rem',
                           fontWeight: 600,
                           cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
                         }}
                       >
-                        {statusLoading ? 'Pinging...' : '🔄 Refresh Status'}
+                        <IconRefresh size={14} color="#f8fafc" />
+                        {statusLoading ? 'Pinging...' : 'Refresh Status'}
                       </button>
                     </div>
 
@@ -580,7 +614,9 @@ export default function SiteFooter() {
                 {activeModal === 'timing' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <div style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: 12, padding: 16 }}>
-                      <h4 style={{ margin: '0 0 6px', color: '#38bdf8', fontSize: '1rem' }}>⏱️ The Anti-Tamper Timekeeper</h4>
+                      <h4 style={{ margin: '0 0 6px', color: '#38bdf8', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <IconClock size={18} color="#38bdf8" /> The Anti-Tamper Timekeeper
+                      </h4>
                       <p style={{ margin: 0, fontSize: '0.88rem' }}>
                         In distributed academic assessments, local workstation clocks cannot be trusted. LogicWhileLiRE implements a <strong>server-authoritative time-lock protocol</strong> that enforces true chronological fairness.
                       </p>
@@ -615,7 +651,9 @@ export default function SiteFooter() {
                 {activeModal === 'proctoring' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <div style={{ background: 'rgba(139, 92, 246, 0.08)', border: '1px solid rgba(139, 92, 246, 0.25)', borderRadius: 12, padding: 16 }}>
-                      <h4 style={{ margin: '0 0 6px', color: '#a78bfa', fontSize: '1rem' }}>👁️ Autonomous Multi-Modal Proctoring Grid</h4>
+                      <h4 style={{ margin: '0 0 6px', color: '#a78bfa', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <IconEye size={18} color="#a78bfa" /> Autonomous Multi-Modal Proctoring Grid
+                      </h4>
                       <p style={{ margin: 0, fontSize: '0.88rem' }}>
                         LogicWhileLiRE uses client-side vision AI models running directly in WebGL tensors to safeguard integrity while respecting candidate privacy.
                       </p>
@@ -623,22 +661,30 @@ export default function SiteFooter() {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                       <div style={{ padding: 14, borderRadius: 10, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <h5 style={{ margin: '0 0 4px', color: '#38bdf8' }}>👤 Multi-Face &amp; Absence Detection</h5>
+                        <h5 style={{ margin: '0 0 4px', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <IconUsers size={16} color="#38bdf8" /> Multi-Face &amp; Absence Detection
+                        </h5>
                         <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8' }}>Tracks continuous presence. Alerts if the candidate vacates the frame or if secondary unauthorized persons appear.</p>
                       </div>
 
                       <div style={{ padding: 14, borderRadius: 10, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <h5 style={{ margin: '0 0 4px', color: '#f59e0b' }}>🪟 Tab-Lock &amp; Window Blur Guard</h5>
+                        <h5 style={{ margin: '0 0 4px', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <IconStop size={16} color="#f59e0b" /> Tab-Lock &amp; Window Blur Guard
+                        </h5>
                         <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8' }}>Intercepts Alt+Tab, window minimization, or switching browser tabs. Logs strike warnings and locks the test upon 3 strikes.</p>
                       </div>
 
                       <div style={{ padding: 14, borderRadius: 10, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <h5 style={{ margin: '0 0 4px', color: '#ef4444' }}>🛑 DevTools &amp; Copy-Paste Lockout</h5>
+                        <h5 style={{ margin: '0 0 4px', color: '#ef4444', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <IconProhibit size={16} color="#ef4444" /> DevTools &amp; Copy-Paste Lockout
+                        </h5>
                         <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8' }}>Disables right-click context menus, developer inspect tools, and clipboard copy-pasting to prevent external AI injection.</p>
                       </div>
 
                       <div style={{ padding: 14, borderRadius: 10, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <h5 style={{ margin: '0 0 4px', color: '#10b981' }}>⚡ Client-Side WebGL Inference</h5>
+                        <h5 style={{ margin: '0 0 4px', color: '#10b981', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <IconFlash size={16} color="#10b981" /> Client-Side WebGL Inference
+                        </h5>
                         <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8' }}>Zero continuous video streaming overhead: vision models execute on-device, preserving bandwidth on low-end campus WiFi.</p>
                       </div>
                     </div>
@@ -649,7 +695,9 @@ export default function SiteFooter() {
                 {activeModal === 'audit' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 12, padding: 16 }}>
-                      <h4 style={{ margin: '0 0 6px', color: '#34d399', fontSize: '1rem' }}>🛡️ Immutable Forensic Ledger</h4>
+                      <h4 style={{ margin: '0 0 6px', color: '#34d399', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <IconShield size={18} color="#34d399" /> Immutable Forensic Ledger
+                      </h4>
                       <p style={{ margin: 0, fontSize: '0.88rem' }}>
                         Every high-stakes examination requires non-repudiable auditability. LogicWhileLiRE maintains a verifiable chronological ledger of all platform actions.
                       </p>

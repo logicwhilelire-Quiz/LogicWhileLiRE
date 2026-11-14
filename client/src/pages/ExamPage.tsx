@@ -8,6 +8,7 @@ import { useProctor } from '../hooks/useProctor';
 import BrandLogo from '../components/BrandLogo';
 import LogicWhileLiRELoader from '../components/LogicWhileLiRELoader';
 import AnimatedPage from '../components/AnimatedPage';
+import { IconAlert, IconProhibit, IconCheck, IconTrophy, IconStop } from '../components/icons/HumanIcons';
 
 interface Question {
   id: string;
@@ -213,7 +214,9 @@ export default function ExamPage() {
     return (
       <div className="page-center">
         <div className="card text-center animate-slide-up" style={{ maxWidth: 460 }}>
-          <div style={{ fontSize: '3rem', marginBottom: 12 }}>⚠️</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+            <IconAlert size={48} color="#ef4444" />
+          </div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-danger)', marginBottom: 8 }}>
             Multiple Exam Tabs Detected
           </h2>
@@ -252,7 +255,9 @@ export default function ExamPage() {
 
             {violation.terminated ? (
               <>
-                <div style={{ fontSize: '3.5rem', marginBottom: 16 }}>🚫</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                  <IconProhibit size={54} color="#ef4444" />
+                </div>
                 <h2 style={{ color: 'var(--color-danger)', fontWeight: 800, marginBottom: 8 }}>
                   Exam Session Terminated
                 </h2>
@@ -265,15 +270,20 @@ export default function ExamPage() {
               </>
             ) : (
               <>
-                <div style={{ fontSize: '3.5rem', marginBottom: 16 }}>🎉</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(34, 197, 94, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+                    <IconCheck size={36} color="#22c55e" strokeWidth={2.5} />
+                  </div>
+                </div>
                 <h2 style={{ fontWeight: 800, marginBottom: 8, color: 'var(--color-text)' }}>
                   Exam Completed!
                 </h2>
                 <p className="text-muted text-sm mb-3">
                   Thank you, <strong style={{ color: 'var(--color-text)' }}>{state?.participant_name}</strong>. Your responses have been securely submitted and graded.
                 </p>
-                <div className="alert alert-success mb-3">
-                  ✅ Answers evaluated server-side. Real-time standings are updating.
+                <div className="alert alert-success mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+                  <IconCheck size={16} color="#22c55e" />
+                  <span>Answers evaluated server-side. Real-time standings are updating.</span>
                 </div>
               </>
             )}
@@ -283,8 +293,10 @@ export default function ExamPage() {
                 id="view-leaderboard-btn"
                 className="btn btn-primary"
                 onClick={() => navigate('/leaderboard/' + (questions[0] ? sessionId : ''))}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
               >
-                🏆 View Live Leaderboard
+                <IconTrophy size={16} color="currentColor" />
+                <span>View Live Leaderboard</span>
               </button>
             </div>
           </div>
@@ -316,7 +328,7 @@ export default function ExamPage() {
               zIndex: 100,
             }}
           >
-            <span>⚠️</span>
+            <IconAlert size={16} color="#FFFFFF" />
             <span>Network disconnected. Your server-authoritative timer continues. Answers will sync once reconnected.</span>
           </div>
         )}
@@ -457,8 +469,14 @@ export default function ExamPage() {
                 className="btn btn-danger btn-full btn-lg"
                 onClick={() => setSubmitConfirm(true)}
                 disabled={phase === 'submitting'}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               >
-                {phase === 'submitting' ? <><div className="btn-spinner" />Submitting...</> : '🏁 Submit Exam'}
+                {phase === 'submitting' ? <><div className="btn-spinner" />Submitting...</> : (
+                  <>
+                    <IconStop size={18} color="currentColor" />
+                    <span>Submit Exam</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -520,7 +538,9 @@ export default function ExamPage() {
                 role="alert"
                 aria-live="assertive"
               >
-                <div className="modal-icon">{violation.terminated ? '🚫' : '⚠️'}</div>
+                <div className="modal-icon" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  {violation.terminated ? <IconProhibit size={36} color="#ef4444" /> : <IconAlert size={36} color="#f59e0b" />}
+                </div>
                 <div className="modal-title">
                   {violation.terminated ? 'Session Terminated' : `Violation Warning (${violation.count})`}
                 </div>
@@ -552,19 +572,23 @@ export default function ExamPage() {
                 exit={{ scale: 0.92, opacity: 0 }}
                 className="modal"
               >
-                <div className="modal-icon">🏁</div>
+                <div className="modal-icon" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <IconStop size={36} color="#38bdf8" />
+                </div>
                 <div className="modal-title">Confirm Exam Submission</div>
                 <div className="modal-message">
                   <p style={{ marginBottom: 12 }}>
                     You have answered <strong style={{ color: 'var(--color-success)' }}>{answeredCount}</strong> of <strong>{totalCount}</strong> questions.
                   </p>
                   {unansweredCount > 0 ? (
-                    <div className="alert alert-warning mb-2" style={{ textAlign: 'left' }}>
-                      ⚠️ <strong>{unansweredCount} questions</strong> are still unanswered!
+                    <div className="alert alert-warning mb-2" style={{ textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <IconAlert size={16} color="#f59e0b" />
+                      <span><strong>{unansweredCount} questions</strong> are still unanswered!</span>
                     </div>
                   ) : (
-                    <div className="alert alert-success mb-2" style={{ textAlign: 'left' }}>
-                      ✨ All questions have been answered.
+                    <div className="alert alert-success mb-2" style={{ textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <IconCheck size={16} color="#22c55e" />
+                      <span>All questions have been answered.</span>
                     </div>
                   )}
                   <p className="text-muted text-xs">
@@ -575,8 +599,9 @@ export default function ExamPage() {
                   <button id="submit-cancel-btn" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setSubmitConfirm(false)}>
                     ← Continue Exam
                   </button>
-                  <button id="submit-confirm-btn" className="btn btn-danger" style={{ flex: 1 }} onClick={handleSubmit}>
-                    ✅ Final Submit
+                  <button id="submit-confirm-btn" className="btn btn-danger" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={handleSubmit}>
+                    <IconCheck size={16} color="currentColor" strokeWidth={2.5} />
+                    <span>Final Submit</span>
                   </button>
                 </div>
               </motion.div>

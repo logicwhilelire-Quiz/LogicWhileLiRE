@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { verifyRegistrationOtp } from '../lib/api';
 import BrandLogo from '../components/BrandLogo';
 import AnimatedPage from '../components/AnimatedPage';
+import { IconCheck, IconAlert } from '../components/icons/HumanIcons';
 
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
@@ -76,7 +77,11 @@ export default function VerifyEmailPage() {
 
           {status === 'success' && (
             <div>
-              <div style={{ fontSize: '3rem', marginBottom: 12 }}>🎉</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(74, 222, 128, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(74, 222, 128, 0.3)' }}>
+                  <IconCheck size={36} color="#4ade80" strokeWidth={2.5} />
+                </div>
+              </div>
               <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#4ade80', marginBottom: 8 }}>
                 Account Verified!
               </h2>
@@ -91,7 +96,11 @@ export default function VerifyEmailPage() {
 
           {status === 'error' && (
             <div>
-              <div style={{ fontSize: '3rem', marginBottom: 12 }}>⚠️</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                  <IconAlert size={36} color="#ef4444" strokeWidth={2} />
+                </div>
+              </div>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f87171', marginBottom: 8 }}>
                 Activation Failed
               </h2>

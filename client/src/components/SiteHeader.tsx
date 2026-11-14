@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import BrandLogo from './BrandLogo';
 import ThemeToggle from './ui/ThemeToggle';
+import { IconHierarchy, IconGraduation, IconCross, IconMenu, IconFlash } from './icons/HumanIcons';
 
 export default function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
@@ -153,7 +154,7 @@ export default function SiteHeader() {
               }}
               title="Toggle HorizonX Architectural Blueprint Inspect Mode (Key: H)"
             >
-              <span>📐</span>
+              <IconHierarchy size={11} color="#38BDF8" />
               <span>HORIZONX [H]</span>
             </button>
           </div>
@@ -228,9 +229,13 @@ export default function SiteHeader() {
                     padding: '4px 10px',
                     borderRadius: 6,
                     border: '1px solid rgba(56, 189, 248, 0.3)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
                   }}
                 >
-                  🎓 {studentUser.name?.split(' ')[0] || 'Candidate'}
+                  <IconGraduation size={13} color="#38BDF8" />
+                  <span>{studentUser.name?.split(' ')[0] || 'Candidate'}</span>
                 </span>
                 <button
                   onClick={handleLogout}
@@ -261,9 +266,9 @@ export default function SiteHeader() {
               className="btn btn-ghost btn-sm mobile-menu-btn"
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label="Toggle menu"
-              style={{ color: '#FFFFFF', fontSize: '1.4rem' }}
+              style={{ color: '#FFFFFF', fontSize: '1.4rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              {menuOpen ? '✕' : '☰'}
+              {menuOpen ? <IconCross size={18} color="#FFFFFF" /> : <IconMenu size={18} color="#FFFFFF" />}
             </button>
           </div>
         </div>
@@ -309,7 +314,7 @@ export default function SiteHeader() {
                   gap: 8,
                 }}
               >
-                <span>⚡</span>
+                <IconFlash size={14} color="#001A38" />
                 <span>Enter Live Exam (Code Entry)</span>
               </Link>
               {navLinks.map(({ label, to }) => (

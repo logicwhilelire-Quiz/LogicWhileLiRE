@@ -7,6 +7,26 @@ import {
   getBackupHistory,
   getGoogleDriveStatus,
 } from '../../lib/api';
+import {
+  IconCheck,
+  IconDownload,
+  IconBuilding,
+  IconGraduation,
+  IconTarget,
+  IconCode,
+  IconFlash,
+  IconAlert,
+  IconMail,
+  IconKey,
+  IconClock,
+  IconRefresh,
+  IconClipboard,
+  IconShield,
+  IconFileText,
+  IconPlus,
+  IconStop,
+  IconUsers,
+} from '../../components/icons/HumanIcons';
 
 interface SectorSetting {
   id: string;
@@ -49,7 +69,7 @@ export default function SettingsControl() {
         : 'and stored in dated hierarchy archive (college / year / section)';
       setBackupMsg({
         type: 'success',
-        text: `✅ System backup executed successfully ${statusText}.`,
+        text: `System backup executed successfully ${statusText}.`,
       });
     } catch (err: any) {
       setBackupMsg({
@@ -75,7 +95,7 @@ export default function SettingsControl() {
       URL.revokeObjectURL(url);
       setBackupMsg({
         type: 'success',
-        text: '✅ Complete system backup archive (.zip) downloaded successfully with CSVs, JSONs, batch lists, and row-count manifest.',
+        text: 'Complete system backup archive (.zip) downloaded successfully with CSVs, JSONs, batch lists, and row-count manifest.',
       });
     } catch (err: any) {
       setBackupMsg({
@@ -183,7 +203,7 @@ export default function SettingsControl() {
       localStorage.setItem('lw_sectors_settings', JSON.stringify(sectors));
       localStorage.setItem('lw_engine_settings', JSON.stringify(engine));
     } catch {}
-    setSavedMsg('✅ All administrative platform options, OTP & login mail templates, 5-sector matrix, proctoring rules, and branding successfully persisted!');
+    setSavedMsg('All administrative platform options, OTP & login mail templates, 5-sector matrix, proctoring rules, and branding successfully persisted!');
     setTimeout(() => setSavedMsg(''), 4000);
   };
 
@@ -231,15 +251,20 @@ export default function SettingsControl() {
                 borderRadius: 8,
                 background: 'linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)',
                 boxShadow: '0 4px 16px rgba(255, 122, 0, 0.35)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
               }}
             >
-              💾 Save All Options & Changes
+              <IconFileText size={16} />
+              <span>Save All Options & Changes</span>
             </button>
           </div>
 
           {savedMsg && (
-            <div style={{ padding: '14px 18px', borderRadius: 8, background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#10B981', fontWeight: 700, fontSize: '0.9rem', marginBottom: 24 }}>
-              {savedMsg}
+            <div style={{ padding: '14px 18px', borderRadius: 8, background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#10B981', fontWeight: 700, fontSize: '0.9rem', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <IconCheck size={16} color="#10B981" />
+              <span>{savedMsg}</span>
             </div>
           )}
 
@@ -248,7 +273,8 @@ export default function SettingsControl() {
             {/* Platform Branding */}
             <div className="card" style={{ padding: '24px 28px', borderRadius: 12, border: '1px solid var(--color-border)', background: 'rgba(11, 18, 38, 0.7)' }}>
               <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#FFFFFF', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>🎨</span> Platform Branding & Identity
+                <IconBuilding size={18} color="#38BDF8" />
+                <span>Platform Branding & Identity</span>
               </h2>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -284,7 +310,7 @@ export default function SettingsControl() {
             {/* Candidate Gate & Student Exam Options */}
             <div className="card" style={{ padding: '24px 28px', borderRadius: 12, border: '1px solid rgba(56, 189, 248, 0.3)', background: 'rgba(11, 18, 38, 0.7)' }}>
               <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#FFFFFF', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>🎓</span> Student Portal & Exam Access Policies
+                <IconGraduation size={18} color="#38BDF8" /> Student Portal & Exam Access Policies
               </h2>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -372,7 +398,7 @@ export default function SettingsControl() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>🌌</span> 5-Sector Technical Matrix Calibration
+                  <IconTarget size={18} color="#FFBE00" /> 5-Sector Technical Matrix Calibration
                 </h2>
                 <p style={{ margin: '4px 0 0 0', fontSize: '0.84rem', color: '#94a3b8' }}>
                   Administer question weight allocations, pass cut-offs, and naming across all 5 sectors.
@@ -447,7 +473,7 @@ export default function SettingsControl() {
             {/* Code Execution Engine */}
             <div className="card" style={{ padding: '24px 28px', borderRadius: 12, border: '1px solid var(--color-border)', background: 'rgba(11, 18, 38, 0.7)' }}>
               <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#FFFFFF', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>⚡</span> Code Execution Engine (LiRE)
+                <IconCode size={18} color="#2B7FFF" /> Code Execution Engine (LiRE)
               </h2>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -477,9 +503,12 @@ export default function SettingsControl() {
                             color: enabled ? '#FFFFFF' : 'var(--color-text-faint)',
                             border: `1px solid ${enabled ? 'rgba(43, 127, 255, 0.5)' : 'rgba(255, 255, 255, 0.08)'}`,
                             cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
                           }}
                         >
-                          {enabled ? '✓ ' : '+ '} {lang.label}
+                          {enabled ? <IconCheck size={12} color="#2B7FFF" /> : <IconPlus size={12} />} {lang.label}
                         </button>
                       );
                     })}
@@ -522,7 +551,7 @@ export default function SettingsControl() {
             {/* Maintenance Lockdown */}
             <div className="card" style={{ padding: '24px 28px', borderRadius: 12, border: '1px solid var(--color-border)', background: 'rgba(11, 18, 38, 0.7)' }}>
               <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#FFFFFF', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>🛑</span> Maintenance Mode Lockdown
+                <IconStop size={18} color="#EF4444" /> Maintenance Mode Lockdown
               </h2>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -563,7 +592,7 @@ export default function SettingsControl() {
           <div className="card" style={{ padding: '24px 28px', borderRadius: 12, border: '1px solid var(--color-border)', background: 'rgba(11, 18, 38, 0.7)', marginBottom: 32 }}>
             <div style={{ marginBottom: 20 }}>
               <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#FFFFFF', margin: '0 0 6px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>✉️</span> Admin-Controlled OTP &amp; Candidate Login Email Templates
+                <IconMail size={18} color="#38BDF8" /> Admin-Controlled OTP &amp; Candidate Login Email Templates
               </h2>
               <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem', margin: 0 }}>
                 Configure the authoritative text dispatched to candidates for authentication OTPs and official credentials issuance.
@@ -574,8 +603,8 @@ export default function SettingsControl() {
               {/* OTP Dispatch Configuration */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '18px', borderRadius: 8, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#38BDF8' }}>
-                    🔑 Authentication OTP Email
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#38BDF8', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <IconKey size={14} color="#38BDF8" /> Authentication OTP Email
                   </span>
                   <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Triggered on Login / Verification</span>
                 </div>
@@ -608,8 +637,8 @@ export default function SettingsControl() {
               {/* Login Welcome & Credentials Configuration */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '18px', borderRadius: 8, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10B981' }}>
-                    🎓 Candidate Credentials Welcome Email
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <IconGraduation size={14} color="#10B981" /> Candidate Credentials Welcome Email
                   </span>
                   <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Triggered on Roster / Registration Approval</span>
                 </div>
@@ -646,7 +675,7 @@ export default function SettingsControl() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
               <div>
                 <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#FFFFFF', margin: '0 0 6px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>💾</span> Automated Database Backups & Google Drive Cloud Recovery
+                  <IconDownload size={18} color="#2B7FFF" /> Automated Database Backups & Google Drive Cloud Recovery
                 </h2>
                 <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem', margin: 0, maxWidth: 680 }}>
                   Nightly and on-demand backup pipeline that exports students, exams, results, and audit logs into dated hierarchical folders (<code style={{ color: '#93C5FD' }}>college / year / section</code>) and syncs directly to Google Drive via server service account.
@@ -670,7 +699,7 @@ export default function SettingsControl() {
                     cursor: backupLoading ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  <span>{backupLoading ? '⏳' : '⚡'}</span>
+                  {backupLoading ? <IconClock size={15} /> : <IconFlash size={15} />}
                   {backupLoading ? 'Backing Up...' : 'Backup now'}
                 </button>
 
@@ -692,7 +721,7 @@ export default function SettingsControl() {
                     cursor: backupLoading ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  <span>📥</span> Download Zip
+                  <IconDownload size={15} /> Download Zip
                 </button>
               </div>
             </div>
@@ -714,7 +743,7 @@ export default function SettingsControl() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span>{driveConfig?.configured ? '☁️' : '⚠️'}</span>
+                {driveConfig?.configured ? <IconCheck size={18} color="#10B981" /> : <IconAlert size={18} color="#EAB308" />}
                 <div>
                   <strong style={{ color: driveConfig?.configured ? '#10B981' : '#FDE047' }}>
                     Google Drive Cloud Storage:{' '}
@@ -761,11 +790,11 @@ export default function SettingsControl() {
             {/* Backup History Table */}
             <div style={{ marginTop: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E2E8F0', margin: 0 }}>
-                  📜 Backup History & Dated Cloud Archives
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E2E8F0', margin: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <IconFileText size={16} color="#94A3B8" /> Backup History & Dated Cloud Archives
                 </h3>
-                <button onClick={fetchBackupHistory} className="btn btn-ghost btn-sm" style={{ fontSize: '0.76rem' }}>
-                  🔄 Refresh History
+                <button onClick={fetchBackupHistory} className="btn btn-ghost btn-sm" style={{ fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <IconRefresh size={13} /> Refresh History
                 </button>
               </div>
 
@@ -808,7 +837,7 @@ export default function SettingsControl() {
                                 color: b.trigger === 'scheduled' ? '#C084FC' : '#93C5FD',
                               }}
                             >
-                              {b.trigger === 'scheduled' ? '⏰ Nightly' : '⚡ Manual'}
+                              {b.trigger === 'scheduled' ? 'Nightly' : 'Manual'}
                             </span>
                           </td>
                           <td style={{ padding: '10px 14px', color: '#93C5FD', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>
@@ -825,13 +854,13 @@ export default function SettingsControl() {
                                 fontSize: '0.7rem',
                                 fontWeight: 700,
                                 background:
-                                  b.drive_status === 'synced'
-                                    ? 'rgba(16, 185, 129, 0.15)'
-                                    : 'rgba(255, 255, 255, 0.06)',
-                                color: b.drive_status === 'synced' ? '#10B981' : 'var(--color-text-muted)',
+                                   b.drive_status === 'synced'
+                                     ? 'rgba(16, 185, 129, 0.15)'
+                                     : 'rgba(255, 255, 255, 0.06)',
+                                 color: b.drive_status === 'synced' ? '#10B981' : 'var(--color-text-muted)',
                               }}
                             >
-                              {b.drive_status === 'synced' ? '☁️ Synced to Drive' : '📁 Local Archive'}
+                              {b.drive_status === 'synced' ? 'Synced to Drive' : 'Local Archive'}
                             </span>
                           </td>
                           <td style={{ padding: '10px 14px', textAlign: 'right' }}>
@@ -848,9 +877,9 @@ export default function SettingsControl() {
                                 });
                               }}
                               className="btn btn-ghost btn-sm"
-                              style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                              style={{ fontSize: '0.75rem', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                             >
-                              📥 Download
+                              <IconDownload size={13} /> Download
                             </button>
                           </td>
                         </tr>
@@ -865,8 +894,8 @@ export default function SettingsControl() {
           {/* Section 5: Audit Log Wall */}
           <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 12, border: '1px solid var(--color-border)', background: 'rgba(11, 18, 38, 0.7)' }}>
             <div style={{ padding: '16px 22px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
-                📋 Administrative Security Audit Log
+              <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#FFFFFF', margin: 0, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <IconClipboard size={16} color="#60A5FA" /> Administrative Security Audit Log
               </h2>
               <span style={{ fontSize: '0.75rem', color: 'var(--color-text-faint)' }}>
                 Immutable administrative activity record

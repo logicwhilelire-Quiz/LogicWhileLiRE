@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { IconAlert, IconLaunch } from '../icons/HumanIcons';
 
 interface FullscreenEnforcementOverlayProps {
   isOpen: boolean;
@@ -94,11 +95,10 @@ export default function FullscreenEnforcementOverlay({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '2rem',
               margin: '0 auto 20px',
             }}
           >
-            ⚠️
+            <IconAlert size={36} color="#ef4444" strokeWidth={2.2} />
           </motion.div>
 
           <h2
@@ -180,9 +180,14 @@ export default function FullscreenEnforcementOverlay({
               cursor: 'pointer',
               boxShadow: '0 6px 20px rgba(27, 95, 181, 0.4)',
               transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
             }}
           >
-            ⛶ Return to Fullscreen Immediately
+            <IconLaunch size={18} color="#FFFFFF" />
+            <span>Return to Fullscreen Immediately</span>
           </button>
         </motion.div>
       </motion.div>

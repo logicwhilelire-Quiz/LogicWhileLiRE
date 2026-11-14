@@ -11,6 +11,15 @@ import {
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedPage from '../../components/AnimatedPage';
 import BulkEnrollModal from '../../components/BulkEnrollModal';
+import {
+  IconUsers,
+  IconShield,
+  IconAlert,
+  IconStop,
+  IconUnlock,
+  IconClock,
+  IconCheck,
+} from '../../components/icons/HumanIcons';
 
 interface Session {
   id: string;
@@ -125,9 +134,9 @@ export default function SessionsPage() {
       setSessions((prev) =>
         prev.map((s) => (s.id === id ? { ...s, status: 'in_progress', termination_reason: null } : s))
       );
-      alert('✅ Re-entry permitted. The candidate can now resume their examination.');
+      alert('Re-entry permitted. The candidate can now resume their examination.');
     } catch (err: any) {
-      alert(`❌ Failed to allow re-entry: ${err?.response?.data?.error || err.message}`);
+      alert(`Failed to allow re-entry: ${err?.response?.data?.error || err.message}`);
     } finally {
       setReentryLoadingId(null);
     }
@@ -180,9 +189,9 @@ export default function SessionsPage() {
                 id="sessions-bulk-enroll-btn"
                 className="btn btn-secondary btn-sm"
                 onClick={() => setIsBulkEnrollOpen(true)}
-                style={{ alignSelf: 'center' }}
+                style={{ alignSelf: 'center', display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                👥 Bulk Enroll Candidates (CSV/XLSX)
+                <IconUsers size={14} /> Bulk Enroll Candidates (CSV/XLSX)
               </button>
             )}
           </div>
@@ -207,16 +216,17 @@ export default function SessionsPage() {
                 id="tab-all-sessions"
                 className={`btn btn-sm ${activeTab === 'sessions' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setActiveTab('sessions')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                👥 Live Participant Sessions ({pagination.total_count || sessions.length})
+                <IconUsers size={14} /> Live Participant Sessions ({pagination.total_count || sessions.length})
               </button>
               <button
                 id="tab-fingerprint-flags"
                 className={`btn btn-sm ${activeTab === 'fingerprints' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setActiveTab('fingerprints')}
-                style={{ position: 'relative' }}
+                style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                🛡️ Device Fingerprint Conflicts ({activities.length})
+                <IconShield size={14} /> Device Fingerprint Conflicts ({activities.length})
                 {pendingFlagsCount > 0 && (
                   <span
                     className="badge badge-danger"
@@ -261,7 +271,9 @@ export default function SessionsPage() {
                           </td>
                           <td>
                             {(s.suspicious_flags as unknown[])?.length > 0 ? (
-                              <span className="badge badge-warning">⚠️ {(s.suspicious_flags as unknown[]).length} flags</span>
+                              <span className="badge badge-warning" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <IconAlert size={11} color="#F59E0B" /> {(s.suspicious_flags as unknown[]).length} flags
+                              </span>
                             ) : (
                               <span className="text-muted">—</span>
                             )}
@@ -273,8 +285,9 @@ export default function SessionsPage() {
                                 className="btn btn-danger btn-sm"
                                 onClick={() => handleTerminate(s.id)}
                                 disabled={terminatingId === s.id}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
                               >
-                                {terminatingId === s.id ? '...' : '🚫 Terminate'}
+                                {terminatingId === s.id ? '...' : <><IconStop size={12} /> Terminate</>}
                               </button>
                             )}
                             {(s.status === 'terminated' || s.status === 'terminated_cheating' || s.status === 'Terminated - violation') && (
@@ -283,10 +296,10 @@ export default function SessionsPage() {
                                 className="btn btn-secondary btn-sm"
                                 onClick={() => handleAllowReentry(s.id)}
                                 disabled={reentryLoadingId === s.id}
-                                style={{ background: 'rgba(16, 185, 129, 0.15)', borderColor: '#10B981', color: '#10B981', fontWeight: 700 }}
+                                style={{ background: 'rgba(16, 185, 129, 0.15)', borderColor: '#10B981', color: '#10B981', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                                 title="Admin Override: Reopen wrongly terminated session with audit logging"
                               >
-                                {reentryLoadingId === s.id ? '...' : '🔓 Allow Re-entry'}
+                                {reentryLoadingId === s.id ? '...' : <><IconUnlock size={12} color="#10B981" /> Allow Re-entry</>}
                               </button>
                             )}
                             {s.termination_reason && (
@@ -332,8 +345,11 @@ export default function SessionsPage() {
             ) : (
               /* FINGERPRINT REVIEW TAB */
               <div>
-                <div className="alert alert-warning mb-3" style={{ fontSize: '0.85rem' }}>
-                  <strong>⚠️ Shared Lab Environment Notice:</strong> False-positive fingerprint matches frequently occur in university and institutional computer labs where workstations share identical hardware, OS images, screen resolution, and WebGL drivers. The system flags conflicts for manual verification and <em>never automatically blocks candidates</em>.
+                <div className="alert alert-warning mb-3" style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <IconAlert size={16} color="#F59E0B" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    <strong>Shared Lab Environment Notice:</strong> False-positive fingerprint matches frequently occur in university and institutional computer labs where workstations share identical hardware, OS images, screen resolution, and WebGL drivers. The system flags conflicts for manual verification and <em>never automatically blocks candidates</em>.
+                  </div>
                 </div>
 
                 {activities.length > 0 ? (
@@ -385,13 +401,19 @@ export default function SessionsPage() {
                           </td>
                           <td>
                             {act.status === 'pending_review' && (
-                              <span className="badge badge-warning">⏳ Pending Review</span>
+                              <span className="badge badge-warning" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <IconClock size={11} /> Pending Review
+                              </span>
                             )}
                             {act.status === 'cleared' && (
-                              <span className="badge badge-success">✅ Flag Cleared</span>
+                              <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <IconCheck size={11} color="#10B981" /> Flag Cleared
+                              </span>
                             )}
                             {act.status === 'confirmed_violation' && (
-                              <span className="badge badge-danger">🚫 Confirmed Violation</span>
+                              <span className="badge badge-danger" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <IconStop size={11} color="#EF4444" /> Confirmed Violation
+                              </span>
                             )}
                             {act.reviewed_by && (
                               <div className="text-xs text-muted mt-1">
@@ -407,9 +429,9 @@ export default function SessionsPage() {
                                 onClick={() => handleResolveFlag(act.id, 'clear')}
                                 disabled={resolvingId === act.id || act.status === 'cleared'}
                                 title="Clear flag (e.g., student took exam on a shared lab computer)"
-                                style={{ fontSize: '0.78rem', padding: '4px 8px' }}
+                                style={{ fontSize: '0.78rem', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                               >
-                                {resolvingId === act.id ? '...' : '✅ Clear Flag'}
+                                {resolvingId === act.id ? '...' : <><IconCheck size={12} color="#10B981" /> Clear Flag</>}
                               </button>
                               <button
                                 id={`confirm-violation-${act.id}`}
@@ -417,9 +439,9 @@ export default function SessionsPage() {
                                 onClick={() => handleResolveFlag(act.id, 'confirm')}
                                 disabled={resolvingId === act.id || act.status === 'confirmed_violation'}
                                 title="Confirm this device duplicate as an active cheating violation"
-                                style={{ fontSize: '0.78rem', padding: '4px 8px' }}
+                                style={{ fontSize: '0.78rem', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                               >
-                                {resolvingId === act.id ? '...' : '🚫 Confirm Violation'}
+                                {resolvingId === act.id ? '...' : <><IconStop size={12} color="#EF4444" /> Confirm Violation</>}
                               </button>
                             </div>
                           </td>
@@ -429,7 +451,9 @@ export default function SessionsPage() {
                   </table>
                 ) : (
                   <div className="card text-center" style={{ padding: 48 }}>
-                    <div style={{ fontSize: '2rem', marginBottom: 12 }}>🛡️</div>
+                    <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+                      <IconShield size={36} color="#60A5FA" />
+                    </div>
                     <div className="font-bold" style={{ marginBottom: 4 }}>No Duplicate Fingerprints Detected</div>
                     <p className="text-muted text-sm">
                       All participant sessions in this exam currently have distinct browser/device signatures.

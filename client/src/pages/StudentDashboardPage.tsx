@@ -43,6 +43,7 @@ interface UpcomingExam {
   id: string;
   title: string;
   code?: string;
+  exam_code?: string;
   duration_minutes: number;
   start_time: string;
   end_time: string;
@@ -208,7 +209,18 @@ export default function StudentDashboardPage() {
     }
     setLaunchError('');
 
-    const hallTicket = student?.roll_number || 'CANDIDATE';
+    let hallTicket = (student?.hall_ticket || student?.roll_number || '').toUpperCase().trim();
+    if (!hallTicket) {
+      try {
+        const stored = localStorage.getItem('student_user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          hallTicket = (parsed.hall_ticket || parsed.roll_number || parsed.hallTicket || '').toUpperCase().trim();
+        }
+      } catch {}
+    }
+    if (!hallTicket) hallTicket = 'CANDIDATE';
+
     try {
       const BASE = API_BASE_URL;
       const { data } = await axios.get(
@@ -603,14 +615,14 @@ export default function StudentDashboardPage() {
 
               {/* Live Proctor Readiness Indicators */}
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: '0.75rem' }}>
-                <span style={{ padding: '3px 8px', borderRadius: 4, background: 'rgba(34, 197, 94, 0.12)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.25)' }}>
-                  ✓ AI Proctor Engine Ready
+                <span style={{ padding: '3px 8px', borderRadius: 4, background: 'rgba(34, 197, 94, 0.12)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <IconCheck size={12} color="#4ade80" /> AI Proctor Engine Ready
                 </span>
-                <span style={{ padding: '3px 8px', borderRadius: 4, background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
-                  ✓ Low-Latency Socket (12ms)
+                <span style={{ padding: '3px 8px', borderRadius: 4, background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <IconCheck size={12} color="#38bdf8" /> Low-Latency Socket (12ms)
                 </span>
-                <span style={{ padding: '3px 8px', borderRadius: 4, background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
-                  ✓ Anti-Tab Lock Enforced
+                <span style={{ padding: '3px 8px', borderRadius: 4, background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <IconShield size={12} color="#f59e0b" /> Anti-Tab Lock Enforced
                 </span>
               </div>
             </div>
@@ -1093,7 +1105,7 @@ export default function StudentDashboardPage() {
 
                     <button
                       type="button"
-                      onClick={() => handleLaunchExam(exam.code || '')}
+                      onClick={() => handleLaunchExam(exam.code || exam.exam_code || exam.id)}
                       className="btn btn-primary w-full text-xs"
                       style={{ padding: '10px', fontWeight: 700, textAlign: 'center', background: 'linear-gradient(135deg, #FF7A00 0%, #EA580C 100%)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                     >

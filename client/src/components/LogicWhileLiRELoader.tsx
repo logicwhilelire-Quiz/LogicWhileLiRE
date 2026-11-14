@@ -122,12 +122,20 @@ export default function LogicWhileLiRELoaderDefault({
         )}
 
         {/* Official Brand Emblem Image with Golden Circuit Glow */}
-        <div
+        <motion.div
+          animate={shouldReduceMotion ? undefined : {
+            boxShadow: [
+              '0 0 20px rgba(234, 168, 18, 0.35), 0 8px 24px rgba(0, 0, 0, 0.6)',
+              '0 0 32px rgba(234, 168, 18, 0.6), 0 8px 24px rgba(0, 0, 0, 0.6)',
+              '0 0 20px rgba(234, 168, 18, 0.35), 0 8px 24px rgba(0, 0, 0, 0.6)',
+            ],
+          }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
           style={{
             position: 'relative',
             borderRadius: 16,
             padding: 3,
-            background: 'linear-gradient(135deg, rgba(234, 168, 18, 0.7) 0%, rgba(56, 189, 248, 0.4) 50%, rgba(234, 168, 18, 0.8) 100%)',
+            background: 'linear-gradient(135deg, rgba(234, 168, 18, 0.75) 0%, rgba(56, 189, 248, 0.5) 50%, rgba(234, 168, 18, 0.85) 100%)',
             boxShadow: '0 0 24px rgba(234, 168, 18, 0.4), 0 8px 24px rgba(0, 0, 0, 0.6)',
             zIndex: 2,
           }}
@@ -135,6 +143,12 @@ export default function LogicWhileLiRELoaderDefault({
           <img
             src="/brand/logicwhilelire-official.png"
             alt="LogicWhile LiRE"
+            onError={(e) => {
+              const target = e.currentTarget as HTMLImageElement;
+              if (!target.src.endsWith('logicwhilelire-mark.svg')) {
+                target.src = '/brand/logicwhilelire-mark.svg';
+              }
+            }}
             style={{
               height: (size === 'sm' ? 44 : size === 'lg' ? 72 : 56) * scale,
               width: (size === 'sm' ? 44 : size === 'lg' ? 72 : 56) * scale,
@@ -145,7 +159,7 @@ export default function LogicWhileLiRELoaderDefault({
               display: 'block',
             }}
           />
-        </div>
+        </motion.div>
       </div>
 
       {/* ── INNOVATIVE LIGHT-TRACING BRAND LOGO ANIMATION ── */}

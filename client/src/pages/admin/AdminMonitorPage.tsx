@@ -12,6 +12,31 @@ import ShimmerText from '../../components/3d/ShimmerText'
 import CandidateViolationTimelineModal from '../../components/CandidateViolationTimelineModal'
 import InspectorRadarMatrix3D from '../../components/3d/InspectorRadarMatrix3D'
 import AdminSidebar from '../../components/layout/AdminSidebar'
+import {
+  IconAlert,
+  IconStop,
+  IconChat,
+  IconDownload,
+  IconMail,
+  IconCross,
+  IconCamera,
+  IconVolume,
+  IconVolumeMute,
+  IconGlobe,
+  IconBuilding,
+  IconKey,
+  IconFlash,
+  IconRefresh,
+  IconUsers,
+  IconRadio,
+  IconShield,
+  IconCheck,
+  IconClipboard,
+  IconLaunch,
+  IconEye,
+  IconProhibit,
+  IconClock,
+} from '../../components/icons/HumanIcons'
 
 const BASE_URL = API_BASE_URL
 
@@ -339,7 +364,7 @@ export default function AdminMonitorPage() {
         },
       })
     }
-    setActionNotice(`⚠️ Warning broadcasted to ${student.hallTicket}`)
+    setActionNotice(`Warning broadcasted to ${student.hallTicket}`)
     setTimeout(() => setActionNotice(''), 3000)
   }
 
@@ -357,7 +382,7 @@ export default function AdminMonitorPage() {
     setStudents(prev =>
       prev.map(s => s.id === student.id ? { ...s, status: 'offline', flagCount: (s.flagCount || 0) + 5 } : s)
     )
-    setActionNotice(`🛑 Terminated session for ${student.hallTicket}`)
+    setActionNotice(`Terminated session for ${student.hallTicket}`)
     setTimeout(() => setActionNotice(''), 3000)
   }
 
@@ -382,7 +407,7 @@ export default function AdminMonitorPage() {
       inspectorName: 'Chief Exam Invigilator',
     }).catch(() => {})
 
-    setActionNotice(`📢 Announcement broadcasted to all ${students.length} candidates in ${examCode}!`)
+    setActionNotice(`Announcement broadcasted to all ${students.length} candidates in ${examCode}!`)
     setBroadcastMessage('')
     setBroadcastModalOpen(false)
     setTimeout(() => setActionNotice(''), 3500)
@@ -409,7 +434,7 @@ export default function AdminMonitorPage() {
       message: whisperMessage,
     }).catch(() => {})
 
-    setActionNotice(`💬 Direct notice sent to ${whisperModalStudent.hallTicket}`)
+    setActionNotice(`Direct notice sent to ${whisperModalStudent.hallTicket}`)
     setWhisperModalStudent(null)
     setWhisperMessage('')
     setTimeout(() => setActionNotice(''), 3000)
@@ -521,7 +546,7 @@ export default function AdminMonitorPage() {
     a.download = `LogicWhileLiRE_Audit_${examCode}_${Date.now()}.json`
     a.click()
     URL.revokeObjectURL(url)
-    setActionNotice(`📥 Downloaded forensic audit report for ${examCode}!`)
+    setActionNotice(`Downloaded forensic audit report for ${examCode}!`)
     setTimeout(() => setActionNotice(''), 3000)
   }
 
@@ -550,11 +575,11 @@ export default function AdminMonitorPage() {
         examCode,
         examTitle: `Exam ${examCode}`,
       })
-      setActionNotice(`📨 Test ${testEmailType} dispatched to ${testEmailRecipient}!`)
+      setActionNotice(`Test ${testEmailType} dispatched to ${testEmailRecipient}!`)
       fetchEmailLogs()
       setTimeout(() => setActionNotice(''), 3500)
     } catch {
-      setActionNotice('❌ Failed to dispatch test email')
+      setActionNotice('Failed to dispatch test email')
       setTimeout(() => setActionNotice(''), 3000)
     } finally {
       setTestEmailSending(false)
@@ -574,10 +599,18 @@ export default function AdminMonitorPage() {
   }
 
   const getEventIcon = (type: string) => {
-    const map: Record<string, string> = {
-      tab_switch: '🔀', multiple_faces: '👥', no_face: '👤', copy_paste: '📋',
+    switch (type) {
+      case 'tab_switch':
+        return <IconProhibit size={13} color="#EF4444" />;
+      case 'multiple_faces':
+        return <IconUsers size={13} color="#F59E0B" />;
+      case 'no_face':
+        return <IconEye size={13} color="#F59E0B" />;
+      case 'copy_paste':
+        return <IconClipboard size={13} color="#EF4444" />;
+      default:
+        return <IconAlert size={13} color="#F59E0B" />;
     }
-    return map[type] || '⚠️'
   }
 
   return (
@@ -627,7 +660,7 @@ export default function AdminMonitorPage() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '1.2rem' }}>📷</span>
+              <IconCamera size={18} color="#34D399" />
               <span style={{ fontSize: '0.8rem', color: '#34D399', fontWeight: 600 }}>
                 <strong>3rd-Party Camera Telemetry Active:</strong> Live optical presence indicator. Telemetry is monitored on client devices only; video/audio streams are never stored on institutional servers.
               </span>
@@ -671,8 +704,9 @@ export default function AdminMonitorPage() {
               className="btn btn-primary btn-sm"
               onClick={() => inputCode && subscribe(inputCode)}
               disabled={loading || !inputCode}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
-              {loading ? <span className="btn-spinner" /> : '📡 Connect'}
+              {loading ? <span className="btn-spinner" /> : <><IconRadio size={14} /> Connect</>}
             </MagneticButton>
 
             {/* Sound Toggle */}
@@ -684,10 +718,10 @@ export default function AdminMonitorPage() {
                 border: '1px solid var(--color-border)',
                 background: soundEnabled ? 'rgba(43,127,255,0.1)' : 'rgba(0,0,0,0.2)',
                 color: soundEnabled ? 'var(--color-primary)' : 'var(--color-text-faint)',
-                cursor: 'pointer', fontSize: '0.85rem',
+                cursor: 'pointer', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
               }}
             >
-              {soundEnabled ? '🔊' : '🔇'}
+              {soundEnabled ? <IconVolume size={16} /> : <IconVolumeMute size={16} />}
             </button>
 
             {/* Broadcast to All Button */}
@@ -701,7 +735,8 @@ export default function AdminMonitorPage() {
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
               }}
             >
-              <span>📢 Broadcast Alert</span>
+              <IconChat size={14} color="#FBBF24" />
+              <span>Broadcast Alert</span>
             </button>
 
             {/* Emergency Room Lockdown / Resume All */}
@@ -717,7 +752,17 @@ export default function AdminMonitorPage() {
               }}
               title={isRoomFrozen ? 'Reactivate all candidate terminals' : 'Freeze all candidate terminals immediately'}
             >
-              <span>{isRoomFrozen ? '▶️ Resume All' : '⏸️ Master Room Freeze'}</span>
+              {isRoomFrozen ? (
+                <>
+                  <IconFlash size={14} color="#34D399" />
+                  <span>Resume All</span>
+                </>
+              ) : (
+                <>
+                  <IconStop size={14} color="#F87171" />
+                  <span>Master Room Freeze</span>
+                </>
+              )}
             </button>
 
             {/* 3D Matrix Toggle Button */}
@@ -732,7 +777,8 @@ export default function AdminMonitorPage() {
                 display: 'flex', alignItems: 'center', gap: 6,
               }}
             >
-              <span>🌐 {show3DMatrix ? 'Hide 3D Matrix' : '3D Orbital Matrix'}</span>
+              <IconGlobe size={14} />
+              <span>{show3DMatrix ? 'Hide 3D Matrix' : '3D Orbital Matrix'}</span>
             </button>
 
             {/* Export Forensic Audit Report Button */}
@@ -747,7 +793,8 @@ export default function AdminMonitorPage() {
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
               }}
             >
-              <span>📥 Export Audit</span>
+              <IconDownload size={14} />
+              <span>Export Audit</span>
             </button>
 
             {/* Outbound Email Hub Button */}
@@ -761,7 +808,8 @@ export default function AdminMonitorPage() {
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
               }}
             >
-              <span>📨 Mail Dispatch Hub</span>
+              <IconMail size={14} />
+              <span>Mail Dispatch Hub</span>
             </button>
           </div>
         </div>
@@ -774,8 +822,9 @@ export default function AdminMonitorPage() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-primary, #38BDF8)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                🏛️ Active College:
+              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-primary, #38BDF8)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <IconBuilding size={14} color="var(--color-primary, #38BDF8)" />
+                <span>Active College:</span>
               </span>
               <select
                 value={selectedCollege}
@@ -794,8 +843,9 @@ export default function AdminMonitorPage() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                🔑 Exam Code:
+              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <IconKey size={14} color="#F59E0B" />
+                <span>Exam Code:</span>
               </span>
               <select
                 value={examCode}
@@ -836,7 +886,7 @@ export default function AdminMonitorPage() {
                 marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8,
               }}
             >
-              <span>⚡</span> {actionNotice}
+              <IconFlash size={14} color="#EAA812" /> {actionNotice}
             </motion.div>
           )}
         </AnimatePresence>
@@ -858,7 +908,7 @@ export default function AdminMonitorPage() {
               animation: connected ? 'blink 1.5s infinite' : 'none',
             }} />
             {connected
-              ? `🔴 REALTIME LIVE — Monitoring "${examCode}" (${stats.total} Candidates)`
+              ? `REALTIME LIVE — Monitoring "${examCode}" (${stats.total} Candidates)`
               : 'Connecting to Realtime stream...'}
           </div>
 
@@ -878,7 +928,8 @@ export default function AdminMonitorPage() {
                 display: 'flex', alignItems: 'center', gap: 6,
               }}
             >
-              <span style={{ fontSize: '0.75rem' }}>🔄 Refresh Telemetry</span>
+              <IconRefresh size={14} />
+              <span style={{ fontSize: '0.75rem' }}>Refresh Telemetry</span>
             </motion.button>
           </div>
         </div>
@@ -886,14 +937,14 @@ export default function AdminMonitorPage() {
         {/* ─── 5-Stats Cards ─── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 20 }}>
           {[
-            { label: 'Total Enrolled', value: stats.total,   color: 'var(--color-primary)',  icon: '👥' },
-            { label: 'Active Answering',value: stats.active, color: '#10B981',               icon: '🟢' },
-            { label: 'Idle / Paused',  value: stats.idle,    color: '#F59E0B',               icon: '🟡' },
-            { label: 'Flagged Cheating',value: stats.cheat,  color: '#EF4444',               icon: '🔴' },
-            { label: 'Completed',     value: stats.done,     color: '#64748B',               icon: '✅' },
+            { label: 'Total Enrolled', value: stats.total,   color: 'var(--color-primary)',  icon: <IconUsers size={20} color="var(--color-primary)" /> },
+            { label: 'Active Answering',value: stats.active, color: '#10B981',               icon: <IconFlash size={20} color="#10B981" /> },
+            { label: 'Idle / Paused',  value: stats.idle,    color: '#F59E0B',               icon: <IconClock size={20} color="#F59E0B" /> },
+            { label: 'Flagged Cheating',value: stats.cheat,  color: '#EF4444',               icon: <IconAlert size={20} color="#EF4444" /> },
+            { label: 'Completed',     value: stats.done,     color: '#64748B',               icon: <IconCheck size={20} color="#64748B" /> },
           ].map(({ label, value, color, icon }) => (
             <GlowCard key={label} glowColor={color + '25'} style={{ padding: '12px 14px', textAlign: 'center' }}>
-              <div style={{ fontSize: '1.1rem', marginBottom: 2 }}>{icon}</div>
+              <div style={{ fontSize: '1.1rem', marginBottom: 2, display: 'flex', justifyContent: 'center' }}>{icon}</div>
               <motion.div
                 key={value}
                 initial={{ scale: 1.15, color }}
@@ -964,8 +1015,8 @@ export default function AdminMonitorPage() {
                   } style={{ padding: 18 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: '1.2rem' }}>
-                          {selectedStudent.status === 'cheating' ? '🚨' : selectedStudent.status === 'offline' ? '🏁' : '👤'}
+                        <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center' }}>
+                          {selectedStudent.status === 'cheating' ? <IconAlert size={18} color="#EF4444" /> : selectedStudent.status === 'offline' ? <IconCheck size={18} color="#64748B" /> : <IconUsers size={18} color="var(--color-primary)" />}
                         </span>
                         <div>
                           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.92rem', fontWeight: 800 }}>
@@ -1035,10 +1086,10 @@ export default function AdminMonitorPage() {
                       const threatColor = threatScore > 70 ? '#EF4444' : threatScore > 35 ? '#F59E0B' : '#10B981'
                       const threatLabel = threatScore > 70 ? 'CRITICAL RISK' : threatScore > 35 ? 'ELEVATED' : 'NOMINAL'
                       const recommendation = threatScore > 70
-                        ? '🚨 RECOM: Disqualify session'
+                        ? 'RECOM: Disqualify session'
                         : threatScore > 35
-                        ? '⚠️ RECOM: Issue whisper reprimand'
-                        : '🛡️ INTEGRITY: Verified healthy'
+                        ? 'RECOM: Issue whisper reprimand'
+                        : 'INTEGRITY: Verified healthy'
 
                       return (
                         <div style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${threatColor}35`, borderRadius: 8, padding: '8px 10px', marginBottom: 12 }}>
@@ -1053,8 +1104,9 @@ export default function AdminMonitorPage() {
                           <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden', marginBottom: 5 }}>
                             <div style={{ width: `${threatScore}%`, height: '100%', background: threatColor, transition: 'width 0.4s ease' }} />
                           </div>
-                          <div style={{ fontSize: '0.65rem', fontWeight: 700, color: threatColor, textAlign: 'center' }}>
-                            {recommendation}
+                          <div style={{ fontSize: '0.65rem', fontWeight: 700, color: threatColor, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                            {threatScore > 70 ? <IconAlert size={11} color={threatColor} /> : threatScore > 35 ? <IconAlert size={11} color={threatColor} /> : <IconShield size={11} color={threatColor} />}
+                            <span>{recommendation}</span>
                           </div>
                         </div>
                       )
@@ -1066,16 +1118,18 @@ export default function AdminMonitorPage() {
                         <MagneticButton
                           className="btn btn-warning btn-sm"
                           onClick={() => handleSendWarning(selectedStudent)}
-                          style={{ fontSize: '0.72rem', padding: '6px 6px' }}
+                          style={{ fontSize: '0.72rem', padding: '6px 6px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                         >
-                          ⚠️ Warn
+                          <IconAlert size={12} />
+                          <span>Warn</span>
                         </MagneticButton>
                         <MagneticButton
                           className="btn btn-danger btn-sm"
                           onClick={() => handleTerminateStudent(selectedStudent)}
-                          style={{ fontSize: '0.72rem', padding: '6px 6px' }}
+                          style={{ fontSize: '0.72rem', padding: '6px 6px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                         >
-                          🛑 Terminate
+                          <IconStop size={12} />
+                          <span>Terminate</span>
                         </MagneticButton>
                       </div>
 
@@ -1088,7 +1142,8 @@ export default function AdminMonitorPage() {
                             fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
                           }}
                         >
-                          💬 Whisper
+                          <IconChat size={12} />
+                          <span>Whisper</span>
                         </button>
                         <button
                           onClick={() => handleExtendTime(selectedStudent, 5)}
@@ -1098,7 +1153,8 @@ export default function AdminMonitorPage() {
                             fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
                           }}
                         >
-                          ⏱️ +5m
+                          <IconClock size={12} />
+                          <span>+5m</span>
                         </button>
                         <button
                           onClick={() => handlePauseResume(selectedStudent)}
@@ -1110,16 +1166,27 @@ export default function AdminMonitorPage() {
                             fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
                           }}
                         >
-                          {selectedStudent.status === 'idle' ? '▶️ Resume' : '⏸️ Pause'}
+                          {selectedStudent.status === 'idle' ? (
+                            <>
+                              <IconFlash size={12} />
+                              <span>Resume</span>
+                            </>
+                          ) : (
+                            <>
+                              <IconStop size={12} />
+                              <span>Pause</span>
+                            </>
+                          )}
                         </button>
                       </div>
 
                       <MagneticButton
                         className="btn btn-ghost btn-sm w-full"
                         onClick={() => setTimelineCandidate(selectedStudent)}
-                        style={{ fontSize: '0.72rem', padding: '6px 8px', border: '1px solid rgba(255,255,255,0.1)' }}
+                        style={{ fontSize: '0.72rem', padding: '6px 8px', border: '1px solid rgba(255,255,255,0.1)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                       >
-                        📋 Full Forensic Dossier & Timeline
+                        <IconClipboard size={14} />
+                        <span>Full Forensic Dossier & Timeline</span>
                       </MagneticButton>
                     </div>
                   </GlowCard>
@@ -1144,8 +1211,9 @@ export default function AdminMonitorPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 380, overflowY: 'auto' }}>
                 <AnimatePresence initial={false}>
                   {events.length === 0 ? (
-                    <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', textAlign: 'center', padding: '32px 0' }}>
-                      🛡️ All clear — no violations logged
+                    <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', textAlign: 'center', padding: '32px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      <IconShield size={14} color="#10B981" />
+                      <span>All clear — no violations logged</span>
                     </div>
                   ) : (
                     events.map(ev => {
@@ -1241,7 +1309,7 @@ export default function AdminMonitorPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: '1.4rem' }}>📢</span>
+                    <IconChat size={20} color="#38BDF8" />
                     <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text)' }}>
                       Broadcast to Exam Room
                     </h3>
@@ -1252,19 +1320,20 @@ export default function AdminMonitorPage() {
                 </div>
                 <button
                   onClick={() => setBroadcastModalOpen(false)}
-                  style={{ background: 'none', border: 'none', color: 'var(--color-text-faint)', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-faint)', fontSize: '1.2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  aria-label="Close"
                 >
-                  ✕
+                  <IconCross size={16} />
                 </button>
               </div>
 
               {/* Preset Quick Chips */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
                 {[
-                  '⏱️ 10 minutes remaining in this examination.',
-                  '⚠️ Ensure your webcam and face remain centered.',
-                  '🛡️ Tab switches are being recorded into forensic ledger.',
-                  '✅ Remember to review and submit before time expires.'
+                  '10 minutes remaining in this examination.',
+                  'Ensure your webcam and face remain centered.',
+                  'Tab switches are being recorded into forensic ledger.',
+                  'Remember to review and submit before time expires.'
                 ].map((preset, idx) => (
                   <button
                     key={idx}
@@ -1307,7 +1376,8 @@ export default function AdminMonitorPage() {
                   onClick={handleBroadcastToAll}
                   style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                 >
-                  <span>📢</span> Broadcast to All Candidates
+                  <IconChat size={14} />
+                  <span>Broadcast to All Candidates</span>
                 </button>
               </div>
             </motion.div>
@@ -1336,7 +1406,7 @@ export default function AdminMonitorPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: '1.4rem' }}>💬</span>
+                    <IconChat size={20} color="#F59E0B" />
                     <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text)' }}>
                       Direct Notice to Candidate
                     </h3>
@@ -1347,9 +1417,10 @@ export default function AdminMonitorPage() {
                 </div>
                 <button
                   onClick={() => setWhisperModalStudent(null)}
-                  style={{ background: 'none', border: 'none', color: 'var(--color-text-faint)', fontSize: '1.2rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-faint)', fontSize: '1.2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  aria-label="Close"
                 >
-                  ✕
+                  <IconCross size={16} />
                 </button>
               </div>
 
@@ -1402,7 +1473,8 @@ export default function AdminMonitorPage() {
                   onClick={handleSendWhisper}
                   style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                 >
-                  <span>💬</span> Send Direct Reprimand
+                  <IconChat size={14} />
+                  <span>Send Direct Reprimand</span>
                 </button>
               </div>
             </motion.div>
@@ -1432,7 +1504,7 @@ export default function AdminMonitorPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: '1.5rem' }}>📨</span>
+                    <IconMail size={22} color="#10B981" />
                     <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-text)' }}>
                       Outbound Mail & Invigilator Dispatch Hub
                     </h3>
@@ -1443,9 +1515,10 @@ export default function AdminMonitorPage() {
                 </div>
                 <button
                   onClick={() => setEmailHubOpen(false)}
-                  style={{ background: 'none', border: 'none', color: 'var(--color-text-faint)', fontSize: '1.3rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-faint)', fontSize: '1.3rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  aria-label="Close"
                 >
-                  ✕
+                  <IconCross size={16} />
                 </button>
               </div>
 
@@ -1467,8 +1540,9 @@ export default function AdminMonitorPage() {
 
               {/* Test Dispatch Workbench */}
               <div style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 10, padding: 14, marginBottom: 16 }}>
-                <div style={{ fontSize: '0.76rem', fontWeight: 800, color: '#34D399', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                  ⚡ Live Interactive Email Dispatch Workbench
+                <div style={{ fontSize: '0.76rem', fontWeight: 800, color: '#34D399', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <IconFlash size={14} color="#34D399" />
+                  <span>Live Interactive Email Dispatch Workbench</span>
                 </div>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <input
@@ -1489,11 +1563,11 @@ export default function AdminMonitorPage() {
                       borderRadius: 6, padding: '6px 10px', color: '#FFF', fontSize: '0.82rem',
                     }}
                   >
-                    <option value="invitation">🎓 Hall Ticket & Passcode</option>
-                    <option value="otp">🔐 OTP Verification Passcode</option>
-                    <option value="submission_receipt">✅ Submission Receipt</option>
-                    <option value="inspector_issue_alert">🚨 Anomaly Proctor Alert</option>
-                    <option value="inspector_notice">⚠️ Direct Invigilator Reprimand</option>
+                    <option value="invitation">Hall Ticket & Passcode</option>
+                    <option value="otp">OTP Verification Passcode</option>
+                    <option value="submission_receipt">Submission Receipt</option>
+                    <option value="inspector_issue_alert">Anomaly Proctor Alert</option>
+                    <option value="inspector_notice">Direct Invigilator Reprimand</option>
                   </select>
                   <button
                     type="button"
@@ -1502,7 +1576,7 @@ export default function AdminMonitorPage() {
                     onClick={handleTestEmailDispatch}
                     style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem' }}
                   >
-                    {testEmailSending ? <span className="btn-spinner" /> : '🚀 Dispatch Now'}
+                    {testEmailSending ? <span className="btn-spinner" /> : <><IconLaunch size={14} /> <span>Dispatch Now</span></>}
                   </button>
                 </div>
               </div>
@@ -1550,7 +1624,10 @@ export default function AdminMonitorPage() {
                               {log.subject}
                             </td>
                             <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                              <span style={{ color: '#10B981', fontWeight: 800 }}>✓ {log.status}</span>
+                              <span style={{ color: '#10B981', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <IconCheck size={12} color="#10B981" />
+                                <span>{log.status}</span>
+                              </span>
                             </td>
                             <td style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--color-text-faint)', fontFamily: 'monospace' }}>
                               {new Date(log.timestamp).toLocaleTimeString()}

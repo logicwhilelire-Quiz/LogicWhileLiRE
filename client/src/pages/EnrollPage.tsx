@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { enrollParticipant } from '../lib/api';
 import BrandLogo from '../components/BrandLogo';
 import AnimatedPage from '../components/AnimatedPage';
+import { IconMail, IconAlert } from '../components/icons/HumanIcons';
 
 export default function EnrollPage() {
   const { examId } = useParams<{ examId: string }>();
@@ -68,8 +69,9 @@ export default function EnrollPage() {
 
         <div className="card">
           {apiError && (
-            <div className="alert alert-error mb-2">
-              ⚠️ {apiError}
+            <div className="alert alert-error mb-2" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <IconAlert size={16} color="#ef4444" />
+              <span>{apiError}</span>
             </div>
           )}
 
@@ -140,7 +142,10 @@ export default function EnrollPage() {
               {loading ? (
                 <><div className="btn-spinner" />Sending OTP...</>
               ) : (
-                <>✉️ Send OTP to Email</>
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <IconMail size={18} color="currentColor" />
+                  <span>Send OTP to Email</span>
+                </span>
               )}
             </button>
           </form>

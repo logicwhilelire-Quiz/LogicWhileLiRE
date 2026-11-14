@@ -4,6 +4,27 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import { API_BASE_URL } from '../../lib/config';
+import {
+  IconBuilding,
+  IconCheck,
+  IconCross,
+  IconPlus,
+  IconDownload,
+  IconRefresh,
+  IconKey,
+  IconUsers,
+  IconSearch,
+  IconPhone,
+  IconMail,
+  IconEdit,
+  IconTrash,
+  IconGraduation,
+  IconRadio,
+  IconClock,
+  IconStop,
+  IconAlert,
+  IconLayers,
+} from '../../components/icons/HumanIcons';
 
 const BASE_URL = API_BASE_URL;
 
@@ -327,7 +348,7 @@ export default function CollegesPage() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
-      setSuccess(`✅ Successfully imported ${res.data.inserted || 0} college(s) from Excel!`);
+      setSuccess(`Successfully imported ${res.data.inserted || 0} college(s) from Excel!`);
       load();
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Failed to import colleges from Excel spreadsheet.');
@@ -348,7 +369,7 @@ export default function CollegesPage() {
       // Update local state in inspected college and list
       if (inspectCollege && inspectCollege.students) {
         const updatedStudents = inspectCollege.students.map(s =>
-          s.id === student.id ? { ...s, is_verified: nextVal, live_status: nextVal ? { state: 'cleared' as const, label: '✓ Cleared & Ready' } : { state: 'pending' as const, label: '⏳ Pending Admin Clearance' } } : s
+          s.id === student.id ? { ...s, is_verified: nextVal, live_status: nextVal ? { state: 'cleared' as const, label: 'Cleared & Ready' } : { state: 'pending' as const, label: 'Pending Admin Clearance' } } : s
         );
         const updatedCollege = { ...inspectCollege, students: updatedStudents };
         setInspectCollege(updatedCollege);
@@ -370,7 +391,7 @@ export default function CollegesPage() {
       });
       if (inspectCollege && inspectCollege.students) {
         const updatedStudents = inspectCollege.students.map(s =>
-          s.id === student.id ? { ...s, is_blocked: nextVal, live_status: nextVal ? { state: 'blocked' as const, label: '🛑 Blocked by Admin' } : { state: 'pending' as const, label: '⏳ Pending Admin Clearance' } } : s
+          s.id === student.id ? { ...s, is_blocked: nextVal, live_status: nextVal ? { state: 'blocked' as const, label: 'Blocked by Admin' } : { state: 'pending' as const, label: 'Pending Admin Clearance' } } : s
         );
         const updatedCollege = { ...inspectCollege, students: updatedStudents };
         setInspectCollege(updatedCollege);
@@ -496,8 +517,8 @@ export default function CollegesPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 14 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-              <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: '#f8fafc' }}>
-                🏛️ College & Session Control
+              <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: '#f8fafc', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <IconBuilding size={24} color="#38BDF8" /> College & Session Control
               </h1>
               <span className="badge badge-primary" style={{ fontSize: '0.75rem', padding: '3px 8px' }}>
                 ADMIN SOVEREIGNTY
@@ -522,21 +543,21 @@ export default function CollegesPage() {
               onClick={load}
               disabled={loading}
               title="Refresh live college data and candidate telemetry"
-              style={{ background: 'rgba(255,255,255,0.05)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.1)' }}
+              style={{ background: 'rgba(255,255,255,0.05)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.1)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
-              🔄 Refresh
+              <IconRefresh size={14} /> Refresh
             </button>
             <button
               id="bulk-import-college-btn"
               className="btn btn-secondary"
               disabled={importing}
               onClick={() => fileInputRef.current?.click()}
-              style={{ background: '#002147', color: '#FFFFFF', border: '1px solid #334155' }}
+              style={{ background: '#002147', color: '#FFFFFF', border: '1px solid #334155', display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
-              {importing ? 'Importing...' : '📥 Bulk Import Excel'}
+              <IconDownload size={14} /> {importing ? 'Importing...' : 'Bulk Import Excel'}
             </button>
-            <button id="add-college-btn" className="btn btn-primary" onClick={openAdd}>
-              ➕ Add College
+            <button id="add-college-btn" className="btn btn-primary" onClick={openAdd} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <IconPlus size={14} /> Add College
             </button>
           </div>
         </div>
@@ -552,9 +573,9 @@ export default function CollegesPage() {
                   type="button"
                   onClick={() => navigate('/admin/login')}
                   className="btn btn-sm btn-primary"
-                  style={{ whiteSpace: 'nowrap', padding: '4px 12px', fontSize: '0.8rem' }}
+                  style={{ whiteSpace: 'nowrap', padding: '4px 12px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
-                  🔑 Log In
+                  <IconKey size={14} /> Log In
                 </button>
               )}
             </motion.div>
@@ -570,32 +591,32 @@ export default function CollegesPage() {
         {/* Real-time Telemetry & Intelligence KPI Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 24 }}>
           <div className="card card-sm" style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
-              🏛️ Colleges Configured
+            <div className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <IconBuilding size={13} color="#38BDF8" /> Colleges Configured
             </div>
             <div style={{ fontSize: '1.9rem', fontWeight: 800, color: '#f8fafc' }}>{colleges.length}</div>
             <div className="text-muted text-xs">{colleges.filter(c => c.is_active).length} Active Campuses</div>
           </div>
 
           <div className="card card-sm" style={{ background: 'rgba(15, 23, 42, 0.7)', borderLeft: '3px solid #6366f1', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
-              🏢 Branches & Batches
+            <div className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <IconLayers size={13} color="#818CF8" /> Branches & Batches
             </div>
             <div style={{ fontSize: '1.9rem', fontWeight: 800, color: '#818cf8' }}>{totalBranchesCount}</div>
             <div className="text-muted text-xs">Mapped across campuses</div>
           </div>
 
           <div className="card card-sm" style={{ background: 'rgba(15, 23, 42, 0.7)', borderLeft: '3px solid #38bdf8', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
-              👥 Registered Candidates
+            <div className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <IconUsers size={13} color="#38BDF8" /> Registered Candidates
             </div>
             <div style={{ fontSize: '1.9rem', fontWeight: 800, color: '#38bdf8' }}>{totalRegisteredStudents}</div>
             <div className="text-muted text-xs">Full student rosters</div>
           </div>
 
           <div className="card card-sm" style={{ background: 'rgba(15, 23, 42, 0.7)', borderLeft: '3px solid #10b981', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
-              🟢 Live in Exam Now
+            <div className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} /> Live in Exam Now
             </div>
             <div style={{ fontSize: '1.9rem', fontWeight: 800, color: '#34d399', display: 'flex', alignItems: 'center', gap: 6 }}>
               <span>{totalLiveInExam}</span>
@@ -605,8 +626,8 @@ export default function CollegesPage() {
           </div>
 
           <div className="card card-sm" style={{ background: 'rgba(15, 23, 42, 0.7)', borderLeft: '3px solid #f59e0b', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
-              ⏳ Pending Clearance
+            <div className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <IconClock size={13} color="#FBBF24" /> Pending Clearance
             </div>
             <div style={{ fontSize: '1.9rem', fontWeight: 800, color: '#fbbf24' }}>{totalPendingClearance}</div>
             <div className="text-muted text-xs">Awaiting admin gate pass</div>
@@ -620,7 +641,7 @@ export default function CollegesPage() {
               id="search-college-input"
               type="text"
               className="form-input"
-              placeholder="🔍 Search colleges by name, code, branch, or city..."
+              placeholder="Search colleges by name, code, branch, or city..."
               value={collegeSearch}
               onChange={e => setCollegeSearch(e.target.value)}
               style={{ paddingLeft: 14, background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255,255,255,0.1)' }}
@@ -640,7 +661,9 @@ export default function CollegesPage() {
           </div>
         ) : filteredColleges.length === 0 ? (
           <div className="card text-center" style={{ padding: 60, background: 'rgba(15, 23, 42, 0.6)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: 12 }}>🏛️</div>
+            <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+              <IconBuilding size={48} color="#64748B" />
+            </div>
             <p className="font-bold mb-1" style={{ color: '#f8fafc' }}>
               {collegeSearch ? 'No colleges match your search' : 'No colleges added yet'}
             </p>
@@ -679,9 +702,17 @@ export default function CollegesPage() {
                         <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#f8fafc' }}>{college.college_name}</div>
                         <div className="text-muted text-xs" style={{ marginTop: 2 }}>
                           {college.city ? `${college.city}, ${college.state || 'AP'}` : college.state || 'Andhra Pradesh'}
-                          {college.contact_phone && ` • 📞 ${college.contact_phone}`}
+                          {college.contact_phone && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginLeft: 6 }}>
+                              • <IconPhone size={10} /> {college.contact_phone}
+                            </span>
+                          )}
                         </div>
-                        {college.contact_email && <div className="text-muted text-xs" style={{ color: '#64748b' }}>{college.contact_email}</div>}
+                        {college.contact_email && (
+                          <div className="text-muted text-xs" style={{ color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                            <IconMail size={10} /> {college.contact_email}
+                          </div>
+                        )}
                       </td>
 
                       {/* Code */}
@@ -775,28 +806,28 @@ export default function CollegesPage() {
                       {/* Registered Students & Live Telemetry */}
                       <td style={{ padding: '14px 16px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#f1f5f9' }}>
-                            👥 {totalStudents} Registered
+                          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#f1f5f9', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <IconUsers size={12} color="#38BDF8" /> {totalStudents} Registered
                           </div>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                             {liveSummary.in_exam > 0 ? (
-                              <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontWeight: 700, border: '1px solid rgba(16, 185, 129, 0.4)' }}>
-                                🟢 {liveSummary.in_exam} In Exam
+                              <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontWeight: 700, border: '1px solid rgba(16, 185, 129, 0.4)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34d399', display: 'inline-block' }} /> {liveSummary.in_exam} In Exam
                               </span>
                             ) : null}
                             {liveSummary.pending_clearance > 0 ? (
-                              <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', fontWeight: 600, border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-                                ⏳ {liveSummary.pending_clearance} Pending
+                              <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', fontWeight: 600, border: '1px solid rgba(245, 158, 11, 0.3)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <IconClock size={10} color="#FBBF24" /> {liveSummary.pending_clearance} Pending
                               </span>
                             ) : null}
                             {liveSummary.cleared_ready > 0 ? (
-                              <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', fontWeight: 600 }}>
-                                ✓ {liveSummary.cleared_ready} Cleared
+                              <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <IconCheck size={10} color="#818CF8" /> {liveSummary.cleared_ready} Cleared
                               </span>
                             ) : null}
                             {liveSummary.completed > 0 ? (
-                              <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(255,255,255,0.06)', color: '#94a3b8', fontWeight: 600 }}>
-                                🏁 {liveSummary.completed} Done
+                              <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(255,255,255,0.06)', color: '#94a3b8', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <IconCheck size={10} color="#94A3B8" /> {liveSummary.completed} Done
                               </span>
                             ) : null}
                             {totalStudents === 0 && (
@@ -818,11 +849,14 @@ export default function CollegesPage() {
                             border: '1px solid currentColor',
                             padding: '4px 10px',
                             fontSize: '0.76rem',
-                            fontWeight: 600
+                            fontWeight: 600,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4
                           }}
                           title="Click to enable/disable student registration portal access for this college"
                         >
-                          {college.registration_enabled !== false ? '✓ Gate Open' : '✕ Gate Closed'}
+                          {college.registration_enabled !== false ? <><IconCheck size={11} color="#10B981" /> Gate Open</> : <><IconCross size={11} color="#EF4444" /> Gate Closed</>}
                         </button>
                       </td>
 
@@ -844,20 +878,23 @@ export default function CollegesPage() {
                               fontWeight: 700,
                               fontSize: '0.78rem',
                               padding: '5px 12px',
-                              boxShadow: '0 2px 8px rgba(79, 70, 229, 0.35)'
+                              boxShadow: '0 2px 8px rgba(79, 70, 229, 0.35)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5
                             }}
                             title="Inspect branches, batches, sections, passout years, and live candidate activity"
                           >
-                            🔍 Inspect Roster & Sections
+                            <IconSearch size={12} /> Inspect Roster & Sections
                           </button>
 
                           <button
                             id={`edit-college-${college.id}`}
                             className="btn btn-secondary btn-sm"
                             onClick={() => openEdit(college)}
-                            style={{ fontSize: '0.78rem', padding: '5px 10px' }}
+                            style={{ fontSize: '0.78rem', padding: '5px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                           >
-                            ✏️ Edit
+                            <IconEdit size={12} /> Edit
                           </button>
 
                           <button
@@ -873,20 +910,20 @@ export default function CollegesPage() {
                             id={`exam-codes-college-${college.id}`}
                             className="btn btn-ghost btn-sm"
                             onClick={() => navigate(`/admin/exam-codes?college=${college.id}`)}
-                            style={{ fontSize: '0.78rem', padding: '5px 10px' }}
+                            style={{ fontSize: '0.78rem', padding: '5px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                             title="Manage exam codes for this college"
                           >
-                            🔑 Codes
+                            <IconKey size={12} /> Codes
                           </button>
 
                           <button
                             id={`delete-college-${college.id}`}
                             className="btn btn-ghost btn-sm text-danger"
                             onClick={() => handleDelete(college)}
-                            style={{ color: 'var(--color-danger)', fontSize: '0.85rem', padding: '5px 8px' }}
+                            style={{ color: 'var(--color-danger)', fontSize: '0.85rem', padding: '5px 8px', display: 'inline-flex', alignItems: 'center' }}
                             title="Delete college"
                           >
-                            🗑️
+                            <IconTrash size={13} color="var(--color-danger)" />
                           </button>
                         </div>
                       </td>
@@ -935,20 +972,28 @@ export default function CollegesPage() {
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 16, flexWrap: 'wrap', gap: 12 }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: 0, color: '#f8fafc' }}>
-                      🏛️ {inspectCollege.college_name}
+                    <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: 0, color: '#f8fafc', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      <IconBuilding size={20} color="#38BDF8" /> {inspectCollege.college_name}
                     </h2>
                     <span style={{ fontFamily: 'monospace', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', borderRadius: 6, padding: '3px 10px', fontSize: '0.85rem', fontWeight: 700, border: '1px solid rgba(99, 102, 241, 0.4)' }}>
                       GR-{inspectCollege.college_code}
                     </span>
-                    <span className={`badge ${inspectCollege.registration_enabled !== false ? 'badge-success' : 'badge-neutral'}`}>
-                      {inspectCollege.registration_enabled !== false ? '✓ Student Registration Active' : '✕ Registration Suspended'}
+                    <span className={`badge ${inspectCollege.registration_enabled !== false ? 'badge-success' : 'badge-neutral'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      {inspectCollege.registration_enabled !== false ? <><IconCheck size={11} color="#10B981" /> Student Registration Active</> : <><IconCross size={11} color="#EF4444" /> Registration Suspended</>}
                     </span>
                   </div>
                   <div className="text-muted text-xs" style={{ marginTop: 4 }}>
                     {inspectCollege.city ? `${inspectCollege.city}, ${inspectCollege.state}` : inspectCollege.state}
-                    {inspectCollege.contact_phone && ` • 📞 ${inspectCollege.contact_phone}`}
-                    {inspectCollege.contact_email && ` • ✉️ ${inspectCollege.contact_email}`}
+                    {inspectCollege.contact_phone && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginLeft: 6 }}>
+                        • <IconPhone size={10} /> {inspectCollege.contact_phone}
+                      </span>
+                    )}
+                    {inspectCollege.contact_email && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginLeft: 6 }}>
+                        • <IconMail size={10} /> {inspectCollege.contact_email}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -956,17 +1001,17 @@ export default function CollegesPage() {
                   <button
                     className="btn btn-secondary btn-sm"
                     onClick={() => exportCollegeStudentsCSV(inspectCollege)}
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', fontSize: '0.78rem' }}
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 5 }}
                     title="Export complete roster of all registered candidates with contacts, batches, and live status"
                   >
-                    📥 Export Roster CSV
+                    <IconDownload size={13} /> Export Roster CSV
                   </button>
                   <button
                     className="btn btn-ghost btn-sm"
                     onClick={() => setInspectCollege(null)}
                     style={{ fontSize: '1.2rem', padding: '4px 8px', lineHeight: 1 }}
                   >
-                    ✕
+                    <IconCross size={16} />
                   </button>
                 </div>
               </div>
@@ -998,13 +1043,17 @@ export default function CollegesPage() {
                   </div>
                 </div>
                 <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
-                  <div className="text-muted text-xs">🟢 Live In Exam</div>
+                  <div className="text-muted text-xs" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34d399', display: 'inline-block' }} /> Live In Exam
+                  </div>
                   <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#34d399' }}>
                     {inspectCollege.live_status_summary?.in_exam || 0}
                   </div>
                 </div>
                 <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
-                  <div className="text-muted text-xs">⏳ Pending Clearance</div>
+                  <div className="text-muted text-xs" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <IconClock size={11} color="#FBBF24" /> Pending Clearance
+                  </div>
                   <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fbbf24' }}>
                     {inspectCollege.live_status_summary?.pending_clearance || 0}
                   </div>
@@ -1025,10 +1074,13 @@ export default function CollegesPage() {
                     borderBottom: inspectTab === 'branches' ? '2px solid #6366f1' : '2px solid transparent',
                     fontWeight: 700,
                     fontSize: '0.86rem',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6
                   }}
                 >
-                  🏢 Branches & Batches Matrix ({inspectCollege.branches?.length || 0})
+                  <IconLayers size={14} /> Branches & Batches Matrix ({inspectCollege.branches?.length || 0})
                 </button>
 
                 <button
@@ -1043,10 +1095,13 @@ export default function CollegesPage() {
                     borderBottom: inspectTab === 'passout' ? '2px solid #6366f1' : '2px solid transparent',
                     fontWeight: 700,
                     fontSize: '0.86rem',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6
                   }}
                 >
-                  🎓 Passout Years & Graduation Classes
+                  <IconGraduation size={14} /> Passout Years & Graduation Classes
                 </button>
 
                 <button
@@ -1061,10 +1116,13 @@ export default function CollegesPage() {
                     borderBottom: inspectTab === 'live' ? '2px solid #10b981' : '2px solid transparent',
                     fontWeight: 700,
                     fontSize: '0.86rem',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6
                   }}
                 >
-                  📡 Live Candidate Telemetry ({inspectCollege.live_status_summary?.in_exam || 0} active)
+                  <IconRadio size={14} color="#34D399" /> Live Candidate Telemetry ({inspectCollege.live_status_summary?.in_exam || 0} active)
                 </button>
 
                 <button
@@ -1079,10 +1137,13 @@ export default function CollegesPage() {
                     borderBottom: inspectTab === 'students' ? '2px solid #6366f1' : '2px solid transparent',
                     fontWeight: 700,
                     fontSize: '0.86rem',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6
                   }}
                 >
-                  👥 Registered Candidate Roster ({inspectCollege.students?.length || 0})
+                  <IconUsers size={14} /> Registered Candidate Roster ({inspectCollege.students?.length || 0})
                 </button>
               </div>
 
@@ -1137,7 +1198,7 @@ export default function CollegesPage() {
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                             {b.batches.map(bat => (
                               <span key={bat} style={{ fontSize: '0.74rem', padding: '2px 8px', borderRadius: 4, background: 'rgba(99, 102, 241, 0.15)', color: '#c7d2fe', fontWeight: 600 }}>
-                                📦 {bat}
+                                Batch {bat}
                               </span>
                             ))}
                           </div>
@@ -1151,7 +1212,7 @@ export default function CollegesPage() {
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                             {b.sections.map(sec => (
                               <span key={sec} style={{ fontSize: '0.74rem', padding: '2px 8px', borderRadius: 4, background: 'rgba(168, 85, 247, 0.15)', color: '#e9d5ff', fontWeight: 600 }}>
-                                🗂️ Sec {sec}
+                                Sec {sec}
                               </span>
                             ))}
                           </div>
@@ -1163,8 +1224,8 @@ export default function CollegesPage() {
                             Graduating: {b.passout_years.join(', ') || '2026–2030'}
                           </div>
                           {b.live_active_count > 0 ? (
-                            <span style={{ fontSize: '0.72rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontWeight: 700 }}>
-                              🟢 {b.live_active_count} In Exam
+                            <span style={{ fontSize: '0.72rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34d399', display: 'inline-block' }} /> {b.live_active_count} In Exam
                             </span>
                           ) : (
                             <span className="text-muted text-xs">0 active now</span>
@@ -1225,15 +1286,15 @@ export default function CollegesPage() {
 
                           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
                             {yrActive > 0 && (
-                              <span style={{ fontSize: '0.72rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontWeight: 700 }}>
-                                🟢 {yrActive} in exam
+                              <span style={{ fontSize: '0.72rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34d399', display: 'inline-block' }} /> {yrActive} in exam
                               </span>
                             )}
-                            <span style={{ fontSize: '0.72rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(99, 102, 241, 0.15)', color: '#a5b4fc' }}>
-                              ✓ {yrCleared} cleared
+                            <span style={{ fontSize: '0.72rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(99, 102, 241, 0.15)', color: '#a5b4fc', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                              <IconCheck size={10} color="#A5B4FC" /> {yrCleared} cleared
                             </span>
-                            <span style={{ fontSize: '0.72rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
-                              ⏳ {yrStudents.length - yrCleared} pending
+                            <span style={{ fontSize: '0.72rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                              <IconClock size={10} color="#FBBF24" /> {yrStudents.length - yrCleared} pending
                             </span>
                           </div>
                         </div>
@@ -1250,7 +1311,9 @@ export default function CollegesPage() {
                 <div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
                     <div style={{ padding: '14px 16px', borderRadius: 10, background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                      <div className="text-muted text-xs">🟢 TAKING ACTIVE EXAM NOW</div>
+                      <div className="text-muted text-xs" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} /> TAKING ACTIVE EXAM NOW
+                      </div>
                       <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#34d399', marginTop: 4 }}>
                         {inspectCollege.live_status_summary?.in_exam || 0}
                       </div>
@@ -1258,7 +1321,9 @@ export default function CollegesPage() {
                     </div>
 
                     <div style={{ padding: '14px 16px', borderRadius: 10, background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-                      <div className="text-muted text-xs">⏳ PENDING ADMIN CLEARANCE</div>
+                      <div className="text-muted text-xs" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <IconClock size={12} color="#FBBF24" /> PENDING ADMIN CLEARANCE
+                      </div>
                       <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#fbbf24', marginTop: 4 }}>
                         {inspectCollege.live_status_summary?.pending_clearance || 0}
                       </div>
@@ -1266,7 +1331,9 @@ export default function CollegesPage() {
                     </div>
 
                     <div style={{ padding: '14px 16px', borderRadius: 10, background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-                      <div className="text-muted text-xs">✓ CLEARED & READY IN LOBBY</div>
+                      <div className="text-muted text-xs" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <IconCheck size={12} color="#818CF8" /> CLEARED & READY IN LOBBY
+                      </div>
                       <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#818cf8', marginTop: 4 }}>
                         {inspectCollege.live_status_summary?.cleared_ready || 0}
                       </div>
@@ -1274,7 +1341,9 @@ export default function CollegesPage() {
                     </div>
 
                     <div style={{ padding: '14px 16px', borderRadius: 10, background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
-                      <div className="text-muted text-xs">🏁 EXAM COMPLETED & SUBMITTED</div>
+                      <div className="text-muted text-xs" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <IconCheck size={12} color="#38BDF8" /> EXAM COMPLETED & SUBMITTED
+                      </div>
                       <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#38bdf8', marginTop: 4 }}>
                         {inspectCollege.live_status_summary?.completed || 0}
                       </div>
@@ -1282,7 +1351,9 @@ export default function CollegesPage() {
                     </div>
 
                     <div style={{ padding: '14px 16px', borderRadius: 10, background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-                      <div className="text-muted text-xs">🛑 BLOCKED CANDIDATES</div>
+                      <div className="text-muted text-xs" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <IconStop size={12} color="#EF4444" /> BLOCKED CANDIDATES
+                      </div>
                       <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f87171', marginTop: 4 }}>
                         {inspectCollege.live_status_summary?.blocked || 0}
                       </div>
@@ -1297,7 +1368,9 @@ export default function CollegesPage() {
 
                   {((inspectCollege.students || []).filter(s => s.live_status?.state === 'in_exam' || s.live_status?.state === 'completed')).length === 0 ? (
                     <div style={{ padding: 30, textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
-                      <div style={{ fontSize: '1.8rem', marginBottom: 8 }}>📡</div>
+                      <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center' }}>
+                        <IconRadio size={28} color="#64748B" />
+                      </div>
                       <p className="text-muted text-sm" style={{ margin: 0 }}>
                         No candidates currently taking an active exam session right now.
                       </p>
@@ -1376,7 +1449,7 @@ export default function CollegesPage() {
                       <input
                         type="text"
                         className="form-input"
-                        placeholder="🔍 Search candidates by name, roll no, phone, gate pass..."
+                        placeholder="Search candidates by name, roll no, phone, gate pass..."
                         value={studentSearch}
                         onChange={e => setStudentSearch(e.target.value)}
                         style={{ padding: '7px 12px', fontSize: '0.82rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
@@ -1430,11 +1503,11 @@ export default function CollegesPage() {
                       style={{ width: 'auto', padding: '7px 10px', fontSize: '0.82rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
                     >
                       <option value="ALL">All Live Statuses</option>
-                      <option value="IN_EXAM">🟢 In Exam</option>
-                      <option value="CLEARED">✓ Cleared & Ready</option>
-                      <option value="PENDING">⏳ Pending Clearance</option>
-                      <option value="COMPLETED">🏁 Completed</option>
-                      <option value="BLOCKED">🛑 Blocked</option>
+                      <option value="IN_EXAM">In Exam</option>
+                      <option value="CLEARED">Cleared & Ready</option>
+                      <option value="PENDING">Pending Clearance</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="BLOCKED">Blocked</option>
                     </select>
                   </div>
 
@@ -1471,7 +1544,11 @@ export default function CollegesPage() {
                                   <div className="text-muted text-xs" style={{ color: '#64748b' }}>{s.email}</div>
                                 </td>
                                 <td style={{ padding: '10px 12px', fontSize: '0.8rem', color: '#cbd5e1' }}>
-                                  {s.contact_number ? `📞 ${s.contact_number}` : '—'}
+                                  {s.contact_number ? (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                      <IconPhone size={11} color="#94A3B8" /> {s.contact_number}
+                                    </span>
+                                  ) : '—'}
                                 </td>
                                 <td style={{ padding: '10px 12px' }}>
                                   <span style={{ fontSize: '0.74rem', padding: '2px 6px', borderRadius: 4, background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontWeight: 600 }}>
@@ -1507,9 +1584,16 @@ export default function CollegesPage() {
                                         : liveState === 'blocked'
                                           ? '#f87171'
                                           : '#fbbf24',
-                                    border: `1px solid currentColor`
+                                    border: `1px solid currentColor`,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4
                                   }}>
-                                    {s.live_status?.label || (s.is_verified ? '✓ Cleared & Ready' : '⏳ Pending Clearance')}
+                                    {liveState === 'cleared' && <IconCheck size={11} color="#818CF8" />}
+                                    {liveState === 'pending' && <IconClock size={11} color="#FBBF24" />}
+                                    {liveState === 'blocked' && <IconStop size={11} color="#F87171" />}
+                                    {liveState === 'in_exam' && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34D399', display: 'inline-block' }} />}
+                                    {s.live_status?.label || (s.is_verified ? 'Cleared & Ready' : 'Pending Clearance')}
                                   </span>
                                 </td>
                                 <td style={{ padding: '10px 12px', textAlign: 'right' }}>
@@ -1522,11 +1606,14 @@ export default function CollegesPage() {
                                         fontSize: '0.72rem',
                                         padding: '3px 8px',
                                         color: s.is_verified ? '#f87171' : '#34d399',
-                                        border: '1px solid rgba(255,255,255,0.1)'
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 3
                                       }}
                                       title={s.is_verified ? 'Revoke gate clearance' : 'Grant gate clearance'}
                                     >
-                                      {s.is_verified ? 'Revoke' : '✓ Clear'}
+                                      {s.is_verified ? 'Revoke' : <><IconCheck size={10} color="#34D399" /> Clear</>}
                                     </button>
                                     <button
                                       type="button"
@@ -1536,11 +1623,14 @@ export default function CollegesPage() {
                                         fontSize: '0.72rem',
                                         padding: '3px 8px',
                                         color: s.is_blocked ? '#34d399' : '#f87171',
-                                        border: '1px solid rgba(255,255,255,0.1)'
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 3
                                       }}
                                       title={s.is_blocked ? 'Unblock candidate' : 'Block candidate'}
                                     >
-                                      {s.is_blocked ? 'Unblock' : '🛑 Block'}
+                                      {s.is_blocked ? 'Unblock' : <><IconStop size={10} color="#F87171" /> Block</>}
                                     </button>
                                   </div>
                                 </td>
@@ -1579,8 +1669,8 @@ export default function CollegesPage() {
               style={{ maxWidth: 520, background: 'rgba(15, 23, 42, 0.98)', border: '1px solid rgba(255,255,255,0.1)' }}
               onClick={e => e.stopPropagation()}
             >
-              <h3 style={{ fontWeight: 800, fontSize: '1.25rem', marginBottom: 20, color: '#f8fafc' }}>
-                {editCollege ? '✏️ Edit College' : '🏛️ Add New College'}
+              <h3 style={{ fontWeight: 800, fontSize: '1.25rem', marginBottom: 20, color: '#f8fafc', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                {editCollege ? <><IconEdit size={18} color="#38BDF8" /> Edit College</> : <><IconBuilding size={18} color="#38BDF8" /> Add New College</>}
               </h3>
 
               {error && (
@@ -1603,9 +1693,9 @@ export default function CollegesPage() {
                       type="button"
                       onClick={() => navigate('/admin/login')}
                       className="btn btn-sm btn-primary"
-                      style={{ whiteSpace: 'nowrap', padding: '4px 12px', fontSize: '0.8rem' }}
+                      style={{ whiteSpace: 'nowrap', padding: '4px 12px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
-                      🔑 Log In
+                      <IconKey size={14} /> Log In
                     </button>
                   )}
                 </div>

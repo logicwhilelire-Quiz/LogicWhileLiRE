@@ -3,6 +3,15 @@ import axios from 'axios';
 import AnimatedPage from '../../components/AnimatedPage';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import { API_BASE_URL } from '../../lib/config';
+import {
+  IconRefresh,
+  IconFlash,
+  IconTarget,
+  IconCheck,
+  IconAlert,
+  IconLock,
+  IconFileText,
+} from '../../components/icons/HumanIcons';
 
 interface ExamOption {
   exam_code: string;
@@ -109,7 +118,7 @@ export default function ResultControl() {
 
   const handleTogglePublish = async () => {
     if (!selectedExam || selectedExam === 'ALL') {
-      setActionMsg('⚠️ Please select a specific exam code to toggle result publication.');
+      setActionMsg('Please select a specific exam code to toggle result publication.');
       return;
     }
     setTogglingPublish(true);
@@ -122,10 +131,10 @@ export default function ResultControl() {
       );
       if (res.data?.success) {
         setResultsPublished(res.data.results_published);
-        setActionMsg(`✅ ${res.data.message}`);
+        setActionMsg(res.data.message);
       }
     } catch (err: any) {
-      setActionMsg(`❌ Failed to update publish status: ${err?.response?.data?.error || err.message}`);
+      setActionMsg(`Failed to update publish status: ${err?.response?.data?.error || err.message}`);
     } finally {
       setTogglingPublish(false);
     }
@@ -133,7 +142,7 @@ export default function ResultControl() {
 
   const handleRecalculate = async () => {
     if (!selectedExam || selectedExam === 'ALL') {
-      setActionMsg('⚠️ Please select a specific exam code to recalculate.');
+      setActionMsg('Please select a specific exam code to recalculate.');
       return;
     }
     setRecalculating(true);
@@ -144,11 +153,11 @@ export default function ResultControl() {
         { headers: getAuthHeaders() }
       );
       if (res.data?.success) {
-        setActionMsg(`✅ ${res.data.message}`);
+        setActionMsg(res.data.message);
         await fetchResults(selectedExam);
       }
     } catch (err: any) {
-      setActionMsg(`❌ Recalculation failed: ${err?.response?.data?.error || err.message}`);
+      setActionMsg(`Recalculation failed: ${err?.response?.data?.error || err.message}`);
     } finally {
       setRecalculating(false);
     }
@@ -163,7 +172,7 @@ export default function ResultControl() {
         { headers: getAuthHeaders() }
       );
       if (res.data?.success) {
-        setActionMsg(`✅ Granted +${amount} grace marks to ${item.name} (${item.hall_ticket}).`);
+        setActionMsg(`Granted +${amount} grace marks to ${item.name} (${item.hall_ticket}).`);
         setResults(prev => prev.map(r => r.id === item.id ? {
           ...r,
           grace_marks: nextGrace,
@@ -172,7 +181,7 @@ export default function ResultControl() {
         } : r));
       }
     } catch (err: any) {
-      setActionMsg(`❌ Failed to apply grace marks: ${err?.response?.data?.error || err.message}`);
+      setActionMsg(`Failed to apply grace marks: ${err?.response?.data?.error || err.message}`);
     }
   };
 
@@ -197,7 +206,7 @@ export default function ResultControl() {
         { headers: getAuthHeaders() }
       );
       if (res.data?.success) {
-        setActionMsg(`✅ Score overridden to ${num} for ${item.name}.`);
+        setActionMsg(`Score overridden to ${num} for ${item.name}.`);
         setResults(prev => prev.map(r => r.id === item.id ? {
           ...r,
           score_override: num,
@@ -207,7 +216,7 @@ export default function ResultControl() {
         } : r));
       }
     } catch (err: any) {
-      setActionMsg(`❌ Failed to override score: ${err?.response?.data?.error || err.message}`);
+      setActionMsg(`Failed to override score: ${err?.response?.data?.error || err.message}`);
     }
   };
 
@@ -243,7 +252,7 @@ export default function ResultControl() {
                 disabled={recalculating || loading}
                 style={{ padding: '10px 18px', fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
               >
-                <span>🔄</span> {recalculating ? 'Recalculating...' : 'Recalculate All'}
+                <IconRefresh size={14} /> {recalculating ? 'Recalculating...' : 'Recalculate All'}
               </button>
 
               <button
@@ -263,7 +272,16 @@ export default function ResultControl() {
                   cursor: 'pointer',
                 }}
               >
-                <span>{resultsPublished ? '🟢 Results Live to Candidates' : '🔒 Results Hidden (Click to Publish)'}</span>
+                {resultsPublished ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
+                    Results Live to Candidates
+                  </span>
+                ) : (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <IconLock size={14} /> Results Hidden (Click to Publish)
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -283,7 +301,7 @@ export default function ResultControl() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '1.2rem' }}>🎯</span>
+              <IconTarget size={18} color="#FFBE00" />
               <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#F8FAFC' }}>Selected Examination:</span>
             </div>
 
@@ -310,7 +328,7 @@ export default function ResultControl() {
                     {ex.exam_code} — {ex.exam_name || 'Examination'} ({ex.total_questions || 10} Qs / {ex.total_marks || 10} M)
                   </option>
                 ))}
-                <option value="ALL">🌐 All Examinations (Combined View)</option>
+                <option value="ALL">All Examinations (Combined View)</option>
               </select>
             </div>
 
@@ -318,9 +336,9 @@ export default function ResultControl() {
               <button
                 onClick={() => fetchResults(selectedExam)}
                 className="btn btn-ghost btn-sm"
-                style={{ padding: '6px 12px', fontSize: '0.8rem', border: '1px solid rgba(255,255,255,0.1)' }}
+                style={{ padding: '6px 12px', fontSize: '0.8rem', border: '1px solid rgba(255,255,255,0.1)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                ⚡ Refresh Live Data
+                <IconFlash size={13} /> Refresh Live Data
               </button>
             </div>
           </div>
@@ -370,7 +388,7 @@ export default function ResultControl() {
             <div className="card" style={{ padding: '18px 22px', borderRadius: 10, background: 'rgba(11, 18, 38, 0.7)', border: '1px solid var(--color-border)' }}>
               <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', fontWeight: 700 }}>Leaderboard State</div>
               <div style={{ fontSize: '1.15rem', fontWeight: 800, color: leaderboardFrozen ? '#F59E0B' : '#10B981', marginTop: 8 }}>
-                {leaderboardFrozen ? '❄️ Frozen by Admin' : '🟢 Real-time Synchronized'}
+                {leaderboardFrozen ? 'Frozen by Admin' : 'Real-time Synchronized'}
               </div>
               <button
                 onClick={() => setLeaderboardFrozen(!leaderboardFrozen)}
@@ -385,7 +403,9 @@ export default function ResultControl() {
           {/* Results Table or Empty State */}
           {loading ? (
             <div style={{ padding: 48, textAlign: 'center', color: '#94A3B8' }}>
-              <div style={{ fontSize: '1.5rem', marginBottom: 12 }}>⚡</div>
+              <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+                <IconFlash size={28} color="#38BDF8" />
+              </div>
               <div>Loading real candidate attempts and scores from database...</div>
             </div>
           ) : results.length === 0 ? (
@@ -399,7 +419,9 @@ export default function ResultControl() {
                 background: 'rgba(15, 23, 42, 0.6)',
               }}
             >
-              <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📝</div>
+              <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+                <IconFileText size={36} color="#64748B" />
+              </div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#F8FAFC', marginBottom: 8 }}>
                 No Candidate Submissions Found for {selectedExam}
               </h3>
@@ -409,9 +431,9 @@ export default function ResultControl() {
               <button
                 onClick={() => fetchResults(selectedExam)}
                 className="btn btn-secondary"
-                style={{ padding: '8px 18px', fontWeight: 600 }}
+                style={{ padding: '8px 18px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                🔄 Refresh Attempts
+                <IconRefresh size={14} /> Refresh Attempts
               </button>
             </div>
           ) : (
@@ -485,8 +507,8 @@ export default function ResultControl() {
                             {r.status.toUpperCase()}
                           </span>
                           {r.violations > 0 && (
-                            <div style={{ fontSize: '0.7rem', color: '#EF4444', marginTop: 2 }}>
-                              ⚠️ {r.violations} flags
+                            <div style={{ fontSize: '0.7rem', color: '#EF4444', marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                              <IconAlert size={10} color="#EF4444" /> {r.violations} flags
                             </div>
                           )}
                         </td>

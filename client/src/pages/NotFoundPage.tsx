@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import BrandLogo from '../components/BrandLogo';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
+import { IconBuilding, IconLaunch } from '../components/icons/HumanIcons';
 
 export default function NotFoundPage() {
   return (
@@ -69,13 +70,13 @@ export default function NotFoundPage() {
 
           <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link to="/" style={{ textDecoration: 'none' }}>
-              <button className="btn btn-primary" style={{ padding: '12px 24px' }}>
-                🏠 Back to Home
+              <button className="btn btn-primary" style={{ padding: '12px 24px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <IconBuilding size={16} color="currentColor" /> Back to Home
               </button>
             </Link>
             <Link to="/enter-exam" style={{ textDecoration: 'none' }}>
-              <button className="btn btn-secondary" style={{ padding: '12px 24px' }}>
-                ⚡ Enter Exam Code
+              <button className="btn btn-secondary" style={{ padding: '12px 24px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <IconLaunch size={16} color="currentColor" /> Enter Exam Code
               </button>
             </Link>
           </div>
