@@ -1087,11 +1087,20 @@ export async function validateStudentEligibility(
 
   if (hasSectionTargeting) {
     if (!cleanHt) return false;
-    const { data: students } = await supabase
+    let { data: students } = await supabase
       .from('students')
       .select('*')
       .or(`hall_ticket.eq.${cleanHt},roll_number.eq.${cleanHt}${roll && roll !== cleanHt ? `,hall_ticket.eq.${roll},roll_number.eq.${roll}` : ''}`)
       .limit(10);
+
+    if (!students || students.length === 0) {
+      const { data: rosterStudents } = await supabase
+        .from('student_roster')
+        .select('*')
+        .or(`roll_number.ilike.${cleanHt}${roll && roll !== cleanHt ? `,roll_number.ilike.${roll}` : ''}`)
+        .limit(10);
+      students = rosterStudents || [];
+    }
 
     if (!students || students.length === 0) return false;
     return students.some((s: any) => isStudentEligibleForExam(s, exam));
@@ -1099,11 +1108,20 @@ export async function validateStudentEligibility(
 
   // Untargeted exam with optional college scope
   if (cleanHt && exam.college_id && exam.college_id !== 'ALL' && exam.college_id !== 0) {
-    const { data: students } = await supabase
+    let { data: students } = await supabase
       .from('students')
       .select('college_id')
       .or(`hall_ticket.eq.${cleanHt},roll_number.eq.${cleanHt}${roll && roll !== cleanHt ? `,hall_ticket.eq.${roll},roll_number.eq.${roll}` : ''}`)
       .limit(10);
+
+    if (!students || students.length === 0) {
+      const { data: rosterStudents } = await supabase
+        .from('student_roster')
+        .select('college_id')
+        .or(`roll_number.ilike.${cleanHt}${roll && roll !== cleanHt ? `,roll_number.ilike.${roll}` : ''}`)
+        .limit(10);
+      students = rosterStudents || [];
+    }
 
     if (students && students.length > 0) {
       const anyCollegeMatch = students.some((s: any) => !s.college_id || String(s.college_id) === String(exam.college_id));
@@ -1247,13 +1265,33 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
 
   // 1.2 ENFORCE STUDENT EMAIL VERIFICATION (Item 9) & RESOLVE STUDENT RECORD
   const candidateRoll = extractCandidateRoll(ht);
-  const { data: studentRecords } = await supabase
+  let { data: studentRecords } = await supabase
     .from('students')
     .select('id, name, email, is_verified, roll_number, hall_ticket, college_id')
     .or(`hall_ticket.eq.${ht},roll_number.eq.${ht}${candidateRoll && candidateRoll !== ht ? `,hall_ticket.eq.${candidateRoll},roll_number.eq.${candidateRoll}` : ''}`)
     .limit(10);
 
-  const studentRecord = studentRecords?.find((s: any) => isStudentEligibleForExam(s, exam)) || studentRecords?.[0];
+  let studentRecord = studentRecords?.find((s: any) => isStudentEligibleForExam(s, exam)) || studentRecords?.[0];
+
+  if (!studentRecord) {
+    const { data: rosterRecords } = await supabase
+      .from('student_roster')
+      .select('*')
+      .or(`roll_number.ilike.${ht}${candidateRoll && candidateRoll !== ht ? `,roll_number.ilike.${candidateRoll}` : ''}`)
+      .limit(10);
+    if (rosterRecords && rosterRecords.length > 0) {
+      const matchedRoster = rosterRecords.find((r: any) => isStudentEligibleForExam(r, exam)) || rosterRecords[0];
+      studentRecord = {
+        id: matchedRoster.id,
+        name: matchedRoster.name,
+        email: matchedRoster.email,
+        roll_number: matchedRoster.roll_number,
+        hall_ticket: matchedRoster.roll_number,
+        college_id: matchedRoster.college_id,
+        is_verified: true,
+      };
+    }
+  }
 
   if (studentRecord && studentRecord.is_verified === false) {
     res.status(403).json({

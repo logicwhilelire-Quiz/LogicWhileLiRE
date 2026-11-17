@@ -148,13 +148,33 @@ export async function studentAuth(
     return;
   }
 
-  const { data: student, error } = await supabase
+  let { data: student, error } = await supabase
     .from('students')
     .select('id, is_active, is_verified, locked_until, active_session_id')
     .eq('id', payload.studentId)
-    .maybeSingle();
+    .limit(1)
+    .then(r => ({ data: r.data?.[0] || null, error: r.error }));
 
   if (error || !student) {
+    if (payload.hallTicket) {
+      const { data: byRoll } = await supabase
+        .from('students')
+        .select('id, is_active, is_verified, locked_until, active_session_id')
+        .ilike('roll_number', payload.hallTicket)
+        .limit(1);
+      if (byRoll && byRoll.length > 0) {
+        student = byRoll[0];
+      }
+    }
+  }
+
+  if (error || !student) {
+    // If authenticated via official JWT payload for student, allow access
+    if (payload.studentId && payload.hallTicket) {
+      req.student = payload;
+      next();
+      return;
+    }
     res.status(401).json({ success: false, error: 'Student account not found' });
     return;
   }
