@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sound } from '../../lib/soundService';
-import { IconEye, IconBuilding, IconFlash, IconShield, IconCheck } from '../icons/HumanIcons';
+import { IconMoon, IconBuilding, IconSun, IconShield, IconCheck } from '../icons/HumanIcons';
 
 export type ThemeMode = 'dark' | 'swarm' | 'emerald' | 'light';
 
@@ -14,9 +14,9 @@ interface ThemeOption {
 }
 
 const THEMES: ThemeOption[] = [
-  { id: 'dark', label: 'LogicWhile Midnight', icon: <IconEye size={15} color="#0284c7" />, color: '#0284c7', desc: 'Executive Slate & Sapphire' },
+  { id: 'dark', label: 'LogicWhile Midnight', icon: <IconMoon size={15} color="#38BDF8" />, color: '#38BDF8', desc: 'Executive Slate & Sapphire' },
   { id: 'swarm', label: 'LogicWhile Enterprise', icon: <IconBuilding size={15} color="#2563EB" />, color: '#2563EB', desc: 'Institutional High-Contrast' },
-  { id: 'emerald', label: 'Academic Ivory', icon: <IconFlash size={15} color="#0D9488" />, color: '#0D9488', desc: 'Daylight Proctored Testing' },
+  { id: 'emerald', label: 'Academic Ivory', icon: <IconSun size={15} color="#0D9488" />, color: '#0D9488', desc: 'Daylight Proctored Testing' },
   { id: 'light', label: 'LogicWhile Royal', icon: <IconShield size={15} color="#EAA812" />, color: '#EAA812', desc: 'Navy & Official Gold Theme' },
 ];
 

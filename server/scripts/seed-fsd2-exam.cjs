@@ -576,12 +576,20 @@ async function seedFSD2Exam() {
 
   // 5. Ensure core student test accounts are verified and eligible
   console.log('[4/4] Ensuring student eligibility across all test cohorts...');
-  const studentRolls = ['2201A0501', 'RVACJ31411'];
-  for (const r of studentRolls) {
+  const bcrypt = require('bcrypt');
+  const defaultPasswordHash = await bcrypt.hash('Student@123', 10);
+  const studentAccounts = [
+    { roll: '2201A0501', name: 'Aravind Swamy' },
+    { roll: 'RVACJ31411', name: 'Candidate RVIT' },
+    { roll: '22B91A0501', name: 'Candidate 22B91A0501' },
+  ];
+
+  for (const acct of studentAccounts) {
+    const r = acct.roll;
     const { data: existing } = await supabase.from('students').select('*').eq('roll_number', r);
     if (!existing || existing.length === 0) {
-      await supabase.from('students').insert({
-        name: 'Student Candidate',
+      const { error: insErr } = await supabase.from('students').insert({
+        name: acct.name,
         roll_number: r,
         hall_ticket: r,
         email: `${r.toLowerCase()}@logicwhilelire.com`,
@@ -592,10 +600,17 @@ async function seedFSD2Exam() {
         year_of_passing: 2026,
         is_verified: true,
         is_active: true,
+        password_hash: defaultPasswordHash,
+        must_change_password: false,
       });
-      console.log(`  ✓ Created verified student profile for: ${r}`);
+      if (insErr) {
+        console.error(`  ❌ Error inserting student ${r}:`, insErr.message);
+      } else {
+        console.log(`  ✓ Created verified student profile for: ${r}`);
+      }
     } else {
-      await supabase.from('students').update({
+      const { error: updErr } = await supabase.from('students').update({
+        name: acct.name,
         is_verified: true,
         is_active: true,
         college_id: collegeId,
@@ -603,9 +618,28 @@ async function seedFSD2Exam() {
         branch_code: 'CSE',
         section: 'A',
         year_of_passing: 2026,
+        password_hash: defaultPasswordHash,
       }).eq('roll_number', r);
-      console.log(`  ✓ Updated & verified student eligibility for: ${r}`);
+      if (updErr) {
+        console.error(`  ❌ Error updating student ${r}:`, updErr.message);
+      } else {
+        console.log(`  ✓ Updated & verified student eligibility for: ${r}`);
+      }
     }
+
+    // Also ensure student is in student_roster table
+    try {
+      await supabase.from('student_roster').upsert({
+        college_id: String(collegeId),
+        roll_number: r,
+        name: acct.name,
+        email: `${r.toLowerCase()}@logicwhilelire.com`,
+        section: 'A',
+        section_id: 'sec-cse-a',
+        cohort_id: 'coh-rvit-2026',
+        academic_year_id: 'ay-2025-2026',
+      }, { onConflict: 'college_id,roll_number' });
+    } catch {}
   }
 
   console.log('\n════════════════════════════════════════════════════════════════');
