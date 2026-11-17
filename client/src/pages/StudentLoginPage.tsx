@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { studentLogin } from '../lib/api';
 import { API_BASE_URL } from '../lib/config';
 import BrandLogo from '../components/BrandLogo';
+import ThemeToggle from '../components/ui/ThemeToggle';
 import ServerWakeupModal from '../components/ServerWakeupModal';
 import { findAdminRosterStudent, type AdminRosterStudent } from '../lib/adminRosterStore';
 import { IconUsers, IconAward, IconShield, IconRadio, IconEye, IconKey, IconCheck, IconAlert } from '../components/icons/HumanIcons';
@@ -159,8 +160,11 @@ export default function StudentLoginPage() {
   });
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'linear-gradient(160deg,#060B1A 0%,#080D22 50%,#050918 100%)', fontFamily: "'Plus Jakarta Sans',-apple-system,sans-serif" }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'linear-gradient(160deg,#060B1A 0%,#080D22 50%,#050918 100%)', fontFamily: "'Plus Jakarta Sans',-apple-system,sans-serif", position: 'relative' }}>
       <GridBackground />
+      <div style={{ position: 'absolute', top: 16, right: 18, zIndex: 10 }}>
+        <ThemeToggle />
+      </div>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 16px', position: 'relative', zIndex: 1 }}>
         <motion.div initial={{ opacity: 0, y: 28, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.5, ease: [0.16,1,0.3,1] }} style={{ width: '100%', maxWidth: 420 }}>
           {/* Brand Header */}

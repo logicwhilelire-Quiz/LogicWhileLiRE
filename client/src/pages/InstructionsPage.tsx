@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { io as connectSocket, Socket } from 'socket.io-client';
 import BrandLogo from '../components/BrandLogo';
+import ThemeToggle from '../components/ui/ThemeToggle';
 import CodeRain from '../components/3d/CodeRain';
 import { getAttemptStatus, startStudentAttempt, getExamLobbyStats } from '../lib/api';
 import { SOCKET_URL } from '../lib/config';
@@ -307,7 +308,7 @@ export default function InstructionsPage() {
         <BrandLogo size="sm" showTagline />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-
+          <ThemeToggle />
           <div
             style={{
               fontFamily: 'var(--font-mono, monospace)',

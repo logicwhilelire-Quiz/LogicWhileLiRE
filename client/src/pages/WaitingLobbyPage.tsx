@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { io as connectSocket, Socket } from "socket.io-client";
 import BrandLogo from "../components/BrandLogo";
 import AnimatedPage from "../components/AnimatedPage";
+import ThemeToggle from "../components/ui/ThemeToggle";
 import { getAssessmentSystemCheck, authLogout, getExamLobbyStats, getAttemptStatus } from "../lib/api";
 import { SOCKET_URL } from "../lib/config";
 import HoloProctorDeskModal from "../components/HoloProctorDeskModal";
@@ -879,6 +880,7 @@ export default function WaitingLobbyPage() {
               <span>SOCKET: {connected ? "CONNECTED" : "RECONNECTING..."}</span>
               {latency !== null && <span style={{ color: "#EAA812" }}>({latency}ms)</span>}
             </div>
+            <ThemeToggle />
             <button
               onClick={handleLogout}
               style={{

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { API_BASE_URL } from '../lib/config';
 import BrandLogo from '../components/BrandLogo';
+import ThemeToggle from '../components/ui/ThemeToggle';
 import SiteFooter from '../components/SiteFooter';
 import LeaderboardPodium from '../components/3d/LeaderboardPodium';
 import PageTransition from '../components/3d/PageTransition';
@@ -222,6 +223,7 @@ export default function LeaderboardECPage() {
             {activeCode}
           </div>
 
+          <ThemeToggle />
           <button
             onClick={() => load(true)}
             disabled={refreshing}

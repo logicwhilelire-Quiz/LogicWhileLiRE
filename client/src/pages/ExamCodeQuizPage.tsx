@@ -10,6 +10,7 @@ import ExamCodeEditor from '../components/exam/ExamCodeEditor'
 import ExamFaceMonitor from '../components/exam/ExamFaceMonitor'
 import ExamTimerProgress from '../components/exam/ExamTimerProgress'
 import BrandLogo from '../components/BrandLogo'
+import ThemeToggle from '../components/ui/ThemeToggle'
 import LogicWhileLiRELoader from '../components/LogicWhileLiRELoader'
 import FullscreenEnforcementOverlay from '../components/exam/FullscreenEnforcementOverlay'
 import ScreenShareWarningOverlay from '../components/exam/ScreenShareWarningOverlay'
@@ -2134,6 +2135,8 @@ export default function QuizPage() {
               </button>
             ))}
           </div>
+
+          <ThemeToggle />
 
           {/* Battery Status */}
           {batteryLevel !== null && (

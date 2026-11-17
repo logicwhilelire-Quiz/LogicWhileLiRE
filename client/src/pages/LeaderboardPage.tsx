@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLeaderboard, type LeaderboardEntry } from '../hooks/useLeaderboard';
 import BrandLogo from '../components/BrandLogo';
+import ThemeToggle from '../components/ui/ThemeToggle';
 import LogicWhileLiRELoader from '../components/LogicWhileLiRELoader';
 import SiteFooter from '../components/SiteFooter';
 import AnimatedPage from '../components/AnimatedPage';
@@ -55,11 +56,14 @@ export default function LeaderboardPage() {
   return (
     <AnimatedPage>
       <div className="app-layout">
-        <nav className="navbar">
+        <nav className="navbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <BrandLogo size="sm" />
-          <button id="leaderboard-refresh-btn" className="btn btn-secondary btn-sm" onClick={refresh}>
-            Refresh
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <ThemeToggle />
+            <button id="leaderboard-refresh-btn" className="btn btn-secondary btn-sm" onClick={refresh}>
+              Refresh
+            </button>
+          </div>
         </nav>
 
         <div className="page-content">
