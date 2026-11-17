@@ -75,7 +75,7 @@ export const UUIDParam = z.object({
 });
 
 export const ExamIdParam = z.object({
-  examId: z.string().regex(uuidRegex, 'Invalid exam ID'),
+  examId: z.string().min(1, 'Exam ID or Code is required').trim(),
 });
 
 export const SessionIdParam = z.object({

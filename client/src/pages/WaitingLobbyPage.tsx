@@ -154,7 +154,7 @@ export default function WaitingLobbyPage() {
         name: locState.studentName || locState.candidate?.name || 'Student Candidate',
         roll_number: locState.hallTicket || locState.candidate?.roll_number || '',
         hall_ticket: locState.hallTicket || locState.candidate?.hall_ticket || '',
-        section: locState.section || locState.candidate?.section || 'General',
+        section: locState.section || locState.candidate?.section || 'Section A',
         branch_code: locState.branch_code || locState.candidate?.branch_code || 'CSE',
         college_name: locState.college_name || locState.candidate?.college_name || 'Institutional Campus',
       } as CandidateProfile;
@@ -169,7 +169,7 @@ export default function WaitingLobbyPage() {
             name: cand.name || cand.studentName || 'Student Candidate',
             roll_number: cand.roll_number || cand.hallTicket || cand.hall_ticket || '',
             hall_ticket: cand.hall_ticket || cand.hallTicket || cand.roll_number || '',
-            section: cand.section || 'General',
+            section: cand.section || 'Section A',
             branch_code: cand.branch_code || 'CSE',
             college_name: cand.college_name || 'Institutional Campus',
           } as CandidateProfile;
@@ -178,6 +178,15 @@ export default function WaitingLobbyPage() {
     }
     return null;
   });
+
+  const [examMeta, setExamMeta] = useState<{
+    exam_name?: string;
+    subject?: string;
+    total_questions?: number;
+    total_marks?: number;
+    sections?: string[];
+    branch?: string;
+  }>({});
 
   const [connected, setConnected] = useState(false);
   const [latency, setLatency] = useState<number | null>(null);
@@ -275,6 +284,16 @@ export default function WaitingLobbyPage() {
         if (Array.isArray(d?.waiting_students) && d.waiting_students.length > 0) {
           setParticipants(d.waiting_students);
         }
+        if (d?.exam_name || d?.sections) {
+          setExamMeta({
+            exam_name: d.exam_name,
+            subject: d.subject,
+            total_questions: d.total_questions,
+            total_marks: d.total_marks,
+            sections: d.sections,
+            branch: d.branch,
+          });
+        }
         if (d?.enrolled != null || d?.connected != null || d?.pending != null) {
           setLobbyMeta({
             enrolled: d.enrolled ?? 0,
@@ -346,6 +365,7 @@ export default function WaitingLobbyPage() {
             allow_late_join: false,
           });
           addEvent('[START] Administrator dispatched live start command! Launching assessment…', 'alert');
+          navigateToInstructions({ serverStartTime: startedAt, durationSeconds: durationSec });
         }
       } catch { }
     };
@@ -599,12 +619,23 @@ export default function WaitingLobbyPage() {
   // Derive section counts for filtering and breakdown cards
   const sectionCounts = useMemo(() => {
     const counts: Record<string, number> = {};
+    if (Array.isArray(examMeta.sections) && examMeta.sections.length > 0) {
+      examMeta.sections.forEach((s) => {
+        const raw = s.toUpperCase().trim();
+        const clean = raw.startsWith('SEC') ? raw : `SECTION ${raw}`;
+        if (clean) counts[clean] = 0;
+      });
+    } else {
+      counts['SECTION A'] = 0;
+      counts['SECTION B'] = 0;
+    }
     allParticipants.forEach((p) => {
-      const sec = (p.section || 'General').toUpperCase().trim();
-      counts[sec] = (counts[sec] || 0) + 1;
+      const rawSec = (p.section || candidate?.section || 'Section A').toUpperCase().trim();
+      const secKey = rawSec.startsWith('SEC') ? rawSec : `SECTION ${rawSec}`;
+      counts[secKey] = (counts[secKey] || 0) + 1;
     });
     return counts;
-  }, [allParticipants]);
+  }, [allParticipants, examMeta.sections, candidate?.section]);
 
   const availableSections = useMemo(() => {
     const secs = Object.keys(sectionCounts).sort();
@@ -613,7 +644,8 @@ export default function WaitingLobbyPage() {
 
   const filteredParticipants = useMemo(() => {
     return allParticipants.filter((p) => {
-      const sec = (p.section || 'General').toUpperCase().trim();
+      const rawSec = (p.section || candidate?.section || 'Section A').toUpperCase().trim();
+      const sec = rawSec.startsWith('SEC') ? rawSec : `SECTION ${rawSec}`;
       const matchesSection = selectedSection === 'ALL' || sec === selectedSection;
       const q = searchQuery.toLowerCase().trim();
       const matchesQuery =
@@ -623,7 +655,7 @@ export default function WaitingLobbyPage() {
         sec.toLowerCase().includes(q);
       return matchesSection && matchesQuery;
     });
-  }, [allParticipants, selectedSection, searchQuery]);
+  }, [allParticipants, candidate?.section, selectedSection, searchQuery]);
 
   const minutes = Math.floor(countdown / 60);
   const seconds = countdown % 60;
@@ -815,7 +847,7 @@ export default function WaitingLobbyPage() {
                 SYNCHRONOUS ASSESSMENT LOBBY
               </div>
               <div style={{ fontSize: "0.72rem", color: "#EAA812", fontWeight: 600 }}>
-                Room: {contestId.toUpperCase()} • PRD v1.0 Engine
+                {examMeta.exam_name ? `${examMeta.exam_name} • ` : ''}Room: {contestId.toUpperCase()} • PRD v1.0 Engine
               </div>
             </div>
           </div>

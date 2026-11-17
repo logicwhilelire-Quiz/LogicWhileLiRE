@@ -210,7 +210,12 @@ export const logViolation = (sessionId: string, type: string, notes?: string) =>
   api.post(`/api/session/${sessionId}/violation`, { type, notes });
 
 // ——— Leaderboard ———
-export const getLeaderboard = (examId: string) => api.get(`/api/exam/${examId}/leaderboard`);
+export const getLeaderboard = (examId: string) =>
+  api.get(`/api/exam/${examId}/leaderboard`).catch(() =>
+    api.get(`/api/exam-code/${examId}/leaderboard`).catch(() =>
+      api.get(`/api/leaderboard/${examId}`)
+    )
+  );
 
 // ——— Admin ———
 export const adminLogin = (data: { username: string; password: string; totp_code?: string }) =>

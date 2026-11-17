@@ -1310,6 +1310,8 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
     let enrolledCount = stats.enrolled;
     let durationSec = 3600;
 
+    let examRowData: any = null;
+
     if (cached && now - cached.timestamp < LOBBY_CACHE_TTL_MS) {
       enrolledCount = cached.enrolledCount;
       durationSec = cached.durationSec;
@@ -1322,11 +1324,12 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
             .eq('exam_code', code),
           supabase
             .from('exam_codes')
-            .select('duration_minutes, start_time, is_active, is_launched, started_at')
+            .select('id, exam_code, exam_name, subject, total_questions, total_marks, duration_minutes, start_time, is_active, is_launched, started_at, branch, passout_year, section_id, section_ids')
             .eq('exam_code', code)
             .maybeSingle(),
         ]);
 
+        examRowData = examRow.data;
         enrolledCount = (enrolled.data as any)?.count ?? stats.enrolled;
         durationSec = ((examRow.data as any)?.duration_minutes || 60) * 60;
 
@@ -1357,9 +1360,20 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
       }
     }
 
+    const finalStartedState = getExamStartedState(code) || startedState;
+    const rawSections = (examRowData as any)?.section_ids || ((examRowData as any)?.section_id ? [(examRowData as any)?.section_id] : ['A']);
+    const targetSections = Array.isArray(rawSections) ? rawSections : [String(rawSections)];
+
     res.json({
       success: true,
       exam_code: code,
+      exam_name: (examRowData as any)?.exam_name || code,
+      subject: (examRowData as any)?.subject || 'Core Curriculum',
+      total_questions: (examRowData as any)?.total_questions || 36,
+      total_marks: (examRowData as any)?.total_marks || 100,
+      branch: (examRowData as any)?.branch || 'CSE',
+      passout_year: (examRowData as any)?.passout_year || 2026,
+      sections: targetSections,
       enrolled: enrolledCount,
       connected: stats.connected,
       queue_count: stats.queue_count ?? stats.connected,
@@ -1367,16 +1381,16 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
       duration_seconds: durationSec,
       waiting_students: waitingList,
       // Exam started state — null if not yet started
-      exam_started: startedState
+      exam_started: finalStartedState
         ? {
-            exam_id: startedState.exam_id,
-            server_start_time: startedState.server_start_time,
-            duration_seconds: startedState.duration_seconds,
-            allow_late_join: startedState.allow_late_join,
-            elapsed_seconds: Math.floor((Date.now() - startedState.server_start_time) / 1000),
+            exam_id: finalStartedState.exam_id,
+            server_start_time: finalStartedState.server_start_time,
+            duration_seconds: finalStartedState.duration_seconds,
+            allow_late_join: finalStartedState.allow_late_join,
+            elapsed_seconds: Math.floor((Date.now() - finalStartedState.server_start_time) / 1000),
             remaining_seconds: Math.max(
               0,
-              startedState.duration_seconds - Math.floor((Date.now() - startedState.server_start_time) / 1000)
+              finalStartedState.duration_seconds - Math.floor((Date.now() - finalStartedState.server_start_time) / 1000)
             ),
           }
         : null,

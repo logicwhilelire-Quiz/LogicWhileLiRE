@@ -1137,7 +1137,36 @@ export async function getLeaderboard(req: Request, res: Response): Promise<void>
 
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
 
-  const leaderboard = (data || []).map((r, index) => ({
+  let rows = data || [];
+  if (rows.length === 0) {
+    const { data: ecData } = await supabase
+      .from('exam_code_attempts')
+      .select('hall_ticket_no, student_name, score, max_score, correct_count, wrong_count, time_taken_seconds')
+      .eq('exam_code', String(examId).toUpperCase())
+      .in('status', ['completed', 'submitted'])
+      .order('score', { ascending: false })
+      .order('time_taken_seconds', { ascending: true });
+
+    if (ecData && ecData.length > 0) {
+      const ecLeaderboard = ecData.map((r, index) => ({
+        rank: index + 1,
+        name: r.student_name || r.hall_ticket_no,
+        hall_ticket: r.hall_ticket_no,
+        total_score: Number(r.score || 0),
+        max_score: Number(r.max_score || 100),
+        normalized_score: r.max_score > 0 ? Number(((r.score / r.max_score) * 100).toFixed(2)) : 0,
+        correct_count: r.correct_count || 0,
+        wrong_count: r.wrong_count || 0,
+        time_taken_seconds: r.time_taken_seconds || 0,
+      }));
+      setCache(cacheKey, ecLeaderboard, LEADERBOARD_CACHE_TTL);
+      res.set('X-Cache', 'MISS');
+      res.json({ success: true, leaderboard: ecLeaderboard });
+      return;
+    }
+  }
+
+  const leaderboard = rows.map((r, index) => ({
     rank: index + 1,
     name: (r.participant as any)?.name,
     hall_ticket: (r.participant as any)?.hall_ticket,

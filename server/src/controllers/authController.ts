@@ -760,11 +760,24 @@ export async function studentLogin(req: Request, res: Response): Promise<void> {
 export async function getStudentDashboard(req: Request, res: Response): Promise<void> {
   const studentPayload = req.student!;
 
-  const { data: student } = await supabase
+  let { data: student } = await supabase
     .from('students')
-    .select('*, college_name')
+    .select('*')
     .eq('id', studentPayload.studentId)
-    .single();
+    .maybeSingle();
+
+  if (!student && studentPayload.hallTicket) {
+    const { data: byRoll } = await supabase
+      .from('students')
+      .select('*')
+      .ilike('roll_number', studentPayload.hallTicket)
+      .maybeSingle();
+    student = byRoll;
+  }
+
+  if (student && !student.college_name && (student.college_id === 80 || String(student.college_id) === '80')) {
+    student.college_name = 'RV Institute of Technology (UGC – Autonomous)';
+  }
 
   if (!student) {
     res.status(404).json({ success: false, error: 'Student not found' });
