@@ -50,35 +50,6 @@ export interface AdminRosterStudent {
   extra_time_mins?: number;
 }
 
-export type RegistrationAuthorityMode = 'ADMIN_ONLY' | 'CLEARANCE_REQUIRED' | 'ACTIVE';
-
-const REG_MODE_KEY = 'admin_registration_mode';
-
-/**
- * Gets the current administrative registration authority mode
- */
-export function getRegistrationAuthorityMode(): RegistrationAuthorityMode {
-  try {
-    const saved = localStorage.getItem(REG_MODE_KEY);
-    if (saved === 'ADMIN_ONLY' || saved === 'CLEARANCE_REQUIRED' || saved === 'ACTIVE') {
-      return saved as RegistrationAuthorityMode;
-    }
-    const legacyEnabled = localStorage.getItem('admin_registration_enabled');
-    if (legacyEnabled === 'false') return 'ADMIN_ONLY';
-  } catch {}
-  return 'CLEARANCE_REQUIRED';
-}
-
-/**
- * Updates the administrative registration authority mode
- */
-export function setRegistrationAuthorityMode(mode: RegistrationAuthorityMode): void {
-  try {
-    localStorage.setItem(REG_MODE_KEY, mode);
-    localStorage.setItem('admin_registration_enabled', mode !== 'ADMIN_ONLY' ? 'true' : 'false');
-  } catch {}
-}
-
 /**
  * Exports complete administrative system archive (students, rosters, audit logs, exam states)
  */
@@ -86,7 +57,6 @@ export function generateSystemBackupArchive(students: AdminRosterStudent[]): {
   timestamp: string;
   version: string;
   roster_students: AdminRosterStudent[];
-  registration_mode: RegistrationAuthorityMode;
   stats: {
     total_students: number;
     approved: number;
@@ -102,7 +72,6 @@ export function generateSystemBackupArchive(students: AdminRosterStudent[]): {
     timestamp: new Date().toISOString(),
     version: 'LogicWhileLiRE-4.0-Admin-Backup',
     roster_students: students,
-    registration_mode: getRegistrationAuthorityMode(),
     stats: {
       total_students: students.length,
       approved,

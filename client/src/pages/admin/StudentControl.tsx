@@ -23,11 +23,8 @@ import {
   IconCross,
 } from '../../components/icons/HumanIcons';
 import {
-  getRegistrationAuthorityMode,
-  setRegistrationAuthorityMode,
   generateSystemBackupArchive,
   exportRosterCsvString,
-  type RegistrationAuthorityMode,
 } from '../../lib/adminRosterStore';
 
 interface College {
@@ -87,30 +84,6 @@ export default function StudentControl() {
   const [copiedPass, setCopiedPass] = useState<string | null>(null);
   const [copiedCreds, setCopiedCreds] = useState<string | null>(null);
   const [previewEmailStudent, setPreviewEmailStudent] = useState<StudentRosterItem | null>(null);
-
-  const [registrationEnabled, setRegistrationEnabled] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('admin_registration_enabled') !== 'false';
-    } catch {
-      return true;
-    }
-  });
-
-  const [regAuthorityMode, setRegAuthorityMode] = useState<RegistrationAuthorityMode>(() => getRegistrationAuthorityMode());
-
-  const handleChangeAuthorityMode = (mode: RegistrationAuthorityMode) => {
-    setRegAuthorityMode(mode);
-    setRegistrationAuthorityMode(mode);
-    setRegistrationEnabled(mode !== 'ADMIN_ONLY');
-    setUploadMsg(
-      mode === 'ADMIN_ONLY'
-        ? '[POLICY] Authority Mode: STRICT ADMIN ENTRY ONLY. Candidate self-registration is closed.'
-        : mode === 'CLEARANCE_REQUIRED'
-        ? '[POLICY] Authority Mode: CLEARANCE REQUIRED. New candidates require explicit Administrator Approval.'
-        : '[POLICY] Authority Mode: ACTIVE AUTO-CLEARANCE. Candidates are automatically approved.'
-    );
-    setTimeout(() => setUploadMsg(''), 5000);
-  };
 
   const verifyOnServer = async (ids: string[]) => {
     const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
@@ -217,21 +190,6 @@ export default function StudentControl() {
     setTimeout(() => setUploadMsg(''), 5000);
   };
 
-  const handleToggleRegistration = () => {
-    const next = !registrationEnabled;
-    setRegistrationEnabled(next);
-    localStorage.setItem('admin_registration_enabled', String(next));
-    const newMode: RegistrationAuthorityMode = next ? 'CLEARANCE_REQUIRED' : 'ADMIN_ONLY';
-    setRegAuthorityMode(newMode);
-    setRegistrationAuthorityMode(newMode);
-    setUploadMsg(
-      next
-        ? '[ACTIVE] Student Registration Gate is now ACTIVE under Administrator Clearance Mode.'
-        : '[PAUSED] Student Registration Gate has been PAUSED by Administrator.'
-    );
-    setTimeout(() => setUploadMsg(''), 5000);
-  };
-
   const currentUser = (() => {
     try {
       return JSON.parse(localStorage.getItem('admin_user') || sessionStorage.getItem('admin_user') || '{"role":"super_admin"}');
@@ -240,12 +198,6 @@ export default function StudentControl() {
     }
   })();
   const isSuperAdmin = currentUser.role === 'super_admin' || currentUser.role === 'admin';
-
-  const generateGatePass = (prefix: 'GP-STU' | 'GP-CAND', roll?: string) => {
-    const code = (roll || 'CAND').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
-    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `${prefix}-${code || 'PASS'}-${rand}`;
-  };
 
   const handleCopyPass = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -294,8 +246,8 @@ export default function StudentControl() {
             section: s.section || 'A',
             batch: s.batch || (s.year_of_passing ? `Batch ${s.year_of_passing}` : 'Batch 1'),
             passout_year: s.passout_year || s.year_of_passing || 2026,
-            student_gate_pass: s.student_gate_pass || `GP-STU-${s.roll_number || s.hall_ticket || 'STU'}-${String(s.id || '101').slice(-4).toUpperCase()}`,
-            candidate_gate_pass: s.candidate_gate_pass || `GP-CAND-${s.roll_number || s.hall_ticket || 'CAND'}-${String(s.id || '202').slice(-4).toUpperCase()}`,
+            student_gate_pass: s.student_gate_pass || '',
+            candidate_gate_pass: s.candidate_gate_pass || '',
             is_verified: s.is_verified !== false,
             is_blocked: Boolean(s.is_blocked),
             block_reason: s.block_reason,
@@ -314,18 +266,18 @@ export default function StudentControl() {
       .catch(() => {});
   }, []);
 
-  // Add single student state with auto-generated gate passes
+  // Add single student state (gate passes are issued by the server on creation)
   const [newStudent, setNewStudent] = useState({
     hall_ticket: '',
     name: '',
     email: '',
     branch: 'CSE',
-    college_name: 'VR Siddhartha Engineering College',
+    college_name: 'Unassigned',
     section: 'CSM-A',
     batch: 'Batch 1',
     passout_year: 2026,
-    student_gate_pass: 'GP-STU-CAND-7842',
-    candidate_gate_pass: 'GP-CAND-CAND-9153',
+    student_gate_pass: '',
+    candidate_gate_pass: '',
   });
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -485,7 +437,7 @@ export default function StudentControl() {
         const cleanEmail = String(rawEmail).trim().toLowerCase();
         const branch = String(row['Branch'] || row['Branch Code'] || row['Department'] || row['Dept'] || 'CSE').trim().toUpperCase();
         const section = String(row['Section'] || row['Sec'] || 'A').trim().toUpperCase();
-        const college = String(row['College'] || row['College Name'] || 'VR Siddhartha Engineering College').trim();
+        const college = String(row['College'] || row['College Name'] || 'Unassigned').trim();
         const yop = parseInt(String(row['Year of Passing'] || row['YOP'] || row['Batch'] || 2028), 10) || 2028;
         const password = String(row['Password'] || `Student#${Math.floor(100000 + Math.random() * 900000)}!`);
 
@@ -499,8 +451,8 @@ export default function StudentControl() {
           section,
           batch: `Batch ${yop}`,
           passout_year: yop,
-          student_gate_pass: `GP-STU-${cleanRoll}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
-          candidate_gate_pass: `GP-CAND-${cleanRoll}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+          student_gate_pass: '',
+          candidate_gate_pass: '',
           is_verified: true,
           is_blocked: false,
           attempts_used: 0,
@@ -586,64 +538,69 @@ export default function StudentControl() {
     e.preventDefault();
     if (!newStudent.hall_ticket || !newStudent.name) return;
 
-    const stuPass = newStudent.student_gate_pass || generateGatePass('GP-STU', newStudent.hall_ticket);
-    const candPass = newStudent.candidate_gate_pass || generateGatePass('GP-CAND', newStudent.hall_ticket);
-
-    const candidate: StudentRosterItem = {
-      id: `man-${Date.now()}`,
-      hall_ticket: newStudent.hall_ticket.trim(),
-      name: newStudent.name.trim(),
-      email: newStudent.email.trim() || `${newStudent.hall_ticket.toLowerCase()}@campus.edu`,
-      branch: newStudent.branch,
-      college_name: newStudent.college_name,
-      section: newStudent.section,
-      batch: newStudent.batch,
-      passout_year: Number(newStudent.passout_year),
-      student_gate_pass: stuPass,
-      candidate_gate_pass: candPass,
-      is_blocked: false,
-      attempts_used: 0,
-      allowed_attempts: 1,
-      extra_time_mins: 0,
-    };
-
-    setStudents((prev) => [candidate, ...prev]);
-    setIsAddModalOpen(false);
-    setNewStudent({
-      hall_ticket: '',
-      name: '',
-      email: '',
-      branch: 'CSE',
-      college_name: 'VR Siddhartha Engineering College',
-      section: 'CSM-A',
-      batch: 'Batch 1',
-      passout_year: 2026,
-      student_gate_pass: generateGatePass('GP-STU', 'CAND'),
-      candidate_gate_pass: generateGatePass('GP-CAND', 'CAND'),
-    });
-
+    const cleanRoll = newStudent.hall_ticket.trim();
+    const cleanEmail = newStudent.email.trim() || `${cleanRoll.toLowerCase()}@campus.edu`;
     const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+
     try {
-      await axios.post(
+      const res = await axios.post(
         `${API_BASE_URL}/api/admin/students`,
         {
-          roll_number: candidate.hall_ticket,
-          hall_ticket: candidate.hall_ticket,
-          name: candidate.name,
-          email: candidate.email,
-          branch: candidate.branch,
-          branch_code: candidate.branch,
-          college_name: candidate.college_name,
-          section: candidate.section,
-          batch: candidate.batch,
-          passout_year: candidate.passout_year,
-          year_of_passing: candidate.passout_year,
-          student_gate_pass: candidate.student_gate_pass,
-          candidate_gate_pass: candidate.candidate_gate_pass,
+          roll_number: cleanRoll,
+          hall_ticket: cleanRoll,
+          name: newStudent.name.trim(),
+          email: cleanEmail,
+          branch: newStudent.branch,
+          branch_code: newStudent.branch,
+          college_name: newStudent.college_name,
+          section: newStudent.section,
+          batch: newStudent.batch,
+          passout_year: Number(newStudent.passout_year),
+          year_of_passing: Number(newStudent.passout_year),
         },
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
-    } catch {}
+
+      const saved = res.data?.student || {};
+      const candidate: StudentRosterItem = {
+        id: String(saved.id || cleanRoll),
+        hall_ticket: saved.roll_number || saved.hall_ticket || cleanRoll,
+        name: saved.name || newStudent.name.trim(),
+        email: saved.email || cleanEmail,
+        branch: saved.branch || saved.branch_code || newStudent.branch,
+        college_name: saved.college_name || newStudent.college_name,
+        section: saved.section || newStudent.section,
+        batch: saved.batch || newStudent.batch,
+        passout_year: saved.passout_year || saved.year_of_passing || Number(newStudent.passout_year),
+        student_gate_pass: saved.student_gate_pass || '',
+        candidate_gate_pass: saved.candidate_gate_pass || '',
+        is_verified: saved.is_verified !== false,
+        is_blocked: Boolean(saved.is_blocked),
+        attempts_used: 0,
+        allowed_attempts: 1,
+        extra_time_mins: 0,
+      };
+
+      setStudents((prev) => [candidate, ...prev]);
+      setIsAddModalOpen(false);
+      setNewStudent({
+        hall_ticket: '',
+        name: '',
+        email: '',
+        branch: 'CSE',
+        college_name: 'Unassigned',
+        section: 'CSM-A',
+        batch: 'Batch 1',
+        passout_year: 2026,
+        student_gate_pass: '',
+        candidate_gate_pass: '',
+      });
+      setUploadMsg(`[ADDED] Candidate ${candidate.name} (${candidate.hall_ticket}) saved to database.`);
+      setTimeout(() => setUploadMsg(''), 4000);
+    } catch (err: any) {
+      setUploadMsg(`[FAILED] Could not add candidate: ${err?.response?.data?.error || err.message}`);
+      setTimeout(() => setUploadMsg(''), 5000);
+    }
   };
 
   const filtered = students.filter((s) => {
@@ -738,26 +695,6 @@ export default function StudentControl() {
                     <span>Export Credentials (CSV)</span>
                   </button>
 
-                  <button
-                    onClick={handleToggleRegistration}
-                    className="btn btn-secondary"
-                    style={{
-                      padding: '10px 16px',
-                      fontWeight: 700,
-                      borderRadius: 8,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      border: registrationEnabled ? '1.5px solid rgba(16, 185, 129, 0.5)' : '1.5px solid rgba(239, 68, 68, 0.5)',
-                      color: registrationEnabled ? '#34d399' : '#f87171',
-                      background: registrationEnabled ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    }}
-                    title="Toggle student self-registration portal on or off"
-                  >
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: registrationEnabled ? '#34d399' : '#f87171', display: 'inline-block' }} />
-                    <span>Registration: {registrationEnabled ? 'ACTIVE' : 'PAUSED'}</span>
-                  </button>
-
                   <a
                     href="/register"
                     target="_blank"
@@ -849,36 +786,9 @@ export default function StudentControl() {
                     </div>
                   </div>
 
-                  {/* 3-Way Authority Mode Selector */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: 700 }}>Registration Authority Mode:</span>
-                    <div style={{ display: 'flex', gap: 6, background: 'rgba(0, 0, 0, 0.4)', padding: 4, borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                      {[
-                        { mode: 'ADMIN_ONLY' as const, label: 'Admin Entry Only', desc: 'Portal closed' },
-                        { mode: 'CLEARANCE_REQUIRED' as const, label: 'Clearance Required', desc: 'Admin approves' },
-                        { mode: 'ACTIVE' as const, label: 'Auto-Clear Active', desc: 'Instant pass' },
-                      ].map((item) => (
-                        <button
-                          key={item.mode}
-                          type="button"
-                          onClick={() => handleChangeAuthorityMode(item.mode)}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: 6,
-                            fontSize: '0.74rem',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            background: regAuthorityMode === item.mode ? 'linear-gradient(135deg, #0284c7, #0369a1)' : 'transparent',
-                            color: regAuthorityMode === item.mode ? '#FFFFFF' : '#94A3B8',
-                            border: 'none',
-                            transition: 'all 0.2s',
-                          }}
-                          title={item.desc}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 10, padding: '6px 12px' }}>
+                    <IconShield size={14} color="#34D399" />
+                    <span style={{ fontSize: '0.76rem', color: '#34D399', fontWeight: 700 }}>Server-Enforced College Gating Active</span>
                   </div>
                 </div>
 
@@ -1891,8 +1801,6 @@ export default function StudentControl() {
                           setNewStudent({
                             ...newStudent,
                             hall_ticket: val,
-                            student_gate_pass: generateGatePass('GP-STU', val || 'STU'),
-                            candidate_gate_pass: generateGatePass('GP-CAND', val || 'CAND'),
                           });
                         }}
                       />
@@ -1991,7 +1899,6 @@ export default function StudentControl() {
                     </div>
                   </div>
 
-                  {/* Auto-Generated Gate Passes Section */}
                   <div
                     style={{
                       background: 'rgba(56, 189, 248, 0.06)',
@@ -2000,62 +1907,14 @@ export default function StudentControl() {
                       padding: '12px 14px',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: 8,
+                      gap: 6,
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <IconShield size={14} color="#38BDF8" /> Auto-Generated Institutional Gate Passes
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const roll = newStudent.hall_ticket.trim() || 'CAND';
-                          setNewStudent({
-                            ...newStudent,
-                            student_gate_pass: generateGatePass('GP-STU', roll),
-                            candidate_gate_pass: generateGatePass('GP-CAND', roll),
-                          });
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#38BDF8',
-                          fontSize: '0.74rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          padding: 0,
-                          textDecoration: 'underline',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                        }}
-                      >
-                        <IconRefresh size={12} color="#38BDF8" /> Regenerate
-                      </button>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <IconShield size={14} color="#38BDF8" /> Institutional Gate Passes
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                      <div>
-                        <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginBottom: 2 }}>Student Gate Pass:</div>
-                        <input
-                          className="form-input"
-                          style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: '#38BDF8', background: 'rgba(0,0,0,0.3)', padding: '6px 8px' }}
-                          value={newStudent.student_gate_pass}
-                          onChange={(e) => setNewStudent({ ...newStudent, student_gate_pass: e.target.value.toUpperCase() })}
-                        />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginBottom: 2 }}>Candidate Gate Pass:</div>
-                        <input
-                          className="form-input"
-                          style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: '#C084FC', background: 'rgba(0,0,0,0.3)', padding: '6px 8px' }}
-                          value={newStudent.candidate_gate_pass}
-                          onChange={(e) => setNewStudent({ ...newStudent, candidate_gate_pass: e.target.value.toUpperCase() })}
-                        />
-                      </div>
-                    </div>
-                    <div style={{ fontSize: '0.70rem', color: 'var(--color-text-faint)', fontStyle: 'italic' }}>
-                      Candidate will automatically be segregated into their collegiate department, group ({newStudent.batch}), and section ({newStudent.section}).
+                    <div style={{ fontSize: '0.74rem', color: 'var(--color-text-faint)' }}>
+                      Authoritative gate passes are generated by the server when the candidate is saved and segregated into {newStudent.batch}, {newStudent.section}.
                     </div>
                   </div>
 
