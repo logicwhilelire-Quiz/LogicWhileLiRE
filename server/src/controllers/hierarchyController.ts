@@ -727,8 +727,8 @@ export async function listStudents(req: Request, res: Response): Promise<void> {
       batch: s.batch || `Batch ${yop}`,
       passout_year: yop,
       contact_number: s.contact_number || s.mobile || '',
-      student_gate_pass: `GP-STU-${roll}-${idSlug}`,
-      candidate_gate_pass: `GP-CAND-${roll}-${candSlug}`,
+      student_gate_pass: s.student_gate_pass || null,
+      candidate_gate_pass: s.candidate_gate_pass || null,
       live_status: liveStatus,
     };
   });
@@ -853,8 +853,8 @@ export async function createStudent(req: Request, res: Response): Promise<void> 
   const { data: secRec } = await supabase.from('sections').select('name').eq('id', section_id).maybeSingle();
   const { data: batRec } = await supabase.from('batches').select('name').eq('id', batch_id).maybeSingle();
 
-  // Auto-generate Student Gate Pass and Candidate Gate Pass
-  const randomSuffix = () => Math.random().toString(36).substring(2, 6).toUpperCase();
+  // Auto-generate cryptographic Student Gate Pass and Candidate Gate Pass
+  const randomSuffix = () => crypto.randomBytes(5).toString('hex').toUpperCase();
   const autoStudentGatePass = student_gate_pass || `GP-STU-${cleanRoll}-${randomSuffix()}`;
   const autoCandidateGatePass = candidate_gate_pass || `GP-CAND-${cleanRoll}-${randomSuffix()}`;
 
@@ -867,7 +867,7 @@ export async function createStudent(req: Request, res: Response): Promise<void> 
     roll_number: cleanRoll,
     hall_ticket: cleanHallTicket,
     college_id: effectiveCollegeId,
-    college_name: college_name || 'VR Siddhartha Engineering College',
+    college_name: college_name || 'Unassigned',
     academic_year_id: academic_year_id || null,
     cohort_id: cohort_id || null,
     section_id: String(section_id),
@@ -2309,8 +2309,8 @@ export async function getInspectorDashboardData(req: Request, res: Response): Pr
           branch: s.branch_code || 'CSE',
           section: s.section || 'A',
           batch: s.batch || 'Batch 1',
-          student_gate_pass: `GP-STU-${roll}-${idSlug}`,
-          candidate_gate_pass: `GP-CAND-${roll}-${candSlug}`,
+          student_gate_pass: s.student_gate_pass || null,
+          candidate_gate_pass: s.candidate_gate_pass || null,
         };
       }),
     });
@@ -2446,6 +2446,45 @@ export async function clearExamAttempts(req: Request, res: Response): Promise<vo
   res.json({
     success: true,
     message: 'Exam attempt sessions cleared successfully from database.',
+  });
+}
+
+/**
+ * POST /api/admin/students/:id/regenerate-gate-pass
+ * Generates fresh cryptographic gate passes and stores them in the DB.
+ */
+export async function regenerateStudentGatePass(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { data: student, error: findErr } = await supabase
+    .from('students')
+    .select('id, roll_number, hall_ticket')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (findErr || !student) {
+    res.status(404).json({ success: false, error: 'Student not found' });
+    return;
+  }
+
+  const roll = String(student.roll_number || student.hall_ticket || 'CAND').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const stuPass = `GP-STU-${roll}-${crypto.randomBytes(5).toString('hex').toUpperCase()}`;
+  const candPass = `GP-CAND-${roll}-${crypto.randomBytes(5).toString('hex').toUpperCase()}`;
+
+  const { error: updErr } = await supabase
+    .from('students')
+    .update({ student_gate_pass: stuPass, candidate_gate_pass: candPass })
+    .eq('id', id);
+
+  if (updErr) {
+    res.status(500).json({ success: false, error: updErr.message });
+    return;
+  }
+
+  res.json({
+    success: true,
+    student_gate_pass: stuPass,
+    candidate_gate_pass: candPass,
+    message: 'Cryptographic gate passes regenerated.',
   });
 }
 

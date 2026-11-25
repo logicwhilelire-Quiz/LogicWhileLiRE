@@ -67,7 +67,7 @@ export async function verifyAttemptToken(
           .select('*')
           .maybeSingle();
         if (newAtt) return { valid: true, evicted: false, terminated: false, attempt: newAtt };
-      } catch {}
+      } catch { }
     }
     return { valid: false, evicted: false, terminated: false, attempt: null };
   }
@@ -188,7 +188,7 @@ export async function listColleges(req: Request, res: Response): Promise<void> {
   const { data, error } = await query;
 
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
-  
+
   if (req.query?.breakdown === 'true') {
     return getCollegesBreakdown(req, res);
   }
@@ -505,8 +505,8 @@ export async function getCollegesBreakdown(req: Request, res: Response): Promise
           batch: batchName,
           passout_year: yop,
           year_of_passing: yop,
-          student_gate_pass: s.student_gate_pass || `GP-STU-${ht}-7842`,
-          candidate_gate_pass: s.candidate_gate_pass || `GP-CAND-${ht}-9153`,
+          student_gate_pass: s.student_gate_pass || null,
+          candidate_gate_pass: s.candidate_gate_pass || null,
           is_verified: Boolean(s.is_verified),
           is_blocked: Boolean(s.is_blocked),
           block_reason: s.block_reason || null,
@@ -803,8 +803,8 @@ export async function createExamCode(req: Request, res: Response): Promise<void>
   const targetedSections = Array.isArray(section_ids) && section_ids.length > 0
     ? section_ids
     : section_id
-    ? [String(section_id).trim()]
-    : [];
+      ? [String(section_id).trim()]
+      : [];
 
   const insertPayload: Record<string, any> = {
     exam_code: examCode,
@@ -845,7 +845,7 @@ export async function createExamCode(req: Request, res: Response): Promise<void>
       String(data.id),
       { exam_code: examCode, exam_name, college_id, branch, passout_year, section_ids: targetedSections },
       req
-    ).catch(() => {});
+    ).catch(() => { });
   }
 
   // Generate QR data URL for the exam entry link
@@ -910,7 +910,7 @@ export async function allocateQuestionPaper(req: Request, res: Response): Promis
       String(existingExam.id),
       { faculty_id, section_id, section_ids, inspector_id },
       req
-    ).catch(() => {});
+    ).catch(() => { });
   }
 
   res.json({
@@ -966,7 +966,7 @@ export async function lockQuestionPaper(req: Request, res: Response): Promise<vo
       String(existingExam.id),
       { is_locked },
       req
-    ).catch(() => {});
+    ).catch(() => { });
   }
 
   res.json({
@@ -1035,7 +1035,7 @@ export async function replaceQuestionPaper(req: Request, res: Response): Promise
       String(id),
       { question_count: Array.isArray(questions) ? questions.length : 0, reason },
       req
-    ).catch(() => {});
+    ).catch(() => { });
   }
 
   res.json({
@@ -1335,10 +1335,24 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
     return;
   }
 
+  const isGatePassInput = ht.startsWith('GP-STU-') || ht.startsWith('GP-CAND-') || ht.startsWith('GP-');
+  if (isGatePassInput && studentRecord) {
+    const storedStu = (studentRecord as any).student_gate_pass;
+    const storedCand = (studentRecord as any).candidate_gate_pass;
+    if ((!storedStu || storedStu.toUpperCase() !== ht) && (!storedCand || storedCand.toUpperCase() !== ht)) {
+      res.status(404).json({
+        success: false,
+        error: 'Invalid or unissued gate pass.',
+        code: 'INVALID_GATE_PASS',
+      });
+      return;
+    }
+  }
+
   const canonicalRoll = studentRecord?.roll_number || studentRecord?.hall_ticket || candidateRoll;
   const candidateDisplayName = studentRecord?.name || studentName?.trim() || canonicalRoll;
-  const studentGatePass = `GP-STU-${canonicalRoll}-${(studentRecord?.id || '0000').substring(0, 4)}`.toUpperCase();
-  const candidateGatePass = `GP-CAND-${canonicalRoll}-${(studentRecord?.id || '0000').substring(0, 4)}`.toUpperCase();
+  const studentGatePass: string | null = (studentRecord as any)?.student_gate_pass || null;
+  const candidateGatePass: string | null = (studentRecord as any)?.candidate_gate_pass || null;
 
   // 1.3 INSPECTOR START & WAITING LOBBY DISPATCH
   const isDemoExam = ec.includes('DEMO') || ec === 'CS2026';
@@ -1557,7 +1571,7 @@ export async function verifyExamEntry(req: Request, res: Response): Promise<void
         });
         await supabase.from('questions_ec').insert(cloned);
       }
-    } catch {}
+    } catch { }
   }
 
   // 5. Create attempt record in waiting_verification status — clock does NOT start yet
@@ -1781,12 +1795,12 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
     // Mask expected_output on hidden test cases to protect problem integrity
     const candidateTestCases = Array.isArray(q.test_cases)
       ? q.test_cases.map((tc: any, tcIdx: number) => ({
-          id: tc.id || `tc_${tcIdx + 1}`,
-          input_text: tc.input_text ?? tc.input ?? '',
-          expected_output: tc.is_hidden ? undefined : (tc.expected_output ?? tc.output ?? ''),
-          is_hidden: Boolean(tc.is_hidden),
-          marks: Number(tc.marks || 1),
-        }))
+        id: tc.id || `tc_${tcIdx + 1}`,
+        input_text: tc.input_text ?? tc.input ?? '',
+        expected_output: tc.is_hidden ? undefined : (tc.expected_output ?? tc.output ?? ''),
+        is_hidden: Boolean(tc.is_hidden),
+        marks: Number(tc.marks || 1),
+      }))
       : [];
 
     return {
@@ -2054,8 +2068,8 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
   const finalStatus = isTerminatedViolation
     ? 'terminated_cheating'
     : isGraceExpired
-    ? 'auto_submitted_expired'
-    : 'completed';
+      ? 'auto_submitted_expired'
+      : 'completed';
 
   const terminationReason = isTerminatedViolation
     ? (req.body.termination_reason || req.body.notes || 'Exam security lockdown violation')
@@ -2111,7 +2125,7 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
           .update({ active_session_id: null })
           .or(`hall_ticket.eq.${studentHt},roll_number.eq.${studentHt}`);
       }
-    } catch {}
+    } catch { }
   }
 
   // Persist attempt to results table for institutional record keeping
@@ -2132,18 +2146,18 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
       time_taken_seconds: timeTakenSeconds || Math.round((Date.now() - startTime) / 1000),
       submitted_at: new Date().toISOString(),
     });
-  } catch {}
+  } catch { }
 
   // Clear leaderboard cache for fresh rank computation
   try {
     leaderboardCache.delete(code);
-  } catch {}
+  } catch { }
 
   // Trigger throttled room telemetry (<= 1 update per second per room)
   try {
     const { scheduleThrottledRoomUpdate } = await import('../services/socketService');
     scheduleThrottledRoomUpdate(code);
-  } catch {}
+  } catch { }
 
   res.json({
     success: true,
@@ -2275,7 +2289,7 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
         .from('students')
         .update({ active_session_id: null })
         .or(`hall_ticket.eq.${candId},roll_number.eq.${candId}`);
-    } catch {}
+    } catch { }
   }
 
   try {
@@ -2287,7 +2301,7 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
       metadata: { message: notes || `${violationType} detected`, count: newCount, snapshot_thumb: vItem.snapshot_thumb, terminated: shouldTerminate },
       created_at: vItem.timestamp,
     });
-  } catch {}
+  } catch { }
 
   // Broadcast live to Admin and Inspector WebSocket monitors
   try {
@@ -2300,7 +2314,7 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
       terminated: shouldTerminate,
       termination_reason: shouldTerminate ? terminationReason : null,
     });
-  } catch {}
+  } catch { }
 
   res.json({
     success: true,
@@ -2313,10 +2327,10 @@ export async function logExamCodeViolation(req: Request, res: Response): Promise
     message: isForceBreach
       ? `EXAM TERMINATED: ${terminationReason}`
       : isGrace
-      ? `Grace period active: ${notes || violationType} noted without strike.`
-      : shouldTerminate
-      ? `Exam auto-terminated due to reaching ${maxViolations} violations.`
-      : `Warning ${newCount}/${maxViolations}: ${notes || violationType}.`,
+        ? `Grace period active: ${notes || violationType} noted without strike.`
+        : shouldTerminate
+          ? `Exam auto-terminated due to reaching ${maxViolations} violations.`
+          : `Warning ${newCount}/${maxViolations}: ${notes || violationType}.`,
   });
 }
 
@@ -2553,7 +2567,7 @@ export async function saveExamCodeAnswer(req: Request, res: Response): Promise<v
   try {
     const { scheduleThrottledRoomUpdate } = await import('../services/socketService');
     scheduleThrottledRoomUpdate(code);
-  } catch {}
+  } catch { }
 
   res.json({
     success: true,
@@ -2897,7 +2911,7 @@ export async function importQuestionsForExamCode(req: Request, res: Response): P
         starter_code: r.starter_code,
       }))
     );
-  } catch {}
+  } catch { }
 
   res.json({
     success: true,
@@ -3478,7 +3492,7 @@ export async function confirmImportQuestions(req: Request, res: Response): Promi
           section: r.section,
         }))
       );
-    } catch {}
+    } catch { }
 
     // Ensure exam_codes has an active, accessible record for this exam code
     try {
@@ -3526,11 +3540,10 @@ export async function confirmImportQuestions(req: Request, res: Response): Promi
         errors: q.errors,
       })),
       exam_code: targetCode,
-      message: `Successfully imported ${rowsToInsert.length} valid questions for ${targetCode}.${
-        invalidQuestions.length > 0
-          ? ` ${invalidQuestions.length} invalid rows were skipped and reported for correction.`
-          : ''
-      }`,
+      message: `Successfully imported ${rowsToInsert.length} valid questions for ${targetCode}.${invalidQuestions.length > 0
+        ? ` ${invalidQuestions.length} invalid rows were skipped and reported for correction.`
+        : ''
+        }`,
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || 'Import failed' });
@@ -3778,9 +3791,9 @@ export async function getExamCodeAnalytics(req: Request, res: Response): Promise
   const avgTimeTakenSec =
     completedAttempts.length > 0
       ? Math.round(
-          completedAttempts.reduce((sum, a) => sum + (a.time_taken_seconds || 0), 0) /
-            completedAttempts.length
-        )
+        completedAttempts.reduce((sum, a) => sum + (a.time_taken_seconds || 0), 0) /
+        completedAttempts.length
+      )
       : 0;
 
   res.json({
@@ -3894,7 +3907,7 @@ export async function getAttemptStatus(req: Request, res: Response): Promise<voi
         .select('*')
         .maybeSingle();
       if (newAtt) attempt = newAtt;
-    } catch {}
+    } catch { }
   }
 
   if (!attempt) {
@@ -3996,7 +4009,7 @@ export async function startStudentAttempt(req: Request, res: Response): Promise<
           last_resumed_at: new Date().toISOString(),
         })
         .eq('id', attempt.id);
-    } catch {}
+    } catch { }
   }
 
   res.json({
@@ -4209,7 +4222,7 @@ export async function releaseStudentForExam(req: Request, res: Response): Promis
           .select('id, hall_ticket_no')
           .maybeSingle();
         finalAttempt = fallbackUpd.data;
-      } catch {}
+      } catch { }
     }
   }
 

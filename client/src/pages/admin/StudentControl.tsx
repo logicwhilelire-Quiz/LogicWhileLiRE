@@ -205,6 +205,34 @@ export default function StudentControl() {
     setTimeout(() => setCopiedPass(null), 2200);
   };
 
+  const handleRegenerateGatePass = async (student: StudentRosterItem) => {
+    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    try {
+      const res = await axios.post(
+        `${API_BASE_URL}/api/admin/students/${student.id}/regenerate-gate-pass`,
+        {},
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      if (res.data?.success) {
+        setStudents((prev) =>
+          prev.map((s) =>
+            s.id === student.id
+              ? {
+                  ...s,
+                  student_gate_pass: res.data.student_gate_pass || '',
+                  candidate_gate_pass: res.data.candidate_gate_pass || '',
+                }
+              : s
+          )
+        );
+        setUploadMsg(`[PASSES] Regenerated gate passes for ${student.hall_ticket}.`);
+      }
+    } catch (err: any) {
+      setUploadMsg(`[FAILED] Could not regenerate gate pass: ${err?.response?.data?.error || err.message}`);
+    }
+    setTimeout(() => setUploadMsg(''), 4000);
+  };
+
   // Student list comes only from the server (database) — nothing is cached locally
   const [students, setStudents] = useState<StudentRosterItem[]>([]);
 
@@ -1496,6 +1524,11 @@ export default function StudentControl() {
                             </span>
                           )}
                         </div>
+                        {!s.student_gate_pass && !s.candidate_gate_pass && (
+                          <span style={{ fontSize: '0.72rem', color: '#94A3B8', fontStyle: 'italic' }}>
+                            Not issued
+                          </span>
+                        )}
                         {s.student_gate_pass && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <span
@@ -1547,6 +1580,29 @@ export default function StudentControl() {
                               {copiedPass === s.candidate_gate_pass ? <IconCheck size={12} color="#34D399" /> : <IconClipboard size={12} />}
                             </button>
                           </div>
+                        )}
+                        {isSuperAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => handleRegenerateGatePass(s)}
+                            style={{
+                              alignSelf: 'flex-start',
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#38BDF8',
+                              fontSize: '0.70rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              padding: 0,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              marginTop: 2,
+                            }}
+                            title="Regenerate cryptographic gate passes"
+                          >
+                            <IconRefresh size={11} color="#38BDF8" /> Regenerate Pass
+                          </button>
                         )}
                       </div>
                     </td>

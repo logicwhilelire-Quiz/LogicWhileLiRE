@@ -96,6 +96,7 @@ import {
   createStudent,
   updateStudent,
   deleteStudent,
+  regenerateStudentGatePass,
   bulkImportStudents,
   previewHierarchyImport,
   exportBatchStudents,
@@ -275,6 +276,7 @@ router.patch(
 
 // ——— Student & Candidate Master Controls ———
 router.patch('/students/:id/block', requireRole('super_admin'), auditLog('BLOCK_STUDENT', 'students'), toggleStudentBlock);
+router.post('/students/:id/regenerate-gate-pass', requireRole('super_admin'), auditLog('REGENERATE_GATE_PASS', 'students'), regenerateStudentGatePass);
 
 // ——— Score Override & Grace Marks ———
 router.post('/results/:sessionId/override', requireRole('super_admin'), auditLog('OVERRIDE_SCORE', 'results'), overrideScore);
