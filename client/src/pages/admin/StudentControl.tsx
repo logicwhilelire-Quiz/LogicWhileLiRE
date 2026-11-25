@@ -23,13 +23,8 @@ import {
   IconCross,
 } from '../../components/icons/HumanIcons';
 import {
-  getAdminRosterStudents,
-  saveAdminRosterStudents,
-  clearAllAdminStudents,
   getRegistrationAuthorityMode,
   setRegistrationAuthorityMode,
-  approveCandidateRoster,
-  bulkApproveAllPendingCandidates,
   generateSystemBackupArchive,
   exportRosterCsvString,
   type RegistrationAuthorityMode,
@@ -117,26 +112,44 @@ export default function StudentControl() {
     setTimeout(() => setUploadMsg(''), 5000);
   };
 
-  const handleApproveClearance = (student: StudentRosterItem) => {
-    approveCandidateRoster(student.id);
-    setStudents((prev) =>
-      prev.map((s) => (s.id === student.id ? { ...s, is_verified: true, status: 'approved' } : s))
+  const verifyOnServer = async (ids: string[]) => {
+    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    await axios.post(
+      `${API_BASE_URL}/api/admin/students/bulk-verify`,
+      { student_ids: ids },
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} }
     );
-    setUploadMsg(`[APPROVED] Examination clearance granted for ${student.name} (${student.hall_ticket}).`);
-    setTimeout(() => setUploadMsg(''), 4000);
   };
 
-  const handleBulkApprovePending = () => {
-    const approvedCount = bulkApproveAllPendingCandidates();
-    setStudents((prev) =>
-      prev.map((s) => (s.is_verified === false || (s as any).status === 'pending_clearance' ? { ...s, is_verified: true, status: 'approved' } : s))
-    );
-    setUploadMsg(`[APPROVED] Successfully approved and cleared ${approvedCount} candidate(s) for examination!`);
+  const handleApproveClearance = async (student: StudentRosterItem) => {
+    try {
+      await verifyOnServer([student.id]);
+      setStudents((prev) =>
+        prev.map((s) => (s.id === student.id ? { ...s, is_verified: true, status: 'approved' } : s))
+      );
+      setUploadMsg(`[APPROVED] Examination clearance granted for ${student.name} (${student.hall_ticket}).`);
+    } catch (err: any) {
+      setUploadMsg(`[FAILED] Could not approve ${student.hall_ticket}: ${err?.response?.data?.error || err.message}`);
+    }
+    setTimeout(() => setUploadMsg(''), 5000);
+  };
+
+  const handleBulkApprovePending = async () => {
+    const pending = students.filter((s) => s.is_verified === false || (s as any).status === 'pending_clearance');
+    if (pending.length === 0) { setUploadMsg('[INFO] No pending candidates to approve.'); setTimeout(() => setUploadMsg(''), 4000); return; }
+    try {
+      await verifyOnServer(pending.map((s) => s.id));
+      const ids = new Set(pending.map((s) => s.id));
+      setStudents((prev) => prev.map((s) => (ids.has(s.id) ? { ...s, is_verified: true, status: 'approved' } : s)));
+      setUploadMsg(`[APPROVED] Successfully approved and cleared ${pending.length} candidate(s) for examination!`);
+    } catch (err: any) {
+      setUploadMsg(`[FAILED] Bulk approval failed: ${err?.response?.data?.error || err.message}`);
+    }
     setTimeout(() => setUploadMsg(''), 5000);
   };
 
   const handleBackupFullSystem = () => {
-    const backup = generateSystemBackupArchive();
+    const backup = generateSystemBackupArchive(students as any);
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -146,12 +159,12 @@ export default function StudentControl() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setUploadMsg('[BACKUP] Full System Candidate Data Backup successfully downloaded!');
+    setUploadMsg('[BACKUP] Candidate data backup downloaded (from the database).');
     setTimeout(() => setUploadMsg(''), 5000);
   };
 
   const handleExportRosterCsv = () => {
-    const csv = exportRosterCsvString();
+    const csv = exportRosterCsvString(students as any);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -161,7 +174,7 @@ export default function StudentControl() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setUploadMsg('[EXPORT] Student roster exported to CSV spreadsheet!');
+    setUploadMsg('[EXPORT] Student roster exported to CSV.');
     setTimeout(() => setUploadMsg(''), 5000);
   };
 
@@ -177,11 +190,12 @@ export default function StudentControl() {
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
     } catch (err: any) {
-      console.warn('Backend clear notice:', err?.response?.data || err.message);
+      setUploadMsg(`[FAILED] Roster was NOT cleared: ${err?.response?.data?.error || err.message}`);
+      setTimeout(() => setUploadMsg(''), 6000);
+      return;
     }
-    clearAllAdminStudents();
     setStudents([]);
-    setUploadMsg('[CLEARED] All candidate roster records cleared from database and storage. Platform is now in a 100% fresh state.');
+    setUploadMsg('[CLEARED] All candidate roster records cleared from the database. Platform is now in a fresh state.');
     setTimeout(() => setUploadMsg(''), 5000);
   };
 
@@ -239,40 +253,8 @@ export default function StudentControl() {
     setTimeout(() => setCopiedPass(null), 2200);
   };
 
-  // Authoritative admin roster initialized from central store
-  const [students, setStudents] = useState<StudentRosterItem[]>(() => {
-    const roster = getAdminRosterStudents();
-    return roster.map((s) => ({
-      id: s.id,
-      hall_ticket: s.hall_ticket || (s as any).roll_number || '',
-      name: s.name,
-      email: s.email,
-      contact_number: s.contact_number || s.mobile || '',
-      mobile: s.mobile || s.contact_number || '',
-      branch: s.branch || (s as any).branch_code || 'CSE',
-      college_name: s.college_name,
-      college_id: s.college_id,
-      section: s.section,
-      batch: s.batch,
-      passout_year: s.passout_year,
-      student_gate_pass: s.student_gate_pass,
-      candidate_gate_pass: s.candidate_gate_pass,
-      is_verified: s.is_verified,
-      is_blocked: !!s.is_blocked,
-      block_reason: s.block_reason,
-      live_status: s.live_status || { state: s.is_verified ? 'cleared' : 'pending', label: s.is_verified ? 'Cleared & Ready' : 'Pending Clearance' },
-      attempts_used: s.attempts_used || 0,
-      allowed_attempts: s.allowed_attempts || 1,
-      extra_time_mins: s.extra_time_mins || 0,
-    }));
-  });
-
-  // Automatically synchronize with central persistent storage whenever admin modifies roster
-  useEffect(() => {
-    if (students && students.length > 0) {
-      saveAdminRosterStudents(students as any);
-    }
-  }, [students]);
+  // Student list comes only from the server (database) — nothing is cached locally
+  const [students, setStudents] = useState<StudentRosterItem[]>([]);
 
   // Load real colleges and students on mount
   useEffect(() => {
@@ -307,7 +289,7 @@ export default function StudentControl() {
             contact_number: s.contact_number || s.mobile || '',
             mobile: s.mobile || s.contact_number || '',
             branch: s.branch || s.branch_code || 'CSE',
-            college_name: s.college_name || 'VR Siddhartha Engineering College',
+            college_name: s.college_name || 'Unassigned',
             college_id: s.college_id,
             section: s.section || 'A',
             batch: s.batch || (s.year_of_passing ? `Batch ${s.year_of_passing}` : 'Batch 1'),
@@ -326,12 +308,7 @@ export default function StudentControl() {
             extra_time_mins: s.extra_time_mins || 0,
           }));
 
-          // Merge without losing local entries
-          setStudents((prev) => {
-            const apiRolls = new Set(mapped.map((m) => m.hall_ticket.toUpperCase()));
-            const localOnly = prev.filter((p) => !apiRolls.has(p.hall_ticket.toUpperCase()));
-            return [...mapped, ...localOnly];
-          });
+          setStudents(mapped);
         }
       })
       .catch(() => {});

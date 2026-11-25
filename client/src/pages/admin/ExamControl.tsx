@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { listExams, activateExam, createExam, startExam } from '../../lib/api';
+import { API_BASE_URL } from '../../lib/config';
 import AnimatedPage from '../../components/AnimatedPage';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import BrandLogo from '../../components/BrandLogo';
@@ -123,8 +125,36 @@ export default function ExamControl() {
     broadcastExamCommand(selectedControlCode, 'stopped', `EXAM TERMINATED: Central command has ended the assessment. All answers auto-submitted.`);
   };
 
-  const handleBackupCompleteSystem = () => {
-    const backup = generateSystemBackupArchive();
+  const fetchRosterFromServer = async () => {
+    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    const res = await axios.get(`${API_BASE_URL}/api/admin/students`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return (res.data?.students || []).map((s: any) => ({
+      id: String(s.id || s.roll_number),
+      hall_ticket: s.roll_number || s.hall_ticket || '',
+      name: s.name || '',
+      email: s.email || '',
+      college_name: s.college_name || '',
+      branch: s.branch || s.branch_code || '',
+      section: s.section || '',
+      batch: s.batch || '',
+      passout_year: s.passout_year || s.year_of_passing || 0,
+      is_verified: s.is_verified !== false,
+      is_blocked: Boolean(s.is_blocked),
+      block_reason: s.block_reason,
+    }));
+  };
+
+  const handleBackupCompleteSystem = async () => {
+    let roster;
+    try { roster = await fetchRosterFromServer(); }
+    catch (err: any) {
+      setCommandFeedback(`Backup failed — could not read students from the server: ${err?.response?.data?.error || err.message}`);
+      setTimeout(() => setCommandFeedback(null), 6000);
+      return;
+    }
+    const backup = generateSystemBackupArchive(roster);
     const fullBackup = {
       ...backup,
       exams,
@@ -146,8 +176,15 @@ export default function ExamControl() {
     setTimeout(() => setCommandFeedback(null), 5000);
   };
 
-  const handleExportCsv = () => {
-    const csvContent = exportRosterCsvString();
+  const handleExportCsv = async () => {
+    let roster;
+    try { roster = await fetchRosterFromServer(); }
+    catch (err: any) {
+      setCommandFeedback(`Export failed — could not read students from the server: ${err?.response?.data?.error || err.message}`);
+      setTimeout(() => setCommandFeedback(null), 6000);
+      return;
+    }
+    const csvContent = exportRosterCsvString(roster);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

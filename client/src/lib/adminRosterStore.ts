@@ -52,71 +52,6 @@ export interface AdminRosterStudent {
 
 export type RegistrationAuthorityMode = 'ADMIN_ONLY' | 'CLEARANCE_REQUIRED' | 'ACTIVE';
 
-export const DEFAULT_ADMIN_STUDENTS: AdminRosterStudent[] = [];
-
-const ROSTER_STORAGE_KEY = 'admin_roster_students';
-
-/**
- * Retrieves all admin-entered students from authoritative local storage
- */
-export function getAdminRosterStudents(): AdminRosterStudent[] {
-  try {
-    const raw = localStorage.getItem(ROSTER_STORAGE_KEY);
-    if (raw !== null) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed;
-      }
-    }
-  } catch {}
-  return [...DEFAULT_ADMIN_STUDENTS];
-}
-
-/**
- * Completely clears the student roster for a fresh institutional setup
- */
-export function clearAllAdminStudents(): void {
-  try {
-    localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify([]));
-  } catch (err) {
-    console.error('Failed to clear admin students:', err);
-  }
-}
-
-/**
- * Saves updated admin student roster to persistent storage
- */
-export function saveAdminRosterStudents(students: AdminRosterStudent[]): void {
-  try {
-    localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(students));
-  } catch (err) {
-    console.error('Failed to save admin roster students:', err);
-  }
-}
-
-/**
- * Finds an admin-entered student by hall ticket, roll number, or email
- */
-export function findAdminRosterStudent(query: string): AdminRosterStudent | undefined {
-  if (!query || !query.trim()) return undefined;
-  const clean = query.trim().toUpperCase();
-  const cleanEmail = query.trim().toLowerCase();
-  const list = getAdminRosterStudents();
-  return list.find(
-    (s) =>
-      (s.hall_ticket && s.hall_ticket.toUpperCase() === clean) ||
-      (s.roll_number && s.roll_number.toUpperCase() === clean) ||
-      (s.email && s.email.toLowerCase() === cleanEmail)
-  );
-}
-
-/**
- * Checks if a given query matches an admin-provisioned student
- */
-export function isStudentInAdminRoster(query: string): boolean {
-  return !!findAdminRosterStudent(query);
-}
-
 const REG_MODE_KEY = 'admin_registration_mode';
 
 /**
@@ -145,74 +80,9 @@ export function setRegistrationAuthorityMode(mode: RegistrationAuthorityMode): v
 }
 
 /**
- * Approves a pending candidate and issues official examination clearance
- */
-export function approveCandidateRoster(studentId: string, approvedBy = 'Institution Administrator'): void {
-  const list = getAdminRosterStudents();
-  const updated = list.map((s) => {
-    if (s.id === studentId || s.hall_ticket === studentId) {
-      return {
-        ...s,
-        is_verified: true,
-        status: 'approved' as const,
-        approved_at: new Date().toISOString(),
-        approved_by: approvedBy,
-        is_blocked: false,
-      };
-    }
-    return s;
-  });
-  saveAdminRosterStudents(updated);
-}
-
-/**
- * Rejects or blocks a candidate with an administrative audit reason
- */
-export function rejectCandidateRoster(studentId: string, reason: string): void {
-  const list = getAdminRosterStudents();
-  const updated = list.map((s) => {
-    if (s.id === studentId || s.hall_ticket === studentId) {
-      return {
-        ...s,
-        is_verified: false,
-        status: 'rejected' as const,
-        is_blocked: true,
-        block_reason: reason || 'Administrative clearance denied',
-      };
-    }
-    return s;
-  });
-  saveAdminRosterStudents(updated);
-}
-
-/**
- * Bulk-approves all pending candidates awaiting clearance
- */
-export function bulkApproveAllPendingCandidates(approvedBy = 'Institution Administrator'): number {
-  const list = getAdminRosterStudents();
-  let count = 0;
-  const updated = list.map((s) => {
-    if (s.is_verified === false || s.status === 'pending_clearance') {
-      count++;
-      return {
-        ...s,
-        is_verified: true,
-        status: 'approved' as const,
-        approved_at: new Date().toISOString(),
-        approved_by: approvedBy,
-        is_blocked: false,
-      };
-    }
-    return s;
-  });
-  saveAdminRosterStudents(updated);
-  return count;
-}
-
-/**
  * Exports complete administrative system archive (students, rosters, audit logs, exam states)
  */
-export function generateSystemBackupArchive(): {
+export function generateSystemBackupArchive(students: AdminRosterStudent[]): {
   timestamp: string;
   version: string;
   roster_students: AdminRosterStudent[];
@@ -224,7 +94,6 @@ export function generateSystemBackupArchive(): {
     blocked: number;
   };
 } {
-  const students = getAdminRosterStudents();
   const approved = students.filter((s) => s.is_verified !== false && s.status !== 'pending_clearance').length;
   const pending = students.filter((s) => s.is_verified === false || s.status === 'pending_clearance').length;
   const blocked = students.filter((s) => s.is_blocked).length;
@@ -246,8 +115,12 @@ export function generateSystemBackupArchive(): {
 /**
  * Generates formatted CSV string of the authoritative student roster
  */
-export function exportRosterCsvString(): string {
-  const students = getAdminRosterStudents();
+export function exportRosterCsvString(students: AdminRosterStudent[]): string {
+  const cell = (v: unknown) => {
+    let t = String(v ?? '');
+    if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; // neutralise spreadsheet formula injection
+    return `"${t.replace(/"/g, '""')}"`;
+  };
   const headers = [
     'Hall Ticket',
     'Full Name',
@@ -264,18 +137,18 @@ export function exportRosterCsvString(): string {
   ];
 
   const rows = students.map((s) => [
-    `"${s.hall_ticket}"`,
-    `"${s.name}"`,
-    `"${s.email}"`,
-    `"${s.college_name.replace(/"/g, '""')}"`,
-    `"${s.branch}"`,
-    `"${s.section}"`,
-    `"${s.batch}"`,
-    s.passout_year,
-    `"${s.is_verified !== false ? 'APPROVED' : 'PENDING'}"`,
-    `"${s.student_gate_pass || ''}"`,
-    s.is_blocked ? 'YES' : 'NO',
-    `"${(s.block_reason || '').replace(/"/g, '""')}"`,
+    cell(s.hall_ticket),
+    cell(s.name),
+    cell(s.email),
+    cell(s.college_name),
+    cell(s.branch),
+    cell(s.section),
+    cell(s.batch),
+    cell(s.passout_year),
+    cell(s.is_verified !== false ? 'APPROVED' : 'PENDING'),
+    cell(s.student_gate_pass),
+    cell(s.is_blocked ? 'YES' : 'NO'),
+    cell(s.block_reason),
   ]);
 
   return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
