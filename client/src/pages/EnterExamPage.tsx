@@ -7,7 +7,7 @@ import SiteHeader from '../components/SiteHeader'
 import SiteFooter from '../components/SiteFooter'
 import BrandLogo from '../components/BrandLogo'
 import ServerWakeupModal from '../components/ServerWakeupModal'
-import { IconLock, IconAlert, IconShield, IconFileText } from '../components/icons/HumanIcons'
+import { IconLock, IconAlert, IconShield, IconFileText, IconFlash } from '../components/icons/HumanIcons'
 
 function ExamEntryBg() {
   return (
