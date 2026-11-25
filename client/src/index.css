@@ -6,7 +6,7 @@
    High-Contrast Sapphire & Cyan Theme Architecture
    ============================================================ */
 :root {
-  /* ─── OFFICIAL HACKPRADESH COLOR PALETTE ─── */
+  /* ─── OFFICIAL LOGICWHILE COLOR PALETTE ─── */
   --hp-cyan:        #00b4d8;
   --hp-cyan-bright: #00d2ff;
   --hp-blue:        #0284c7;
@@ -1926,7 +1926,7 @@ div[role="radio"]:hover,
 }
 
 /* ============================================================
-   HACKPRADESH 2026 UI COMPONENTS & DESIGN PATTERNS
+   LOGICWHILE 2026 UI COMPONENTS & DESIGN PATTERNS
    Split Hero, HUD Countdown, Badges, Infinite Marquee,
    Tracks Grid, Timeline & Stage Elements
    ============================================================ */

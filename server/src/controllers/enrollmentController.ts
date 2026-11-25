@@ -109,7 +109,9 @@ export async function enrollParticipant(req: Request, res: Response): Promise<vo
     return;
   }
 
-  console.log(`\n==========================================\n🔑 [DEMO OTP] Recipient: ${email} | Code: ${otp}\n==========================================\n`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`\n==========================================\n🔑 [DEV OTP] Recipient: ${email} | Code: ${otp}\n==========================================\n`);
+  }
 
   res.status(200).json({
     success: true,

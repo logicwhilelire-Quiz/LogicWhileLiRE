@@ -260,6 +260,7 @@ export default function EnterExamPage() {
                   />
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
                     <span style={{ fontSize: '0.73rem', color: '#64748B' }}>Provided by your administrator or examination department</span>
+                    {import.meta.env.DEV && (
                     <button
                       type="button"
                       onClick={() => {
@@ -282,6 +283,7 @@ export default function EnterExamPage() {
                     >
                       <IconFlash size={12} color="#EAA812" /> Autofill FSD2026 (Demo)
                     </button>
+                    )}
                   </div>
                 </div>
 

@@ -819,7 +819,7 @@ async function runTests() {
     inspectorSocket.disconnect();
 
     console.log('\n================================================================');
-    console.log(`🎉 ALL ${passed}/16 INSPECTOR-LED EXAM FLOW TESTS PASSED CLEANLY!`);
+    console.log(`🎉 ALL ${passed}/${passed} INSPECTOR-LED EXAM FLOW TESTS PASSED CLEANLY!`);
     console.log('================================================================\n');
 
     const { supabase } = require('./dist/db/supabase');

@@ -217,7 +217,7 @@ export async function bootstrapSuperAdmin(): Promise<void> {
     const passwordHash = await bcrypt.hash(password, 12);
 
     // 5. Generate fresh TOTP 2FA secret (RFC 6238)
-    console.log('🛡️  Generating fresh TOTP 2FA secret (AES-256-CTR encrypted at rest)...');
+    console.log('🛡️  Generating fresh TOTP 2FA secret (AES-256-GCM encrypted at rest)...');
     const totpPlainSecret = generateTotpSecret();
     const totpEncryptedSecret = encryptTotpSecret(totpPlainSecret);
     const otpauthUri = generateTotpUri(email, 'LogicWhileLiRE', totpPlainSecret);

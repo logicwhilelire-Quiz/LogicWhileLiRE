@@ -1,7 +1,7 @@
 /**
  * LogicWhileLiRE — TOTP 2FA Service
  * Mandatory for admin and inspector roles.
- * TOTP secrets are AES-256-CTR encrypted at rest using TOTP_ENCRYPTION_KEY env var.
+ * TOTP secrets are AES-256-GCM encrypted at rest (legacy CTR still readable) using TOTP_ENCRYPTION_KEY env var.
  *
  * Uses otpauth-compliant base32 secrets (hotp/totp standard).
  * Compatible with: Google Authenticator, Authy, Bitwarden, and any RFC 6238 app.

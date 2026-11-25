@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 
 /**
  * CosmicCanvas — Interactive Particle Constellation Canvas
- * Ported directly from HackPradesh 2026 design system:
+ * Ported directly from LogicWhile 2026 design system:
  * - Dynamic particle network with logo palette colors (cyan, blue, sapphire, sun gold, solar flame orange)
  * - Mouse repulsion with soft radius falloff
  * - Distance-based connecting filament lines

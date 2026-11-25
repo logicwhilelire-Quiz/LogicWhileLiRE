@@ -6,7 +6,6 @@ import { API_BASE_URL } from '../lib/config';
 import BrandLogo from '../components/BrandLogo';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import ServerWakeupModal from '../components/ServerWakeupModal';
-import { findAdminRosterStudent, type AdminRosterStudent } from '../lib/adminRosterStore';
 import { IconUsers, IconAward, IconShield, IconRadio, IconEye, IconKey, IconCheck, IconAlert } from '../components/icons/HumanIcons';
 
 /* ── Animated background ── */
@@ -84,29 +83,6 @@ export default function StudentLoginPage() {
     return () => clearInterval(iv);
   }, [loading]);
 
-  function loginWithAdminStudent(student: AdminRosterStudent) {
-    if (student.is_blocked) { setError('Account suspended by administration.'); return; }
-    if (student.is_verified === false || student.status === 'pending_clearance') {
-      setError('Account pending clearance from administrator.'); return;
-    }
-    const studentUser = {
-      id: student.id, name: student.name,
-      first_name: student.first_name || student.name.split(' ')[0],
-      last_name: student.last_name || student.name.split(' ')[1] || '',
-      email: student.email,
-      roll_number: student.hall_ticket || student.roll_number,
-      hall_ticket: student.hall_ticket || student.roll_number,
-      college_id: student.college_id || 1, college_name: student.college_name,
-      branch_code: student.branch || student.branch_code || 'CSE',
-      section: student.section,
-      section_id: student.section_id || `sec-${(student.branch || 'cse').toLowerCase()}-${student.section.toLowerCase()}`,
-      year_of_passing: student.passout_year, passout_year: student.passout_year, batch: student.batch,
-    };
-    localStorage.setItem('student_token', `token-admin-roster-${student.id}`);
-    localStorage.setItem('student_user', JSON.stringify(studentUser));
-    navigate(redirectTarget);
-  }
-
   async function handleSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault();
     const loginQuery = form.login.trim();
@@ -121,12 +97,6 @@ export default function StudentLoginPage() {
       navigate(redirectTarget);
       return;
     } catch (err: any) {
-      const matchedAdminStudent = findAdminRosterStudent(loginQuery);
-      if (matchedAdminStudent && matchedAdminStudent.is_verified !== false && matchedAdminStudent.status === 'approved') {
-        setIsWarmingUp(false);
-        loginWithAdminStudent(matchedAdminStudent);
-        return;
-      }
       const isColdStart =
         err?.code === 'ECONNABORTED' ||
         err?.message?.includes('timeout') ||
