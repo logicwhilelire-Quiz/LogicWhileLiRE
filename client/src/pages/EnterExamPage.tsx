@@ -250,7 +250,7 @@ export default function EnterExamPage() {
                   <label htmlFor="examCode" style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#EAA812', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 7 }}>1. EXAM CODE *</label>
                   <input
                     id="examCode" type="text" required
-                    placeholder="Enter Exam Code (e.g. CS2026-A)"
+                    placeholder="Enter Exam Code (e.g. FSD2026)"
                     value={form.examCode}
                     onChange={e => handleChange('examCode', e.target.value)}
                     autoComplete="off" spellCheck={false} maxLength={20}
@@ -258,7 +258,31 @@ export default function EnterExamPage() {
                     onFocus={e => { e.target.style.borderColor = '#EAA812'; e.target.style.boxShadow = '0 0 0 3px rgba(234,168,18,0.2)'; }}
                     onBlur={e => { e.target.style.borderColor = 'rgba(234,168,18,0.3)'; e.target.style.boxShadow = 'none'; }}
                   />
-                  <div style={{ fontSize: '0.73rem', color: '#475569', marginTop: 5 }}>Provided by your administrator or examination department</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                    <span style={{ fontSize: '0.73rem', color: '#64748B' }}>Provided by your administrator or examination department</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForm({ examCode: 'FSD2026', hallTicket: '2201A0501' });
+                        setError('');
+                      }}
+                      style={{
+                        background: 'rgba(234,168,18,0.12)',
+                        border: '1px solid rgba(234,168,18,0.35)',
+                        borderRadius: 6,
+                        color: '#EAA812',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        padding: '3px 8px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4
+                      }}
+                    >
+                      <IconFlash size={12} color="#EAA812" /> Autofill FSD2026 (Demo)
+                    </button>
+                  </div>
                 </div>
 
                 {/* Hall Ticket */}

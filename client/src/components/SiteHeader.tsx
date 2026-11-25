@@ -52,19 +52,23 @@ export default function SiteHeader() {
 
   const isLoggedIn = !!studentUser;
 
-  // Clean, Uncluttered Institutional Navigation Links: Student Portal, Admin, Control / Staff Login
+  // Clean, Uncluttered Institutional Navigation Links: All Core Portals
   const navLinks = isLoggedIn
     ? [
         { label: 'Home', to: '/' },
+        { label: 'Enter Exam', to: '/enter-exam' },
+        { label: 'Practice Arena', to: '/practice' },
         { label: 'Student Portal', to: '/student/dashboard' },
-        { label: 'Control / Staff Login', to: '/inspector' },
-        { label: 'Admin', to: '/admin' },
+        { label: 'Inspector Desk', to: '/inspector' },
+        { label: 'Admin Hub', to: '/admin' },
       ]
     : [
         { label: 'Home', to: '/' },
+        { label: 'Enter Exam', to: '/enter-exam' },
+        { label: 'Practice Arena', to: '/practice' },
         { label: 'Student Portal', to: '/login' },
-        { label: 'Control / Staff Login', to: '/inspector' },
-        { label: 'Admin', to: '/admin' },
+        { label: 'Inspector Desk', to: '/inspector' },
+        { label: 'Admin Hub', to: '/admin' },
       ];
 
   return (
