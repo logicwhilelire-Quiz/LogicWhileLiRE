@@ -154,13 +154,9 @@ export default function StudentDashboardPage() {
           const dedupedExams = rawExams.filter((ex) => {
             const codeKey = (ex.code || '').trim().toUpperCase();
             const idKey = String(ex.id || '').trim().toLowerCase();
-            const titleKey = (ex.title || '').trim().toLowerCase();
-            if (codeKey && seenKeys.has(`code:${codeKey}`)) return false;
-            if (idKey && seenKeys.has(`id:${idKey}`)) return false;
-            if (titleKey && seenKeys.has(`title:${titleKey}`)) return false;
-            if (codeKey) seenKeys.add(`code:${codeKey}`);
-            if (idKey) seenKeys.add(`id:${idKey}`);
-            if (titleKey) seenKeys.add(`title:${titleKey}`);
+            const uniqueKey = codeKey ? `code:${codeKey}` : `id:${idKey}`;
+            if (seenKeys.has(uniqueKey)) return false;
+            seenKeys.add(uniqueKey);
             return true;
           });
           setUpcomingExams(dedupedExams);
@@ -233,14 +229,38 @@ export default function StudentDashboardPage() {
         navigate(`/instructions/${encodeURIComponent(targetCode)}`, {
           state: { hallTicket },
         });
-      } else {
-        setLaunchError('No exam available for your section or invalid exam code.');
       }
     } catch (err: any) {
+      const errCode = err.response?.data?.code;
+      const errMsg = err.response?.data?.error || err.response?.data?.message;
+
+      // When the exam has been scheduled and section-verified but waiting for inspector start:
+      if (errCode === 'EXAM_NOT_STARTED_BY_INSPECTOR' || errCode === 'EXAM_NOT_STARTED') {
+        const attemptData = JSON.stringify({
+          examCode: targetCode,
+          hallTicket: hallTicket,
+          studentName: student?.name || hallTicket,
+          examDetails: {
+            exam_name: targetCode,
+          },
+        });
+        localStorage.setItem('logicwhilelire_attempt', attemptData);
+        localStorage.setItem('lw_attempt', attemptData);
+
+        navigate(`/contest/${encodeURIComponent(targetCode)}/waiting-lobby`, {
+          state: {
+            candidate: student,
+            hallTicket,
+            examCode: targetCode,
+          },
+        });
+        return;
+      }
+
       setLaunchError(
         err.response?.status === 404
-          ? 'No exam available or exam code does not exist for your section.'
-          : (err.response?.data?.message || 'Failed to verify exam eligibility.')
+          ? (errMsg || 'No exam available or exam code does not exist for your section.')
+          : (errMsg || 'Failed to verify exam eligibility.')
       );
     }
   };
@@ -620,10 +640,10 @@ export default function StudentDashboardPage() {
                   <span style={{ fontSize: '1.3rem' }}>🏆</span>
                 </div>
                 <div style={{ fontSize: '2rem', fontWeight: 900, color: '#facc15' }}>
-                  #{rank?.college_rank || 1}
+                  {pastResults.length > 0 && rank?.college_rank ? `#${rank.college_rank}` : '—'}
                 </div>
                 <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: 4 }}>
-                  In your collegiate department
+                  {pastResults.length > 0 ? 'In your collegiate department' : 'No completed assessments'}
                 </div>
               </div>
 
@@ -643,10 +663,10 @@ export default function StudentDashboardPage() {
                   <span style={{ fontSize: '1.3rem' }}>🌐</span>
                 </div>
                 <div style={{ fontSize: '2rem', fontWeight: 900, color: '#60a5fa' }}>
-                  #{rank?.overall_rank || 1}
+                  {pastResults.length > 0 && rank?.overall_rank ? `#${rank.overall_rank}` : '—'}
                 </div>
                 <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: 4 }}>
-                  Top {100 - (rank?.percentile || 99)}% across all cohorts
+                  {pastResults.length > 0 && rank?.percentile ? `Top ${100 - rank.percentile}% across all cohorts` : 'Pending completed assessments'}
                 </div>
               </div>
 
@@ -666,10 +686,10 @@ export default function StudentDashboardPage() {
                   <span style={{ fontSize: '1.3rem' }}>📊</span>
                 </div>
                 <div style={{ fontSize: '2rem', fontWeight: 900, color: '#c084fc' }}>
-                  {rank?.average_score || 90}%
+                  {pastResults.length > 0 && rank?.average_score !== undefined && rank?.average_score !== null ? `${rank.average_score}%` : '—'}
                 </div>
                 <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: 4 }}>
-                  Normalized accuracy metric
+                  {pastResults.length > 0 ? 'Normalized accuracy metric' : 'No verified submissions yet'}
                 </div>
               </div>
 

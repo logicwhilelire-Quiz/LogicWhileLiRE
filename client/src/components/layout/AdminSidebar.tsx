@@ -52,12 +52,12 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
     // Data Flow: 1. College -> 2. Branch/Year/Section -> 3. Students -> 4. Exams -> 5. Questions
     { id: 'colleges', label: '1. Colleges & Institutions', path: '/admin/colleges', icon: '🏛️', roles: ['super_admin', 'admin'] },
     { id: 'hierarchy', label: '2. Structure (Branch/Year/Sec)', path: '/admin/hierarchy', icon: '🌳', roles: ['super_admin', 'admin'] },
-    { id: 'students', label: '3. Student Management', path: '/admin/students', icon: '👥', roles: ['super_admin', 'admin', 'faculty'] },
-    { id: 'exams', label: '4. Exam Control', path: '/admin/exams', icon: '⚙️', roles: ['super_admin', 'admin', 'faculty'] },
+    { id: 'students', label: '3. Student Management', path: '/admin/students', icon: '👥', roles: ['super_admin', 'admin'] },
+    { id: 'exams', label: '4. Exam Control', path: '/admin/exams', icon: '⚙️', roles: ['super_admin', 'admin'] },
     { id: 'create', label: 'Create Exam', path: '/admin/create-exam', icon: '➕', roles: ['super_admin', 'admin'] },
     { id: 'exam-codes', label: 'Exam Codes', path: '/admin/exam-codes', icon: '🔑', roles: ['super_admin', 'admin'] },
-    { id: 'questions', label: '5. Question Bank', path: '/admin/questions', icon: '📝', roles: ['super_admin', 'admin', 'faculty'] },
-    { id: 'import', label: 'Import Questions (Excel)', path: '/admin/import', icon: '📥', roles: ['super_admin', 'admin', 'faculty'] },
+    { id: 'questions', label: '5. Question Bank', path: '/admin/questions', icon: '📝', roles: ['super_admin', 'admin'] },
+    { id: 'import', label: 'Import Questions (Excel)', path: '/admin/import', icon: '📥', roles: ['super_admin', 'admin'] },
 
     // Telemetry & Invigilation
     { id: 'inspector', label: 'Inspector Live Console', path: '/admin/inspector', icon: '📡', roles: ['super_admin', 'admin', 'inspector'] },

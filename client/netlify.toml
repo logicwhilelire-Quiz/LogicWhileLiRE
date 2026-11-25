@@ -12,7 +12,7 @@
   from = "/api/*"
   to = "https://logicwhilelire-api.onrender.com/api/:splat"
   status = 200
-  force = false
+  force = true
 
 # SPA Fallback: Route all non-asset paths to index.html with 200 status
 # NOTE: Assets (JS/CSS/images) must NOT be caught here — Netlify serves them directly from dist/
@@ -30,7 +30,7 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(self), microphone=(self), display-capture=(self)"
+    Permissions-Policy = "camera=(self), display-capture=(self)"
 
 # index.html must NEVER be cached so deployments are picked up immediately
 [[headers]]

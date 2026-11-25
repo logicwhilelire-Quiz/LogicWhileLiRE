@@ -88,12 +88,35 @@ export function isStudentEligibleForExam(student: any, exam: any): boolean {
     }
   }
 
-  // 2. Branch Targeting
+  // 2. Branch Targeting (with robust normalization for full names and acronyms)
   const examBranch = (exam.branch || exam.department || '').trim().toUpperCase();
   const studentBranch = (student.branch_code || student.branch || student.department || '').trim().toUpperCase();
 
   if (examBranch && examBranch !== 'ALL' && examBranch !== 'ANY') {
-    if (!studentBranch || studentBranch !== examBranch) {
+    const normalizeBranch = (b: string): string => {
+      if (!b) return '';
+      const u = b.toUpperCase().trim();
+      const p = u.match(/\(([A-Z0-9]+)\)/);
+      if (p) return p[1];
+      if (u.includes('COMP') || u.includes('CSE')) return 'CSE';
+      if (u.includes('AIML') || u.includes('CSM') || (u.includes('ARTIFICIAL') && u.includes('MACHINE'))) return 'CSM';
+      if (u.includes('DATA SCIENCE') || u.includes('CSD')) return 'CSD';
+      if (u.includes('BUSINESS') || u.includes('CSBS')) return 'CSBS';
+      if (u.includes('INFO') || u === 'IT') return 'IT';
+      if (u.includes('COMMUNICATION') || u === 'ECE') return 'ECE';
+      if (u.includes('ELECTRICAL') || u === 'EEE') return 'EEE';
+      if (u.includes('MECH')) return 'MECH';
+      if (u.includes('CIVIL')) return 'CIVIL';
+      return u.replace(/[^A-Z0-9]/g, '');
+    };
+
+    const branchMatch =
+      studentBranch === examBranch ||
+      normalizeBranch(studentBranch) === normalizeBranch(examBranch) ||
+      studentBranch.includes(examBranch) ||
+      examBranch.includes(studentBranch);
+
+    if (!studentBranch || !branchMatch) {
       return false;
     }
   }
@@ -133,12 +156,28 @@ export function isStudentEligibleForExam(student: any, exam: any): boolean {
     const studentSection = String(student.section || student.section_id || student.section_name || '').trim().toUpperCase();
     const studentSectionId = String(student.section_id || '').trim().toUpperCase();
 
+    const normalizeSec = (s: string): string => {
+      if (!s) return '';
+      const clean = s.toUpperCase().trim().replace(/^SECTION\s*/i, '').replace(/^SEC\s*[-_]?/i, '');
+      const parts = clean.split(/[-_]/);
+      return parts[parts.length - 1].trim();
+    };
+
     const matchesSection = targetedSections.some((target) => {
       // Direct match on section name (e.g. "A" or "SECTION A") or section ID
       if (studentSection === target || studentSectionId === target) return true;
       if (studentSection.replace(/^SECTION\s*/i, '') === target.replace(/^SECTION\s*/i, '')) return true;
       if (studentSectionId && studentSectionId.endsWith(`-${target.toLowerCase()}`)) return true;
       if (studentSection && (target.endsWith(`-${studentSection}`) || target.endsWith(`-${studentSection.toLowerCase()}`))) return true;
+
+      // Smart core section letter normalization (e.g. CSE-A, Section A, Sec_A -> A)
+      const normStudent = normalizeSec(studentSection);
+      const normTarget = normalizeSec(target);
+      if (normStudent && normTarget && normStudent === normTarget) return true;
+
+      const normStudentId = normalizeSec(studentSectionId);
+      if (normStudentId && normTarget && normStudentId === normTarget) return true;
+
       return false;
     });
 

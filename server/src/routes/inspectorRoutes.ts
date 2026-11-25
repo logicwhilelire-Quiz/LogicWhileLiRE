@@ -46,28 +46,7 @@ export interface OutboundEmailRecord {
 }
 
 const AUDIT_LEDGER: AuditEvent[] = [];
-const EMAIL_DISPATCH_LEDGER: OutboundEmailRecord[] = process.env.NODE_ENV === 'production' ? [] : [
-  {
-    id: 'eml-init-1',
-    type: 'invitation',
-    recipient: 'candidate01@example.com',
-    recipientName: 'Candidate 01',
-    examCode: 'DEMO123',
-    subject: '🎓 Official Hall Ticket & Passcode — DEMO123',
-    status: 'DELIVERED',
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: 'eml-init-2',
-    type: 'otp',
-    recipient: 'candidate02@example.com',
-    recipientName: 'Candidate 02',
-    examCode: 'DEMO123',
-    subject: '🔐 Your Verification Code: 491024 — DEMO123',
-    status: 'DELIVERED',
-    timestamp: new Date(Date.now() - 2800000).toISOString(),
-  },
-];
+const EMAIL_DISPATCH_LEDGER: OutboundEmailRecord[] = [];
 
 /**
  * POST /api/v1/inspector/broadcast

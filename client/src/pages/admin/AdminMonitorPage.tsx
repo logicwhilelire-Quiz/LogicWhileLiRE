@@ -42,54 +42,13 @@ function playWarningChime() {
   } catch {}
 }
 
-/* ── 100 Live Students Cohort Generator ────────────────── */
-function generate100Students(examCode: string): StudentTile[] {
-  const departments = ['CSE', 'ECE', 'IT', 'AI&DS', 'MECH']
-  const students: StudentTile[] = []
-
-  for (let i = 1; i <= 100; i++) {
-    const pad = String(i).padStart(3, '0')
-    const dept = departments[i % departments.length]
-    const hallTicket = `2201A${dept === 'CSE' ? '05' : dept === 'IT' ? '12' : '04'}${pad}`
-
-    // Realistic distribution: 73 active, 15 idle, 8 flagged (cheating), 4 offline (submitted)
-    let status: StudentTile['status'] = 'active'
-    let flagCount = 0
-    let score = Math.floor(45 + Math.random() * 50)
-
-    if (i % 12 === 0) {
-      status = 'cheating'
-      flagCount = Math.floor(3 + Math.random() * 4)
-    } else if (i % 7 === 0) {
-      status = 'idle'
-      flagCount = Math.random() > 0.5 ? 1 : 0
-    } else if (i > 96) {
-      status = 'offline'
-      score = Math.floor(75 + Math.random() * 25)
-    }
-
-    students.push({
-      id: hallTicket,
-      name: `Candidate ${pad}`,
-      hallTicket,
-      status,
-      score,
-      flagCount,
-      joinedAt: new Date(Date.now() - Math.floor(Math.random() * 3600000)).toISOString(),
-      lastSeen: new Date().toISOString(),
-      currentQuestion: Math.floor(1 + Math.random() * 15),
-    })
-  }
-
-  return students
-}
 
 /* ── Main Monitor Component ───────────────────────────── */
 export default function AdminMonitorPage() {
   const { examId } = useParams<{ examId: string }>()
   const navigate = useNavigate()
 
-  const defaultExamCode = (examId || 'DEMO123').toUpperCase()
+  const defaultExamCode = (examId || '').toUpperCase()
   const [examCode, setExamCode] = useState(defaultExamCode)
   const [inputCode, setInputCode] = useState(defaultExamCode)
   const [students, setStudents] = useState<StudentTile[]>([])
@@ -97,7 +56,6 @@ export default function AdminMonitorPage() {
   const [selectedStudent, setSelectedStudent] = useState<StudentTile | null>(null)
   const [connected, setConnected] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [isSimulating, setIsSimulating] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [actionNotice, setActionNotice] = useState('')
   const [timelineCandidate, setTimelineCandidate] = useState<StudentTile | null>(null)
@@ -206,9 +164,7 @@ export default function AdminMonitorPage() {
         })
         setStudents(tiles)
       } else {
-        // Auto-seed initial cohort for DEMO123 / DEMO100
-        const cohort = generate100Students(code)
-        setStudents(cohort)
+        setStudents([])
       }
 
       if (violations && violations.length > 0) {
@@ -217,9 +173,8 @@ export default function AdminMonitorPage() {
 
       setConnected(true)
     } catch (err) {
-      console.error('[Monitor] Snapshot load fallback', err)
-      const cohort = generate100Students(code)
-      setStudents(cohort)
+      console.error('[Monitor] Snapshot load error', err)
+      setStudents([])
       setConnected(true)
     } finally {
       setLoading(false)
@@ -371,79 +326,7 @@ export default function AdminMonitorPage() {
     }
   }, [examCode, subscribe])
 
-  /* ── 100 Live Students Cohort Generator ── */
-  const handleGenerateCohort = () => {
-    const cohort = generate100Students(examCode)
-    setStudents(cohort)
-    setActionNotice(`⚡ 100 Students generated for ${examCode}!`)
-    setTimeout(() => setActionNotice(''), 3000)
-  }
 
-  /* ── Interactive Live Simulation Toggle ── */
-  const toggleSimulation = () => {
-    if (isSimulating) {
-      if (simTimerRef.current) clearInterval(simTimerRef.current)
-      simTimerRef.current = null
-      setIsSimulating(false)
-      setActionNotice('⏸️ Simulation paused')
-      setTimeout(() => setActionNotice(''), 2500)
-      return
-    }
-
-    if (students.length === 0) {
-      handleGenerateCohort()
-    }
-
-    setIsSimulating(true)
-    setActionNotice('▶️ 100-student live simulation active!')
-    setTimeout(() => setActionNotice(''), 3000)
-
-    const eventTypes = ['tab_switch', 'multiple_faces', 'no_face', 'copy_paste']
-
-    simTimerRef.current = setInterval(() => {
-      setStudents(prev => {
-        if (prev.length === 0) return prev
-        const clone = [...prev]
-        const idx = Math.floor(Math.random() * clone.length)
-        const target = { ...clone[idx] }
-
-        const actionRand = Math.random()
-
-        if (actionRand < 0.35) {
-          // Student answers question & score updates
-          target.status = 'active'
-          target.score = Math.min(100, (target.score || 50) + Math.floor(Math.random() * 5))
-          target.currentQuestion = Math.min(15, (target.currentQuestion || 1) + 1)
-        } else if (actionRand < 0.65) {
-          // Cheat violation occurs
-          const violationType = eventTypes[Math.floor(Math.random() * eventTypes.length)]
-          target.flagCount = (target.flagCount || 0) + 1
-          if (target.flagCount >= 3) {
-            target.status = 'cheating'
-          }
-          recordEvent({
-            id: `sim-ev-${Date.now()}`,
-            candidate_id: target.hallTicket || target.name,
-            event_type: violationType,
-            metadata: { simulated: true },
-            created_at: new Date().toISOString(),
-          })
-        } else if (actionRand < 0.85) {
-          // Student goes idle or active
-          target.status = target.status === 'active' ? 'idle' : 'active'
-        } else {
-          // Student submits exam
-          if (target.status !== 'offline') {
-            target.status = 'offline'
-            target.score = Math.floor(65 + Math.random() * 35)
-          }
-        }
-
-        clone[idx] = target
-        return clone
-      })
-    }, 2200)
-  }
 
   /* ── Send Warning to Candidate ── */
   const handleSendWarning = (student: StudentTile) => {
@@ -758,7 +641,7 @@ export default function AdminMonitorPage() {
           {/* Quick exam picker + Action Buttons */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', gap: 4 }}>
-              {['DEMO123', 'DEMO100', 'CS2026'].map(code => (
+              {availableExamCodes.slice(0, 4).map(code => (
                 <button
                   key={code}
                   onClick={() => { setInputCode(code); subscribe(code) }}
@@ -980,40 +863,23 @@ export default function AdminMonitorPage() {
               : 'Connecting to Realtime stream...'}
           </div>
 
-          {/* 100 Cohort Simulator Actions */}
+          {/* Telemetry Actions */}
           <div style={{ display: 'flex', gap: 8 }}>
             <motion.button
-              onClick={handleGenerateCohort}
+              onClick={() => examCode && loadSnapshot(examCode)}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               style={{
                 padding: '6px 14px', borderRadius: 999,
                 fontSize: '0.76rem', fontWeight: 700,
-                border: '1px solid rgba(43,127,255,0.4)',
-                background: 'rgba(43,127,255,0.1)',
-                color: 'var(--color-primary)',
-                cursor: 'pointer',
-              }}
-            >
-              ⚡ 100 Students Cohort
-            </motion.button>
-
-            <motion.button
-              onClick={toggleSimulation}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              style={{
-                padding: '6px 14px', borderRadius: 999,
-                fontSize: '0.76rem', fontWeight: 700,
-                border: '1px solid',
-                borderColor: isSimulating ? '#10B981' : 'rgba(245,158,11,0.5)',
-                background: isSimulating ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.1)',
-                color: isSimulating ? '#10B981' : '#F59E0B',
+                border: '1px solid rgba(56,189,248,0.5)',
+                background: 'rgba(56,189,248,0.12)',
+                color: '#38BDF8',
                 cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 6,
               }}
             >
-              <span style={{ fontSize: '0.75rem' }}>{isSimulating ? '⏸️ Stop Sim' : '▶️ Live Simulation'}</span>
+              <span style={{ fontSize: '0.75rem' }}>🔄 Refresh Telemetry</span>
             </motion.button>
           </div>
         </div>

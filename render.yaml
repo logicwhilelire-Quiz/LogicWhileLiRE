@@ -17,12 +17,14 @@ services:
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
+      - key: NODE_VERSION
+        value: 24.22.1
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3001
       - key: VIOLATION_THRESHOLD
-        value: 2
+        value: 5
       - key: JWT_EXPIRY
         value: 3h
       - key: OTP_EXPIRY_MINUTES
@@ -48,7 +50,7 @@ services:
       - key: ADMIN_PASSWORD_HASH
         sync: false
       - key: INITIAL_ADMIN_EMAIL
-        sync: false
+        value: logicwhilelire@gmail.com
       - key: RESEND_API_KEY
         sync: false # Primary email transport — Resend HTTPS API key
       - key: EMAIL_DAILY_CAP
@@ -74,13 +76,15 @@ services:
       - key: OTP_FROM_EMAIL
         sync: false
       - key: ADMIN_ALERT_EMAIL
-        sync: false # Destination for proctoring violations & critical alerts
+        value: logicwhilelire@gmail.com
       - key: ADMIN_EMAIL
-        sync: false # Admin email for proctoring monitor notifications
+        value: logicwhilelire@gmail.com
       - key: SUPPORT_EMAIL
-        sync: false # Support contact email displayed in email footers
+        value: logicwhilelire@gmail.com
       - key: INSPECTOR_ALERT_EMAIL
-        sync: false # Email for proctoring inspector alerts
+        value: logicwhilelire@gmail.com
+      - key: ADMIN_PHONE
+        value: "+919493734553"
       - key: STUDENT_JWT_EXPIRY
         value: "4h"
       - key: BACKUP_DIR
@@ -93,6 +97,10 @@ services:
         value: smtp-relay.brevo.com
       - key: BREVO_SMTP_PORT
         value: "587"
+      - key: BREVO_API_KEY
+        sync: false
+      - key: SLOW_QUERY_THRESHOLD_MS
+        value: "500"
 
 
   # ——————————————————————————————————————————
@@ -109,6 +117,8 @@ services:
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
+      - key: NODE_VERSION
+        value: 24.22.1
       - key: NODE_ENV
         value: staging
       - key: PORT
@@ -116,7 +126,7 @@ services:
       - key: DEMO_MODE
         value: "false"
       - key: VIOLATION_THRESHOLD
-        value: 2
+        value: 5
       - key: JWT_EXPIRY
         value: 3h
       - key: OTP_EXPIRY_MINUTES
@@ -142,7 +152,7 @@ services:
       - key: ADMIN_USERNAME
         sync: false
       - key: INITIAL_ADMIN_EMAIL
-        sync: false
+        value: logicwhilelire@gmail.com
       - key: ADMIN_PASSWORD_HASH
         sync: false
       - key: RESEND_API_KEY
@@ -166,13 +176,15 @@ services:
       - key: OTP_FROM_EMAIL
         sync: false
       - key: ADMIN_ALERT_EMAIL
-        sync: false
+        value: logicwhilelire@gmail.com
       - key: ADMIN_EMAIL
-        sync: false
+        value: logicwhilelire@gmail.com
       - key: SUPPORT_EMAIL
-        sync: false
+        value: logicwhilelire@gmail.com
       - key: INSPECTOR_ALERT_EMAIL
-        sync: false
+        value: logicwhilelire@gmail.com
+      - key: ADMIN_PHONE
+        value: "+919493734553"
       - key: STUDENT_JWT_EXPIRY
         value: "4h"
       - key: BACKUP_DIR
@@ -185,4 +197,7 @@ services:
         value: smtp-relay.brevo.com
       - key: BREVO_SMTP_PORT
         value: "587"
-
+      - key: BREVO_API_KEY
+        sync: false
+      - key: SLOW_QUERY_THRESHOLD_MS
+        value: "500"

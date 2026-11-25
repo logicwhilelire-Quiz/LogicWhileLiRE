@@ -121,31 +121,20 @@ router.get('/metadata', async (_req, res) => {
       formattedBranches.push(b);
     }
 
-    const defaultYears = [2026, 2027, 2028, 2029, 2030];
     const formattedYears = Array.from(
       new Set(
         (cohorts || [])
           .map((ch: any) => ch.year_of_passing || ch.yop)
           .filter(Boolean)
           .concat((academicYears || []).map((ay: any) => parseInt(ay.year || ay.year_name, 10)).filter(Boolean))
-          .concat(defaultYears)
       )
     ).sort((a: number, b: number) => a - b);
 
-    const defaultSections = [
-      { id: 'sec-a', name: 'A' },
-      { id: 'sec-b', name: 'B' },
-      { id: 'sec-c', name: 'C' },
-      { id: 'sec-d', name: 'D' },
-      { id: 'sec-e', name: 'E' },
-    ];
-    const formattedSections = (sections && sections.length > 0)
-      ? sections.map((s: any) => ({
-          id: s.id,
-          cohort_id: s.cohort_id,
-          name: s.name || s.section_name || 'A',
-        }))
-      : defaultSections;
+    const formattedSections = (sections || []).map((s: any) => ({
+      id: s.id,
+      cohort_id: s.cohort_id,
+      name: s.name || s.section_name || 'Section A',
+    }));
 
     res.json({
       success: true,

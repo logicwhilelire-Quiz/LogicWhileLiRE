@@ -101,14 +101,18 @@ export default function StudentLoginPage() {
     if (!loginQuery) { setError('Please enter your hall ticket or email'); return; }
     if (!form.password) { setError('Please enter your password'); return; }
     setLoading(true); setError('');
-    const matchedAdminStudent = findAdminRosterStudent(loginQuery);
-    if (matchedAdminStudent) { loginWithAdminStudent(matchedAdminStudent); setLoading(false); return; }
     try {
       const res = await studentLogin({ login: loginQuery, password: form.password });
       if (res.data?.token) localStorage.setItem('student_token', res.data.token);
       if (res.data?.student) localStorage.setItem('student_user', JSON.stringify(res.data.student));
       navigate(redirectTarget);
+      return;
     } catch (err: any) {
+      const matchedAdminStudent = findAdminRosterStudent(loginQuery);
+      if (matchedAdminStudent && matchedAdminStudent.is_verified !== false && matchedAdminStudent.status === 'approved') {
+        loginWithAdminStudent(matchedAdminStudent);
+        return;
+      }
       if (err?.code === 'ECONNABORTED' || err?.message?.includes('timeout') || err?.message?.includes('Network Error')) {
         setError('Server is warming up or temporarily unreachable. Please retry in a few moments.');
       } else {

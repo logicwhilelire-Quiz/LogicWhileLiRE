@@ -163,9 +163,8 @@ export default function EnterExamPage() {
         })
         return
       }
-      const msg = err instanceof Error
-        ? err.message
-        : (err as { response?: { data?: ApiError } }).response?.data?.message || 'Entry failed. Please check your credentials.'
+      const resData = (err as any)?.response?.data
+      const msg = resData?.error || resData?.message || (err instanceof Error ? err.message : 'Entry failed. Please check your credentials.')
       setError(msg)
       triggerShake()
     } finally {
