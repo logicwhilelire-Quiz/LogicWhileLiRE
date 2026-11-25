@@ -189,25 +189,28 @@ export default function CollegesPage() {
     setError('');
     try {
       let loadedColleges: College[] = [];
+      let resolved = false;
 
       // Tier 1: Enriched admin breakdown
       try {
         const res = await api('/api/admin/colleges?breakdown=true');
-        if (res.data?.colleges && res.data.colleges.length > 0) {
+        if (res.data?.success && Array.isArray(res.data?.colleges)) {
           loadedColleges = res.data.colleges.map(enhanceCollegeRecord);
           if (res.data.overall_summary) setOverallSummary(res.data.overall_summary);
+          resolved = true;
         }
       } catch {
         // Silently continue to Tier 2
       }
 
       // Tier 2: Public breakdown fallback
-      if (loadedColleges.length === 0) {
+      if (!resolved) {
         try {
           const fbRes = await api('/api/colleges?breakdown=true');
-          if (fbRes.data?.colleges && fbRes.data.colleges.length > 0) {
+          if (fbRes.data?.success && Array.isArray(fbRes.data?.colleges)) {
             loadedColleges = fbRes.data.colleges.map(enhanceCollegeRecord);
             if (fbRes.data.overall_summary) setOverallSummary(fbRes.data.overall_summary);
+            resolved = true;
           }
         } catch {
           // Silently continue to Tier 3
@@ -215,11 +218,12 @@ export default function CollegesPage() {
       }
 
       // Tier 3: Standard colleges list
-      if (loadedColleges.length === 0) {
+      if (!resolved) {
         try {
           const plainRes = await api('/api/admin/colleges');
-          if (plainRes.data?.colleges && plainRes.data.colleges.length > 0) {
+          if (plainRes.data?.success && Array.isArray(plainRes.data?.colleges)) {
             loadedColleges = plainRes.data.colleges.map(enhanceCollegeRecord);
+            resolved = true;
           }
         } catch {
           // Silently continue to Tier 4
@@ -227,22 +231,23 @@ export default function CollegesPage() {
       }
 
       // Tier 4: Public colleges endpoint
-      if (loadedColleges.length === 0) {
+      if (!resolved) {
         try {
           const pubRes = await api('/api/colleges');
-          if (pubRes.data?.colleges && pubRes.data.colleges.length > 0) {
+          if (pubRes.data?.success && Array.isArray(pubRes.data?.colleges)) {
             loadedColleges = pubRes.data.colleges.map(enhanceCollegeRecord);
+            resolved = true;
           }
         } catch {
-          // Silently continue to Tier 5
+          // Silently continue
         }
       }
 
-      if (loadedColleges.length > 0) {
+      if (resolved) {
         setColleges(loadedColleges);
         if (inspectCollege) {
-          const updated = loadedColleges.find(c => c.id === inspectCollege.id);
-          if (updated) setInspectCollege(updated);
+          const updated = loadedColleges.find(c => c.id === inspectCollege.id) || null;
+          setInspectCollege(updated);
         }
       }
     } finally {
@@ -323,9 +328,20 @@ export default function CollegesPage() {
 
   async function handleDelete(college: College) {
     if (!confirm(`Delete ${college.college_name}? This will also delete all exam codes for this college.`)) return;
+    setError('');
     try {
       await api(`/api/admin/colleges/${college.id}`, { method: 'DELETE' });
-      load();
+      setColleges(prev => {
+        const next = prev.filter(c => c.id !== college.id);
+        setOverallSummary({
+          total_students: next.reduce((acc, c) => acc + (c.total_students || 0), 0),
+          live_in_exam: next.reduce((acc, c) => acc + (c.live_status_summary?.in_exam || 0), 0),
+          pending_clearance: next.reduce((acc, c) => acc + (c.live_status_summary?.pending_clearance || 0), 0),
+        });
+        return next;
+      });
+      if (inspectCollege?.id === college.id) setInspectCollege(null);
+      setSuccess(`${college.college_name} deleted.`);
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Delete failed');
     }

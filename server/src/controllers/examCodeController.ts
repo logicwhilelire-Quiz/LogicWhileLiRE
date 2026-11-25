@@ -6,6 +6,7 @@ import { supabase } from '../db/supabase';
 import { isStudentEligibleForExam, deriveStudyYear } from '../utils/academicYear';
 import { getPrimaryClientOrigin } from '../utils/url';
 import { recordAuditLog } from '../middleware/auditLog';
+import { getCache, setCache, invalidateCache } from '../services/cacheService';
 import {
   broadcastViolationToMonitor,
   broadcastStudentReleased,
@@ -217,6 +218,13 @@ export async function listColleges(req: Request, res: Response): Promise<void> {
  */
 export async function getCollegesBreakdown(req: Request, res: Response): Promise<void> {
   try {
+    const cacheKey = `colleges_breakdown:${req.admin?.role || 'public'}:${req.admin?.college_id || 'all'}`;
+    const cached = getCache<any>(cacheKey);
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
     // 1. Fetch colleges
     let collegeQuery = supabase
       .from('colleges')
@@ -243,13 +251,31 @@ export async function getCollegesBreakdown(req: Request, res: Response): Promise
       return;
     }
 
-    // 2. Fetch cohorts, sections, batches, students, attempts
+    if (!colleges || colleges.length === 0) {
+      const emptyPayload = {
+        success: true,
+        colleges: [],
+        total_colleges: 0,
+        overall_summary: {
+          total_students: 0,
+          live_in_exam: 0,
+          pending_clearance: 0,
+          cleared_ready: 0,
+          total_branches: 0,
+        },
+      };
+      setCache(cacheKey, emptyPayload, 10);
+      res.json(emptyPayload);
+      return;
+    }
+
+    // 2. Fetch cohorts, sections, batches, students (safe columns only), attempts (without heavy answers JSON), sessions
     const [cohortsRes, sectionsRes, batchesRes, studentsRes, attemptsRes, sessionsRes] = await Promise.all([
       supabase.from('cohorts').select('*'),
       supabase.from('sections').select('*'),
       supabase.from('batches').select('*'),
-      supabase.from('students').select('*').order('created_at', { ascending: false }),
-      supabase.from('exam_code_attempts').select('id, hall_ticket_no, exam_code, status, score, max_score, violation_count, answers, created_at, updated_at'),
+      supabase.from('students').select('id, name, email, roll_number, hall_ticket, college_id, branch, branch_code, section, section_id, batch, passout_year, year_of_passing, is_verified, is_blocked, created_at').order('created_at', { ascending: false }),
+      supabase.from('exam_code_attempts').select('id, hall_ticket_no, exam_code, status, score, max_score, violation_count, created_at, updated_at'),
       supabase.from('exam_sessions').select('id, participant_id, status, violation_count, started_at, submitted_at, participants(hall_ticket, name)')
     ]);
 
@@ -540,7 +566,7 @@ export async function getCollegesBreakdown(req: Request, res: Response): Promise
       };
     });
 
-    res.json({
+    const responsePayload = {
       success: true,
       colleges: enrichedColleges,
       total_colleges: enrichedColleges.length,
@@ -551,7 +577,9 @@ export async function getCollegesBreakdown(req: Request, res: Response): Promise
         cleared_ready: enrichedColleges.reduce((acc, c) => acc + c.live_status_summary.cleared_ready, 0),
         total_branches: new Set(enrichedColleges.flatMap((c) => c.branches.map((b: any) => b.branch_code))).size
       }
-    });
+    };
+    setCache(cacheKey, responsePayload, 10);
+    res.json(responsePayload);
   } catch (err: any) {
     console.error('[CollegesBreakdown] Error:', err);
     res.status(500).json({ success: false, error: err?.message || 'Failed to generate college breakdown' });
@@ -591,6 +619,7 @@ export async function createCollege(req: Request, res: Response): Promise<void> 
     }
     return;
   }
+  invalidateCache('colleges_breakdown');
   res.status(201).json({ success: true, college: data });
 }
 
@@ -617,6 +646,7 @@ export async function updateCollege(req: Request, res: Response): Promise<void> 
     .single();
 
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
+  invalidateCache('colleges_breakdown');
   res.json({ success: true, college: data });
 }
 
@@ -627,6 +657,7 @@ export async function deleteCollege(req: Request, res: Response): Promise<void> 
   const { id } = req.params;
   const { error } = await supabase.from('colleges').delete().eq('id', id);
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
+  invalidateCache('colleges_breakdown');
   res.json({ success: true, message: 'College deleted' });
 }
 
@@ -651,6 +682,7 @@ export async function bulkImportCollegesHandler(req: Request, res: Response): Pr
       return;
     }
     const result = await bulkInsertColleges(parsed.validRows);
+    invalidateCache('colleges_breakdown');
     res.json({
       success: result.valid,
       total: result.total_rows,
