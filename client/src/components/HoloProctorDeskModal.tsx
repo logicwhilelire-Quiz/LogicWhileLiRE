@@ -14,6 +14,7 @@ import {
   IconFlash,
   IconFileText,
   IconLaunch,
+  IconCross,
 } from './icons/HumanIcons'
 
 export interface ProctorCommsMessage {

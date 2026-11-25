@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { IconFileText } from './icons/HumanIcons'
+import { IconFileText, IconCross } from './icons/HumanIcons'
 
 interface HoloScratchpadModalProps {
   isOpen: boolean

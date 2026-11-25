@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import { sound } from '../lib/soundService';
-import { IconHierarchy } from './icons/HumanIcons';
+import { IconHierarchy, IconCross } from './icons/HumanIcons';
 
 interface Coordinate {
   x: number;

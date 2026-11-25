@@ -10,6 +10,7 @@ import {
   IconChat,
   IconShield,
   IconSearch,
+  IconCross,
 } from './icons/HumanIcons'
 
 interface ViolationEvent {

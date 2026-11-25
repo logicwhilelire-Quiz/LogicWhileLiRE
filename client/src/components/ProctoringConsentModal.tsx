@@ -8,6 +8,7 @@ import {
   IconFileText,
   IconUsers,
   IconSettings,
+  IconCheck,
 } from './icons/HumanIcons';
 
 interface ProctoringConsentModalProps {

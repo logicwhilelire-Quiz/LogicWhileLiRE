@@ -33,6 +33,7 @@ interface StudentProfile {
   name: string;
   email: string;
   roll_number: string;
+  hall_ticket?: string;
   college_id: number | string;
   college_name?: string;
   section?: string;

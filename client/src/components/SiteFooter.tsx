@@ -20,6 +20,7 @@ import {
   IconStop,
   IconProhibit,
   IconCpu,
+  IconCross,
 } from './icons/HumanIcons';
 
 type ModalType =
