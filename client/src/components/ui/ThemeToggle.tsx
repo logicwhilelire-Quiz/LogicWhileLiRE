@@ -14,10 +14,10 @@ interface ThemeOption {
 }
 
 const THEMES: ThemeOption[] = [
-  { id: 'dark', label: 'LogicWhile Midnight', icon: <IconMoon size={15} color="#38BDF8" />, color: '#38BDF8', desc: 'Executive Slate & Sapphire' },
-  { id: 'swarm', label: 'LogicWhile Enterprise', icon: <IconBuilding size={15} color="#2563EB" />, color: '#2563EB', desc: 'Institutional High-Contrast' },
-  { id: 'emerald', label: 'Academic Ivory', icon: <IconSun size={15} color="#0D9488" />, color: '#0D9488', desc: 'Daylight Proctored Testing' },
-  { id: 'light', label: 'LogicWhile Royal', icon: <IconShield size={15} color="#EAA812" />, color: '#EAA812', desc: 'Navy & Official Gold Theme' },
+  { id: 'dark', label: 'Circuit Midnight', icon: <IconMoon size={15} color="#FFB400" />, color: '#FFB400', desc: 'Logo Navy, Gold & Orange' },
+  { id: 'swarm', label: 'Royal Navy', icon: <IconBuilding size={15} color="#3B82F6" />, color: '#3B82F6', desc: 'Deep Navy & Flame Orange' },
+  { id: 'emerald', label: 'Pearl Daylight', icon: <IconSun size={15} color="#0A1C68" />, color: '#1D4ED8', desc: 'Crisp Light Navy & Orange' },
+  { id: 'light', label: 'Gold & Ivory', icon: <IconShield size={15} color="#FF7A00" />, color: '#FF7A00', desc: 'Warm Circuit Gold & Navy' },
 ];
 
 export default function ThemeToggle({ className = '' }: { className?: string }) {

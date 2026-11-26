@@ -1,42 +1,57 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 /* ============================================================
-   LogicWhileLiRE — Cyber-Fluid UI Design System
-   Colors, Gradients, Typography & Glass Surfaces
-   High-Contrast Sapphire & Cyan Theme Architecture
+   LogicWhile LiRE — Official Logo-Based UI Design System
+   Brand Hierarchy: LogicWhile (Parent Company) › LiRE (Assessment Sub-Branch)
+   Palette: Deep Royal Navy (#0A1C68) · Flame Orange (#FF7A00) · Circuit Gold (#FFB400)
    ============================================================ */
 :root {
-  /* ─── OFFICIAL LOGICWHILE COLOR PALETTE ─── */
-  --hp-cyan:        #00b4d8;
-  --hp-cyan-bright: #00d2ff;
-  --hp-blue:        #0284c7;
-  --hp-sapphire:    #1d4ed8;
-  --hp-navy:        #080d2a;
+  /* ─── OFFICIAL LOGICWHILE LOGO COLOR PALETTE ─── */
+  --lw-navy:        #0A1C68;
+  --lw-navy-dark:   #07134B;
+  --lw-navy-deep:   #050B22;
+  --lw-royal:       #1D4ED8;
+  --lw-royal-bright:#3B82F6;
 
-  --hp-gold:        #fbbf24;
-  --hp-amber:       #f59e0b;
-  --hp-orange:      #f97316;
-  --hp-flame:       #ea580c;
+  --lw-orange:      #FF7A00;
+  --lw-orange-deep: #EA580C;
+  --lw-orange-bright:#FB923C;
 
-  --cyan:           #0284c7;
-  --cyan-glow:      rgba(0, 180, 216, 0.28);
-  --blue:           #1d4ed8;
-  --blue-glow:      rgba(29, 78, 216, 0.25);
-  --orange:         #ea580c;
-  --orange-glow:    rgba(234, 88, 12, 0.28);
-  --amber:          #f59e0b;
-  --amber-glow:     rgba(245, 158, 11, 0.28);
+  --lw-gold:        #FFB400;
+  --lw-gold-bright: #FFD000;
+  --lw-amber:       #F59E0B;
+
+  /* Backward-compatible semantic tokens mapped to Logo Colors */
+  --hp-cyan:        #FF7A00;
+  --hp-cyan-bright: #FFB400;
+  --hp-blue:        #0A1C68;
+  --hp-sapphire:    #1D4ED8;
+  --hp-navy:        #07134B;
+
+  --hp-gold:        #FFD000;
+  --hp-amber:       #FFB400;
+  --hp-orange:      #FF7A00;
+  --hp-flame:       #EA580C;
+
+  --cyan:           #1D4ED8;
+  --cyan-glow:      rgba(29, 78, 216, 0.28);
+  --blue:           #0A1C68;
+  --blue-glow:      rgba(10, 28, 104, 0.30);
+  --orange:         #FF7A00;
+  --orange-glow:    rgba(255, 122, 0, 0.30);
+  --amber:          #FFB400;
+  --amber-glow:     rgba(255, 180, 0, 0.32);
   --emerald:        #059669;
 
-  /* ─── OFFICIAL GRADIENTS ─── */
-  --grad-hp:          linear-gradient(135deg, #00b4d8 0%, #0284c7 35%, #f59e0b 70%, #ea580c 100%);
-  --grad-hack:        linear-gradient(135deg, #00d2ff 0%, #0284c7 55%, #1d4ed8 100%);
-  --grad-pradesh:     linear-gradient(135deg, #fcd34d 0%, #f59e0b 45%, #ea580c 100%);
-  --grad-sphere:      linear-gradient(135deg, #00b4d8 0%, #0284c7 35%, #f59e0b 70%, #ea580c 100%);
-  --grad-text:        linear-gradient(135deg, #0f172a 15%, #0284c7 45%, #f59e0b 80%, #ea580c 100%);
-  --grad-btn:         linear-gradient(135deg, #0284c7 0%, #1d4ed8 45%, #ea580c 100%);
-  --grad-btn-hover:   linear-gradient(135deg, #00d2ff 0%, #0284c7 40%, #f97316 100%);
-  --grad-card-border: linear-gradient(135deg, rgba(0, 180, 216, 0.35), rgba(245, 158, 11, 0.25), rgba(234, 88, 12, 0.35));
+  /* ─── OFFICIAL LOGICWHILE LOGO GRADIENTS ─── */
+  --grad-hp:          linear-gradient(135deg, #0A1C68 0%, #1D4ED8 35%, #FF7A00 72%, #FFB400 100%);
+  --grad-hack:        linear-gradient(135deg, #3B82F6 0%, #1D4ED8 50%, #0A1C68 100%);
+  --grad-pradesh:     linear-gradient(135deg, #FFD000 0%, #FFB400 45%, #FF7A00 100%);
+  --grad-sphere:      linear-gradient(135deg, #0A1C68 0%, #1D4ED8 38%, #FF7A00 72%, #FFD000 100%);
+  --grad-text:        linear-gradient(135deg, #0A1C68 10%, #1D4ED8 42%, #FF7A00 74%, #FFB400 100%);
+  --grad-btn:         linear-gradient(135deg, #0A1C68 0%, #1D4ED8 48%, #FF7A00 100%);
+  --grad-btn-hover:   linear-gradient(135deg, #1D4ED8 0%, #FF7A00 55%, #FFB400 100%);
+  --grad-card-border: linear-gradient(135deg, rgba(255, 180, 0, 0.45), rgba(255, 122, 0, 0.35), rgba(29, 78, 216, 0.4));
 
   /* ─── BASE SURFACES (Clean Modern Light) ─── */
   --bg:                #f8fafc;
@@ -45,10 +60,10 @@
   --bg-card-hover:     #ffffff;
   --panel:             #ffffff;
   --panel-border:      #e2e8f0;
-  --panel-border-glow: rgba(2, 132, 199, 0.25);
+  --panel-border-glow: rgba(10, 28, 104, 0.25);
 
-  --text-pure:         #0f172a;
-  --text-primary:      #0f172a;
+  --text-pure:         #07134B;
+  --text-primary:      #0A1C68;
   --text-secondary:    #475569;
   --text-muted:        #64748b;
 
@@ -57,23 +72,23 @@
   --color-bg-subtle:    #f1f5f9;
   --color-surface:      #ffffff;
   --color-surface-2:    #f8fafc;
-  --color-surface-3:    #f1f5f9;
+  --color-surface-3:    #eef2ff;
   --color-border:       #e2e8f0;
   --color-border-hover: #cbd5e1;
-  --color-border-glow:  rgba(2, 132, 199, 0.22);
+  --color-border-glow:  rgba(255, 180, 0, 0.30);
 
-  --color-primary:            #0284c7;
-  --color-primary-dark:       #1d4ed8;
-  --color-primary-light:      #e0f2fe;
-  --color-primary-hover:      #0369a1;
-  --color-primary-glow:       rgba(0, 180, 216, 0.28);
-  --color-primary-glow-strong:rgba(2, 132, 199, 0.40);
+  --color-primary:            #1D4ED8;
+  --color-primary-dark:       #0A1C68;
+  --color-primary-light:      #e0e7ff;
+  --color-primary-hover:      #2563EB;
+  --color-primary-glow:       rgba(29, 78, 216, 0.28);
+  --color-primary-glow-strong:rgba(10, 28, 104, 0.42);
 
-  --color-secondary:      #ea580c;
-  --color-secondary-dark: #c2410c;
-  --color-accent:         #f59e0b;
+  --color-secondary:      #FF7A00;
+  --color-secondary-dark: #EA580C;
+  --color-accent:         #FFB400;
 
-  --color-text:        #0f172a;
+  --color-text:        #07134B;
   --color-text-muted:  #475569;
   --color-text-faint:  #94a3b8;
 
@@ -100,15 +115,15 @@
   --radius-2xl: 36px;
 
   /* ─── SHADOWS ─── */
-  --shadow-sm:      0 1px 3px rgba(15, 23, 42, 0.05);
-  --shadow-md:      0 4px 14px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.04);
-  --shadow-lg:      0 12px 30px -4px rgba(15, 23, 42, 0.08), 0 4px 10px rgba(15, 23, 42, 0.04);
-  --shadow-glow:    0 0 20px rgba(0, 180, 216, 0.25);
-  --shadow-glow-lg: 0 0 32px rgba(2, 132, 199, 0.35);
-  --shadow-glass:   0 8px 30px rgba(15, 23, 42, 0.06);
+  --shadow-sm:      0 1px 3px rgba(7, 19, 75, 0.06);
+  --shadow-md:      0 4px 14px rgba(7, 19, 75, 0.08), 0 2px 6px rgba(7, 19, 75, 0.04);
+  --shadow-lg:      0 12px 30px -4px rgba(7, 19, 75, 0.10), 0 4px 10px rgba(7, 19, 75, 0.05);
+  --shadow-glow:    0 0 20px rgba(255, 180, 0, 0.28);
+  --shadow-glow-lg: 0 0 32px rgba(255, 122, 0, 0.32);
+  --shadow-glass:   0 8px 30px rgba(7, 19, 75, 0.08);
 
   /* ─── GLASSMORPHISM ─── */
-  --glass-bg:     rgba(255, 255, 255, 0.90);
+  --glass-bg:     rgba(255, 255, 255, 0.92);
   --glass-border: rgba(226, 232, 240, 0.9);
   --glass-blur:   16px;
 
@@ -122,103 +137,103 @@
   --transition-slow: 350ms var(--ease-spring);
 }
 
-/* ─── 1. LOGICWHILE MIDNIGHT THEME (Executive Slate & Sapphire) ─── */
+/* ─── 1. LOGICWHILE CIRCUIT MIDNIGHT (Deep Logo Navy & Gold/Orange) ─── */
 [data-theme="dark"],
 .theme-dark {
-  --bg:                #0b1120;
-  --bg-elevated:       #111827;
-  --bg-card:           #0f172a;
-  --bg-card-hover:     #1e293b;
-  --panel:             #0f172a;
-  --panel-border:      rgba(255, 255, 255, 0.08);
-  --panel-border-glow: rgba(2, 132, 199, 0.15);
+  --bg:                #050B22;
+  --bg-elevated:       #0A153A;
+  --bg-card:           #081232;
+  --bg-card-hover:     #0F1E4D;
+  --panel:             #081232;
+  --panel-border:      rgba(255, 180, 0, 0.14);
+  --panel-border-glow: rgba(255, 122, 0, 0.25);
 
   --text-pure:         #ffffff;
   --text-primary:      #f8fafc;
-  --text-secondary:    #94a3b8;
-  --text-muted:        #64748b;
+  --text-secondary:    #cbd5e1;
+  --text-muted:        #94a3b8;
 
-  --color-bg:          #0b1120;
-  --color-bg-subtle:   #0f172a;
-  --color-surface:     #111827;
-  --color-surface-2:   #1e293b;
-  --color-surface-3:   #334155;
-  --color-border:      rgba(255, 255, 255, 0.10);
-  --color-border-hover:rgba(2, 132, 199, 0.40);
-  --color-border-glow: rgba(2, 132, 199, 0.20);
+  --color-bg:          #050B22;
+  --color-bg-subtle:   #07102E;
+  --color-surface:     #0A153A;
+  --color-surface-2:   #102052;
+  --color-surface-3:   #192E6E;
+  --color-border:      rgba(255, 255, 255, 0.11);
+  --color-border-hover:rgba(255, 180, 0, 0.45);
+  --color-border-glow: rgba(255, 180, 0, 0.24);
 
-  --color-primary:            #0284c7;
-  --color-primary-dark:       #0369a1;
-  --color-primary-light:      rgba(2, 132, 199, 0.12);
-  --color-primary-hover:      #38bdf8;
-  --color-primary-glow:       rgba(2, 132, 199, 0.20);
-  --color-primary-glow-strong:rgba(2, 132, 199, 0.35);
+  --color-primary:            #FFB400;
+  --color-primary-dark:       #FF7A00;
+  --color-primary-light:      rgba(255, 180, 0, 0.14);
+  --color-primary-hover:      #FFD000;
+  --color-primary-glow:       rgba(255, 180, 0, 0.26);
+  --color-primary-glow-strong:rgba(255, 122, 0, 0.40);
 
-  --color-secondary:      #ea580c;
-  --color-secondary-dark: #c2410c;
-  --color-accent:         #EAA812;
+  --color-secondary:      #FF7A00;
+  --color-secondary-dark: #EA580C;
+  --color-accent:         #3B82F6;
 
   --color-text:        #f8fafc;
   --color-text-muted:  #94a3b8;
   --color-text-faint:  #64748b;
 
-  --glass-bg:          rgba(15, 23, 42, 0.92);
-  --glass-border:      rgba(255, 255, 255, 0.08);
-  --shadow-sm:         0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md:         0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg:         0 12px 28px rgba(0, 0, 0, 0.5);
-  --shadow-glass:      0 8px 24px rgba(0, 0, 0, 0.4);
+  --glass-bg:          rgba(8, 18, 50, 0.92);
+  --glass-border:      rgba(255, 180, 0, 0.16);
+  --shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md:         0 4px 14px rgba(0, 0, 0, 0.45);
+  --shadow-lg:         0 12px 28px rgba(0, 0, 0, 0.55);
+  --shadow-glass:      0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
-/* ─── 2. LOGICWHILE ENTERPRISE THEME (High-Contrast Institutional) ─── */
+/* ─── 2. LOGICWHILE ROYAL NAVY (Official Emblem Blue & Flame Orange) ─── */
 [data-theme="swarm"],
 .theme-swarm {
-  --bg:                #070d1e;
-  --bg-elevated:       #0e172f;
-  --bg-card:           #0a1329;
-  --bg-card-hover:     #132042;
-  --panel:             #0a1329;
-  --panel-border:      rgba(37, 99, 235, 0.20);
-  --panel-border-glow: rgba(37, 99, 235, 0.25);
+  --bg:                #04091E;
+  --bg-elevated:       #07134B;
+  --bg-card:           #06103C;
+  --bg-card-hover:     #0A1C68;
+  --panel:             #06103C;
+  --panel-border:      rgba(59, 130, 246, 0.25);
+  --panel-border-glow: rgba(255, 122, 0, 0.28);
 
   --text-pure:         #ffffff;
   --text-primary:      #f9fafb;
-  --text-secondary:    #94a3b8;
-  --text-muted:        #64748b;
+  --text-secondary:    #cbd5e1;
+  --text-muted:        #94a3b8;
 
-  --color-bg:          #070d1e;
-  --color-bg-subtle:   #0a1329;
-  --color-surface:     #0e172f;
-  --color-surface-2:   #152347;
-  --color-surface-3:   #1e3264;
-  --color-border:      rgba(255, 255, 255, 0.10);
-  --color-border-hover:rgba(37, 99, 235, 0.45);
-  --color-border-glow: rgba(37, 99, 235, 0.25);
+  --color-bg:          #04091E;
+  --color-bg-subtle:   #06103C;
+  --color-surface:     #07134B;
+  --color-surface-2:   #0A1C68;
+  --color-surface-3:   #152D8A;
+  --color-border:      rgba(96, 165, 250, 0.18);
+  --color-border-hover:rgba(255, 122, 0, 0.50);
+  --color-border-glow: rgba(255, 180, 0, 0.26);
 
-  --color-primary:            #2563eb;
-  --color-primary-dark:       #1d4ed8;
-  --color-primary-light:      rgba(37, 99, 235, 0.12);
-  --color-primary-hover:      #3b82f6;
-  --color-primary-glow:       rgba(37, 99, 235, 0.22);
-  --color-primary-glow-strong:rgba(37, 99, 235, 0.40);
+  --color-primary:            #3B82F6;
+  --color-primary-dark:       #1D4ED8;
+  --color-primary-light:      rgba(59, 130, 246, 0.16);
+  --color-primary-hover:      #60A5FA;
+  --color-primary-glow:       rgba(59, 130, 246, 0.26);
+  --color-primary-glow-strong:rgba(29, 78, 216, 0.42);
 
-  --color-secondary:      #e11d48;
-  --color-secondary-dark: #be123c;
-  --color-accent:         #EAA812;
+  --color-secondary:      #FF7A00;
+  --color-secondary-dark: #EA580C;
+  --color-accent:         #FFD000;
 
   --color-text:        #f9fafb;
   --color-text-muted:  #94a3b8;
   --color-text-faint:  #64748b;
 
-  --glass-bg:          rgba(10, 19, 41, 0.94);
-  --glass-border:      rgba(37, 99, 235, 0.18);
-  --shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.35);
-  --shadow-md:         0 4px 14px rgba(0, 0, 0, 0.45);
-  --shadow-lg:         0 12px 30px rgba(0, 0, 0, 0.55);
-  --shadow-glass:      0 8px 30px rgba(0, 0, 0, 0.45);
+  --glass-bg:          rgba(7, 19, 75, 0.94);
+  --glass-border:      rgba(59, 130, 246, 0.22);
+  --shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.38);
+  --shadow-md:         0 4px 14px rgba(0, 0, 0, 0.48);
+  --shadow-lg:         0 12px 30px rgba(0, 0, 0, 0.58);
+  --shadow-glass:      0 8px 30px rgba(0, 0, 0, 0.48);
 }
 
-/* ─── 3. ACADEMIC IVORY THEME (Daylight Proctored Testing) ─── */
+/* ─── 3. LOGICWHILE PEARL DAYLIGHT (Clean Navy & Orange on White) ─── */
 [data-theme="emerald"],
 .theme-emerald {
   --bg:                #f8fafc;
@@ -226,81 +241,81 @@
   --bg-card:           #ffffff;
   --bg-card-hover:     #f1f5f9;
   --panel:             #ffffff;
-  --panel-border:      #e2e8f0;
-  --panel-border-glow: rgba(13, 148, 136, 0.20);
+  --panel-border:      #dbeafe;
+  --panel-border-glow: rgba(10, 28, 104, 0.22);
 
-  --text-pure:         #0f172a;
-  --text-primary:      #0f172a;
+  --text-pure:         #07134B;
+  --text-primary:      #0A1C68;
   --text-secondary:    #334155;
   --text-muted:        #64748b;
 
   --color-bg:          #f8fafc;
-  --color-bg-subtle:   #f1f5f9;
+  --color-bg-subtle:   #eff6ff;
   --color-surface:     #ffffff;
   --color-surface-2:   #f8fafc;
-  --color-surface-3:   #f1f5f9;
+  --color-surface-3:   #eff6ff;
   --color-border:      #e2e8f0;
-  --color-border-hover:#cbd5e1;
-  --color-border-glow: rgba(13, 148, 136, 0.20);
+  --color-border-hover:#93c5fd;
+  --color-border-glow: rgba(10, 28, 104, 0.22);
 
-  --color-primary:            #0d9488;
-  --color-primary-dark:       #0f766e;
-  --color-primary-light:      rgba(13, 148, 136, 0.10);
-  --color-primary-hover:      #14b8a6;
-  --color-primary-glow:       rgba(13, 148, 136, 0.18);
-  --color-primary-glow-strong:rgba(13, 148, 136, 0.30);
+  --color-primary:            #0A1C68;
+  --color-primary-dark:       #07134B;
+  --color-primary-light:      rgba(10, 28, 104, 0.08);
+  --color-primary-hover:      #1D4ED8;
+  --color-primary-glow:       rgba(29, 78, 216, 0.18);
+  --color-primary-glow-strong:rgba(10, 28, 104, 0.30);
 
-  --color-secondary:      #ea580c;
-  --color-secondary-dark: #c2410c;
-  --color-accent:         #d97706;
+  --color-secondary:      #FF7A00;
+  --color-secondary-dark: #EA580C;
+  --color-accent:         #FFB400;
 
-  --color-text:        #0f172a;
+  --color-text:        #07134B;
   --color-text-muted:  #475569;
   --color-text-faint:  #94a3b8;
 
   --glass-bg:          rgba(255, 255, 255, 0.96);
-  --glass-border:      #e2e8f0;
-  --shadow-sm:         0 1px 2px rgba(15, 23, 42, 0.05);
-  --shadow-md:         0 4px 12px rgba(15, 23, 42, 0.08);
-  --shadow-lg:         0 12px 24px rgba(15, 23, 42, 0.10);
-  --shadow-glass:      0 8px 24px rgba(15, 23, 42, 0.08);
+  --glass-border:      #dbeafe;
+  --shadow-sm:         0 1px 2px rgba(10, 28, 104, 0.06);
+  --shadow-md:         0 4px 12px rgba(10, 28, 104, 0.08);
+  --shadow-lg:         0 12px 24px rgba(10, 28, 104, 0.10);
+  --shadow-glass:      0 8px 24px rgba(10, 28, 104, 0.08);
 }
 
-/* ─── 4. LOGICWHILE ROYAL THEME (Executive Ivory & Gold) ─── */
+/* ─── 4. LOGICWHILE GOLD & IVORY (Circuit Gold, Orange & Deep Navy) ─── */
 [data-theme="light"],
 .theme-light {
-  --bg:                #fafaf9;
+  --bg:                #fffdf7;
   --bg-elevated:       #ffffff;
   --bg-card:           #ffffff;
-  --bg-card-hover:     #f5f5f4;
+  --bg-card-hover:     #fef9e7;
   --panel:             #ffffff;
-  --panel-border:      #e7e5e4;
-  --panel-border-glow: rgba(217, 119, 6, 0.20);
+  --panel-border:      #fde68a;
+  --panel-border-glow: rgba(255, 122, 0, 0.22);
 
-  --text-pure:         #1c1917;
-  --text-primary:      #1c1917;
-  --text-secondary:    #44403c;
-  --text-muted:        #78716c;
+  --text-pure:         #07134B;
+  --text-primary:      #0A1C68;
+  --text-secondary:    #334155;
+  --text-muted:        #64748b;
 
-  --color-bg:          #fafaf9;
-  --color-bg-subtle:   #f5f5f4;
+  --color-bg:          #fffdf7;
+  --color-bg-subtle:   #fef3c7;
   --color-surface:     #ffffff;
-  --color-surface-2:   #fafaf9;
-  --color-surface-3:   #f5f5f4;
-  --color-border:      #e7e5e4;
-  --color-border-hover:#d6d3d1;
-  --color-border-glow: rgba(217, 119, 6, 0.20);
+  --color-surface-2:   #fffbeb;
+  --color-surface-3:   #fef3c7;
+  --color-border:      #fde68a;
+  --color-border-hover:#f59e0b;
+  --color-border-glow: rgba(255, 180, 0, 0.28);
 
-  --color-primary:            #d97706;
-  --color-primary-dark:       #b45309;
-  --color-primary-light:      rgba(217, 119, 6, 0.10);
-  --color-primary-hover:      #f59e0b;
-  --color-primary-glow:       rgba(217, 119, 6, 0.18);
-  --color-primary-glow-strong:rgba(217, 119, 6, 0.30);
+  --color-primary:            #EA580C;
+  --color-primary-dark:       #C2410C;
+  --color-primary-light:      rgba(255, 122, 0, 0.12);
+  --color-primary-hover:      #FF7A00;
+  --color-primary-glow:       rgba(255, 122, 0, 0.22);
+  --color-primary-glow-strong:rgba(255, 180, 0, 0.34);
 
-  --color-secondary:      #0284c7;
-  --color-secondary-dark: #0369a1;
-  --color-accent:         #e11d48;
+  --color-secondary:      #0A1C68;
+  --color-secondary-dark: #07134B;
+  --color-accent:         #FFB400;
 
   --color-text:        #1c1917;
   --color-text-muted:  #57534e;
@@ -337,10 +352,10 @@ body {
 
 /* Subtle architectural shading per theme */
 [data-theme="dark"] body {
-  background-image: radial-gradient(ellipse at 50% 15%, rgba(2, 132, 199, 0.08) 0%, transparent 65%);
+  background-image: radial-gradient(ellipse at 50% 10%, rgba(29, 78, 216, 0.14) 0%, transparent 60%), radial-gradient(ellipse at 85% 80%, rgba(255, 122, 0, 0.06) 0%, transparent 55%);
 }
 [data-theme="swarm"] body {
-  background-image: radial-gradient(ellipse at 50% 15%, rgba(37, 99, 235, 0.08) 0%, transparent 65%);
+  background-image: radial-gradient(ellipse at 50% 12%, rgba(255, 180, 0, 0.08) 0%, transparent 58%), radial-gradient(ellipse at 15% 85%, rgba(29, 78, 216, 0.14) 0%, transparent 55%);
 }
 [data-theme="emerald"] body,
 [data-theme="light"] body {
@@ -1959,8 +1974,8 @@ div[role="radio"]:hover,
 .blue-text { color: var(--blue); }
 .orange-text { color: var(--orange); }
 .amber-text { color: var(--amber); }
-.violet-text { color: #0284c7; }
-.magenta-text { color: #ea580c; }
+.violet-text { color: #1D4ED8; }
+.magenta-text { color: #FF7A00; }
 
 /* ─── Global Centered Container ─── */
 .wrap {

@@ -405,19 +405,19 @@ export default function GateHeroCanvas({ wsLatency = 18 }: GateHeroCanvasProps) 
                 gap: 8,
               }}
             >
-              <span>LogicWhileLiRE</span>
+              <span>LogicWhile</span>
             </div>
             <div
               style={{
                 fontSize: '0.72rem',
-                color: '#4A7DBE',
+                color: '#FFB400',
                 fontWeight: 700,
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 marginTop: 2,
               }}
             >
-              Logic. While. LiRE.
+              LiRE Assessment Sub-Branch
             </div>
           </div>
 

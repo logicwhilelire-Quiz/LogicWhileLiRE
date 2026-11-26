@@ -47,19 +47,19 @@ export default function AboutPage() {
                 marginBottom: 16,
               }}
             >
-              The Story of LogicWhileLiRE
+              <span style={{ color: '#FF7A00' }}>Logic</span>While — LiRE Assessment Division
             </h1>
 
             <p
               style={{
-                fontSize: '1.15rem',
+                fontSize: '1.12rem',
                 color: 'var(--color-text-muted)',
                 lineHeight: 1.6,
                 maxWidth: 680,
                 margin: '0 auto',
               }}
             >
-              An autonomous examination and engineering assessment platform engineered for scale, algorithmic fairness, and uncompromising proctoring integrity.
+              <strong>LiRE (Live • Real • Engine)</strong> is the specialized autonomous examination and engineering assessment sub-branch of <strong>LogicWhile</strong>, built for institutional scale, algorithmic fairness, and uncompromising proctoring integrity.
             </p>
           </div>
 
@@ -70,7 +70,7 @@ export default function AboutPage() {
             transition={{ duration: 0.5 }}
             style={{
               background: 'var(--color-surface, #FFFFFF)',
-              border: '2px solid rgba(234, 168, 18, 0.4)',
+              border: '2px solid rgba(255, 180, 0, 0.45)',
               borderRadius: 'var(--radius-lg, 16px)',
               padding: '36px 40px',
               boxShadow: 'var(--shadow-md)',
@@ -83,16 +83,16 @@ export default function AboutPage() {
                   width: 72,
                   height: 72,
                   borderRadius: 20,
-                  background: 'linear-gradient(135deg, #002147 0%, #0A2540 100%)',
-                  border: '2px solid #EAA812',
+                  background: 'linear-gradient(135deg, #07134B 0%, #0A1C68 100%)',
+                  border: '2px solid #FFB400',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#EAA812',
+                  color: '#FF7A00',
                   fontSize: '2rem',
                   fontWeight: 800,
                   fontFamily: 'var(--font-display)',
-                  boxShadow: '0 4px 14px rgba(0, 33, 71, 0.3)',
+                  boxShadow: '0 4px 14px rgba(10, 28, 104, 0.35)',
                 }}
               >
                 LW
@@ -104,10 +104,10 @@ export default function AboutPage() {
                     fontWeight: 800,
                     letterSpacing: '0.1em',
                     textTransform: 'uppercase',
-                    color: '#EAA812',
+                    color: '#FFB400',
                   }}
                 >
-                  Platform Engineering
+                  Main Enterprise &amp; Assessment Sub-Branch
                 </span>
                 <h2
                   style={{
@@ -118,10 +118,10 @@ export default function AboutPage() {
                     margin: '4px 0',
                   }}
                 >
-                  LogicWhile Engine
+                  LogicWhile › LiRE Engine
                 </h2>
                 <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
-                  Institutional Online Examination Platform and Autonomous Assessment Engine.
+                  <strong>LogicWhile</strong> is the parent organization driving engineering innovation; <strong>LiRE</strong> operates as its dedicated Institutional Online Examination &amp; Rank Engine sub-branch.
                 </p>
               </div>
             </div>

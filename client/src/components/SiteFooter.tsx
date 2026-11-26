@@ -139,10 +139,10 @@ export default function SiteFooter() {
             </Link>
 
             <p className="footer-tagline" style={{ maxWidth: 360, color: 'var(--color-text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-              Standardized Examination &amp; Autonomous Assessment Platform featuring server-authoritative timing, AI proctoring, and live assessment synchronization.
+              <strong style={{ color: '#FF7A00' }}>LogicWhile</strong> <span style={{ color: '#FFB400', fontWeight: 700 }}>› LiRE Assessment Sub-Branch</span>. Standardized Institutional Examination Engine featuring server-authoritative timing, AI proctoring, and live assessment synchronization.
             </p>
 
-            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-primary)' }}>
+            <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#FFB400' }}>
               Elevating Coding Knowledge
             </div>
           </div>
@@ -152,7 +152,7 @@ export default function SiteFooter() {
             <div
               className="footer-col-title"
               style={{
-                color: 'var(--color-primary, #38BDF8)',
+                color: '#FFB400',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 700,
                 fontSize: '0.92rem',
@@ -187,7 +187,7 @@ export default function SiteFooter() {
             <div
               className="footer-col-title"
               style={{
-                color: 'var(--color-primary, #38BDF8)',
+                color: '#FFB400',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 700,
                 fontSize: '0.92rem',
@@ -227,7 +227,7 @@ export default function SiteFooter() {
             <div
               className="footer-col-title"
               style={{
-                color: 'var(--color-primary, #38BDF8)',
+                color: '#FFB400',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 700,
                 fontSize: '0.92rem',
@@ -270,7 +270,7 @@ export default function SiteFooter() {
         {/* Bottom Bar */}
         <div className="footer-bottom" style={{ borderColor: 'var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: '20px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: '0.86rem' }}>
-            <span>© 2026 LogicWhile. All rights reserved.</span>
+            <span>© 2026 <strong>LogicWhile</strong> · LiRE Institutional Assessment Sub-Branch. All rights reserved.</span>
           </div>
           <span style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
             <button

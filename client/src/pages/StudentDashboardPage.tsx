@@ -357,19 +357,22 @@ export default function StudentDashboardPage() {
           </div>
         </div>
         <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
+            <span style={{ color: '#FF7A00' }}>LogicWhile</span> <span style={{ color: '#64748B' }}>›</span> <span style={{ color: '#FFB400' }}>LiRE Sub-Branch</span>
+          </div>
           <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#F8FAFC', letterSpacing: '0.04em', marginBottom: 6 }}>
-            LOGICWHILE LiRE ASSESSMENT PORTAL
+            CANDIDATE ASSESSMENT PORTAL
           </div>
           <p className="text-muted" style={{ fontSize: '0.84rem', margin: 0 }}>
             Synchronizing institutional clearance, sector benchmarks &amp; scheduled exams...
           </p>
         </div>
-        <div style={{ width: 180, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+        <div style={{ width: 200, height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
           <div
             style={{
               width: '60%',
               height: '100%',
-              background: 'linear-gradient(90deg, #EAA812, #38BDF8)',
+              background: 'linear-gradient(90deg, #1D4ED8, #FF7A00, #FFD000)',
               borderRadius: 2,
               animation: 'scanlineMove 1.4s infinite ease-in-out',
             }}
@@ -426,15 +429,15 @@ export default function StudentDashboardPage() {
               <BrandLogo size="sm" variant="standard" showTagline={true} />
               <span
                 style={{
-                  fontSize: '0.78rem',
-                  fontWeight: 700,
+                  fontSize: '0.76rem',
+                  fontWeight: 800,
                   textTransform: 'uppercase',
-                  letterSpacing: '1px',
-                  color: '#38BDF8',
-                  padding: '3px 8px',
-                  background: 'rgba(56, 189, 248, 0.12)',
-                  borderRadius: 4,
-                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  letterSpacing: '0.8px',
+                  color: '#FFD000',
+                  padding: '4px 10px',
+                  background: 'rgba(255, 180, 0, 0.12)',
+                  borderRadius: 6,
+                  border: '1px solid rgba(255, 180, 0, 0.35)',
                 }}
               >
                 Candidate Portal

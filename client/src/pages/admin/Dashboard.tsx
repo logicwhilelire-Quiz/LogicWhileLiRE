@@ -126,14 +126,14 @@ export default function Dashboard() {
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
             <div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
-                LogicWhileLiRE Master Control
+              <div style={{ fontSize: '0.78rem', color: '#FFB400', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                <span style={{ color: '#FF7A00' }}>LogicWhile</span> › LiRE Assessment Sub-Branch Control
               </div>
               <h1 style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, fontFamily: 'var(--font-display)' }}>
                 Administrative Dashboard
               </h1>
               <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem', margin: '4px 0 0 0' }}>
-                Single Source of Truth · Full Control over Exams, Students, Proctoring & Engine
+                Single Source of Truth · Full Control over Exams, Students, Proctoring &amp; Engine
               </p>
             </div>
 

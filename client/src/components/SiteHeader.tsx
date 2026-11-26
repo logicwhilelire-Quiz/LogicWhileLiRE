@@ -57,18 +57,20 @@ export default function SiteHeader() {
     ? [
         { label: 'Home', to: '/' },
         { label: 'Enter Exam', to: '/enter-exam' },
-        { label: 'Practice Arena', to: '/practice' },
-        { label: 'Student Portal', to: '/student/dashboard' },
-        { label: 'Inspector Desk', to: '/inspector' },
-        { label: 'Admin Hub', to: '/admin' },
+        { label: 'Practice', to: '/practice' },
+        { label: 'Student', to: '/student/dashboard' },
+        { label: 'Faculty', to: '/faculty' },
+        { label: 'Inspector', to: '/inspector' },
+        { label: 'Admin', to: '/admin' },
       ]
     : [
         { label: 'Home', to: '/' },
         { label: 'Enter Exam', to: '/enter-exam' },
-        { label: 'Practice Arena', to: '/practice' },
-        { label: 'Student Portal', to: '/login' },
-        { label: 'Inspector Desk', to: '/inspector' },
-        { label: 'Admin Hub', to: '/admin' },
+        { label: 'Practice', to: '/practice' },
+        { label: 'Student', to: '/login' },
+        { label: 'Faculty', to: '/faculty' },
+        { label: 'Inspector', to: '/inspector' },
+        { label: 'Admin', to: '/admin' },
       ];
 
   return (
@@ -82,18 +84,18 @@ export default function SiteHeader() {
         width: '100%',
         zIndex: 1000,
         boxShadow: scrolled
-          ? '0 6px 24px rgba(0, 0, 0, 0.45)'
-          : '0 4px 18px rgba(0, 0, 0, 0.3)',
+          ? '0 6px 26px rgba(5, 11, 34, 0.65)'
+          : '0 4px 18px rgba(5, 11, 34, 0.45)',
       }}
     >
-      {/* Top Utility Helpline Bar — Fixed at very top */}
+      {/* Top Utility Corporate Lineage Bar — Fixed at very top */}
       <div
         style={{
-          background: '#001833',
-          color: '#94A3B8',
+          background: '#07134B',
+          color: '#CBD5E1',
           fontSize: '11.5px',
           fontWeight: 600,
-          borderBottom: '1px solid rgba(234, 168, 18, 0.3)',
+          borderBottom: '1px solid rgba(255, 180, 0, 0.35)',
           padding: '5px 24px',
           width: '100%',
         }}
@@ -115,25 +117,28 @@ export default function SiteHeader() {
                 width: 7,
                 height: 7,
                 borderRadius: '50%',
-                background: '#10B981',
-                boxShadow: '0 0 8px #10B981',
+                background: '#FF7A00',
+                boxShadow: '0 0 8px #FF7A00',
                 display: 'inline-block',
               }}
             />
-            <span style={{ color: '#EAA812', letterSpacing: '0.04em', fontWeight: 800 }}>
-              LOGICWHILE
+            <span style={{ letterSpacing: '0.04em', fontWeight: 900 }}>
+              <span style={{ color: '#FF7A00' }}>LOGIC</span>
+              <span style={{ color: '#FFFFFF' }}>WHILE</span>
             </span>
-            <span style={{ color: '#475569' }}>•</span>
-            <span style={{ color: '#38BDF8', fontWeight: 700 }}>ONLINE ASSESSMENT PLATFORM</span>
+            <span style={{ color: '#64748B' }}>›</span>
+            <span style={{ color: '#FFD000', fontWeight: 700, letterSpacing: '0.04em' }}>
+              LiRE ASSESSMENT SUB-BRANCH
+            </span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: '11px' }}>
             <span>
-              STATUS: <strong style={{ color: '#10B981' }}>SYSTEM OPERATIONAL</strong>
+              STATUS: <strong style={{ color: '#10B981' }}>OPERATIONAL</strong>
             </span>
             <span style={{ color: '#475569' }}>|</span>
             <span>
-              CLOCK: <strong style={{ color: '#EAA812' }}>SERVER-AUTHORITATIVE</strong>
+              CLOCK: <strong style={{ color: '#FFB400' }}>SERVER-AUTHORITATIVE</strong>
             </span>
             <span style={{ color: '#475569' }}>|</span>
             <button
@@ -144,11 +149,11 @@ export default function SiteHeader() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 5,
-                background: 'rgba(56, 189, 248, 0.12)',
-                border: '1px solid rgba(56, 189, 248, 0.4)',
+                background: 'rgba(255, 180, 0, 0.14)',
+                border: '1px solid rgba(255, 180, 0, 0.42)',
                 borderRadius: 4,
                 padding: '2px 8px',
-                color: '#38BDF8',
+                color: '#FFD000',
                 fontSize: '10.5px',
                 fontWeight: 700,
                 fontFamily: "'Space Grotesk', monospace",
@@ -158,7 +163,7 @@ export default function SiteHeader() {
               }}
               title="Toggle HorizonX Architectural Blueprint Inspect Mode (Key: H)"
             >
-              <IconHierarchy size={11} color="#38BDF8" />
+              <IconHierarchy size={11} color="#FFD000" />
               <span>HORIZONX [H]</span>
             </button>
           </div>
@@ -169,8 +174,10 @@ export default function SiteHeader() {
       <header
         className={`site-header ${scrolled ? 'scrolled' : ''}`}
         style={{
-          background: scrolled ? '#001A38' : '#002147',
-          borderBottom: '3px solid #EAA812',
+          background: scrolled
+            ? 'linear-gradient(90deg, #050B22 0%, #07134B 50%, #050B22 100%)'
+            : 'linear-gradient(90deg, #07134B 0%, #0A1C68 50%, #07134B 100%)',
+          borderBottom: '3px solid #FFB400',
           height: '74px',
           padding: '0 24px',
           display: 'flex',
@@ -194,26 +201,27 @@ export default function SiteHeader() {
           <Link
             to="/"
             style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}
-            aria-label="LogicWhile LiRE Home"
+            aria-label="LogicWhile — LiRE Assessment Portal Home"
           >
-            <BrandLogo size="sm" variant="standard" showTagline={true} />
+            <BrandLogo size="sm" variant="standard" showTagline={true} themeOverride="dark" />
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="navbar-links" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <nav className="navbar-links" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {navLinks.map(({ label, to }) => (
               <Link key={to} to={to} style={{ textDecoration: 'none' }}>
                 <div
                   className={`navbar-link ${location.pathname === to ? 'active' : ''}`}
                   style={{
-                    color: location.pathname === to ? '#EAA812' : '#E2E8F0',
+                    color: location.pathname === to ? '#FFD000' : '#E2E8F0',
                     fontWeight: location.pathname === to ? 800 : 600,
-                    fontSize: '14px',
-                    padding: '8px 14px',
+                    fontSize: '13.5px',
+                    padding: '7px 11px',
                     borderRadius: 6,
-                    background: location.pathname === to ? 'rgba(234,168,18,0.1)' : 'transparent',
-                    border: location.pathname === to ? '1px solid rgba(234,168,18,0.3)' : '1px solid transparent',
+                    background: location.pathname === to ? 'rgba(255, 180, 0, 0.14)' : 'transparent',
+                    border: location.pathname === to ? '1px solid rgba(255, 180, 0, 0.42)' : '1px solid transparent',
                     transition: 'all 0.15s ease',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {label}
@@ -223,30 +231,30 @@ export default function SiteHeader() {
 
             {/* Logged in state: student indicator + Logout */}
             {isLoggedIn && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 6 }}>
                 <span
                   style={{
-                    fontSize: '12.5px',
-                    color: '#38BDF8',
+                    fontSize: '12px',
+                    color: '#FFD000',
                     fontWeight: 700,
-                    background: 'rgba(56, 189, 248, 0.1)',
+                    background: 'rgba(255, 180, 0, 0.12)',
                     padding: '4px 10px',
                     borderRadius: 6,
-                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    border: '1px solid rgba(255, 180, 0, 0.35)',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
                   }}
                 >
-                  <IconGraduation size={13} color="#38BDF8" />
+                  <IconGraduation size={13} color="#FFB400" />
                   <span>{studentUser.name?.split(' ')[0] || 'Candidate'}</span>
                 </span>
                 <button
                   onClick={handleLogout}
                   style={{
                     background: 'transparent',
-                    border: '1px solid rgba(239, 68, 68, 0.4)',
-                    color: '#F87171',
+                    border: '1px solid rgba(255, 122, 0, 0.5)',
+                    color: '#FB923C',
                     padding: '5px 10px',
                     borderRadius: 6,
                     fontSize: '12px',

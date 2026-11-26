@@ -31,18 +31,18 @@ import {
   IconCpu,
 } from '../components/icons/HumanIcons';
 
-/* ── Institutional Architectural Backdrop ── */
+/* ── Institutional Architectural Backdrop (LogicWhile Logo Color System) ── */
 function InstitutionalGridBackdrop() {
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
       <div style={{
         position: 'absolute', inset: 0,
-        backgroundImage: 'linear-gradient(rgba(2,132,199,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(2,132,199,0.04) 1px, transparent 1px)',
+        backgroundImage: 'linear-gradient(rgba(255,180,0,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,180,0,0.045) 1px, transparent 1px)',
         backgroundSize: '48px 48px',
       }} />
       <div style={{
-        position: 'absolute', top: 0, left: '20%', right: '20%', height: 350,
-        background: 'radial-gradient(ellipse at 50% 0%, rgba(2,132,199,0.08) 0%, transparent 70%)',
+        position: 'absolute', top: 0, left: '15%', right: '15%', height: 380,
+        background: 'radial-gradient(ellipse at 50% 0%, rgba(255,180,0,0.10) 0%, rgba(29,78,216,0.10) 45%, transparent 72%)',
       }} />
     </div>
   );
@@ -80,12 +80,12 @@ function PortalCard({ icon, badge, badgeColor, badgeBg, title, desc, specs, href
       transition={{ delay, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       style={{
-        background: hovered ? 'linear-gradient(145deg,rgba(15,23,42,0.98),rgba(0,10,30,0.96))' : 'rgba(10,16,35,0.82)',
+        background: hovered ? 'linear-gradient(145deg,rgba(10,28,104,0.92),rgba(5,11,34,0.98))' : 'rgba(7,19,75,0.68)',
         border: `1.5px solid ${hovered ? glowColor : borderColor}`,
         borderRadius: 20, padding: '26px 22px',
         display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
         backdropFilter: 'blur(20px)',
-        boxShadow: hovered ? `0 20px 60px rgba(0,0,0,0.5),0 0 40px ${glowColor}33` : '0 8px 30px rgba(0,0,0,0.3)',
+        boxShadow: hovered ? `0 20px 60px rgba(0,0,0,0.55),0 0 38px ${glowColor}33` : '0 8px 30px rgba(0,0,0,0.35)',
         transition: 'all 0.3s cubic-bezier(0.16,1,0.3,1)',
         transform: hovered ? 'translateY(-6px)' : 'translateY(0)',
         position: 'relative', overflow: 'hidden', minHeight: 285,
@@ -311,35 +311,49 @@ export default function LandingPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(180deg, #060B1A 0%, #080D22 40%, #050A18 100%)',
+      background: 'linear-gradient(180deg, #050B22 0%, #07134B 42%, #04091E 100%)',
       color: '#F8FAFC',
       fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif",
       display: 'flex', flexDirection: 'column', position: 'relative',
     }}>
       <style>{`
-        .landing-grid-bg { background-image: linear-gradient(rgba(2,132,199,0.055) 1px,transparent 1px),linear-gradient(90deg,rgba(2,132,199,0.055) 1px,transparent 1px); background-size:44px 44px; }
+        .landing-grid-bg { background-image: linear-gradient(rgba(255,180,0,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,180,0,0.05) 1px,transparent 1px); background-size:44px 44px; }
       `}</style>
 
       <InstitutionalGridBackdrop />
       <SiteHeader />
 
       {/* ── HERO ── */}
-      <section className="landing-grid-bg" style={{ position: 'relative', padding: '70px 24px 85px', textAlign: 'center', overflow: 'hidden', zIndex: 1 }}>
-        <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', width: 800, height: 400, background: 'radial-gradient(ellipse,rgba(2,132,199,0.15) 0%,transparent 70%)', pointerEvents: 'none' }} />
+      <section className="landing-grid-bg" style={{ position: 'relative', padding: '64px 24px 82px', textAlign: 'center', overflow: 'hidden', zIndex: 1 }}>
+        <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', width: 840, height: 420, background: 'radial-gradient(ellipse,rgba(255,180,0,0.14) 0%, rgba(255,122,0,0.08) 40%, transparent 72%)', pointerEvents: 'none' }} />
 
-        <div ref={heroRef} style={{ maxWidth: 880, margin: '0 auto', position: 'relative', zIndex: 1, willChange: 'transform' }}>
+        <div ref={heroRef} style={{ maxWidth: 900, margin: '0 auto', position: 'relative', zIndex: 1, willChange: 'transform' }}>
           
-          {/* Live Cluster Health Badge */}
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }} style={{ marginBottom: 18 }}>
+          {/* Parent Enterprise > Sub-Branch Hierarchy Pill + Live Cluster Health */}
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }} style={{ marginBottom: 18, display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
             <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 10,
-              background: engineHealth.state === 'standby' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-              border: `1px solid ${engineHealth.state === 'standby' ? 'rgba(245, 158, 11, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`,
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: 'rgba(10, 28, 104, 0.72)',
+              border: '1px solid rgba(255, 180, 0, 0.48)',
               borderRadius: 20, padding: '5px 16px',
-              fontSize: '0.74rem', fontWeight: 800,
+              fontSize: '0.73rem', fontWeight: 800,
+              letterSpacing: '0.05em',
+              boxShadow: '0 0 18px rgba(255, 180, 0, 0.16)',
+            }}>
+              <span style={{ color: '#FF7A00', fontWeight: 900 }}>LOGICWHILE</span>
+              <span style={{ color: '#64748B' }}>›</span>
+              <span style={{ color: '#FFD000' }}>LiRE ASSESSMENT SUB-BRANCH</span>
+            </div>
+
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: engineHealth.state === 'standby' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+              border: `1px solid ${engineHealth.state === 'standby' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
+              borderRadius: 20, padding: '5px 15px',
+              fontSize: '0.73rem', fontWeight: 800,
               color: engineHealth.state === 'standby' ? '#FBBF24' : '#34D399',
               letterSpacing: '0.04em',
-              boxShadow: '0 0 16px rgba(16, 185, 129, 0.15)',
+              boxShadow: '0 0 16px rgba(16, 185, 129, 0.14)',
             }}>
               <span style={{
                 width: 8, height: 8, borderRadius: '50%',
@@ -347,7 +361,7 @@ export default function LandingPage() {
                 boxShadow: `0 0 10px ${engineHealth.state === 'standby' ? '#F59E0B' : '#10B981'}`,
               }} />
               <span>
-                OFFICIAL INSTITUTIONAL PLATFORM &bull; v{engineHealth.version} &bull;{' '}
+                v{engineHealth.version} &bull;{' '}
                 {engineHealth.state === 'online' && engineHealth.latencyMs !== null
                   ? `LIVE ENGINE ONLINE (${engineHealth.latencyMs}ms)`
                   : engineHealth.state === 'standby'
@@ -357,14 +371,14 @@ export default function LandingPage() {
             </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} style={{ marginBottom: 24 }}>
+          <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} style={{ marginBottom: 22 }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 14,
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(234,168,18,0.35)',
+              background: 'rgba(10, 28, 104, 0.55)', border: '1.5px solid rgba(255, 180, 0, 0.45)',
               borderRadius: 16, padding: '14px 24px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.4),0 0 24px rgba(234,168,18,0.10)',
+              boxShadow: '0 10px 34px rgba(0,0,0,0.45),0 0 28px rgba(255,180,0,0.14)',
             }}>
-              <BrandLogo size="md" variant="standard" showTagline={true} />
+              <BrandLogo size="md" variant="standard" showTagline={true} themeOverride="dark" />
             </div>
           </motion.div>
 
@@ -372,92 +386,94 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15, duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              fontSize: 'clamp(2.2rem, 5vw, 3.5rem)', fontWeight: 900, lineHeight: 1.15,
-              margin: '0 0 18px', letterSpacing: '-0.03em',
+              fontSize: 'clamp(2.2rem, 5vw, 3.55rem)', fontWeight: 900, lineHeight: 1.15,
+              margin: '0 0 16px', letterSpacing: '-0.03em',
               fontFamily: "'Rajdhani',sans-serif", color: '#FFFFFF',
             }}
           >
-            LogicWhile{' '}
+            <span style={{ color: '#FF7A00' }}>Logic</span><span style={{ color: '#FFFFFF' }}>While</span>{' '}
             <span style={{
-              background: 'linear-gradient(135deg,#EAA812 0%,#F59E0B 40%,#FBBF24 100%)',
+              background: 'linear-gradient(135deg,#FFD000 0%,#FFB400 45%,#FF7A00 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-              filter: 'drop-shadow(0 0 20px rgba(234,168,18,0.4))',
-            }}>Live Rank Engine</span>
+              filter: 'drop-shadow(0 0 22px rgba(255,180,0,0.38))',
+            }}>LiRE Assessment Engine</span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.28, duration: 0.55 }}
-            style={{ fontSize: '1.08rem', color: '#94A3B8', maxWidth: 680, margin: '0 auto 30px', lineHeight: 1.72 }}
+            style={{ fontSize: '1.05rem', color: '#CBD5E1', maxWidth: 700, margin: '0 auto 30px', lineHeight: 1.72 }}
           >
-            Synchronous live assessment with server-authoritative timers, automated anti-cheat monitoring,
-            real-time proctoring and instantaneous competitive telemetry.
+            <strong style={{ color: '#FFD000' }}>LiRE (Live • Real • Engine)</strong> is the official institutional examination
+            and technical assessment sub-branch powered by <strong style={{ color: '#FF7A00' }}>LogicWhile</strong> — delivering
+            server-authoritative timing, automated anti-cheat proctoring, and sub-50ms competitive telemetry.
           </motion.p>
 
           <motion.div
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 32 }}
+            style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 32 }}
           >
             <Link to="/enter-exam" id="hero-enter-exam-btn" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
-              background: 'linear-gradient(135deg,#10B981 0%,#059669 100%)',
-              color: '#FFFFFF', fontWeight: 800, fontSize: '0.98rem',
-              padding: '13px 30px', borderRadius: 12, textDecoration: 'none',
-              boxShadow: '0 4px 26px rgba(16,185,129,0.45)', transition: 'all 0.2s ease',
+              background: 'linear-gradient(135deg,#FF7A00 0%,#FFB400 100%)',
+              color: '#07134B', fontWeight: 900, fontSize: '0.96rem',
+              padding: '13px 28px', borderRadius: 12, textDecoration: 'none',
+              boxShadow: '0 6px 26px rgba(255,180,0,0.42)', transition: 'all 0.2s ease',
             }}
-            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 34px rgba(16,185,129,0.65)'; }}
-            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 26px rgba(16,185,129,0.45)'; }}
+            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 10px 34px rgba(255,180,0,0.6)'; }}
+            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 6px 26px rgba(255,180,0,0.42)'; }}
             >
-              <IconLaunch size={18} color="#FFFFFF" /> Enter Exam Code
+              <IconLaunch size={18} color="#07134B" /> Enter Exam Code
             </Link>
             <Link to="/login" id="hero-student-gate-btn" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
-              background: 'linear-gradient(135deg,#0284c7 0%,#1d4ed8 100%)',
-              color: '#FFFFFF', fontWeight: 800, fontSize: '0.98rem',
-              padding: '13px 28px', borderRadius: 12, textDecoration: 'none',
-              boxShadow: '0 4px 26px rgba(2,132,199,0.45)', transition: 'all 0.2s ease',
+              background: 'linear-gradient(135deg,#0A1C68 0%,#1D4ED8 100%)',
+              color: '#FFFFFF', fontWeight: 800, fontSize: '0.96rem',
+              padding: '13px 26px', borderRadius: 12, textDecoration: 'none',
+              border: '1px solid rgba(96,165,250,0.4)',
+              boxShadow: '0 4px 24px rgba(29,78,216,0.45)', transition: 'all 0.2s ease',
             }}
-            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 34px rgba(2,132,199,0.65)'; }}
-            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 26px rgba(2,132,199,0.45)'; }}
+            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 32px rgba(29,78,216,0.65)'; }}
+            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 24px rgba(29,78,216,0.45)'; }}
             >
-              <IconGraduation size={18} color="#FFFFFF" /> Student Gate
+              <IconGraduation size={18} color="#FFFFFF" /> Student Portal
             </Link>
             <Link to="/practice" id="hero-practice-btn" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
-              background: 'linear-gradient(135deg,#8B5CF6 0%,#6D28D9 100%)',
-              color: '#FFFFFF', fontWeight: 800, fontSize: '0.95rem',
-              padding: '13px 26px', borderRadius: 12, textDecoration: 'none',
-              boxShadow: '0 4px 24px rgba(139,92,246,0.35)', transition: 'all 0.2s ease',
+              background: 'rgba(255, 122, 0, 0.14)',
+              color: '#FDBA74', fontWeight: 800, fontSize: '0.94rem',
+              padding: '13px 24px', borderRadius: 12, textDecoration: 'none',
+              border: '1.5px solid rgba(255, 122, 0, 0.45)', transition: 'all 0.2s ease',
             }}
-            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 32px rgba(139,92,246,0.55)'; }}
-            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 24px rgba(139,92,246,0.35)'; }}
+            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.background = 'rgba(255, 122, 0, 0.22)'; }}
+            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.background = 'rgba(255, 122, 0, 0.14)'; }}
             >
-              <IconTarget size={18} color="#FFFFFF" /> 5 Sectors Arena
+              <IconTarget size={18} color="#FDBA74" /> 5 Sectors Arena
             </Link>
             <Link to="/admin" id="hero-admin-btn" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
-              background: 'linear-gradient(135deg,#EAA812 0%,#F59E0B 100%)',
-              color: '#001A38', fontWeight: 800, fontSize: '0.95rem',
-              padding: '13px 26px', borderRadius: 12, textDecoration: 'none',
-              boxShadow: '0 4px 24px rgba(234,168,18,0.35)', transition: 'all 0.2s ease',
+              background: 'rgba(255, 180, 0, 0.14)',
+              color: '#FFD000', fontWeight: 800, fontSize: '0.94rem',
+              padding: '13px 24px', borderRadius: 12, textDecoration: 'none',
+              border: '1.5px solid rgba(255, 180, 0, 0.45)', transition: 'all 0.2s ease',
             }}
-            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 32px rgba(234,168,18,0.55)'; }}
-            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 24px rgba(234,168,18,0.35)'; }}
+            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.background = 'rgba(255, 180, 0, 0.22)'; }}
+            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.background = 'rgba(255, 180, 0, 0.14)'; }}
             >
-              <IconHierarchy size={18} color="#001A38" /> Admin Console
+              <IconHierarchy size={18} color="#FFD000" /> Admin Hub
             </Link>
             <Link to="/inspector" id="hero-inspector-btn" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
-              background: 'rgba(255,255,255,0.07)',
-              color: '#A78BFA', fontWeight: 800, fontSize: '0.95rem',
-              padding: '13px 26px', borderRadius: 12, textDecoration: 'none',
-              border: '1.5px solid rgba(167,139,250,0.4)', transition: 'all 0.2s ease',
+              background: 'rgba(139, 92, 246, 0.12)',
+              color: '#C4B5FD', fontWeight: 800, fontSize: '0.94rem',
+              padding: '13px 24px', borderRadius: 12, textDecoration: 'none',
+              border: '1.5px solid rgba(167,139,250,0.42)', transition: 'all 0.2s ease',
             }}
-            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(167,139,250,0.12)'; el.style.transform = 'translateY(-2px)'; }}
-            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.07)'; el.style.transform = ''; }}
+            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(167,139,250,0.22)'; el.style.transform = 'translateY(-2px)'; }}
+            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(139, 92, 246, 0.12)'; el.style.transform = ''; }}
             >
-              <IconRadar size={18} color="#A78BFA" /> Inspector Console
+              <IconRadar size={18} color="#C4B5FD" /> Inspector Console
             </Link>
           </motion.div>
 
@@ -467,25 +483,25 @@ export default function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.48, duration: 0.55 }}
             style={{
-              maxWidth: 720,
+              maxWidth: 740,
               margin: '0 auto 36px',
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.9) 100%)',
-              border: '1.5px solid rgba(16, 185, 129, 0.35)',
+              background: 'linear-gradient(135deg, rgba(10, 28, 104, 0.65) 0%, rgba(5, 11, 34, 0.92) 100%)',
+              border: '1.5px solid rgba(255, 180, 0, 0.42)',
               borderRadius: 16,
               padding: '16px 20px',
-              boxShadow: '0 12px 36px rgba(0,0,0,0.4), 0 0 24px rgba(16, 185, 129, 0.12)',
+              boxShadow: '0 14px 38px rgba(0,0,0,0.48), 0 0 26px rgba(255, 180, 0, 0.14)',
               backdropFilter: 'blur(16px)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <IconFlash size={18} color="#34D399" />
-                <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                  Exam Morning Express Gateway
+                <IconFlash size={18} color="#FFD000" />
+                <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#FFD000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  LiRE Express Exam Gateway
                 </span>
               </div>
-              <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>
-                Zero OTP &bull; Instant Passcode Authentication
+              <span style={{ fontSize: '0.72rem', color: '#FDBA74', fontWeight: 600 }}>
+                Zero OTP &bull; Instant Hall Ticket + Code Verification
               </span>
             </div>
 
@@ -499,8 +515,8 @@ export default function LandingPage() {
                   flex: '1 1 180px',
                   padding: '10px 14px',
                   borderRadius: 8,
-                  background: 'rgba(5, 10, 24, 0.85)',
-                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  background: 'rgba(5, 11, 34, 0.88)',
+                  border: '1px solid rgba(255, 180, 0, 0.35)',
                   color: '#F8FAFC',
                   fontSize: '0.86rem',
                   fontFamily: 'monospace',
@@ -517,8 +533,8 @@ export default function LandingPage() {
                   flex: '1 1 180px',
                   padding: '10px 14px',
                   borderRadius: 8,
-                  background: 'rgba(5, 10, 24, 0.85)',
-                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  background: 'rgba(5, 11, 34, 0.88)',
+                  border: '1px solid rgba(255, 180, 0, 0.35)',
                   color: '#F8FAFC',
                   fontSize: '0.86rem',
                   fontFamily: 'monospace',
@@ -531,21 +547,21 @@ export default function LandingPage() {
                 style={{
                   padding: '10px 22px',
                   borderRadius: 8,
-                  background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-                  color: '#FFFFFF',
-                  fontWeight: 800,
+                  background: 'linear-gradient(135deg, #FF7A00 0%, #FFB400 100%)',
+                  color: '#07134B',
+                  fontWeight: 900,
                   fontSize: '0.86rem',
                   border: 'none',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  boxShadow: '0 4px 18px rgba(16, 185, 129, 0.4)',
+                  boxShadow: '0 4px 18px rgba(255, 180, 0, 0.42)',
                   transition: 'all 0.2s ease',
                   whiteSpace: 'nowrap',
                 }}
               >
-                <IconLaunch size={16} color="#FFFFFF" /> Start Assessment
+                <IconLaunch size={16} color="#07134B" /> Start Assessment
               </button>
             </form>
           </motion.div>
@@ -554,13 +570,13 @@ export default function LandingPage() {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }}
             style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}
           >
-            <StatPill icon={<IconClock size={20} color="#EAA812" />} value="< 50ms" label="Timer Sync" />
-            <StatPill icon={<IconShield size={20} color="#10B981" />} value="5-Layer" label="Anti-Cheat" />
-            <StatPill icon={<IconTrophy size={20} color="#38BDF8" />} value="Real-Time" label="Leaderboard" />
-            <StatPill icon={<IconRadio size={20} color="#A78BFA" />} value="Offline" label="Resilient" />
+            <StatPill icon={<IconClock size={20} color="#FFD000" />} value="< 50ms" label="Timer Sync" />
+            <StatPill icon={<IconShield size={20} color="#FF7A00" />} value="5-Layer" label="Anti-Cheat" />
+            <StatPill icon={<IconTrophy size={20} color="#60A5FA" />} value="Real-Time" label="Leaderboard" />
+            <StatPill icon={<IconRadio size={20} color="#10B981" />} value="Offline" label="Resilient" />
           </motion.div>
         </div>
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, background: 'linear-gradient(0deg,#060B1A,transparent)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, background: 'linear-gradient(0deg,#050B22,transparent)', pointerEvents: 'none' }} />
       </section>
 
       {/* ── ACCESS PORTALS ── */}
@@ -580,11 +596,11 @@ export default function LandingPage() {
           </motion.div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(230px,1fr))', gap: 20 }}>
-            <PortalCard icon={<IconLaunch size={32} color="#10B981" />} badge="Platform I • Exam Entry" badgeColor="#10B981" badgeBg="rgba(16,185,129,0.12)" title="Exam Code Gate" desc="Direct candidate exam access using assigned Exam Code and Hall Ticket Number. Section eligibility is verified server-side with zero OTP friction." specs={['No-OTP Entry', 'Fixed Server Clock', 'SVG Watermark']} href="/enter-exam" btnId="landing-enter-exam-btn" btnLabel="Enter Exam Session" btnGradient="linear-gradient(135deg,#10B981 0%,#059669 100%)" glowColor="#10B981" borderColor="rgba(16,185,129,0.25)" delay={0.04} />
-            <PortalCard icon={<IconGraduation size={32} color="#38BDF8" />} badge="Platform II • Student" badgeColor="#38BDF8" badgeBg="rgba(56,189,248,0.12)" title="Student Intelligence" desc="Authenticated candidate hub with upcoming section-matched exams, 5-Sector Holo Practice Arena, 4-page performance dossiers, and rank tracking." specs={['5-Sector Arena', '4-Page Dossier', 'Live Ranks']} href="/login" btnId="landing-student-login-btn" btnLabel="Enter Candidate Gate" btnGradient="linear-gradient(135deg,#0284c7 0%,#1d4ed8 100%)" glowColor="#38BDF8" borderColor="rgba(56,189,248,0.25)" delay={0.08} />
-            <PortalCard icon={<IconBuilding size={32} color="#F43F5E" />} badge="Platform III • Faculty" badgeColor="#F43F5E" badgeBg="rgba(244,63,94,0.12)" title="Faculty Mentorship" desc="Zero-trust section-scoped command for accredited department faculty: review assigned sections, author papers, and track cohort accuracy." specs={['Section Scoping', 'Paper Authoring', 'Cohort Metrics']} href="/faculty" btnId="landing-faculty-login-btn" btnLabel="Sign In as Faculty" btnGradient="linear-gradient(135deg,#E11D48 0%,#F43F5E 100%)" glowColor="#F43F5E" borderColor="rgba(244,63,94,0.25)" delay={0.12} />
-            <PortalCard icon={<IconRadar size={32} color="#A78BFA" />} badge="Platform IV • Proctor" badgeColor="#A78BFA" badgeBg="rgba(167,139,250,0.12)" title="Inspector Command" desc="Live invigilation bridge with waiting hall release controls, authoritative exam start dispatch, dynamic 1–10 tab strike policy, and violation feed." specs={['Sync Start', '1-10 Tab Strikes', 'Release Queue']} href="/inspector" btnId="landing-inspector-login-btn" btnLabel="Sign In as Inspector" btnGradient="linear-gradient(135deg,#7C3AED 0%,#8B5CF6 100%)" glowColor="#8B5CF6" borderColor="rgba(139,92,246,0.16)" delay={0.16} />
-            <PortalCard icon={<IconHierarchy size={32} color="#FBBF24" />} badge="Platform V • Master" badgeColor="#FBBF24" badgeBg="rgba(251,191,36,0.12)" title="Super Admin Hub" desc="Complete multi-tenant governance — manage colleges, academic hierarchy, 5-sector banks, bulk XLSX rosters, RBAC staff, and Drive backups." specs={['College Taxonomy', 'Bulk XLSX', 'Audit & Backups']} href="/admin" btnId="landing-admin-login-btn" btnLabel="Sign In as Admin" btnGradient="linear-gradient(135deg,#D97706 0%,#EAA812 100%)" glowColor="#EAA812" borderColor="rgba(234,168,18,0.18)" delay={0.20} />
+            <PortalCard icon={<IconLaunch size={32} color="#10B981" />} badge="Portal I • Exam Entry" badgeColor="#34D399" badgeBg="rgba(16,185,129,0.14)" title="Exam Code Gate" desc="Direct candidate exam access using assigned Exam Code and Hall Ticket Number. Section eligibility is verified server-side with zero OTP friction." specs={['No-OTP Entry', 'Server Clock', 'SVG Watermark']} href="/enter-exam" btnId="landing-enter-exam-btn" btnLabel="Enter Exam Session" btnGradient="linear-gradient(135deg,#059669 0%,#10B981 100%)" glowColor="#10B981" borderColor="rgba(16,185,129,0.28)" delay={0.04} />
+            <PortalCard icon={<IconGraduation size={32} color="#60A5FA" />} badge="Portal II • Student" badgeColor="#60A5FA" badgeBg="rgba(37,99,235,0.18)" title="Student Intelligence" desc="Authenticated candidate hub with upcoming section-matched exams, 5-Sector Holo Practice Arena, 4-page performance dossiers, and rank tracking." specs={['5-Sector Arena', '4-Page Dossier', 'Live Ranks']} href="/login" btnId="landing-student-login-btn" btnLabel="Enter Candidate Gate" btnGradient="linear-gradient(135deg,#0A1C68 0%,#1D4ED8 100%)" glowColor="#3B82F6" borderColor="rgba(59,130,246,0.32)" delay={0.08} />
+            <PortalCard icon={<IconBuilding size={32} color="#FF7A00" />} badge="Portal III • Faculty" badgeColor="#FB923C" badgeBg="rgba(255,122,0,0.16)" title="Faculty Mentorship" desc="Zero-trust section-scoped command for accredited department faculty: review assigned sections, author papers, and track cohort accuracy." specs={['Section Scoping', 'Paper Authoring', 'Cohort Metrics']} href="/faculty" btnId="landing-faculty-login-btn" btnLabel="Sign In as Faculty" btnGradient="linear-gradient(135deg,#EA580C 0%,#FF7A00 100%)" glowColor="#FF7A00" borderColor="rgba(255,122,0,0.30)" delay={0.12} />
+            <PortalCard icon={<IconRadar size={32} color="#A78BFA" />} badge="Portal IV • Proctor" badgeColor="#C4B5FD" badgeBg="rgba(139,92,246,0.16)" title="Inspector Command" desc="Live invigilation bridge with waiting hall release controls, authoritative exam start dispatch, dynamic 1–10 tab strike policy, and violation feed." specs={['Sync Start', '1-10 Tab Strikes', 'Release Queue']} href="/inspector" btnId="landing-inspector-login-btn" btnLabel="Sign In as Inspector" btnGradient="linear-gradient(135deg,#6D28D9 0%,#8B5CF6 100%)" glowColor="#8B5CF6" borderColor="rgba(139,92,246,0.26)" delay={0.16} />
+            <PortalCard icon={<IconHierarchy size={32} color="#FFD000" />} badge="Portal V • Master" badgeColor="#FFD000" badgeBg="rgba(255,180,0,0.16)" title="Super Admin Hub" desc="Complete multi-tenant governance — manage colleges, academic hierarchy, 5-sector banks, bulk XLSX rosters, RBAC staff, and Drive backups." specs={['College Taxonomy', 'Bulk XLSX', 'Audit & Backups']} href="/admin" btnId="landing-admin-login-btn" btnLabel="Sign In as Admin" btnGradient="linear-gradient(135deg,#FF7A00 0%,#FFB400 100%)" glowColor="#FFB400" borderColor="rgba(255,180,0,0.30)" delay={0.20} />
           </div>
         </div>
       </section>
@@ -700,17 +716,17 @@ export default function LandingPage() {
             <div>
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
-                background: 'rgba(234,168,18,0.15)', border: '1px solid rgba(234,168,18,0.4)',
+                background: 'rgba(255,180,0,0.16)', border: '1px solid rgba(255,180,0,0.45)',
                 borderRadius: 20, padding: '4px 14px', marginBottom: 14,
-                fontSize: '0.75rem', fontWeight: 800, color: '#FBBF24', letterSpacing: '0.06em', textTransform: 'uppercase',
+                fontSize: '0.75rem', fontWeight: 800, color: '#FFD000', letterSpacing: '0.06em', textTransform: 'uppercase',
               }}>
-                Institutional Tagline
+                LogicWhile Assessment Sub-Branch
               </div>
               <h2 style={{
                 fontSize: 'clamp(2rem,4vw,2.8rem)', fontWeight: 900, margin: '0 0 14px',
                 color: '#FFFFFF', fontFamily: "'Rajdhani',sans-serif", letterSpacing: '-0.02em', lineHeight: 1.2,
               }}>
-                Logic. While. LiRE.
+                <span style={{ color: '#FF7A00' }}>Logic</span>While <span style={{ color: '#FFD000' }}>· LiRE Engine</span>
               </h2>
               <p style={{ color: '#94A3B8', fontSize: '0.94rem', lineHeight: 1.7, margin: '0 0 24px' }}>
                 The Live Rank Engine (LiRE) benchmarks thousands of simultaneous participants with sub-50ms velocity. Standardized tie-breaking incorporates accuracy percentages, negative marking deductibles, and submission velocity.
@@ -936,9 +952,9 @@ export default function LandingPage() {
                 Hyderabad Campus Headquarters
               </h3>
               <p style={{ fontSize: '0.84rem', color: '#94A3B8', lineHeight: 1.6, margin: '0 0 12px' }}>
-                LogicWhile Institute<br />
-                Madhapur, HITEC City, Hyderabad<br />
-                Telangana 500081, India
+                <strong style={{ color: '#FF7A00' }}>LogicWhile</strong> (Main Enterprise)<br />
+                LiRE Assessment Sub-Branch · Madhapur, HITEC City<br />
+                Hyderabad, Telangana 500081, India
               </p>
               <div style={{ fontSize: '0.78rem', color: '#EAA812', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <IconTarget size={14} color="#EAA812" /> Main Technological Center

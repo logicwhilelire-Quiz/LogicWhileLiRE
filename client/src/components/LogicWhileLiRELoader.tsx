@@ -8,11 +8,18 @@ export interface LogicWhileLiRELoaderProps {
 }
 
 const INSTITUTIONAL_PHASES = [
-  'Verifying Server-Authoritative Clock...',
-  'Synchronizing Assessment Encryption Mesh...',
-  'Securing Single-Session Integrity Bounds...',
-  'Connecting High-Concurrency Event Telemetry...',
-  'LogicWhile LiRE Engine · Ready',
+  'Synchronizing Server-Authoritative Clock...',
+  'Verifying LogicWhile Auth & Single-Session Bounds...',
+  'Initializing LiRE Encrypted Proctoring Enclave...',
+  'Connecting Live Rank Engine Telemetry Stream...',
+  'LogicWhile · LiRE Assessment Engine Ready',
+];
+
+const TELEMETRY_NODES = [
+  { id: 'clock', label: 'Clock Sync' },
+  { id: 'auth', label: 'Session Guard' },
+  { id: 'proctor', label: 'AI Proctor' },
+  { id: 'lire', label: 'LiRE Engine' },
 ];
 
 export function LogicWhileLiRELoader(props: LogicWhileLiRELoaderProps) {
@@ -26,44 +33,27 @@ export default function LogicWhileLiRELoaderDefault({
 }: LogicWhileLiRELoaderProps) {
   const shouldReduceMotion = useReducedMotion();
   const [phaseIndex, setPhaseIndex] = useState(0);
-  const [progressPercent, setProgressPercent] = useState(25);
+  const [progressPercent, setProgressPercent] = useState(22);
 
   useEffect(() => {
     if (message) return;
     const interval = setInterval(() => {
       setPhaseIndex((prev) => (prev + 1) % INSTITUTIONAL_PHASES.length);
-    }, 1700);
+    }, 1500);
     return () => clearInterval(interval);
   }, [message]);
 
   useEffect(() => {
     if (!showProgress) return;
     const timer = setInterval(() => {
-      setProgressPercent((prev) => {
-        if (prev >= 98) return 98;
-        return Math.min(prev + 5, 98);
-      });
-    }, 240);
+      setProgressPercent((prev) => (prev >= 98 ? 98 : Math.min(prev + 6, 98)));
+    }, 220);
     return () => clearInterval(timer);
   }, [showProgress]);
 
-  const scale = size === 'sm' ? 0.75 : size === 'lg' ? 1.25 : 1;
+  const scale = size === 'sm' ? 0.78 : size === 'lg' ? 1.18 : 1;
   const currentStatusText = message || INSTITUTIONAL_PHASES[phaseIndex];
-
-  // Letter outline paths for "LOGICWHILE" centered in viewBox 0 0 540 80
-  // Each path corresponds to one uppercase letter's structural contour
-  const letters = [
-    { char: 'L', path: 'M 20 15 L 20 65 L 50 65', id: 'l1', delay: 0 },
-    { char: 'O', path: 'M 90 15 A 25 25 0 1 0 90 65 A 25 25 0 1 0 90 15 Z', id: 'o1', delay: 0.18 },
-    { char: 'G', path: 'M 165 24 A 25 25 0 1 0 165 56 L 165 40 L 148 40', id: 'g1', delay: 0.36 },
-    { char: 'I', path: 'M 195 15 L 215 15 M 205 15 L 205 65 M 195 65 L 215 65', id: 'i1', delay: 0.54 },
-    { char: 'C', path: 'M 268 22 A 25 25 0 1 0 268 58', id: 'c1', delay: 0.72 },
-    { char: 'W', path: 'M 290 15 L 302 65 L 314 28 L 326 65 L 338 15', id: 'w1', delay: 0.90 },
-    { char: 'H', path: 'M 358 15 L 358 65 M 358 40 L 388 40 M 388 15 L 388 65', id: 'h1', delay: 1.08 },
-    { char: 'I', path: 'M 408 15 L 428 15 M 418 15 L 418 65 M 408 65 L 428 65', id: 'i2', delay: 1.26 },
-    { char: 'L', path: 'M 448 15 L 448 65 L 476 65', id: 'l2', delay: 1.44 },
-    { char: 'E', path: 'M 522 15 L 494 15 L 494 65 L 524 65 M 494 40 L 518 40', id: 'e1', delay: 1.62 },
-  ];
+  const activeNodeCount = Math.min(4, Math.max(1, Math.ceil((progressPercent / 100) * 4)));
 
   return (
     <div
@@ -72,77 +62,101 @@ export default function LogicWhileLiRELoaderDefault({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: size === 'sm' ? '14px' : '28px',
-        gap: size === 'sm' ? 12 : 18,
+        padding: size === 'sm' ? '10px' : '18px 16px',
+        gap: size === 'sm' ? 12 : 16,
         userSelect: 'none',
+        width: '100%',
       }}
       role="status"
       aria-live="polite"
     >
-      {/* ── ELEVATED OFFICIAL BRAND EMBLEM IMAGE WITH HOLOGRAPHIC HALO ── */}
+      {/* ── CORPORATE HIERARCHY RIBBON (Main Company > Sub-Branch) ── */}
+      <div
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '4px 12px',
+          borderRadius: 999,
+          background: 'rgba(10, 28, 104, 0.55)',
+          border: '1px solid rgba(255, 180, 0, 0.42)',
+          boxShadow: '0 0 18px rgba(255, 180, 0, 0.14)',
+          fontSize: size === 'sm' ? '0.62rem' : '0.68rem',
+          fontWeight: 800,
+          letterSpacing: '0.07em',
+          textTransform: 'uppercase',
+        }}
+      >
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#FF7A00', boxShadow: '0 0 8px #FF7A00' }} />
+        <span style={{ color: '#FF7A00' }}>LogicWhile</span>
+        <span style={{ color: '#64748B' }}>›</span>
+        <span style={{ color: '#FFD000' }}>LiRE Assessment Portal</span>
+      </div>
+
+      {/* ── OFFICIAL LOGO EMBLEM WITH DUAL CIRCUIT ORBITS ── */}
       <div
         style={{
           position: 'relative',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          marginBottom: 4,
+          margin: '2px 0',
         }}
       >
-        {/* Orbital holographic circuit ring */}
         {!shouldReduceMotion && (
           <motion.div
             style={{
               position: 'absolute',
-              width: (size === 'sm' ? 68 : size === 'lg' ? 104 : 86) * scale,
-              height: (size === 'sm' ? 68 : size === 'lg' ? 104 : 86) * scale,
+              width: (size === 'sm' ? 70 : size === 'lg' ? 106 : 88) * scale,
+              height: (size === 'sm' ? 70 : size === 'lg' ? 106 : 88) * scale,
               borderRadius: '50%',
-              border: '1.5px dashed rgba(234, 168, 18, 0.55)',
+              border: '1.5px dashed rgba(255, 180, 0, 0.65)',
               pointerEvents: 'none',
             }}
             animate={{ rotate: 360 }}
-            transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
           />
         )}
 
-        {/* Counter-rotating subtle cyan ring */}
         {!shouldReduceMotion && (
           <motion.div
             style={{
               position: 'absolute',
-              width: (size === 'sm' ? 78 : size === 'lg' ? 116 : 98) * scale,
-              height: (size === 'sm' ? 78 : size === 'lg' ? 116 : 98) * scale,
+              width: (size === 'sm' ? 82 : size === 'lg' ? 120 : 100) * scale,
+              height: (size === 'sm' ? 82 : size === 'lg' ? 120 : 100) * scale,
               borderRadius: '50%',
-              border: '1px solid rgba(56, 189, 248, 0.25)',
+              border: '1px solid rgba(255, 122, 0, 0.35)',
               pointerEvents: 'none',
             }}
             animate={{ rotate: -360 }}
-            transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 16, repeat: Infinity, ease: 'linear' }}
           />
         )}
 
-        {/* Official Brand Emblem Image with Golden Circuit Glow */}
         <motion.div
-          animate={shouldReduceMotion ? undefined : {
-            boxShadow: [
-              '0 0 20px rgba(234, 168, 18, 0.35), 0 8px 24px rgba(0, 0, 0, 0.6)',
-              '0 0 32px rgba(234, 168, 18, 0.6), 0 8px 24px rgba(0, 0, 0, 0.6)',
-              '0 0 20px rgba(234, 168, 18, 0.35), 0 8px 24px rgba(0, 0, 0, 0.6)',
-            ],
-          }}
-          transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+          animate={
+            shouldReduceMotion
+              ? undefined
+              : {
+                  boxShadow: [
+                    '0 0 18px rgba(255, 180, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.6)',
+                    '0 0 34px rgba(255, 122, 0, 0.55), 0 8px 24px rgba(0, 0, 0, 0.6)',
+                    '0 0 18px rgba(255, 180, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.6)',
+                  ],
+                }
+          }
+          transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
           style={{
             position: 'relative',
             borderRadius: 16,
             padding: 3,
-            background: 'linear-gradient(135deg, rgba(234, 168, 18, 0.75) 0%, rgba(56, 189, 248, 0.5) 50%, rgba(234, 168, 18, 0.85) 100%)',
-            boxShadow: '0 0 24px rgba(234, 168, 18, 0.4), 0 8px 24px rgba(0, 0, 0, 0.6)',
+            background: 'linear-gradient(135deg, #FFD000 0%, #FF7A00 55%, #1D4ED8 100%)',
             zIndex: 2,
           }}
         >
           <img
             src="/brand/logicwhilelire-official.png"
-            alt="LogicWhile LiRE"
+            alt="LogicWhile — LiRE Official Emblem"
             onError={(e) => {
               const target = e.currentTarget as HTMLImageElement;
               if (!target.src.endsWith('logicwhilelire-mark.svg')) {
@@ -150,8 +164,8 @@ export default function LogicWhileLiRELoaderDefault({
               }
             }}
             style={{
-              height: (size === 'sm' ? 44 : size === 'lg' ? 72 : 56) * scale,
-              width: (size === 'sm' ? 44 : size === 'lg' ? 72 : 56) * scale,
+              height: (size === 'sm' ? 46 : size === 'lg' ? 72 : 58) * scale,
+              width: (size === 'sm' ? 46 : size === 'lg' ? 72 : 58) * scale,
               objectFit: 'contain',
               borderRadius: 13,
               background: '#FFFFFF',
@@ -162,189 +176,215 @@ export default function LogicWhileLiRELoaderDefault({
         </motion.div>
       </div>
 
-      {/* ── INNOVATIVE LIGHT-TRACING BRAND LOGO ANIMATION ── */}
+      {/* ── ANIMATED CIRCUIT WORDMARK STAGE (Matches Official Logo Frame + Rays) ── */}
       <div
         style={{
           position: 'relative',
-          width: 520 * scale,
+          width: 480 * scale,
           maxWidth: '92vw',
-          height: 100 * scale,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'linear-gradient(180deg, rgba(14, 26, 46, 0.7) 0%, rgba(8, 19, 38, 0.95) 100%)',
-          borderRadius: 14,
-          border: '1px solid rgba(234, 168, 18, 0.22)',
-          boxShadow: '0 12px 36px rgba(0, 0, 0, 0.5), inset 0 0 24px rgba(56, 189, 248, 0.05)',
+          padding: size === 'sm' ? '12px 16px' : '16px 22px',
+          background: 'linear-gradient(160deg, rgba(10, 28, 104, 0.65) 0%, rgba(5, 11, 34, 0.96) 100%)',
+          borderRadius: 16,
+          border: '1.5px solid rgba(255, 180, 0, 0.35)',
+          boxShadow: '0 14px 38px rgba(0, 0, 0, 0.55), inset 0 0 28px rgba(255, 180, 0, 0.06)',
           overflow: 'hidden',
         }}
       >
-        {/* Architectural Grid Watermark in Background */}
+        {/* Architectural Circuit Grid */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
-            opacity: 0.12,
+            opacity: 0.14,
             backgroundImage:
-              'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+              'linear-gradient(rgba(255, 180, 0, 0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 180, 0, 0.16) 1px, transparent 1px)',
             backgroundSize: '20px 20px',
             pointerEvents: 'none',
           }}
         />
 
-        {/* Dynamic Sweeping Ambient Glow Flare */}
+        {/* Sweeping Gold-Orange Flare */}
         {!shouldReduceMotion && (
           <motion.div
             style={{
               position: 'absolute',
               top: 0,
               bottom: 0,
-              width: 140,
-              background: 'linear-gradient(90deg, transparent, rgba(234, 168, 18, 0.15), rgba(56, 189, 248, 0.2), transparent)',
+              width: 130,
+              background: 'linear-gradient(90deg, transparent, rgba(255, 180, 0, 0.16), rgba(255, 122, 0, 0.18), transparent)',
               pointerEvents: 'none',
               filter: 'blur(8px)',
             }}
-            animate={{ left: ['-20%', '120%'] }}
+            animate={{ left: ['-25%', '125%'] }}
             transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
           />
         )}
 
-        <svg
-          viewBox="0 0 540 80"
-          style={{
-            width: '92%',
-            height: '80%',
-            overflow: 'visible',
-          }}
-        >
+        {/* Animated Circuit Frame SVG + Crisp Single-Word LogicWhile + Sub-Branch LiRE Box */}
+        <svg viewBox="0 0 520 112" style={{ width: '100%', height: 'auto', display: 'block', position: 'relative', zIndex: 1 }}>
           <defs>
-            {/* Electric Golden Core Gradient */}
-            <linearGradient id="neon-glow-gold" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient id="lwLoaderGoldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#FF7A00" />
-              <stop offset="50%" stopColor="#FFBE00" />
-              <stop offset="100%" stopColor="#38BDF8" />
+              <stop offset="50%" stopColor="#FFD000" />
+              <stop offset="100%" stopColor="#FFB400" />
             </linearGradient>
-
-            {/* Glowing Drop Filter */}
-            <filter id="neon-bloom" x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="3.5" result="blur1" />
-              <feGaussianBlur stdDeviation="7" result="blur2" />
-              <feMerge>
-                <feMergeNode in="blur2" />
-                <feMergeNode in="blur1" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
           </defs>
 
-          {/* 1. Underlying Architectural Blueprint Outline */}
-          {letters.map((l) => (
-            <path
-              key={`base-${l.id}`}
-              d={l.path}
-              fill="none"
-              stroke="rgba(255, 255, 255, 0.08)"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          ))}
+          {/* Outer Circuit Traces */}
+          <path
+            d="M 16 74 L 16 14 L 504 14 L 504 40 L 486 40"
+            fill="none"
+            stroke="rgba(255, 180, 0, 0.25)"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M 16 98 L 504 98 L 504 68"
+            fill="none"
+            stroke="rgba(255, 180, 0, 0.25)"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
 
-          {/* 2. Neon Boundary Tracing (Starts at L, sequentially tracing to E) */}
-          {!shouldReduceMotion ? (
-            letters.map((l) => (
-              <motion.path
-                key={`trace-${l.id}`}
-                d={l.path}
-                fill="none"
-                stroke="url(#neon-glow-gold)"
-                strokeWidth="4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                filter="url(#neon-bloom)"
-                initial={{ pathLength: 0, opacity: 0.15 }}
-                animate={{
-                  pathLength: [0, 1, 1, 0],
-                  opacity: [0.2, 1, 0.85, 0.2],
-                }}
-                transition={{
-                  duration: 2.4,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                  delay: l.delay,
-                }}
-              />
-            ))
-          ) : (
-            letters.map((l) => (
-              <path
-                key={`static-${l.id}`}
-                d={l.path}
-                fill="none"
-                stroke="#FFBE00"
-                strokeWidth="4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ))
-          )}
-
-          {/* 3. Hot Electric Spark Pinpoint running through contours */}
           {!shouldReduceMotion && (
-            <motion.path
-              d="M 20 15 L 20 65 L 50 65 M 90 15 A 25 25 0 1 0 90 65 M 165 24 A 25 25 0 1 0 165 56 L 165 40 L 148 40 M 195 15 L 215 15 M 205 15 L 205 65 M 268 22 A 25 25 0 1 0 268 58 M 290 15 L 302 65 L 314 28 L 326 65 L 338 15 M 358 15 L 358 65 M 358 40 L 388 40 M 388 15 L 388 65 M 408 15 L 428 15 M 418 15 L 418 65 M 448 15 L 448 65 L 476 65 M 522 15 L 494 15 L 494 65 L 524 65"
-              fill="none"
-              stroke="#FFFFFF"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray="18 280"
-              initial={{ strokeDashoffset: 1200 }}
-              animate={{ strokeDashoffset: 0 }}
-              transition={{ duration: 2.6, repeat: Infinity, ease: 'linear' }}
-            />
+            <>
+              <motion.path
+                d="M 16 74 L 16 14 L 504 14 L 504 40 L 486 40"
+                fill="none"
+                stroke="url(#lwLoaderGoldGrad)"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: [0, 1, 1] }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+              />
+              <motion.path
+                d="M 16 98 L 504 98 L 504 68"
+                fill="none"
+                stroke="url(#lwLoaderGoldGrad)"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: [0, 1, 1] }}
+                transition={{ duration: 2.2, delay: 0.25, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            </>
           )}
+
+          {/* Left Terminal & Right Circuit Bulb with Light Rays */}
+          <circle cx="16" cy="74" r="6" fill="#FFB400" />
+          <circle cx="504" cy="68" r="6" fill="#FFB400" />
+          <circle cx="486" cy="40" r="8" fill="#FFD000" />
+          <g stroke="#FFD000" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="472" y1="34" x2="454" y2="27" />
+            <line x1="470" y1="40" x2="450" y2="40" />
+            <line x1="472" y1="46" x2="454" y2="53" />
+          </g>
+
+          {/* Single Wordmark: LogicWhile (Logo Orange + High-Contrast White/Blue) */}
+          <text
+            x="248"
+            y="60"
+            textAnchor="middle"
+            fontFamily="'Rajdhani', 'Plus Jakarta Sans', sans-serif"
+            fontSize="42"
+            fontWeight="800"
+            letterSpacing="0.02em"
+          >
+            <tspan fill="#FF7A00">Logic</tspan>
+            <tspan fill="#FFFFFF">While</tspan>
+          </text>
+
+          {/* Boxed Sub-Branch Line */}
+          <rect
+            x="110"
+            y="72"
+            width="292"
+            height="22"
+            rx="5"
+            fill="rgba(7, 19, 75, 0.9)"
+            stroke="#FFB400"
+            strokeWidth="1.6"
+          />
+          <text
+            x="256"
+            y="87"
+            textAnchor="middle"
+            fontFamily="'JetBrains Mono', monospace"
+            fontSize="11.5"
+            fontWeight="700"
+            letterSpacing="0.06em"
+            fill="#F8FAFC"
+          >
+            <tspan fill="#FFB400">LiRE</tspan>
+            <tspan fill="#94A3B8"> • </tspan>
+            <tspan fill="#FDBA74">Li: Live</tspan>
+            <tspan fill="#64748B"> · </tspan>
+            <tspan fill="#FFD000">R: Real</tspan>
+            <tspan fill="#64748B"> · </tspan>
+            <tspan fill="#FDBA74">E: Engine</tspan>
+          </text>
         </svg>
-
-        {/* LiRE Institutional Gold Badge in bottom right */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 6,
-            right: 14,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '2px 8px',
-            borderRadius: 4,
-            background: 'rgba(234, 168, 18, 0.12)',
-            border: '1px solid rgba(234, 168, 18, 0.35)',
-          }}
-        >
-          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981' }} />
-          <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#EAA812', letterSpacing: '0.1em' }}>
-            LiRE ENGINE
-          </span>
-        </div>
       </div>
 
-      {/* Human-Made Clean Sub-Caption */}
-      <div style={{ textAlign: 'center', lineHeight: 1.3 }}>
-        <div style={{ fontSize: size === 'sm' ? '0.82rem' : '0.94rem', fontWeight: 700, color: '#F1F5F9', letterSpacing: '0.04em' }}>
-          Standardized Institutional Assessment Platform
-        </div>
-        <div style={{ fontSize: '0.70rem', color: '#64748B', fontWeight: 500, letterSpacing: '0.02em', marginTop: 2 }}>
-          Server-Authoritative Clock • Anti-Tamper Proctoring Enclave
-        </div>
+      {/* ── SUBSYSTEM DIAGNOSTIC NODES ── */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+          gap: 6,
+          width: 480 * scale,
+          maxWidth: '92vw',
+        }}
+      >
+        {TELEMETRY_NODES.map((node, idx) => {
+          const isOnline = idx < activeNodeCount;
+          return (
+            <div
+              key={node.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 5,
+                padding: '5px 6px',
+                borderRadius: 8,
+                background: isOnline ? 'rgba(255, 180, 0, 0.10)' : 'rgba(255, 255, 255, 0.03)',
+                border: `1px solid ${isOnline ? 'rgba(255, 180, 0, 0.40)' : 'rgba(255, 255, 255, 0.08)'}`,
+                fontSize: '0.65rem',
+                fontWeight: 700,
+                color: isOnline ? '#FFD000' : '#64748B',
+                transition: 'all 0.25s ease',
+              }}
+            >
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: isOnline ? '#FF7A00' : '#475569',
+                  boxShadow: isOnline ? '0 0 6px #FF7A00' : 'none',
+                  flexShrink: 0,
+                }}
+              />
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{node.label}</span>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Institutional Progress Bar */}
+      {/* ── INSTITUTIONAL PROGRESS BAR (Logo Navy -> Orange -> Gold Gradient) ── */}
       {showProgress && (
-        <div style={{ width: 280 * scale, maxWidth: '90%' }}>
+        <div style={{ width: 320 * scale, maxWidth: '92%' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-            <span style={{ fontSize: '0.66rem', color: '#64748B', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-              Synchronizing Clock & Assets
+            <span style={{ fontSize: '0.66rem', color: '#94A3B8', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              Booting Assessment Sub-Branch
             </span>
-            <span style={{ fontSize: '0.72rem', color: '#FFBE00', fontWeight: 800, fontFamily: 'monospace' }}>
+            <span style={{ fontSize: '0.72rem', color: '#FFD000', fontWeight: 800, fontFamily: 'monospace' }}>
               {progressPercent}%
             </span>
           </div>
@@ -352,20 +392,20 @@ export default function LogicWhileLiRELoaderDefault({
           <div
             style={{
               position: 'relative',
-              height: 4,
+              height: 5,
               borderRadius: 999,
               background: 'rgba(255, 255, 255, 0.08)',
               overflow: 'hidden',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 180, 0, 0.2)',
             }}
           >
             <motion.div
               style={{
                 height: '100%',
                 width: `${progressPercent}%`,
-                background: 'linear-gradient(90deg, #FF7A00 0%, #FFBE00 50%, #38BDF8 100%)',
+                background: 'linear-gradient(90deg, #1D4ED8 0%, #FF7A00 55%, #FFD000 100%)',
                 borderRadius: 999,
-                boxShadow: '0 0 8px rgba(255, 190, 0, 0.6)',
+                boxShadow: '0 0 10px rgba(255, 180, 0, 0.65)',
               }}
               transition={{ ease: 'easeOut', duration: 0.2 }}
             />
@@ -373,14 +413,14 @@ export default function LogicWhileLiRELoaderDefault({
         </div>
       )}
 
-      {/* Dynamic Telemetry Status Message */}
-      <div style={{ textAlign: 'center', minHeight: 20, maxWidth: 420 }}>
+      {/* ── LIVE TELEMETRY STATUS LINE ── */}
+      <div style={{ textAlign: 'center', minHeight: 20, maxWidth: 460 }}>
         <span
           style={{
             display: 'inline-block',
-            fontSize: size === 'sm' ? '0.78rem' : '0.86rem',
+            fontSize: size === 'sm' ? '0.76rem' : '0.84rem',
             fontWeight: 600,
-            color: '#38BDF8',
+            color: '#FDBA74',
             letterSpacing: '0.01em',
             fontFamily: 'monospace',
           }}

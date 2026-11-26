@@ -46,7 +46,7 @@ export default function LogicWhileLiREIntro({ onComplete }: { onComplete?: () =>
             position: 'fixed',
             inset: 0,
             zIndex: 999999,
-            background: 'radial-gradient(ellipse at 50% 40%, #0c1735 0%, #050814 75%, #020409 100%)',
+            background: 'radial-gradient(ellipse at 50% 40%, #0A1C68 0%, #050B22 70%, #020512 100%)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -61,7 +61,7 @@ export default function LogicWhileLiREIntro({ onComplete }: { onComplete?: () =>
               width: 380,
               height: 380,
               borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(255, 194, 0, 0.18) 0%, rgba(56, 189, 248, 0.12) 50%, transparent 75%)',
+              background: 'radial-gradient(circle, rgba(255, 180, 0, 0.20) 0%, rgba(255, 122, 0, 0.14) 50%, transparent 75%)',
               filter: 'blur(30px)',
               pointerEvents: 'none',
             }}
@@ -185,15 +185,15 @@ export default function LogicWhileLiREIntro({ onComplete }: { onComplete?: () =>
                   fillRule="evenodd"
                   d="M 324 200 C 324 246 304 278 266 278 C 228 278 208 246 208 200 C 208 154 228 122 266 122 C 304 122 324 154 324 200 Z 
                      M 284 200 C 284 168 276 154 266 154 C 256 154 248 168 248 200 C 248 232 256 246 266 246 C 276 246 284 232 284 200 Z"
-                  fill="#38BDF8"
+                  fill="#60A5FA"
                 />
-                <line x1="222" y1="256" x2="310" y2="144" stroke="#38BDF8" strokeWidth="16" strokeLinecap="round" />
+                <line x1="222" y1="256" x2="310" y2="144" stroke="#60A5FA" strokeWidth="16" strokeLinecap="round" />
                 {/* g */}
                 <path
                   d="M 358 158 C 358 138 374 124 402 124 C 428 124 442 138 442 162 L 442 254 C 442 270 432 278 408 278 C 378 278 360 262 360 262 L 372 236 C 372 236 384 248 402 248 C 414 248 418 242 418 234 L 418 226 C 410 236 394 242 380 242 C 358 242 342 224 342 198 C 342 172 358 158 358 158 Z"
                   fill="#FF7A00"
                 />
-                <ellipse cx="392" cy="184" rx="24" ry="22" fill="#0A1024" />
+                <ellipse cx="392" cy="184" rx="24" ry="22" fill="#050B22" />
                 <g fill="#FF7A00">
                   <rect x="368" y="168" width="48" height="3.5" rx="1.5" />
                   <rect x="368" y="176" width="48" height="3.5" rx="1.5" />
@@ -213,16 +213,16 @@ export default function LogicWhileLiREIntro({ onComplete }: { onComplete?: () =>
                 {/* Whi1e */}
                 <path
                   d="M 108 304 L 140 304 L 164 404 L 190 304 L 218 304 L 244 404 L 268 304 L 300 304 L 262 444 L 228 444 L 204 346 L 180 444 L 146 444 Z"
-                  fill="#38BDF8"
+                  fill="#60A5FA"
                 />
                 <path
                   d="M 324 290 L 356 290 L 356 350 C 368 336 386 328 404 328 C 428 328 442 342 442 368 L 442 444 L 410 444 L 410 376 C 410 362 404 354 392 354 C 378 354 368 366 368 382 L 368 444 L 336 444 Z"
-                  fill="#38BDF8"
+                  fill="#60A5FA"
                 />
-                <circle cx="468" cy="316" r="15" fill="#38BDF8" />
+                <circle cx="468" cy="316" r="15" fill="#60A5FA" />
                 <path
                   d="M 456 348 C 456 348 468 346 476 354 C 482 360 482 370 482 384 L 482 426 C 482 438 490 444 502 444 L 504 444 L 504 446 C 496 448 484 448 472 442 C 458 434 454 420 454 406 L 454 348 Z"
-                  fill="#38BDF8"
+                  fill="#60A5FA"
                 />
                 {/* 1 in Orange */}
                 <path
@@ -232,7 +232,7 @@ export default function LogicWhileLiREIntro({ onComplete }: { onComplete?: () =>
                 <path
                   d="M 648 376 C 648 348 630 328 602 328 C 572 328 552 350 552 386 C 552 422 572 446 604 446 C 624 446 640 436 648 420 L 622 408 C 618 416 612 422 602 422 C 590 422 582 414 580 398 L 648 398 C 648 398 648 388 648 376 Z
                      M 580 376 C 582 360 590 350 602 350 C 614 350 622 360 622 376 Z"
-                  fill="#38BDF8"
+                  fill="#60A5FA"
                 />
               </motion.g>
 
@@ -248,15 +248,15 @@ export default function LogicWhileLiREIntro({ onComplete }: { onComplete?: () =>
                   width="548"
                   height="144"
                   rx="6"
-                  stroke="#FFC200"
+                  stroke="#FFB400"
                   strokeWidth="14"
-                  fill="rgba(56, 189, 248, 0.08)"
+                  fill="rgba(10, 28, 104, 0.35)"
                 />
-                <path d="M 176 502 L 208 502 L 208 558 L 244 558 L 244 584 L 176 584 Z" fill="#38BDF8" />
-                <circle cx="288" cy="510" r="12" fill="#38BDF8" />
+                <path d="M 176 502 L 208 502 L 208 558 L 244 558 L 244 584 L 176 584 Z" fill="#60A5FA" />
+                <circle cx="288" cy="510" r="12" fill="#60A5FA" />
                 <path
                   d="M 276 534 C 278 534 292 532 296 540 C 300 546 300 554 300 566 C 300 576 306 584 316 584 L 298 584 C 286 584 280 574 280 562 L 280 534 Z"
-                  fill="#38BDF8"
+                  fill="#60A5FA"
                 />
 
                 <path
@@ -264,7 +264,7 @@ export default function LogicWhileLiREIntro({ onComplete }: { onComplete?: () =>
                      M 372 522 L 400 522 C 410 522 416 526 416 534 C 416 542 410 546 400 546 L 372 546 Z"
                   fill="#FF7A00"
                 />
-                <g fill="#0A1024">
+                <g fill="#050B22">
                   <rect x="342" y="508" width="104" height="3" />
                   <rect x="342" y="516" width="104" height="3" />
                   <rect x="342" y="524" width="104" height="3" />
@@ -276,7 +276,7 @@ export default function LogicWhileLiREIntro({ onComplete }: { onComplete?: () =>
                   <rect x="342" y="572" width="104" height="3" />
                 </g>
 
-                <path d="M 470 502 L 536 502 L 536 526 L 498 526 L 498 544 L 528 544 L 528 566 L 498 566 L 498 560 L 498 584 L 536 584 L 536 584 L 470 584 Z" fill="#38BDF8" />
+                <path d="M 470 502 L 536 502 L 536 526 L 498 526 L 498 544 L 528 544 L 528 566 L 498 566 L 498 560 L 498 584 L 536 584 L 536 584 L 470 584 Z" fill="#60A5FA" />
 
                 <text
                   x="410"
@@ -286,7 +286,7 @@ export default function LogicWhileLiREIntro({ onComplete }: { onComplete?: () =>
                   fontSize="17"
                   fontWeight="700"
                   letterSpacing="0.12em"
-                  fill="#93C5FD"
+                  fill="#FFD000"
                 >
                   Li: Live  •  R: Real  •  E: Engine
                 </text>

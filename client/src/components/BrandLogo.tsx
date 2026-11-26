@@ -69,12 +69,11 @@ export default function BrandLogo({
     hero: { h: 360, markW: 360, fontSize: 52, subSize: 20,  tagSize: 17,  gap: 24 },
   }[size];
 
-  // LogicWhile LiRE Institutional Theme palettes
-  const goldGlow    = isDark ? 'rgba(234, 168, 18, 0.55)' : 'rgba(234, 168, 18, 0.35)';
-  const blueColor   = isDark ? '#FFFFFF' : '#002147';
-  const orangeColor = '#EAA812';
-  const taglineColor = isDark ? '#F1F5F9' : '#002147';
-  const subtextColor = isDark ? '#93C5FD' : '#475569';
+  // LogicWhile LiRE Official Logo Color Palette (Navy #0A1C68 · Orange #FF7A00 · Gold #FFB400)
+  const goldGlow    = isDark ? 'rgba(255, 180, 0, 0.55)' : 'rgba(255, 180, 0, 0.35)';
+  const navyAccent  = isDark ? '#FFFFFF' : '#0A1C68';
+  const orangeColor = '#FF7A00';
+  const goldColor   = '#FFB400';
 
   // --- 1. PURE ICON MARK (Exact Emblem Badge) ---
   if (variant === 'mark') {
@@ -95,16 +94,16 @@ export default function BrandLogo({
             borderRadius: Math.max(6, Math.round(dims.h * 0.16)),
             padding: 2,
             background: isDark
-              ? 'linear-gradient(135deg, rgba(255, 194, 0, 0.6) 0%, rgba(56, 189, 248, 0.4) 50%, rgba(255, 122, 0, 0.5) 100%)'
-              : 'linear-gradient(135deg, rgba(234, 179, 8, 0.5) 0%, rgba(0, 18, 122, 0.3) 100%)',
+              ? 'linear-gradient(135deg, #FFD000 0%, #FFB400 45%, #FF7A00 100%)'
+              : 'linear-gradient(135deg, #FFB400 0%, #FF7A00 50%, #0A1C68 100%)',
             boxShadow: isDark
-              ? `0 0 16px ${goldGlow}, 0 2px 8px rgba(0,0,0,0.5)`
-              : '0 2px 10px rgba(0,0,0,0.14)',
+              ? `0 0 18px ${goldGlow}, 0 2px 8px rgba(0,0,0,0.5)`
+              : '0 2px 10px rgba(10, 28, 104, 0.18)',
           }}
         >
           <img
             src="/brand/logicwhilelire-official.png"
-            alt="LogicWhile LiRE Official Logo"
+            alt="LogicWhile — LiRE Official Logo"
             style={{
               height: dims.h,
               width: dims.h,
@@ -133,19 +132,19 @@ export default function BrandLogo({
           maxWidth: '100%',
           position: 'relative',
         }}
-        aria-label="LogicWhile LiRE — Elevating Coding Knowledge"
+        aria-label="LogicWhile — LiRE Assessment Sub-Branch · Elevating Coding Knowledge"
       >
         <div
           style={{
             background: isDark
-              ? 'linear-gradient(145deg, rgba(13, 22, 48, 0.92) 0%, rgba(7, 12, 28, 0.95) 100%)'
-              : 'linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 100%)',
-            border: isDark ? '1.5px solid rgba(255, 194, 0, 0.5)' : '1px solid rgba(0,0,0,0.12)',
+              ? 'linear-gradient(145deg, rgba(10, 28, 104, 0.88) 0%, rgba(5, 11, 34, 0.96) 100%)'
+              : 'linear-gradient(145deg, #FFFFFF 0%, #FFFBEB 100%)',
+            border: isDark ? '1.5px solid rgba(255, 180, 0, 0.55)' : '1.5px solid rgba(10, 28, 104, 0.16)',
             borderRadius: 20,
-            padding: 14,
+            padding: 16,
             boxShadow: isDark
-              ? '0 16px 48px rgba(0, 0, 0, 0.7), 0 0 32px rgba(255, 194, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1)'
-              : '0 12px 36px rgba(0, 0, 0, 0.14)',
+              ? '0 16px 48px rgba(0, 0, 0, 0.7), 0 0 32px rgba(255, 180, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.1)'
+              : '0 12px 36px rgba(10, 28, 104, 0.14)',
             display: 'inline-flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -153,7 +152,7 @@ export default function BrandLogo({
             position: 'relative',
           }}
         >
-          {/* Ambient Corner Accent Bulbs */}
+          {/* Corporate Lineage Pill */}
           <div
             style={{
               position: 'absolute',
@@ -161,24 +160,24 @@ export default function BrandLogo({
               right: 8,
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 4,
-              padding: '2px 8px',
+              gap: 5,
+              padding: '3px 10px',
               borderRadius: 12,
-              background: 'rgba(255, 194, 0, 0.15)',
-              border: '1px solid rgba(255, 194, 0, 0.4)',
-              fontSize: '0.66rem',
+              background: isDark ? 'rgba(255, 122, 0, 0.18)' : 'rgba(10, 28, 104, 0.08)',
+              border: `1px solid ${isDark ? 'rgba(255, 180, 0, 0.5)' : 'rgba(10, 28, 104, 0.22)'}`,
+              fontSize: '0.64rem',
               fontWeight: 800,
-              color: '#FFC200',
-              letterSpacing: '0.04em',
+              color: isDark ? goldColor : '#0A1C68',
+              letterSpacing: '0.05em',
             }}
           >
-            <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#FFC200', boxShadow: '0 0 6px #FFC200' }} />
-            <span>OFFICIAL EMBLEM</span>
+            <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: orangeColor, boxShadow: `0 0 6px ${orangeColor}` }} />
+            <span>LOGICWHILE › LiRE DIVISION</span>
           </div>
 
           <img
             src="/brand/logicwhilelire-official.png"
-            alt="LogicWhile LiRE — Elevating Coding Knowledge"
+            alt="LogicWhile — LiRE Assessment Division"
             style={{
               maxWidth: size === 'hero' ? 440 : size === 'lg' ? 320 : size === 'xl' ? 380 : 270,
               width: '100%',
@@ -195,22 +194,24 @@ export default function BrandLogo({
             <div
               style={{
                 marginTop: 10,
-                padding: '4px 14px',
+                padding: '5px 14px',
                 borderRadius: 20,
-                background: isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(0, 18, 122, 0.06)',
-                border: isDark ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(0, 18, 122, 0.15)',
+                background: isDark ? 'rgba(255, 180, 0, 0.1)' : 'rgba(10, 28, 104, 0.06)',
+                border: isDark ? '1px solid rgba(255, 180, 0, 0.35)' : '1px solid rgba(10, 28, 104, 0.15)',
                 display: 'inline-flex',
                 alignItems: 'center',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
                 gap: 6,
               }}
             >
-              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: isDark ? '#38BDF8' : '#00127A', letterSpacing: '0.04em' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: isDark ? goldColor : '#0A1C68', letterSpacing: '0.04em' }}>
                 ELEVATING CODING KNOWLEDGE
               </span>
               <span style={{ display: 'inline-flex', alignItems: 'center' }}>
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="#FF7A00" aria-hidden="true"><polygon points="12,2 15,9 22,12 15,15 12,22 9,15 2,12 9,9" /></svg>
               </span>
-              <span style={{ fontSize: '0.68rem', color: isDark ? '#94A3B8' : '#64748B', fontFamily: 'monospace' }}>
+              <span style={{ fontSize: '0.68rem', color: isDark ? '#FDBA74' : '#EA580C', fontFamily: 'monospace', fontWeight: 700 }}>
                 Li: Live • R: Real • E: Engine
               </span>
             </div>
@@ -234,7 +235,7 @@ export default function BrandLogo({
         userSelect: 'none',
         position: 'relative',
       }}
-      aria-label="LogicWhile LiRE — Elevating Coding Knowledge"
+      aria-label="LogicWhile — LiRE Assessment Sub-Branch · Elevating Coding Knowledge"
     >
       {/* Official Elevated Emblem Mark Image */}
       <div
@@ -243,17 +244,17 @@ export default function BrandLogo({
           borderRadius: Math.max(6, Math.round(dims.h * 0.16)),
           padding: 2,
           background: isDark
-            ? 'linear-gradient(135deg, rgba(255, 194, 0, 0.7) 0%, rgba(56, 189, 248, 0.4) 50%, rgba(255, 122, 0, 0.6) 100%)'
-            : 'linear-gradient(135deg, rgba(234, 179, 8, 0.4) 0%, rgba(0, 18, 122, 0.25) 100%)',
+            ? 'linear-gradient(135deg, #FFD000 0%, #FFB400 50%, #FF7A00 100%)'
+            : 'linear-gradient(135deg, #FFB400 0%, #FF7A00 55%, #0A1C68 100%)',
           boxShadow: isDark
             ? `0 0 16px ${goldGlow}, 0 2px 8px rgba(0,0,0,0.6)`
-            : '0 2px 8px rgba(0,0,0,0.12)',
+            : '0 2px 8px rgba(10, 28, 104, 0.16)',
           flexShrink: 0,
         }}
       >
         <img
           src="/brand/logicwhilelire-official.png"
-          alt="LogicWhile LiRE"
+          alt="LogicWhile"
           style={{
             height: dims.h,
             width: dims.h,
@@ -268,7 +269,7 @@ export default function BrandLogo({
 
       {/* Typography Lockup Column */}
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', lineHeight: 1.15 }}>
-        {/* Wordmark: LogicWhile LiRE */}
+        {/* Wordmark: LogicWhile (Single Word Parent Company) + LiRE (Sub-Branch Badge) */}
         <div
           style={{
             fontFamily: "var(--font-display, 'Space Grotesk', system-ui, sans-serif)",
@@ -276,62 +277,61 @@ export default function BrandLogo({
             fontWeight: 800,
             letterSpacing: '-0.02em',
             display: 'inline-flex',
-            alignItems: 'baseline',
+            alignItems: 'center',
             whiteSpace: 'nowrap',
           }}
         >
-          {/* LogicWhile Wordmark in rich institutional amber */}
-          <span
-            style={{
-              color: '#EAA812',
-              fontWeight: 900,
-              textShadow: isDark ? '0 0 14px rgba(234, 168, 18, 0.5)' : 'none',
-              letterSpacing: '-0.01em',
-            }}
-          >
-            LogicWhile
+          {/* LogicWhile strictly formatted as one cohesive single word using Logo Orange + Navy/White */}
+          <span style={{ fontWeight: 900, letterSpacing: '-0.02em', display: 'inline-flex', alignItems: 'baseline' }}>
+            <span style={{ color: orangeColor, textShadow: isDark ? '0 0 12px rgba(255, 122, 0, 0.35)' : 'none' }}>
+              Logic
+            </span>
+            <span style={{ color: isDark ? '#FFFFFF' : '#0A1C68', textShadow: isDark ? '0 0 10px rgba(59, 130, 246, 0.35)' : 'none' }}>
+              While
+            </span>
           </span>
 
-          <span style={{ width: Math.round(dims.fontSize * 0.35) }} />
+          <span style={{ width: Math.round(dims.fontSize * 0.36) }} />
 
-          {/* Elevated Boxed LiRE badge */}
+          {/* Elevated Boxed LiRE Sub-Branch Badge */}
           <span
+            title="LiRE — Assessment Sub-Branch of LogicWhile"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              padding: '1px 8px',
+              padding: '1px 7px',
               borderRadius: 6,
-              border: `1.8px solid ${isDark ? '#EAA812' : '#D97706'}`,
+              border: `1.8px solid ${goldColor}`,
               background: isDark
-                ? 'linear-gradient(135deg, rgba(234, 168, 18, 0.22) 0%, rgba(245, 158, 11, 0.12) 100%)'
-                : 'rgba(234, 168, 18, 0.15)',
-              boxShadow: isDark ? '0 0 12px rgba(234, 168, 18, 0.35)' : 'none',
-              fontSize: Math.round(dims.fontSize * 0.88),
+                ? 'linear-gradient(135deg, rgba(255, 180, 0, 0.20) 0%, rgba(255, 122, 0, 0.14) 100%)'
+                : 'linear-gradient(135deg, rgba(255, 208, 0, 0.22) 0%, rgba(255, 122, 0, 0.12) 100%)',
+              boxShadow: isDark ? '0 0 12px rgba(255, 180, 0, 0.32)' : 'none',
+              fontSize: Math.round(dims.fontSize * 0.80),
               fontWeight: 900,
               letterSpacing: '0.06em',
-              color: isDark ? '#FFFFFF' : '#002147',
+              color: navyAccent,
             }}
           >
-            LiRE
+            <span>Li</span>
+            <span style={{ color: orangeColor }}>R</span>
+            <span>E</span>
           </span>
         </div>
 
-        {/* Sub-Brand & Tagline: Render both highlighted lines matching official brand specification */}
+        {/* Sub-Brand & Tagline: Parent -> Sub-Branch Hierarchy */}
         {effectiveShowTagline && (
           <div style={{ display: 'flex', flexDirection: 'column', marginTop: 2, gap: 1 }}>
-            {/* Sub-Brand Definition: • Li: Live • R: Real • E: Engine */}
             <div
               style={{
                 fontFamily: "var(--font-mono, 'JetBrains Mono', 'Fira Code', monospace)",
-                fontSize: size === 'xs' ? 8 : size === 'sm' ? 10 : dims.subSize,
+                fontSize: size === 'xs' ? 8 : size === 'sm' ? 9.5 : dims.subSize,
                 fontWeight: 700,
-                color: '#38BDF8',
+                color: isDark ? goldColor : '#EA580C',
                 letterSpacing: '0.04em',
                 whiteSpace: 'nowrap',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 5,
-                textShadow: isDark ? '0 0 8px rgba(56, 189, 248, 0.5)' : 'none',
               }}
             >
               <span
@@ -340,27 +340,25 @@ export default function BrandLogo({
                   width: size === 'sm' ? 5 : 6,
                   height: size === 'sm' ? 5 : 6,
                   borderRadius: '50%',
-                  background: '#38BDF8',
-                  boxShadow: '0 0 8px #38BDF8',
+                  background: orangeColor,
+                  boxShadow: `0 0 8px ${orangeColor}`,
                 }}
               />
-              <span style={{ color: '#38BDF8', fontWeight: 800 }}>Li: Live</span>
-              <span style={{ color: '#94A3B8' }}>•</span>
-              <span style={{ color: '#38BDF8', fontWeight: 800 }}>R: Real</span>
-              <span style={{ color: '#94A3B8' }}>•</span>
-              <span style={{ color: '#38BDF8', fontWeight: 800 }}>E: Engine</span>
+              <span style={{ color: isDark ? '#FDBA74' : '#EA580C', fontWeight: 800 }}>Li: Live</span>
+              <span style={{ color: isDark ? '#64748B' : '#94A3B8' }}>•</span>
+              <span style={{ color: isDark ? '#FFD000' : '#0A1C68', fontWeight: 800 }}>R: Real</span>
+              <span style={{ color: isDark ? '#64748B' : '#94A3B8' }}>•</span>
+              <span style={{ color: isDark ? '#FDBA74' : '#EA580C', fontWeight: 800 }}>E: Engine</span>
             </div>
 
-            {/* Tagline: Elevating Coding Knowledge */}
             <div
               style={{
                 fontFamily: "var(--font-display, 'Plus Jakarta Sans', system-ui, sans-serif)",
-                fontSize: size === 'xs' ? 7.5 : size === 'sm' ? 9.5 : dims.tagSize,
+                fontSize: size === 'xs' ? 7.5 : size === 'sm' ? 9 : dims.tagSize,
                 fontWeight: 800,
-                color: isDark ? '#FFFFFF' : '#002147',
+                color: isDark ? '#E2E8F0' : '#0A1C68',
                 letterSpacing: '0.02em',
                 whiteSpace: 'nowrap',
-                textShadow: isDark ? '0 1px 4px rgba(0,0,0,0.7)' : 'none',
               }}
             >
               Elevating Coding Knowledge

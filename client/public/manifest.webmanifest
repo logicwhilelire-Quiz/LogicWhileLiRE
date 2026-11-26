@@ -1,11 +1,11 @@
 {
-  "name": "LogicWhile LiRE",
+  "name": "LogicWhile — LiRE Assessment Portal",
   "short_name": "LogicWhile LiRE",
-  "description": "LogicWhile LiRE — Elevating Coding Knowledge • Li: Live • R: Real • E: Engine",
+  "description": "LiRE (Live • Real • Engine) — Institutional Online Examination & Assessment Sub-Branch of LogicWhile.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#050814",
-  "theme_color": "#2B7FFF",
+  "background_color": "#050B22",
+  "theme_color": "#0A1C68",
   "orientation": "any",
   "icons": [
     {

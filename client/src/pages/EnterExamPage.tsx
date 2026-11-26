@@ -11,9 +11,9 @@ import { IconLock, IconAlert, IconShield, IconFileText, IconFlash } from '../com
 
 function ExamEntryBg() {
   return (
-    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 15%, rgba(16,185,129,0.08) 0%, transparent 65%)' }} />
-      <div style={{ position: 'absolute', inset: 0, opacity: 0.22, backgroundImage: 'linear-gradient(rgba(16,185,129,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(16,185,129,0.08) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
+    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden', background: 'radial-gradient(ellipse at 50% 0%, #0A1C68 0%, #050B22 65%, #030718 100%)' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 15%, rgba(255,180,0,0.11) 0%, transparent 65%)' }} />
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.25, backgroundImage: 'linear-gradient(rgba(255,180,0,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,180,0,0.08) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
     </div>
   );
 }
@@ -228,16 +228,19 @@ export default function EnterExamPage() {
           className={shaking ? 'shake-animation' : ''}
         >
           {/* Premium Exam Card */}
-          <div style={{ background: 'rgba(10,18,40,0.92)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderRadius: 20, border: '1.5px solid rgba(234,168,18,0.35)', boxShadow: '0 24px 64px rgba(0,0,0,0.6),0 0 50px rgba(234,168,18,0.12),inset 0 1px 0 rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+          <div style={{ background: 'linear-gradient(155deg, rgba(10, 28, 104, 0.65) 0%, rgba(5, 11, 34, 0.95) 100%)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderRadius: 20, border: '1.5px solid rgba(255,180,0,0.45)', boxShadow: '0 24px 64px rgba(0,0,0,0.65),0 0 50px rgba(255,180,0,0.14),inset 0 1px 0 rgba(255,255,255,0.08)', overflow: 'hidden' }}>
             {/* Institutional Header Strip */}
-            <div style={{ background: 'linear-gradient(135deg,#002147 0%,#001535 100%)', color: '#FFFFFF', padding: '24px 30px', textAlign: 'center', borderBottom: '2px solid #EAA812', position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '100%', background: 'radial-gradient(ellipse at 50% 0%,rgba(234,168,18,0.12) 0%,transparent 70%)', pointerEvents: 'none' }} />
-              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10, position: 'relative' }}>
-                <BrandLogo size="sm" variant="standard" showTagline={true} />
+            <div style={{ background: 'linear-gradient(135deg,#07134B 0%,#0A1C68 100%)', color: '#FFFFFF', padding: '22px 28px', textAlign: 'center', borderBottom: '2.5px solid #FFB400', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '100%', background: 'radial-gradient(ellipse at 50% 0%,rgba(255,180,0,0.14) 0%,transparent 70%)', pointerEvents: 'none' }} />
+              <div style={{ fontSize: '0.66rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10, position: 'relative' }}>
+                <span style={{ color: '#FF7A00' }}>LogicWhile</span> <span style={{ color: '#64748B' }}>›</span> <span style={{ color: '#FFD000' }}>LiRE Examination Sub-Branch</span>
               </div>
-              <h1 style={{ fontSize: '1.2rem', fontWeight: 900, margin: '0 0 4px', letterSpacing: '0.04em', fontFamily: "'Rajdhani',sans-serif", position: 'relative' }}>EXAMINATION ENTRANCE GATE</h1>
-              <p style={{ fontSize: '0.78rem', color: '#EAA812', margin: 0, fontWeight: 700, position: 'relative' }}>
-                <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#EAA812', marginRight: 6, verticalAlign: 'middle', animation: 'eePulse 2s ease-in-out infinite' }} />
+              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10, position: 'relative' }}>
+                <BrandLogo size="sm" variant="standard" showTagline={true} themeOverride="dark" />
+              </div>
+              <h1 style={{ fontSize: '1.25rem', fontWeight: 900, margin: '0 0 4px', letterSpacing: '0.04em', fontFamily: "'Rajdhani',sans-serif", position: 'relative' }}>EXAMINATION ENTRANCE GATE</h1>
+              <p style={{ fontSize: '0.78rem', color: '#FFD000', margin: 0, fontWeight: 700, position: 'relative' }}>
+                <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#FF7A00', marginRight: 6, verticalAlign: 'middle', animation: 'eePulse 2s ease-in-out infinite' }} />
                 Enter with Hall Ticket &amp; Assigned Exam Code
               </p>
             </div>
@@ -335,14 +338,14 @@ export default function EnterExamPage() {
                 />                {/* Submit Button */}
                 <button
                   type="submit" disabled={loading}
-                  style={{ width: '100%', background: loading ? 'rgba(234,168,18,0.5)' : 'linear-gradient(135deg,#EAA812 0%,#F59E0B 100%)', color: loading ? 'rgba(0,33,71,0.6)' : '#002147', border: 'none', borderRadius: 10, padding: '14px 20px', fontSize: '0.98rem', fontWeight: 900, letterSpacing: '0.04em', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : '0 4px 20px rgba(234,168,18,0.45)', marginTop: 4, transition: 'all 0.25s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-                  onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(234,168,18,0.6)'; } }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = loading ? 'none' : '0 4px 20px rgba(234,168,18,0.45)'; }}
+                  style={{ width: '100%', background: loading ? 'rgba(255,180,0,0.45)' : 'linear-gradient(135deg,#FF7A00 0%,#FFB400 55%,#FFD000 100%)', color: loading ? 'rgba(7,19,75,0.6)' : '#07134B', border: 'none', borderRadius: 10, padding: '14px 20px', fontSize: '0.98rem', fontWeight: 900, letterSpacing: '0.04em', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : '0 6px 24px rgba(255,180,0,0.45)', marginTop: 4, transition: 'all 0.25s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 32px rgba(255,180,0,0.6)'; } }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = loading ? 'none' : '0 6px 24px rgba(255,180,0,0.45)'; }}
                 >
                   {loading ? (
-                    <><span style={{ display:'inline-block',width:16,height:16,borderRadius:'50%',border:'2px solid rgba(0,33,71,0.3)',borderTopColor:'#002147',animation:'spin 0.7s linear infinite' }} /><span>Verifying Credentials...</span></>
+                    <><span style={{ display:'inline-block',width:16,height:16,borderRadius:'50%',border:'2px solid rgba(7,19,75,0.3)',borderTopColor:'#07134B',animation:'spin 0.7s linear infinite' }} /><span>Verifying Credentials...</span></>
                   ) : (
-                    <><span><IconLock size={16} color="#002147" /></span><span>Authorize &amp; Enter Assessment Lobby →</span></>
+                    <><span><IconLock size={16} color="#07134B" /></span><span>Authorize &amp; Enter Assessment Lobby →</span></>
                   )}
                 </button>
 

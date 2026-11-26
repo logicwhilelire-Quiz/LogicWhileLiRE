@@ -123,30 +123,33 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
       {/* Admin / Inspector Identity Badge */}
       <div
         style={{
-          padding: '10px 14px',
-          borderRadius: 10,
+          padding: '11px 14px',
+          borderRadius: 12,
           background: isSuperAdmin
-            ? 'rgba(43, 127, 255, 0.08)'
+            ? 'rgba(255, 180, 0, 0.08)'
             : isInspector
-            ? 'rgba(234, 179, 8, 0.08)'
-            : 'rgba(16, 185, 129, 0.08)',
+            ? 'rgba(255, 122, 0, 0.09)'
+            : 'rgba(59, 130, 246, 0.09)',
           border: isSuperAdmin
-            ? '1px solid rgba(43, 127, 255, 0.25)'
+            ? '1px solid rgba(255, 180, 0, 0.35)'
             : isInspector
-            ? '1px solid rgba(234, 179, 8, 0.3)'
-            : '1px solid rgba(16, 185, 129, 0.25)',
-          marginBottom: 20,
+            ? '1px solid rgba(255, 122, 0, 0.35)'
+            : '1px solid rgba(59, 130, 246, 0.3)',
+          marginBottom: 18,
         }}
       >
-        <div style={{ fontSize: '0.68rem', color: isSuperAdmin ? 'var(--color-primary)' : isInspector ? '#EAB308' : '#10B981', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div style={{ fontSize: '0.64rem', color: '#94A3B8', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 3 }}>
+          <span style={{ color: '#FF7A00' }}>LogicWhile</span> › LiRE Sub-Branch
+        </div>
+        <div style={{ fontSize: '0.68rem', color: isSuperAdmin ? '#FFD000' : isInspector ? '#FB923C' : '#60A5FA', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           {isSuperAdmin ? 'SUPER ADMIN ACCESS' : isInspector ? 'INSPECTOR CONSOLE' : 'FACULTY PORTAL'}
         </div>
-        <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
+        <div style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--color-text, #FFFFFF)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
           {currentUser.name || currentUser.email || (isInspector ? 'College Inspector' : 'Super Administrator')}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-          <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: isSuperAdmin ? '#3B82F6' : isInspector ? '#EAB308' : '#10B981' }} />
-          <span style={{ fontSize: '0.7rem', color: isSuperAdmin ? '#93C5FD' : isInspector ? '#FDE047' : '#6EE7B7', fontWeight: 600 }}>{roleTitle}</span>
+          <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: isSuperAdmin ? '#FFB400' : isInspector ? '#FF7A00' : '#3B82F6' }} />
+          <span style={{ fontSize: '0.7rem', color: isSuperAdmin ? '#FDE68A' : isInspector ? '#FDBA74' : '#93C5FD', fontWeight: 600 }}>{roleTitle}</span>
         </div>
       </div>
 
@@ -172,23 +175,43 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
                 fontSize: '0.86rem',
                 fontWeight: isActive ? 700 : 500,
                 color: isActive ? '#FFFFFF' : 'var(--color-text-muted)',
-                background: isActive ? 'rgba(43, 127, 255, 0.18)' : 'transparent',
-                border: isActive ? '1px solid rgba(43, 127, 255, 0.4)' : '1px solid transparent',
+                background: isActive ? 'linear-gradient(90deg, rgba(255, 180, 0, 0.20) 0%, rgba(255, 122, 0, 0.10) 100%)' : 'transparent',
+                border: isActive ? '1px solid rgba(255, 180, 0, 0.45)' : '1px solid transparent',
                 cursor: 'pointer',
                 textAlign: 'left',
                 width: '100%',
                 transition: 'all 0.15s ease',
               }}
             >
-              <span>{item.icon}</span>
+              <span style={{ color: isActive ? '#FFB400' : 'inherit', display: 'inline-flex' }}>{item.icon}</span>
               <span>{item.label}</span>
             </button>
           );
         })}
       </nav>
 
-      {/* Logout */}
-      <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
+      {/* Portal Home + Logout */}
+      <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <button
+          onClick={() => navigate('/')}
+          className="admin-nav-item"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            color: '#FFB400',
+            width: '100%',
+            padding: '8px 14px',
+            background: 'rgba(255, 180, 0, 0.08)',
+            border: '1px solid rgba(255, 180, 0, 0.25)',
+            borderRadius: 8,
+            cursor: 'pointer',
+            fontSize: '0.82rem',
+            fontWeight: 700,
+          }}
+        >
+          <span>← LogicWhile Home</span>
+        </button>
         <button
           onClick={handleLogout}
           className="admin-nav-item"
@@ -210,8 +233,8 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
           <IconLogout size={16} />
           <span>Logout Portal</span>
         </button>
-        <div style={{ fontSize: '0.68rem', color: 'var(--color-text-faint, #64748b)', textAlign: 'center', marginTop: 12, lineHeight: 1.4 }}>
-          LogicWhile LiRE • <em>"Logic. While. LiRE."</em><br />Autonomous Assessment Engine
+        <div style={{ fontSize: '0.68rem', color: 'var(--color-text-faint, #64748b)', textAlign: 'center', marginTop: 10, lineHeight: 1.4 }}>
+          <strong style={{ color: '#FF7A00' }}>LogicWhile</strong> · <em>LiRE Assessment Division</em><br />Official Institutional Sub-Branch
         </div>
       </div>
     </aside>
