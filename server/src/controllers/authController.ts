@@ -1206,14 +1206,71 @@ export async function getStudentInstitutionalReport(req: Request, res: Response)
     const examCode = latestAttempt?.exam_code || pExamTitle || 'ASSESSMENT';
     const examTitle = ecExamName || latestAttempt?.exam_code || pExamTitle || 'Assessment';
 
+    // Compute real cohort/batch comparison metrics if student has completed attempts
+    let cohortStats: {
+      batchAverageScore: number | null;
+      topPerformerScore: number | null;
+      sectionRank: number | null;
+      totalInCohort: number | null;
+      examCode: string | null;
+    } = {
+      batchAverageScore: null,
+      topPerformerScore: null,
+      sectionRank: null,
+      totalInCohort: null,
+      examCode: null,
+    };
+
+    if (hasAttempts && latestAttempt?.exam_code) {
+      try {
+        const { data: cohortAttempts } = await supabase
+          .from('exam_code_attempts')
+          .select('hall_ticket_no, student_id, score, status')
+          .eq('exam_code', latestAttempt.exam_code)
+          .in('status', ['submitted', 'completed']);
+
+        if (cohortAttempts && cohortAttempts.length > 0) {
+          const scores = cohortAttempts
+            .map((a: any) => Number(a.score))
+            .filter((n: number) => Number.isFinite(n))
+            .sort((a: number, b: number) => b - a);
+
+          if (scores.length > 0) {
+            const sum = scores.reduce((acc: number, s: number) => acc + s, 0);
+            const myScore = Number(latestResult?.total_score ?? latestAttempt.score ?? 0);
+            const higherCount = scores.filter((s: number) => s > myScore).length;
+            cohortStats = {
+              batchAverageScore: Math.round((sum / scores.length) * 10) / 10,
+              topPerformerScore: Math.round(scores[0] * 10) / 10,
+              sectionRank: higherCount + 1,
+              totalInCohort: scores.length,
+              examCode: latestAttempt.exam_code,
+            };
+          }
+        }
+      } catch {
+        // Non-fatal: keep cohortStats nulls if batch query fails
+      }
+    }
+
+    const assessmentHistory = allCompletedResults.map((r: any, idx: number) => ({
+      index: idx + 1,
+      examCode: r.exam_code || examCode || `ASSESSMENT-${idx + 1}`,
+      totalScore: Number(r.total_score) || 0,
+      maxScore: Number(r.max_score) || 0,
+      percentage: Number(r.percentage) || 0,
+      gradedAt: r.graded_at || null,
+      topicBreakdown: r.topic_breakdown || null,
+    }));
+
     const diagnostic = hasAttempts
       ? {
           status: 'assessed',
-          message: `Candidate ${student.name} completed assessment "${examTitle}" with score ${latestResult?.total_score || latestAttempt?.score || 0} / ${latestResult?.max_score || latestAttempt?.max_score || 100}. Detailed sector velocity recorded below.`,
+          message: `Candidate ${student.name} completed assessment "${examTitle}" with score ${latestResult?.total_score ?? latestAttempt?.score ?? 0} / ${latestResult?.max_score ?? latestAttempt?.max_score ?? 0}. Detailed sector telemetry recorded below.`,
         }
       : {
           status: 'baseline',
-          message: `Candidate ${student.name} (${student.hall_ticket || student.roll_number || hallTicket}) is enrolled in ${student.college_name || 'RV Institute of Technology'} (${student.branch_code || 'CSE'} - Sec ${student.section || 'C'}). Baseline enrollment active. Performance diagnostics and velocity suggestions will generate dynamically upon submission of the candidate's first proctored examination.`,
+          message: `Candidate ${student.name} (${student.hall_ticket || student.roll_number || hallTicket}) is enrolled in ${student.college_name || 'their institution'}${student.branch_code ? ` (${student.branch_code}${student.section ? ` - Sec ${student.section}` : ''})` : ''}. Baseline enrollment is active with 0 completed assessments. Scores and cohort comparisons will populate after the first submitted exam.`,
         };
 
     res.json({
@@ -1224,33 +1281,26 @@ export async function getStudentInstitutionalReport(req: Request, res: Response)
         name: student.name || `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Candidate',
         rollNumber: student.hall_ticket || student.roll_number || hallTicket,
         email: student.email,
-        collegeName: student.college_name || 'RV Institute Of Technology',
-        branch: student.branch_code || 'CSE',
-        section: student.section || 'C',
-        batch: student.batch || student.year_of_passing || '2028',
+        collegeName: student.college_name || 'Institutional Enrollment',
+        branch: student.branch_code || 'General',
+        section: student.section || '—',
+        batch: student.batch || student.year_of_passing || '—',
         registeredAt: student.created_at,
       },
       summary: hasAttempts ? {
         totalScore: latestResult?.total_score ?? Number(latestAttempt?.score) ?? 0,
-        maxScore: latestResult?.max_score ?? Number(latestAttempt?.max_score) ?? 100,
+        maxScore: latestResult?.max_score ?? Number(latestAttempt?.max_score) ?? 0,
         percentage: latestResult?.percentage ?? (latestAttempt?.max_score ? Math.round((Number(latestAttempt.score) / Number(latestAttempt.max_score)) * 100) : 0),
         correctCount: latestResult?.correct_count ?? 0,
         wrongCount: latestResult?.wrong_count ?? 0,
         timeTakenSeconds: latestResult?.time_taken_seconds ?? Number(latestAttempt?.time_taken_seconds) ?? 0,
         examCode,
         examTitle,
+        examsCompleted: allCompletedResults.length,
         gradedAt: latestResult?.graded_at || latestAttempt?.submitted_at || null,
-      } : {
-        totalScore: 0,
-        maxScore: 70,
-        percentage: 0,
-        correctCount: 0,
-        wrongCount: 0,
-        timeTakenSeconds: 0,
-        examCode: 'PRE-EXAM-BASELINE',
-        examTitle: 'Curriculum Baseline Target',
-        gradedAt: null,
-      },
+      } : null,
+      cohortStats,
+      assessmentHistory,
       topicBreakdown: hasAttempts && Object.keys(aggregatedTopics).length > 0 ? aggregatedTopics : null,
       diagnostic,
       attempts: ecAttempts || [],

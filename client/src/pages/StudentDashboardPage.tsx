@@ -580,7 +580,7 @@ export default function StudentDashboardPage() {
                   className="btn btn-outline text-xs"
                   style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px' }}
                 >
-                  <IconFileText size={14} /> View PDF Performance Card
+                  <IconFileText size={14} /> View Official Performance Report
                 </Link>
                 <Link
                   to="/practice"
@@ -840,7 +840,7 @@ export default function StudentDashboardPage() {
                   5-Sector Competency Matrix &amp; 3D Interactive Universe
                 </h2>
                 <p style={{ margin: '4px 0 0 0', fontSize: '0.84rem', color: '#94a3b8' }}>
-                  Live candidate mastery across the 5 technical sectors of LogicWhileLiRE.
+                  Live candidate mastery across the 5 technical sectors of <strong style={{ color: '#FF7A00' }}>LogicWhile</strong> <span style={{ color: '#FFD000' }}>› LiRE</span>.
                 </p>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>

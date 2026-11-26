@@ -670,9 +670,9 @@ export default function PracticeArenaPage() {
   const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'Easy' | 'Medium' | 'Hard'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge>(DAILY_CHALLENGES[0]);
-  const [streakDays, setStreakDays] = useState(7);
-  const [xp, setXp] = useState(1450);
-  const [solvedCount, setSolvedCount] = useState(2);
+  const [streakDays, setStreakDays] = useState(0);
+  const [xp, setXp] = useState(0);
+  const [solvedCount, setSolvedCount] = useState(0);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'coding' | 'blitz' | 'sectors'>('coding');
   const [xpBanner, setXpBanner] = useState<string | null>(null);
@@ -738,13 +738,14 @@ export default function PracticeArenaPage() {
     { q: 'Two unbiased dice are rolled. What is the probability of rolling a sum of 7?', opts: ['1/6', '7/36', '1/12', '5/36'], ans: 0, sector: 'Sector 1: Quant' },
   ];
 
-  // Dynamic 3D Radar scores reflecting sector engagement
+  // Dynamic 3D Radar scores reflecting real practice session engagement (0 until solved)
+  const [solvedSectors, setSolvedSectors] = useState<Record<string, number>>({});
   const liveRadarScores: SectorScore[] = [
-    { sector: 'Quantitative Aptitude', short: 'Quant', score: 86 + (solvedCount > 0 ? 4 : 0), benchmark: 72, color: '#F59E0B' },
-    { sector: 'Logical Reasoning', short: 'Logic', score: 92, benchmark: 76, color: '#8B5CF6' },
-    { sector: 'Core Computer Science', short: 'Core CS', score: 79 + (solvedCount > 1 ? 6 : 0), benchmark: 68, color: '#10B981' },
-    { sector: 'Data Structures & Algorithms', short: 'DSA', score: 84 + (solvedCount > 2 ? 5 : 0), benchmark: 64, color: '#38BDF8' },
-    { sector: 'Full-Stack & System Design', short: 'Full-Stack', score: 88, benchmark: 71, color: '#F43F5E' },
+    { sector: 'Quantitative Aptitude', short: 'Quant', score: Math.min(100, (solvedSectors['sector-quant'] || 0) * 25), benchmark: 72, color: '#FFB400' },
+    { sector: 'Logical Reasoning', short: 'Logic', score: Math.min(100, (solvedSectors['sector-logic'] || 0) * 25), benchmark: 76, color: '#8B5CF6' },
+    { sector: 'Core Computer Science', short: 'Core CS', score: Math.min(100, (solvedSectors['sector-core-cs'] || 0) * 25), benchmark: 68, color: '#10B981' },
+    { sector: 'Data Structures & Algorithms', short: 'DSA', score: Math.min(100, (solvedSectors['sector-dsa'] || 0) * 25), benchmark: 64, color: '#3B82F6' },
+    { sector: 'Full-Stack & System Design', short: 'Full-Stack', score: Math.min(100, (solvedSectors['sector-fullstack'] || 0) * 25), benchmark: 71, color: '#FF7A00' },
   ];
 
   useEffect(() => {
@@ -785,6 +786,11 @@ export default function PracticeArenaPage() {
       sound.playChime(4);
       setXp((prev) => prev + selectedChallenge.xp);
       setSolvedCount((prev) => prev + 1);
+      setStreakDays((prev) => (prev === 0 ? 1 : prev));
+      setSolvedSectors((prev) => ({
+        ...prev,
+        [selectedChallenge.sectorId]: (prev[selectedChallenge.sectorId] || 0) + 1,
+      }));
       setXpBanner(`Sector Challenge Solved: +${selectedChallenge.xp} XP credited to your ${selectedChallenge.sectorName} mastery profile!`);
       setTimeout(() => setXpBanner(null), 5000);
     } else {
@@ -972,12 +978,12 @@ export default function PracticeArenaPage() {
                 <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#60A5FA', fontFamily: "'Space Grotesk', sans-serif" }}>
                   {xp.toLocaleString()} XP
                 </span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#A78BFA' }}>
-                  Lvl 8 Architect
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#FFD000' }}>
+                  Lvl {Math.floor(xp / 200) + 1} Challenger
                 </span>
               </div>
               <div style={{ width: '100%', height: 6, background: 'rgba(255, 255, 255, 0.1)', borderRadius: 999, marginTop: 4, overflow: 'hidden' }}>
-                <div style={{ width: '74%', height: '100%', background: 'linear-gradient(90deg, #2B7FFF, #A78BFA)', borderRadius: 999 }} />
+                <div style={{ width: `${Math.min(100, Math.round(((xp % 200) / 200) * 100))}%`, height: '100%', background: 'linear-gradient(90deg, #FF7A00, #FFB400)', borderRadius: 999 }} />
               </div>
             </div>
           </div>
