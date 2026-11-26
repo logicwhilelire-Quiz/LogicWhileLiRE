@@ -115,12 +115,12 @@ Set each of the following in **Netlify Dashboard → Site configuration → Envi
 Before launching, execute the following SQL scripts in the **Supabase SQL Editor**:
 
 1. **Mail Logs Audit Table**:
-   Run contents of [`supabase/migrations/20261011000000_mail_logs.sql`](file:///c:/Users/chara/OneDrive/Desktop/LogicWhileLire/Quiz/supabase/migrations/20261011000000_mail_logs.sql)
+   Run contents of [`supabase/migrations/20261011000000_mail_logs.sql`](supabase/migrations/20261011000000_mail_logs.sql)
    - Creates `mail_logs` table with statuses: `sent`, `delivered`, `bounced`, `failed`, `resending`
    - Creates indexes on `to_email`, `status`, `resend_id`, `created_at`
 
 2. **Staff Login Linking**:
-   Run contents of [`supabase/migrations/20261011000001_staff_login_linking.sql`](file:///c:/Users/chara/OneDrive/Desktop/LogicWhileLire/Quiz/supabase/migrations/20261011000001_staff_login_linking.sql)
+   Run contents of [`supabase/migrations/20261011000001_staff_login_linking.sql`](supabase/migrations/20261011000001_staff_login_linking.sql)
    - Adds unique `username`, `phone`, and `must_change_password` columns to `staff`
    - Backfills existing accounts
 

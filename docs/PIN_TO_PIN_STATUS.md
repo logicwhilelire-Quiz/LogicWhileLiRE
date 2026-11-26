@@ -69,12 +69,12 @@ All test suites were freshly executed against the active codebase and running ba
 
 ## 2. Route-by-Route Pin-to-Pin Content & Interaction Audit
 
-Below is the exhaustive, in-order analysis of every route declared in [client/src/App.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/App.tsx).
+Below is the exhaustive, in-order analysis of every route declared in [client/src/App.tsx](client/src/App.tsx).
 
 ---
 
 ### Route 1: `/`
-- **Component File:** [client/src/pages/LandingPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/LandingPage.tsx)
+- **Component File:** [client/src/pages/LandingPage.tsx](client/src/pages/LandingPage.tsx)
 - **What It Does:**  
   Serves as the public marketing homepage for GROWTHRAN. It showcases the core features of the assessment engine (AI generation, face proctoring, sandboxed coding, 3D leaderboards), presents hardware integrity credentials, and offers interactive entry buttons for students and administrators, alongside an institution pilot inquiry form.
 - **Real Content Verbatim:**
@@ -94,13 +94,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
   - High GPU particle count when multiple WebGL background canvases mount simultaneously on lower-end devices.
   - Form submit displays an in-memory alert when email service is disconnected.
 - **Screenshots:**
-  - Desktop 1440px: [01_landing_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/01_landing_1440.png)
-  - Mobile 375px: [01_landing_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/01_landing_375.png)
+  - Desktop 1440px: [01_landing_1440.png](screenshots/audit/01_landing_1440.png)
+  - Mobile 375px: [01_landing_375.png](screenshots/audit/01_landing_375.png)
 
 ---
 
 ### Route 2: `/enter-exam`
-- **Component File:** [client/src/pages/EnterExamPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/EnterExamPage.tsx)
+- **Component File:** [client/src/pages/EnterExamPage.tsx](client/src/pages/EnterExamPage.tsx)
 - **What It Does:**  
   Candidate direct authentication gate using the Exam Code System. Students enter an assigned institutional Exam Code (e.g., `DEMO123` or `GR-VRSEC-2026`) and their college Hall Ticket number to verify their eligibility without needing an email OTP.
 - **Real Content Verbatim:**
@@ -119,13 +119,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - If backend is offline, error message displays generic fallback `"Entry failed. Please check your credentials."`.
 - **Screenshots:**
-  - Desktop 1440px: [02_enter_exam_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/02_enter_exam_1440.png)
-  - Mobile 375px: [02_enter_exam_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/02_enter_exam_375.png)
+  - Desktop 1440px: [02_enter_exam_1440.png](screenshots/audit/02_enter_exam_1440.png)
+  - Mobile 375px: [02_enter_exam_375.png](screenshots/audit/02_enter_exam_375.png)
 
 ---
 
 ### Route 3: `/instructions/:examCode`
-- **Component File:** [client/src/pages/InstructionsPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/InstructionsPage.tsx)
+- **Component File:** [client/src/pages/InstructionsPage.tsx](client/src/pages/InstructionsPage.tsx)
 - **What It Does:**  
   Mandatory pre-exam readiness verification screen. Displays hardware checks (network latency, browser compatibility, screen lock, camera permissions), rules of conduct, dual-language instructions (English and Telugu), and a countdown timer before unlocking the assessment.
 - **Real Content Verbatim:**
@@ -148,13 +148,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - In headless automated environments without a physical camera, user must click "Allow" on synthetic media streams.
 - **Screenshots:**
-  - Desktop 1440px: [03_instructions_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/03_instructions_1440.png)
-  - Mobile 375px: [03_instructions_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/03_instructions_375.png)
+  - Desktop 1440px: [03_instructions_1440.png](screenshots/audit/03_instructions_1440.png)
+  - Mobile 375px: [03_instructions_375.png](screenshots/audit/03_instructions_375.png)
 
 ---
 
 ### Route 4: `/quiz/:examCode`
-- **Component File:** [client/src/pages/ExamCodeQuizPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/ExamCodeQuizPage.tsx)
+- **Component File:** [client/src/pages/ExamCodeQuizPage.tsx](client/src/pages/ExamCodeQuizPage.tsx)
 - **What It Does:**  
   The core examination screen. Houses the server-authoritative timer, real-time client webcam proctoring widget (face presence / multiple faces / gaze detection), 17-question palette with status indicators (answered, flagged, unvisited), MCQ option selection, and final submission modal.
 - **Real Content Verbatim:**
@@ -177,13 +177,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
   - Camera permissions denied prompts an alert modal; candidate cannot proceed until access is granted.
   - Minor render warning previously existed in ExamFaceMonitor callback (now cleanly wrapped in `setTimeout(0)`).
 - **Screenshots:**
-  - Desktop 1440px: [04_quiz_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/04_quiz_1440.png)
-  - Mobile 375px: [04_quiz_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/04_quiz_375.png)
+  - Desktop 1440px: [04_quiz_1440.png](screenshots/audit/04_quiz_1440.png)
+  - Mobile 375px: [04_quiz_375.png](screenshots/audit/04_quiz_375.png)
 
 ---
 
 ### Route 5: `/result-ec/:examCode`
-- **Component File:** [client/src/pages/ResultECPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/ResultECPage.tsx)
+- **Component File:** [client/src/pages/ResultECPage.tsx](client/src/pages/ResultECPage.tsx)
 - **What It Does:**  
   The candidate post-exam scorecard and integrity verification page. Displays the percentage score, qualification badge, correct/wrong/skipped question breakdown, skill breakdown radar/bar chart, server time synchronization metrics, and links to the 3D leaderboard.
 - **Real Content Verbatim:**
@@ -204,13 +204,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - Direct navigation without submission history displays fallback demonstration scores rather than an empty state.
 - **Screenshots:**
-  - Desktop 1440px: [05_result_ec_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/05_result_ec_1440.png)
-  - Mobile 375px: [05_result_ec_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/05_result_ec_375.png)
+  - Desktop 1440px: [05_result_ec_1440.png](screenshots/audit/05_result_ec_1440.png)
+  - Mobile 375px: [05_result_ec_375.png](screenshots/audit/05_result_ec_375.png)
 
 ---
 
 ### Route 6: `/leaderboard-ec/:examCode` (also aliased as `/leaderboard/:examCode`)
-- **Component File:** [client/src/pages/LeaderboardECPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/LeaderboardECPage.tsx)
+- **Component File:** [client/src/pages/LeaderboardECPage.tsx](client/src/pages/LeaderboardECPage.tsx)
 - **What It Does:**  
   Real-time competitive tournament leaderboard for an exam code cohort. Features an interactive 3D WebGL podium for the top 3 contenders, live rank list with search filtering, socket-driven score telemetry, and a simulation toggle.
 - **Real Content Verbatim:**
@@ -232,13 +232,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - On low-power mobile GPUs, rendering 3 separate canvas podiums can induce slight frame drops.
 - **Screenshots:**
-  - Desktop 1440px: [06_leaderboard_ec_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/06_leaderboard_ec_1440.png)
-  - Mobile 375px: [06_leaderboard_ec_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/06_leaderboard_ec_375.png)
+  - Desktop 1440px: [06_leaderboard_ec_1440.png](screenshots/audit/06_leaderboard_ec_1440.png)
+  - Mobile 375px: [06_leaderboard_ec_375.png](screenshots/audit/06_leaderboard_ec_375.png)
 
 ---
 
 ### Route 7: `/verify/:token` (and `/certificate/verify/:token`, `/verify`)
-- **Component File:** [client/src/pages/VerifyCertificatePage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/VerifyCertificatePage.tsx)
+- **Component File:** [client/src/pages/VerifyCertificatePage.tsx](client/src/pages/VerifyCertificatePage.tsx)
 - **What It Does:**  
   Formal service retirement tombstone page. Compliant with Phase C4 specification, informs users that legacy certificate verification URLs have been decommissioned and that candidate integrity is verified via institutional exam code ledgers.
 - **Real Content Verbatim:**
@@ -253,13 +253,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None. Clean, robust, lightweight static view.
 - **Screenshots:**
-  - Desktop 1440px: [07_verify_cert_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/07_verify_cert_1440.png)
-  - Mobile 375px: [07_verify_cert_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/07_verify_cert_375.png)
+  - Desktop 1440px: [07_verify_cert_1440.png](screenshots/audit/07_verify_cert_1440.png)
+  - Mobile 375px: [07_verify_cert_375.png](screenshots/audit/07_verify_cert_375.png)
 
 ---
 
 ### Route 8: `/practice` (and `/arena`)
-- **Component File:** [client/src/pages/PracticeArenaPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/PracticeArenaPage.tsx)
+- **Component File:** [client/src/pages/PracticeArenaPage.tsx](client/src/pages/PracticeArenaPage.tsx)
 - **What It Does:**  
   Student coding practice arena and daily retention sprint portal. Provides an in-browser code editor with multi-language execution (Python 3, JavaScript, C++), 60-second quiz blitz mode, streak tracking, XP levels, and PWA installation options.
 - **Real Content Verbatim:**
@@ -278,13 +278,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - In offline mode, code execution returns simulated standard output rather than sandboxed runner results.
 - **Screenshots:**
-  - Desktop 1440px: [08_practice_arena_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/08_practice_arena_1440.png)
-  - Mobile 375px: [08_practice_arena_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/08_practice_arena_375.png)
+  - Desktop 1440px: [08_practice_arena_1440.png](screenshots/audit/08_practice_arena_1440.png)
+  - Mobile 375px: [08_practice_arena_375.png](screenshots/audit/08_practice_arena_375.png)
 
 ---
 
 ### Route 9: `/register` (and `/gate`, `/register-candidate`, `/student/register`)
-- **Component File:** [client/src/pages/CandidateRegisterGatePage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/CandidateRegisterGatePage.tsx)
+- **Component File:** [client/src/pages/CandidateRegisterGatePage.tsx](client/src/pages/CandidateRegisterGatePage.tsx)
 - **What It Does:**  
   The Candidate Assessment Registration Gate conforming to the official `AL-SPEC-2026-REG` specification. A 3-step intake wizard capturing identity, academic institution, discrete YOP cohort (2027–2030), mutex section (A–E), and credential setup with live composite uniqueness checks on `(college_id, roll_number)`.
 - **Real Content Verbatim:**
@@ -304,13 +304,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - Oxlint reports unused variables `IcosahedronCanvas`, `ConfettiEffect`, and synchronous `setState` in draft restore effect (non-breaking warnings).
 - **Screenshots:**
-  - Desktop 1440px: [09_candidate_gate_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/09_candidate_gate_1440.png)
-  - Mobile 375px: [09_candidate_gate_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/09_candidate_gate_375.png)
+  - Desktop 1440px: [09_candidate_gate_1440.png](screenshots/audit/09_candidate_gate_1440.png)
+  - Mobile 375px: [09_candidate_gate_375.png](screenshots/audit/09_candidate_gate_375.png)
 
 ---
 
 ### Route 10: `/contest/:contestId/waiting-lobby`
-- **Component File:** [client/src/pages/WaitingLobbyPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/WaitingLobbyPage.tsx)
+- **Component File:** [client/src/pages/WaitingLobbyPage.tsx](client/src/pages/WaitingLobbyPage.tsx)
 - **What It Does:**  
   Synchronized waiting lobby for scheduled batch assessments. Validates the candidate's gate registration claim, maintains an active WebSocket heartbeat, displays the global synchronized countdown timer, and transitions candidates into the assessment simultaneously.
 - **Real Content Verbatim:**
@@ -333,13 +333,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - If contest ID is not found, displays fallback demo candidate clearance badge rather than an error screen.
 - **Screenshots:**
-  - Desktop 1440px: [10_waiting_lobby_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/10_waiting_lobby_1440.png)
-  - Mobile 375px: [10_waiting_lobby_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/10_waiting_lobby_375.png)
+  - Desktop 1440px: [10_waiting_lobby_1440.png](screenshots/audit/10_waiting_lobby_1440.png)
+  - Mobile 375px: [10_waiting_lobby_375.png](screenshots/audit/10_waiting_lobby_375.png)
 
 ---
 
 ### Route 11: `/login` (and `/student/login`)
-- **Component File:** [client/src/pages/StudentLoginPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/StudentLoginPage.tsx)
+- **Component File:** [client/src/pages/StudentLoginPage.tsx](client/src/pages/StudentLoginPage.tsx)
 - **What It Does:**  
   Credential-based authentication portal for registered students. Supports sign-in via either email address or institutional Hall Ticket number, with password visibility toggling, lockout warnings, and links to registration and password reset.
 - **Real Content Verbatim:**
@@ -357,13 +357,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None detected. Clean, responsive form layout.
 - **Screenshots:**
-  - Desktop 1440px: [11_student_login_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/11_student_login_1440.png)
-  - Mobile 375px: [11_student_login_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/11_student_login_375.png)
+  - Desktop 1440px: [11_student_login_1440.png](screenshots/audit/11_student_login_1440.png)
+  - Mobile 375px: [11_student_login_375.png](screenshots/audit/11_student_login_375.png)
 
 ---
 
 ### Route 12: `/forgot-password`
-- **Component File:** [client/src/pages/ForgotPasswordPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/ForgotPasswordPage.tsx)
+- **Component File:** [client/src/pages/ForgotPasswordPage.tsx](client/src/pages/ForgotPasswordPage.tsx)
 - **What It Does:**  
   Initiates the self-service password recovery flow. Candidates or faculty enter their registered email address to receive a cryptographically signed, 1-hour expiration password reset link.
 - **Real Content Verbatim:**
@@ -380,13 +380,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - When SMTP credentials are not configured, server logs the reset link to console instead of sending email.
 - **Screenshots:**
-  - Desktop 1440px: [12_forgot_password_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/12_forgot_password_1440.png)
-  - Mobile 375px: [12_forgot_password_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/12_forgot_password_375.png)
+  - Desktop 1440px: [12_forgot_password_1440.png](screenshots/audit/12_forgot_password_1440.png)
+  - Mobile 375px: [12_forgot_password_375.png](screenshots/audit/12_forgot_password_375.png)
 
 ---
 
 ### Route 13: `/reset-password`
-- **Component File:** [client/src/pages/ResetPasswordPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/ResetPasswordPage.tsx)
+- **Component File:** [client/src/pages/ResetPasswordPage.tsx](client/src/pages/ResetPasswordPage.tsx)
 - **What It Does:**  
   Password completion screen. Accepts the reset token from URL query parameters, verifies token validity, and updates the user's password while unlocking any lockout flags.
 - **Real Content Verbatim:**
@@ -404,13 +404,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - Entering directly without query parameters intentionally displays the warning alert banner.
 - **Screenshots:**
-  - Desktop 1440px: [13_reset_password_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/13_reset_password_1440.png)
-  - Mobile 375px: [13_reset_password_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/13_reset_password_375.png)
+  - Desktop 1440px: [13_reset_password_1440.png](screenshots/audit/13_reset_password_1440.png)
+  - Mobile 375px: [13_reset_password_375.png](screenshots/audit/13_reset_password_375.png)
 
 ---
 
 ### Route 14: `/enroll/:examId`
-- **Component File:** [client/src/pages/EnrollPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/EnrollPage.tsx)
+- **Component File:** [client/src/pages/EnrollPage.tsx](client/src/pages/EnrollPage.tsx)
 - **What It Does:**  
   Legacy direct enrollment screen for specific exams. Candidates provide their Full Name, Hall Ticket, Mobile, and Email to enroll and generate an OTP.
 - **Real Content Verbatim:**
@@ -431,13 +431,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - This flow represents the legacy OTP system. The platform now recommends the Exam Code System (`/enter-exam`), but maintains this route for backwards compatibility.
 - **Screenshots:**
-  - Desktop 1440px: [14_enroll_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/14_enroll_1440.png)
-  - Mobile 375px: [14_enroll_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/14_enroll_375.png)
+  - Desktop 1440px: [14_enroll_1440.png](screenshots/audit/14_enroll_1440.png)
+  - Mobile 375px: [14_enroll_375.png](screenshots/audit/14_enroll_375.png)
 
 ---
 
 ### Route 15: `/enroll/:examId/verify`
-- **Component File:** [client/src/pages/OTPVerifyPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/OTPVerifyPage.tsx)
+- **Component File:** [client/src/pages/OTPVerifyPage.tsx](client/src/pages/OTPVerifyPage.tsx)
 - **What It Does:**  
   6-digit OTP verification screen accompanying the legacy enrollment route. Validates email OTP delivery and issues the participant session JWT.
 - **Real Content Verbatim:**
@@ -455,13 +455,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - Direct navigation without router state triggers an immediate guard redirect to the enrollment step.
 - **Screenshots:**
-  - Desktop 1440px: [15_otp_verify_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/15_otp_verify_1440.png)
-  - Mobile 375px: [15_otp_verify_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/15_otp_verify_375.png)
+  - Desktop 1440px: [15_otp_verify_1440.png](screenshots/audit/15_otp_verify_1440.png)
+  - Mobile 375px: [15_otp_verify_375.png](screenshots/audit/15_otp_verify_375.png)
 
 ---
 
 ### Route 16: `/exam`
-- **Component File:** [client/src/pages/ExamPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/ExamPage.tsx)
+- **Component File:** [client/src/pages/ExamPage.tsx](client/src/pages/ExamPage.tsx)
 - **What It Does:**  
   The legacy session-based exam interface. Utilizes participant session tokens issued by the OTP verification route, enforcing duplicate tab locking, server-authoritative timer, and violation logging.
 - **Real Content Verbatim:**
@@ -479,13 +479,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - Accessing the URL directly in the browser bar redirects to `/` due to strict session ID checking on mount.
 - **Screenshots:**
-  - Desktop 1440px: [16_exam_legacy_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/16_exam_legacy_1440.png)
-  - Mobile 375px: [16_exam_legacy_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/16_exam_legacy_375.png)
+  - Desktop 1440px: [16_exam_legacy_1440.png](screenshots/audit/16_exam_legacy_1440.png)
+  - Mobile 375px: [16_exam_legacy_375.png](screenshots/audit/16_exam_legacy_375.png)
 
 ---
 
 ### Route 17: `/leaderboard/:examId`
-- **Component File:** [client/src/pages/LeaderboardPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/LeaderboardPage.tsx)
+- **Component File:** [client/src/pages/LeaderboardPage.tsx](client/src/pages/LeaderboardPage.tsx)
 - **What It Does:**  
   Legacy public leaderboard display for UUID-based exams. Renders candidate scores, ranks, and submission times with live polling.
 - **Real Content Verbatim:**
@@ -501,13 +501,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - In App.tsx, route line 78 (`/leaderboard/:examCode`) shadows line 109 (`/leaderboard/:examId`) unless params match specific patterns.
 - **Screenshots:**
-  - Desktop 1440px: [17_leaderboard_legacy_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/17_leaderboard_legacy_1440.png)
-  - Mobile 375px: [17_leaderboard_legacy_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/17_leaderboard_legacy_375.png)
+  - Desktop 1440px: [17_leaderboard_legacy_1440.png](screenshots/audit/17_leaderboard_legacy_1440.png)
+  - Mobile 375px: [17_leaderboard_legacy_375.png](screenshots/audit/17_leaderboard_legacy_375.png)
 
 ---
 
 ### Route 18: `/admin` and `/admin/login`
-- **Component File:** [client/src/pages/admin/AdminLoginPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/AdminLoginPage.tsx)
+- **Component File:** [client/src/pages/admin/AdminLoginPage.tsx](client/src/pages/admin/AdminLoginPage.tsx)
 - **What It Does:**  
   Institutional administrator and faculty authentication page. Protects the institutional control center from unauthorized access.
 - **Real Content Verbatim:**
@@ -525,13 +525,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None detected.
 - **Screenshots:**
-  - Desktop 1440px: [18_admin_login_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/18_admin_login_1440.png)
-  - Mobile 375px: [18_admin_login_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/18_admin_login_375.png)
+  - Desktop 1440px: [18_admin_login_1440.png](screenshots/audit/18_admin_login_1440.png)
+  - Mobile 375px: [18_admin_login_375.png](screenshots/audit/18_admin_login_375.png)
 
 ---
 
 ### Route 19: `/admin/dashboard`
-- **Component File:** [client/src/pages/admin/Dashboard.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/Dashboard.tsx)
+- **Component File:** [client/src/pages/admin/Dashboard.tsx](client/src/pages/admin/Dashboard.tsx)
 - **What It Does:**  
   The main administrative command center dashboard. Provides high-level telemetry on active exams, registered student volume, live proctoring violations, server engine health, and navigation quick-links to all management sub-modules.
 - **Real Content Verbatim:**
@@ -554,13 +554,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - Note on component naming: `AdminDashboardPage.tsx` also exists in `pages/admin/`, but App.tsx binds `/admin/dashboard` to `Dashboard.tsx`.
 - **Screenshots:**
-  - Desktop 1440px: [19_admin_dashboard_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/19_admin_dashboard_1440.png)
-  - Mobile 375px: [19_admin_dashboard_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/19_admin_dashboard_375.png)
+  - Desktop 1440px: [19_admin_dashboard_1440.png](screenshots/audit/19_admin_dashboard_1440.png)
+  - Mobile 375px: [19_admin_dashboard_375.png](screenshots/audit/19_admin_dashboard_375.png)
 
 ---
 
 ### Route 20: `/admin/exams` (and `/admin/exam-control`)
-- **Component File:** [client/src/pages/admin/ExamControl.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/ExamControl.tsx)
+- **Component File:** [client/src/pages/admin/ExamControl.tsx](client/src/pages/admin/ExamControl.tsx)
 - **What It Does:**  
   Comprehensive exam management interface. Allows administrators to inspect all institutional exams, view scheduled time windows, activate or deactivate exams, duplicate configurations, and trigger live launches.
 - **Real Content Verbatim:**
@@ -578,13 +578,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None.
 - **Screenshots:**
-  - Desktop 1440px: [20_admin_exams_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/20_admin_exams_1440.png)
-  - Mobile 375px: [20_admin_exams_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/20_admin_exams_375.png)
+  - Desktop 1440px: [20_admin_exams_1440.png](screenshots/audit/20_admin_exams_1440.png)
+  - Mobile 375px: [20_admin_exams_375.png](screenshots/audit/20_admin_exams_375.png)
 
 ---
 
 ### Route 21: `/admin/questions` (and `/admin/question-control`)
-- **Component File:** [client/src/pages/admin/QuestionControl.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/QuestionControl.tsx)
+- **Component File:** [client/src/pages/admin/QuestionControl.tsx](client/src/pages/admin/QuestionControl.tsx)
 - **What It Does:**  
   Question bank management panel. Enables administrators to review questions across multiple subjects, filter by topic, add single MCQs or coding questions, and bulk-ingest questions via 5-column Excel spreadsheets.
 - **Real Content Verbatim:**
@@ -601,13 +601,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None.
 - **Screenshots:**
-  - Desktop 1440px: [21_admin_questions_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/21_admin_questions_1440.png)
-  - Mobile 375px: [21_admin_questions_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/21_admin_questions_375.png)
+  - Desktop 1440px: [21_admin_questions_1440.png](screenshots/audit/21_admin_questions_1440.png)
+  - Mobile 375px: [21_admin_questions_375.png](screenshots/audit/21_admin_questions_375.png)
 
 ---
 
 ### Route 22: `/admin/students` (and `/admin/student-control`)
-- **Component File:** [client/src/pages/admin/StudentControl.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/StudentControl.tsx)
+- **Component File:** [client/src/pages/admin/StudentControl.tsx](client/src/pages/admin/StudentControl.tsx)
 - **What It Does:**  
   Candidate roster governance interface. Enables roster Excel ingestion, individual student search by hall ticket or email, candidate status inspection, and blocking/unblocking candidates from active examinations.
 - **Real Content Verbatim:**
@@ -625,13 +625,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None.
 - **Screenshots:**
-  - Desktop 1440px: [22_admin_students_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/22_admin_students_1440.png)
-  - Mobile 375px: [22_admin_students_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/22_admin_students_375.png)
+  - Desktop 1440px: [22_admin_students_1440.png](screenshots/audit/22_admin_students_1440.png)
+  - Mobile 375px: [22_admin_students_375.png](screenshots/audit/22_admin_students_375.png)
 
 ---
 
 ### Route 23: `/admin/monitor` (and `/admin/monitor/:examId`, `/admin/monitor-control`)
-- **Component File:** [client/src/pages/admin/MonitorControl.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/MonitorControl.tsx)
+- **Component File:** [client/src/pages/admin/MonitorControl.tsx](client/src/pages/admin/MonitorControl.tsx)
 - **What It Does:**  
   100-student live proctoring telemetry wall. Provides invigilators with real-time video snapshot tiles, strike counters, face detection status, audio spike indicators, and candidate remote force-submission controls.
 - **Real Content Verbatim:**
@@ -649,13 +649,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - Note: `AdminMonitorPage.tsx` also exists in codebase; App.tsx routes to `MonitorControl.tsx`.
 - **Screenshots:**
-  - Desktop 1440px: [23_admin_monitor_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/23_admin_monitor_1440.png)
-  - Mobile 375px: [23_admin_monitor_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/23_admin_monitor_375.png)
+  - Desktop 1440px: [23_admin_monitor_1440.png](screenshots/audit/23_admin_monitor_1440.png)
+  - Mobile 375px: [23_admin_monitor_375.png](screenshots/audit/23_admin_monitor_375.png)
 
 ---
 
 ### Route 24: `/admin/results` (and `/admin/result-control`)
-- **Component File:** [client/src/pages/admin/ResultControl.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/ResultControl.tsx)
+- **Component File:** [client/src/pages/admin/ResultControl.tsx](client/src/pages/admin/ResultControl.tsx)
 - **What It Does:**  
   Assessment evaluation, score override, and results publication vault. Allows institutional staff to review candidate submissions, grant grace marks, override proctoring penalties, and release or conceal public scorecards.
 - **Real Content Verbatim:**
@@ -669,13 +669,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None.
 - **Screenshots:**
-  - Desktop 1440px: [24_admin_results_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/24_admin_results_1440.png)
-  - Mobile 375px: [24_admin_results_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/24_admin_results_375.png)
+  - Desktop 1440px: [24_admin_results_1440.png](screenshots/audit/24_admin_results_1440.png)
+  - Mobile 375px: [24_admin_results_375.png](screenshots/audit/24_admin_results_375.png)
 
 ---
 
 ### Route 25: `/admin/settings` (and `/admin/settings-control`)
-- **Component File:** [client/src/pages/admin/SettingsControl.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/SettingsControl.tsx)
+- **Component File:** [client/src/pages/admin/SettingsControl.tsx](client/src/pages/admin/SettingsControl.tsx)
 - **What It Does:**  
   Platform configuration and engine governance portal. Houses branding customization, execution engine timeout constraints, system maintenance lockdown toggles, and administrative security audit logs.
 - **Real Content Verbatim:**
@@ -691,13 +691,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None.
 - **Screenshots:**
-  - Desktop 1440px: [25_admin_settings_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/25_admin_settings_1440.png)
-  - Mobile 375px: [25_admin_settings_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/25_admin_settings_375.png)
+  - Desktop 1440px: [25_admin_settings_1440.png](screenshots/audit/25_admin_settings_1440.png)
+  - Mobile 375px: [25_admin_settings_375.png](screenshots/audit/25_admin_settings_375.png)
 
 ---
 
 ### Route 26: `/admin/staff`
-- **Component File:** [client/src/pages/admin/StaffManagementPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/StaffManagementPage.tsx)
+- **Component File:** [client/src/pages/admin/StaffManagementPage.tsx](client/src/pages/admin/StaffManagementPage.tsx)
 - **What It Does:**  
   Faculty and administrative user governance. Restricted to Super Admins to invite faculty, grant `college_admin` permissions, view login activity, and deactivate staff credentials.
 - **Real Content Verbatim:**
@@ -717,13 +717,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - Accessing with a faculty token returns HTTP 403 Forbidden (verified by `test-roles.js`).
 - **Screenshots:**
-  - Desktop 1440px: [26_admin_staff_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/26_admin_staff_1440.png)
-  - Mobile 375px: [26_admin_staff_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/26_admin_staff_375.png)
+  - Desktop 1440px: [26_admin_staff_1440.png](screenshots/audit/26_admin_staff_1440.png)
+  - Mobile 375px: [26_admin_staff_375.png](screenshots/audit/26_admin_staff_375.png)
 
 ---
 
 ### Route 27: `/admin/create-exam`
-- **Component File:** [client/src/pages/admin/CreateExamPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/CreateExamPage.tsx)
+- **Component File:** [client/src/pages/admin/CreateExamPage.tsx](client/src/pages/admin/CreateExamPage.tsx)
 - **What It Does:**  
   3-step guided exam creation wizard. Captures exam metadata (name, code, subject, duration, passing marks, violation threshold), question bank source (AI generation vs Excel import), and security toggles.
 - **Real Content Verbatim:**
@@ -740,13 +740,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None.
 - **Screenshots:**
-  - Desktop 1440px: [27_admin_create_exam_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/27_admin_create_exam_1440.png)
-  - Mobile 375px: [27_admin_create_exam_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/27_admin_create_exam_375.png)
+  - Desktop 1440px: [27_admin_create_exam_1440.png](screenshots/audit/27_admin_create_exam_1440.png)
+  - Mobile 375px: [27_admin_create_exam_375.png](screenshots/audit/27_admin_create_exam_375.png)
 
 ---
 
 ### Route 28: `/admin/import`
-- **Component File:** [client/src/pages/admin/ImportQuestionsPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/ImportQuestionsPage.tsx)
+- **Component File:** [client/src/pages/admin/ImportQuestionsPage.tsx](client/src/pages/admin/ImportQuestionsPage.tsx)
 - **What It Does:**  
   Dedicated Excel question import utility. Accepts 5-column formatted `.xlsx` files and validates row formatting against exam schemas.
 - **Real Content Verbatim:**
@@ -763,13 +763,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - Requires valid exam UUID; users typically find it easier to use the 1-click import inside `QuestionControl.tsx`.
 - **Screenshots:**
-  - Desktop 1440px: [28_admin_import_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/28_admin_import_1440.png)
-  - Mobile 375px: [28_admin_import_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/28_admin_import_375.png)
+  - Desktop 1440px: [28_admin_import_1440.png](screenshots/audit/28_admin_import_1440.png)
+  - Mobile 375px: [28_admin_import_375.png](screenshots/audit/28_admin_import_375.png)
 
 ---
 
 ### Route 29: `/admin/sessions`
-- **Component File:** [client/src/pages/admin/SessionsPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/SessionsPage.tsx)
+- **Component File:** [client/src/pages/admin/SessionsPage.tsx](client/src/pages/admin/SessionsPage.tsx)
 - **What It Does:**  
   Historical session audit log. Allows administrators to inspect all past and current candidate sessions for a selected exam, including device fingerprints, IP addresses, and violation histories.
 - **Real Content Verbatim:**
@@ -784,13 +784,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None.
 - **Screenshots:**
-  - Desktop 1440px: [29_admin_sessions_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/29_admin_sessions_1440.png)
-  - Mobile 375px: [29_admin_sessions_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/29_admin_sessions_375.png)
+  - Desktop 1440px: [29_admin_sessions_1440.png](screenshots/audit/29_admin_sessions_1440.png)
+  - Mobile 375px: [29_admin_sessions_375.png](screenshots/audit/29_admin_sessions_375.png)
 
 ---
 
 ### Route 30: `/admin/reports`
-- **Component File:** [client/src/pages/admin/ReportsPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/ReportsPage.tsx)
+- **Component File:** [client/src/pages/admin/ReportsPage.tsx](client/src/pages/admin/ReportsPage.tsx)
 - **What It Does:**  
   Institutional reporting and export console. Generates downloadable comprehensive Excel workbooks and formatted PDF grade sheets for any exam.
 - **Real Content Verbatim:**
@@ -805,13 +805,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None.
 - **Screenshots:**
-  - Desktop 1440px: [30_admin_reports_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/30_admin_reports_1440.png)
-  - Mobile 375px: [30_admin_reports_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/30_admin_reports_375.png)
+  - Desktop 1440px: [30_admin_reports_1440.png](screenshots/audit/30_admin_reports_1440.png)
+  - Mobile 375px: [30_admin_reports_375.png](screenshots/audit/30_admin_reports_375.png)
 
 ---
 
 ### Route 31: `/admin/analytics` (and `/admin/analytics/:examId`)
-- **Component File:** [client/src/pages/admin/AnalyticsPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/AnalyticsPage.tsx)
+- **Component File:** [client/src/pages/admin/AnalyticsPage.tsx](client/src/pages/admin/AnalyticsPage.tsx)
 - **What It Does:**  
   Psychometric and exam analytics engine. Computes question difficulty indices, discrimination ratings, topic mastery charts, average time spent per question, and cross-exam candidate historical performance.
 - **Real Content Verbatim:**
@@ -828,13 +828,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None.
 - **Screenshots:**
-  - Desktop 1440px: [31_admin_analytics_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/31_admin_analytics_1440.png)
-  - Mobile 375px: [31_admin_analytics_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/31_admin_analytics_375.png)
+  - Desktop 1440px: [31_admin_analytics_1440.png](screenshots/audit/31_admin_analytics_1440.png)
+  - Mobile 375px: [31_admin_analytics_375.png](screenshots/audit/31_admin_analytics_375.png)
 
 ---
 
 ### Route 32: `/admin/colleges`
-- **Component File:** [client/src/pages/admin/CollegesPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/CollegesPage.tsx)
+- **Component File:** [client/src/pages/admin/CollegesPage.tsx](client/src/pages/admin/CollegesPage.tsx)
 - **What It Does:**  
   Institutional campus directory management. Administers participating universities and engineering colleges, campus codes, contact details, and assigned college admins.
 - **Real Content Verbatim:**
@@ -853,13 +853,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None.
 - **Screenshots:**
-  - Desktop 1440px: [32_admin_colleges_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/32_admin_colleges_1440.png)
-  - Mobile 375px: [32_admin_colleges_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/32_admin_colleges_375.png)
+  - Desktop 1440px: [32_admin_colleges_1440.png](screenshots/audit/32_admin_colleges_1440.png)
+  - Mobile 375px: [32_admin_colleges_375.png](screenshots/audit/32_admin_colleges_375.png)
 
 ---
 
 ### Route 33: `/admin/exam-codes`
-- **Component File:** [client/src/pages/admin/ExamCodesPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/admin/ExamCodesPage.tsx)
+- **Component File:** [client/src/pages/admin/ExamCodesPage.tsx](client/src/pages/admin/ExamCodesPage.tsx)
 - **What It Does:**  
   Exam Code lifecycle generator and dispatch ledger. Creates and distributes unique, college-scoped codes (format `GR-<COLLEGE>-<CODE>` or legacy `LW-`) with start/end windows and maximum seat quotas.
 - **Real Content Verbatim:**
@@ -879,13 +879,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None.
 - **Screenshots:**
-  - Desktop 1440px: [33_admin_exam_codes_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/33_admin_exam_codes_1440.png)
-  - Mobile 375px: [33_admin_exam_codes_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/33_admin_exam_codes_375.png)
+  - Desktop 1440px: [33_admin_exam_codes_1440.png](screenshots/audit/33_admin_exam_codes_1440.png)
+  - Mobile 375px: [33_admin_exam_codes_375.png](screenshots/audit/33_admin_exam_codes_375.png)
 
 ---
 
 ### Route 34: `/about`
-- **Component File:** [client/src/pages/AboutPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/AboutPage.tsx)
+- **Component File:** [client/src/pages/AboutPage.tsx](client/src/pages/AboutPage.tsx)
 - **What It Does:**  
   Brand narrative, engineering philosophy, and architect credentials page. Explains the "Learn. Grow. Run." doctrine and details the server-authoritative technical design.
 - **Real Content Verbatim:**
@@ -901,13 +901,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None.
 - **Screenshots:**
-  - Desktop 1440px: [34_about_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/34_about_1440.png)
-  - Mobile 375px: [34_about_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/34_about_375.png)
+  - Desktop 1440px: [34_about_1440.png](screenshots/audit/34_about_1440.png)
+  - Mobile 375px: [34_about_375.png](screenshots/audit/34_about_375.png)
 
 ---
 
 ### Route 35: `*` (Fallback 404)
-- **Component File:** [client/src/pages/NotFoundPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/NotFoundPage.tsx)
+- **Component File:** [client/src/pages/NotFoundPage.tsx](client/src/pages/NotFoundPage.tsx)
 - **What It Does:**  
   Global 404 error boundary fallback screen for unmapped or mistyped routes.
 - **Real Content Verbatim:**
@@ -921,8 +921,8 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 - **Known Issues & Rough Edges:**
   - None.
 - **Screenshots:**
-  - Desktop 1440px: [35_not_found_1440.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/35_not_found_1440.png)
-  - Mobile 375px: [35_not_found_375.png](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/35_not_found_375.png)
+  - Desktop 1440px: [35_not_found_1440.png](screenshots/audit/35_not_found_1440.png)
+  - Mobile 375px: [35_not_found_375.png](screenshots/audit/35_not_found_375.png)
 
 ---
 
@@ -930,13 +930,13 @@ Below is the exhaustive, in-order analysis of every route declared in [client/sr
 
 | Layer | Current Working State | Implementation Location | Impact on Real Usage |
 | :--- | :--- | :--- | :--- |
-| **Database Engine** | **In-Memory Demo Database (`mockSupabase.ts`)** | [server/src/db/supabase.ts](file:///c:/Users/chara/OneDrive/Desktop/Quiz/server/src/db/supabase.ts) | `DEMO_MODE=true` in `.env`. Server runs an in-memory SQL mock query builder supporting `.from()`, `.select()`, `.insert()`, `.update()`, `.eq()`, `.order()`. Data persists while server runs; resets on server restart. |
+| **Database Engine** | **In-Memory Demo Database (`mockSupabase.ts`)** | [server/src/db/supabase.ts](server/src/db/supabase.ts) | `DEMO_MODE=true` in `.env`. Server runs an in-memory SQL mock query builder supporting `.from()`, `.select()`, `.insert()`, `.update()`, `.eq()`, `.order()`. Data persists while server runs; resets on server restart. |
 | **Supabase URL & Keys** | **Placeholder Values** | `server/.env` & `client/.env` | `SUPABASE_URL=https://your-project.supabase.co`<br>`SUPABASE_SERVICE_ROLE_KEY=your-service-role-key`<br>`VITE_SUPABASE_URL=https://your-project.supabase.co` |
 | **Admin Credentials** | **Hardcoded Pre-seeded Hash** | `server/.env` & `server/src/db/mockSupabase.ts` | Username: `admin` or `admin@growthran.com`<br>Password: `admin123` (bcrypt 12-round salt).<br>Faculty accounts: `suresh@growthran.com` / `admin123`, `priya@growthran.com` / `admin123`. |
-| **Email / SMTP Delivery** | **Console Mock Interceptor** | [server/src/services/emailService.ts](file:///c:/Users/chara/OneDrive/Desktop/Quiz/server/src/services/emailService.ts) | `SMTP_HOST=`, `SMTP_USER=`, `SMTP_PASS=` are blank in `.env`. Outgoing emails (password resets, scorecards) log to server console (`[SMTP-DEV] (No SMTP credentials configured) Mock delivery to ...`) rather than hitting external SMTP servers. |
+| **Email / SMTP Delivery** | **Console Mock Interceptor** | [server/src/services/emailService.ts](server/src/services/emailService.ts) | `SMTP_HOST=`, `SMTP_USER=`, `SMTP_PASS=` are blank in `.env`. Outgoing emails (password resets, scorecards) log to server console (`[SMTP-DEV] (No SMTP credentials configured) Mock delivery to ...`) rather than hitting external SMTP servers. |
 | **Old Brand Config Leftovers** | **Stale Email Domains in Config** | `server/.env` | `OTP_FROM_EMAIL=noreply@logicwhilequiz.com`<br>`ADMIN_ALERT_EMAIL=admin@logicwhilequiz.com`<br>(Code logic handles branded emails properly, but `.env` holds prior brand names). |
-| **Result Page Data** | **Fallback Fixture Data** | [client/src/pages/ResultECPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/ResultECPage.tsx) | Direct access to `/result-ec/:code` without taking an exam falls back to: `Score 85/100, Rank #3 of 148, token GR-VRSEC-2026-HT2026001`. |
-| **Live Leaderboard Shift** | **Simulation Button** | [client/src/pages/LeaderboardECPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/LeaderboardECPage.tsx) | "⚡ Simulate Live Shift" injects local state mutations for testing podium transitions without live socket traffic. |
+| **Result Page Data** | **Fallback Fixture Data** | [client/src/pages/ResultECPage.tsx](client/src/pages/ResultECPage.tsx) | Direct access to `/result-ec/:code` without taking an exam falls back to: `Score 85/100, Rank #3 of 148, token GR-VRSEC-2026-HT2026001`. |
+| **Live Leaderboard Shift** | **Simulation Button** | [client/src/pages/LeaderboardECPage.tsx](client/src/pages/LeaderboardECPage.tsx) | "⚡ Simulate Live Shift" injects local state mutations for testing podium transitions without live socket traffic. |
 | **Seeded Exam Data** | **In-Memory Roster** | `server/src/db/mockSupabase.ts` | 2 seeded exams (`DEMO_EXAM_ID`, `DEMO_EXAM_2_ID`), 17 technical questions, 6 exam codes (`DEMO123`, `GR-VRSEC-2026`, etc.), and 4 top engineering colleges. |
 
 ---
@@ -962,5 +962,5 @@ If a stranger encountered this application today with no explanation, they would
 
 ## 6. Audit Artifacts Index
 
-All 70 fresh screenshots captured during this audit at 1440px and 375px resolution are preserved in the repository under [screenshots/audit/](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/).
-Raw DOM extraction metrics and console audit payloads are available in [screenshots/audit/audit_extracted_content.json](file:///c:/Users/chara/OneDrive/Desktop/Quiz/screenshots/audit/audit_extracted_content.json).
+All 70 fresh screenshots captured during this audit at 1440px and 375px resolution are preserved in the repository under [screenshots/audit/](screenshots/audit/).
+Raw DOM extraction metrics and console audit payloads are available in [screenshots/audit/audit_extracted_content.json](screenshots/audit/audit_extracted_content.json).

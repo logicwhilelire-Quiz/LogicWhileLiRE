@@ -44,7 +44,7 @@ services:
       - key: ADMIN_JWT_SECRET
         generateValue: true
       - key: TOTP_ENCRYPTION_KEY
-        generateValue: true # 32+ char random key for AES-256-CTR encryption of TOTP secrets at rest
+        generateValue: true # 32+ char random key for AES-256-GCM encryption of TOTP secrets at rest
       - key: ADMIN_USERNAME
         sync: false
       - key: ADMIN_PASSWORD_HASH

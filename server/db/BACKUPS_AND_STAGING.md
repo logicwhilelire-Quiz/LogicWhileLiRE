@@ -18,7 +18,7 @@
    - Retention window: **7 days (standard) or up to 30 days (extended)**.
 
 ### Automated Offsite Backup Script
-We provide a standalone backup utility in [`server/scripts/backup-db.sh`](file:///c:/Users/chara/OneDrive/Desktop/Quiz/server/scripts/backup-db.sh) that:
+We provide a standalone backup utility in [`server/scripts/backup-db.sh`](server/scripts/backup-db.sh) that:
 1. Performs compressed `pg_dump` backups using the direct Postgres connection URI (`postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres`).
 2. Compresses dumps with `gzip -9` and timestamps them.
 3. Automatically prunes backups older than 14 days.
@@ -54,7 +54,7 @@ To test live exams, proctoring violations, and email flows without polluting pro
 
 ## 3. GitHub Actions CI/CD Pipeline
 
-The repository includes [`.github/workflows/ci.yml`](file:///c:/Users/chara/OneDrive/Desktop/Quiz/.github/workflows/ci.yml) which executes on every push and pull request to `main`, `master`, and `preview`:
+The repository includes [`.github/workflows/ci.yml`](.github/workflows/ci.yml) which executes on every push and pull request to `main`, `master`, and `preview`:
 - **Server Job**: Dependency installation, TypeScript compiler check (`tsc`), security auth test, and question schema validation.
 - **Client Job**: Dependency installation, type check, and production bundle generation.
 

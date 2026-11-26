@@ -153,7 +153,7 @@ graph LR
 
 ## 3. CI Pipeline (GitHub Actions)
 
-The repository includes a GitHub Actions configuration at [`.github/workflows/ci.yml`](file:///c:/Users/chara/OneDrive/Desktop/Quiz/.github/workflows/ci.yml).
+The repository includes a GitHub Actions configuration at [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ### Pipeline Structure
 The workflow triggers on every `push` and `pull_request` targeting `main`, `master`, `staging`, and `preview`:
@@ -227,13 +227,13 @@ Complete the following one-time manual tasks in your cloud dashboards:
 ### 1. Supabase Setup
 - [ ] Create **Production Project** (`logic-while-quiz-prod`) in Supabase.
 - [ ] Create **Staging Project** (`logic-while-quiz-staging`) in Supabase.
-- [ ] In both projects, open the **SQL Editor**, paste the contents of [`server/db/schema.sql`](file:///c:/Users/chara/OneDrive/Desktop/Quiz/server/db/schema.sql), and run it.
+- [ ] In both projects, open the **SQL Editor**, paste the contents of [`server/db/schema.sql`](server/db/schema.sql), and run it.
 - [ ] Verify that all 10 tables (`exams`, `participants`, `exam_sessions`, `session_answers`, `questions`, `violations`, `suspicious_activity`, `results`, `deliverable_failures`, `audit_log`) and indexes are created.
 - [ ] Copy the Project URL, Anon Key, and Service Role Key for each environment.
 
 ### 2. Render / Railway Backend Deployment
 - [ ] Connect your GitHub repository to Render.
-- [ ] Apply [`render.yaml`](file:///c:/Users/chara/OneDrive/Desktop/Quiz/render.yaml) Blueprint to automatically create:
+- [ ] Apply [`render.yaml`](render.yaml) Blueprint to automatically create:
   - `logic-while-quiz-server` (Production, branch `main`)
   - `logic-while-quiz-server-staging` (Staging, branch `staging`)
 - [ ] Fill in the environment variables marked with `sync: false` in Render's dashboard:

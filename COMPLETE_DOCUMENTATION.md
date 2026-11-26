@@ -106,7 +106,7 @@ If any targeting attribute (`college_id`, `branch`, `passout_year`, `section_id(
 
 ## 4. Dynamic Study Year Derivation (Zero Hardcoding)
 
-In collegiate engineering institutions (such as autonomous engineering colleges in India), the academic calendar begins in **July** (month index $\ge 6$). Study years are derived dynamically with zero hardcoded years in [server/src/utils/academicYear.ts](file:///c:/Users/chara/OneDrive/Desktop/Quiz/server/src/utils/academicYear.ts):
+In collegiate engineering institutions (such as autonomous engineering colleges in India), the academic calendar begins in **July** (month index $\ge 6$). Study years are derived dynamically with zero hardcoded years in [server/src/utils/academicYear.ts](server/src/utils/academicYear.ts):
 
 $$\text{academicStartYear} = \begin{cases} \text{currentYear} & \text{if currentMonth} \ge 6 \\ \text{currentYear} - 1 & \text{if currentMonth} < 6 \end{cases}$$
 
@@ -196,7 +196,7 @@ In `hierarchyController.ts`, all incoming spreadsheet records undergo strict san
 ## 7. Frontend Architecture & Page Catalog
 
 ### 7.1 Landing Page (`/`): Simplified 3-Entry 3D Portal
-The landing page ([client/src/pages/LandingPage.tsx](file:///c:/Users/chara/OneDrive/Desktop/Quiz/client/src/pages/LandingPage.tsx)) has been streamlined to focus exclusively on three large, accessible 3D interactive portal entries:
+The landing page ([client/src/pages/LandingPage.tsx](client/src/pages/LandingPage.tsx)) has been streamlined to focus exclusively on three large, accessible 3D interactive portal entries:
 1. **Candidate Gate (`/gate`):** Direct Exam Code + Hall Ticket entrance. Zero-OTP friction.
 2. **Student Portal ID (`/login`):** Email or roll number login with access to personal dashboard and 5 technical sectors.
 3. **Admin Control Center (`/admin`):** Institutional console for Super Admins, Inspectors, and Faculty.
@@ -270,7 +270,7 @@ The landing page ([client/src/pages/LandingPage.tsx](file:///c:/Users/chara/OneD
 ## 10. Database Schema & Migration Guide
 
 ### 10.1 Running the Migration on Existing Databases
-Execute [supabase/migration_existing_database.sql](file:///c:/Users/chara/OneDrive/Desktop/Quiz/supabase/migration_existing_database.sql) in **Supabase Dashboard → SQL Editor**. It is 100% idempotent:
+Execute [supabase/migration_existing_database.sql](supabase/migration_existing_database.sql) in **Supabase Dashboard → SQL Editor**. It is 100% idempotent:
 - **Zero Drops:** Never executes `DROP TABLE` or `TRUNCATE`.
 - **Zero Demo Pollution:** Contains no mock data inserts.
 - **Additive Columns:** Uses `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`:
