@@ -37,6 +37,9 @@ interface DashboardWidgetsData {
   live_exams: Array<{ id: string; title: string; is_active: boolean; start_time?: string }>;
   students_online: number;
   violations_count: number;
+  colleges_count?: number;
+  students_count?: number;
+  results_count?: number;
   recent_faculty_activity: Array<{
     id: string;
     user_id: string;
@@ -93,27 +96,15 @@ export default function Dashboard() {
       axios
         .get(`${API_BASE_URL}/api/admin/dashboard-widgets`, { headers })
         .then((r) => {
-          if (r.data?.widgets) setWidgets(r.data.widgets);
+          const w = r.data?.widgets;
+          if (w) {
+            setWidgets(w);
+            if (typeof w.colleges_count === 'number') setCollegesCount(w.colleges_count);
+            if (typeof w.students_count === 'number') setStudentsCount(w.students_count);
+            if (typeof w.results_count === 'number') setResultsCount(w.results_count);
+          }
         })
         .catch(() => {}),
-      axios
-        .get(`${API_BASE_URL}/api/colleges`, { headers })
-        .then((r) => {
-          if (Array.isArray(r.data?.colleges)) setCollegesCount(r.data.colleges.length);
-        })
-        .catch(() => setCollegesCount(0)),
-      axios
-        .get(`${API_BASE_URL}/api/admin/students`, { headers })
-        .then((r) => {
-          if (Array.isArray(r.data?.students)) setStudentsCount(r.data.students.length);
-        })
-        .catch(() => setStudentsCount(0)),
-      axios
-        .get(`${API_BASE_URL}/api/admin/results`, { headers })
-        .then((r) => {
-          if (Array.isArray(r.data?.results)) setResultsCount(r.data.results.length);
-        })
-        .catch(() => setResultsCount(0)),
     ]).finally(() => setLoading(false));
   }, [navigate]);
 

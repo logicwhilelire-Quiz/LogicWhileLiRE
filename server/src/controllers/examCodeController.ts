@@ -158,6 +158,10 @@ export function deterministicShuffle<T>(arr: T[], seedStr: string): T[] {
  * When ?registration=true is supplied, filters only colleges enabled for student registration.
  */
 export async function listColleges(req: Request, res: Response): Promise<void> {
+  if (req.query?.breakdown === 'true') {
+    return getCollegesBreakdown(req, res);
+  }
+
   let query = supabase
     .from('colleges')
     .select('id, college_name, college_code, city, state, is_active, registration_enabled')
@@ -188,10 +192,6 @@ export async function listColleges(req: Request, res: Response): Promise<void> {
   const { data, error } = await query;
 
   if (error) { res.status(500).json({ success: false, error: error.message }); return; }
-
-  if (req.query?.breakdown === 'true') {
-    return getCollegesBreakdown(req, res);
-  }
 
   // Ensure default registration_enabled is true if null/undefined
   const colleges = (data || []).map((c: any) => ({

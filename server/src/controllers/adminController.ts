@@ -2112,47 +2112,63 @@ export async function listAuditLogs(req: Request, res: Response): Promise<void> 
  */
 export async function getAdminDashboardWidgets(req: Request, res: Response): Promise<void> {
   try {
-    // 1. Live exams: active exams
-    const { data: exams } = await supabase.from('exams').select('id, title, is_active, start_time, end_time');
-    const liveExams = (exams || []).filter((e: any) => e.is_active);
+    const cacheKey = 'admin_dashboard_widgets';
+    const cached = getCache<any>(cacheKey);
+    if (cached) {
+      res.json(cached);
+      return;
+    }
 
-    // 2. Students online: active sessions
-    const { data: sessions } = await supabase.from('exam_sessions').select('id, status, started_at');
-    const activeSessions = (sessions || []).filter((s: any) => s.status === 'in_progress');
+    const t0 = Date.now();
+    const [
+      examsRes,
+      sessionsRes,
+      violationsRes,
+      suspiciousRes,
+      logsRes,
+      collegesCountRes,
+      studentsCountRes,
+      resultsCountRes,
+    ] = await Promise.all([
+      supabase.from('exams').select('id, title, is_active, start_time, end_time'),
+      supabase.from('exam_sessions').select('id, status').eq('status', 'in_progress'),
+      supabase.from('violations').select('id', { count: 'exact', head: true }),
+      supabase.from('suspicious_activity').select('id', { count: 'exact', head: true }),
+      supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(30),
+      supabase.from('colleges').select('id', { count: 'exact', head: true }),
+      supabase.from('students').select('id', { count: 'exact', head: true }),
+      supabase.from('results').select('id', { count: 'exact', head: true }),
+    ]);
 
-    // 3. Violations count
-    const { data: violations } = await supabase.from('violations').select('id');
-    const { data: suspicious } = await supabase.from('suspicious_activity').select('id');
-    const totalViolations = (violations?.length || 0) + (suspicious?.length || 0);
+    const dbLatencyMs = Date.now() - t0;
+    const liveExams = (examsRes.data || []).filter((e: any) => e.is_active);
+    const activeSessions = sessionsRes.data || [];
+    const totalViolations =
+      (violationsRes.count ?? violationsRes.data?.length ?? 0) +
+      (suspiciousRes.count ?? suspiciousRes.data?.length ?? 0);
+    const facultyLogs = (logsRes.data || []).filter((l: any) => l.role === 'faculty').slice(0, 10);
 
-    // 4. Recent faculty activity: audit logs where role == 'faculty'
-    const { data: allLogs } = await supabase
-      .from('audit_log')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(30);
-
-    const facultyLogs = (allLogs || []).filter((l: any) => l.role === 'faculty').slice(0, 10);
-
-    // 5. System Health
     const mem = process.memoryUsage();
     const systemHealth = {
       status: 'operational',
       database: 'connected',
-      latency_ms: 2,
+      latency_ms: dbLatencyMs,
       socket_engine: 'active',
       uptime_seconds: Math.floor(process.uptime()),
       heap_used_mb: Math.round(mem.heapUsed / 1024 / 1024),
       node_version: process.version,
     };
 
-    res.json({
+    const payload = {
       success: true,
       widgets: {
         live_exams_count: liveExams.length,
         live_exams: liveExams,
         students_online: activeSessions.length,
         violations_count: totalViolations,
+        colleges_count: collegesCountRes.count ?? 0,
+        students_count: studentsCountRes.count ?? 0,
+        results_count: resultsCountRes.count ?? 0,
         recent_faculty_activity: (facultyLogs || []).map((l: any) => ({
           id: l.id,
           user_id: l.user_id || l.admin_id,
@@ -2164,7 +2180,10 @@ export async function getAdminDashboardWidgets(req: Request, res: Response): Pro
         })),
         system_health: systemHealth,
       },
-    });
+    };
+
+    setCache(cacheKey, payload, 10);
+    res.json(payload);
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message || 'Failed to fetch dashboard widgets' });
   }

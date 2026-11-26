@@ -5,6 +5,7 @@ import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import BrandLogo from '../components/BrandLogo';
 import { sound } from '../lib/soundService';
+import { API_BASE_URL } from '../lib/config';
 import {
   IconClock,
   IconShield,
@@ -68,10 +69,10 @@ function StatPill({ icon, value, label }: StatPillProps) {
 
 interface PortalCardProps {
   icon: React.ReactNode; badge: string; badgeColor: string; badgeBg: string;
-  title: string; desc: string; href: string; btnId: string; btnLabel: string;
+  title: string; desc: string; specs?: string[]; href: string; btnId: string; btnLabel: string;
   btnGradient: string; glowColor: string; borderColor: string; delay?: number;
 }
-function PortalCard({ icon, badge, badgeColor, badgeBg, title, desc, href, btnId, btnLabel, btnGradient, glowColor, borderColor, delay = 0 }: PortalCardProps) {
+function PortalCard({ icon, badge, badgeColor, badgeBg, title, desc, specs, href, btnId, btnLabel, btnGradient, glowColor, borderColor, delay = 0 }: PortalCardProps) {
   const [hovered, setHovered] = useState(false);
   return (
     <motion.div
@@ -81,13 +82,13 @@ function PortalCard({ icon, badge, badgeColor, badgeBg, title, desc, href, btnId
       style={{
         background: hovered ? 'linear-gradient(145deg,rgba(15,23,42,0.98),rgba(0,10,30,0.96))' : 'rgba(10,16,35,0.82)',
         border: `1.5px solid ${hovered ? glowColor : borderColor}`,
-        borderRadius: 20, padding: '28px 24px',
+        borderRadius: 20, padding: '26px 22px',
         display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
         backdropFilter: 'blur(20px)',
         boxShadow: hovered ? `0 20px 60px rgba(0,0,0,0.5),0 0 40px ${glowColor}33` : '0 8px 30px rgba(0,0,0,0.3)',
         transition: 'all 0.3s cubic-bezier(0.16,1,0.3,1)',
         transform: hovered ? 'translateY(-6px)' : 'translateY(0)',
-        position: 'relative', overflow: 'hidden', minHeight: 260,
+        position: 'relative', overflow: 'hidden', minHeight: 285,
       }}
     >
       <div style={{
@@ -105,7 +106,18 @@ function PortalCard({ icon, badge, badgeColor, badgeBg, title, desc, href, btnId
           }}>{badge}</span>
         </div>
         <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 10px', fontFamily: "'Rajdhani',sans-serif", letterSpacing: '-0.01em' }}>{title}</h3>
-        <p style={{ color: '#94A3B8', fontSize: '0.83rem', lineHeight: 1.65, margin: '0 0 20px' }}>{desc}</p>
+        <p style={{ color: '#94A3B8', fontSize: '0.83rem', lineHeight: 1.65, margin: '0 0 14px' }}>{desc}</p>
+        {specs && specs.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 18 }}>
+            {specs.map((sp) => (
+              <span key={sp} style={{
+                fontSize: '0.68rem', fontWeight: 700, color: '#CBD5E1',
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 6, padding: '2px 8px',
+              }}>{sp}</span>
+            ))}
+          </div>
+        )}
       </div>
       <Link to={href} id={btnId} style={{
         textAlign: 'center',
@@ -237,6 +249,35 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const [quickExamCode, setQuickExamCode] = useState('');
   const [quickHallTicket, setQuickHallTicket] = useState('');
+  const [engineHealth, setEngineHealth] = useState<{ state: 'checking' | 'online' | 'standby'; latencyMs: number | null; version: string }>({
+    state: 'checking',
+    latencyMs: null,
+    version: '4.0.0',
+  });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const t0 = performance.now();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    fetch(`${API_BASE_URL}/api/health`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Health check failed'))))
+      .then((data) => {
+        const ms = Math.max(1, Math.round(performance.now() - t0));
+        setEngineHealth({
+          state: 'online',
+          latencyMs: ms,
+          version: data?.version || '4.0.0',
+        });
+      })
+      .catch(() => {
+        setEngineHealth((prev) => ({ ...prev, state: 'standby', latencyMs: null }));
+      })
+      .finally(() => clearTimeout(timer));
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, []);
 
   const handleQuickEntry = (e: React.FormEvent) => {
     e.preventDefault();
@@ -250,11 +291,21 @@ export default function LandingPage() {
   };
 
   useEffect(() => {
+    let rafId = 0;
     const handleScroll = () => {
-      if (heroRef.current) heroRef.current.style.transform = `translateY(${window.scrollY * 0.28}px)`;
+      if (rafId) return;
+      rafId = window.requestAnimationFrame(() => {
+        if (heroRef.current) {
+          heroRef.current.style.transform = `translate3d(0, ${window.scrollY * 0.24}px, 0)`;
+        }
+        rafId = 0;
+      });
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
   }, []);
 
   return (
@@ -266,9 +317,6 @@ export default function LandingPage() {
       display: 'flex', flexDirection: 'column', position: 'relative',
     }}>
       <style>{`
-        @keyframes orbFloat1 { 0%,100% { transform:translate(0,0) scale(1); } 33% { transform:translate(40px,-30px) scale(1.05); } 66% { transform:translate(-20px,20px) scale(0.95); } }
-        @keyframes orbFloat2 { 0%,100% { transform:translate(0,0) scale(1); } 33% { transform:translate(-30px,40px) scale(1.08); } 66% { transform:translate(20px,-25px) scale(0.97); } }
-        @keyframes orbFloat3 { 0%,100% { transform:translate(0,0) scale(1); } 50% { transform:translate(25px,-35px) scale(1.06); } }
         .landing-grid-bg { background-image: linear-gradient(rgba(2,132,199,0.055) 1px,transparent 1px),linear-gradient(90deg,rgba(2,132,199,0.055) 1px,transparent 1px); background-size:44px 44px; }
       `}</style>
 
@@ -279,19 +327,33 @@ export default function LandingPage() {
       <section className="landing-grid-bg" style={{ position: 'relative', padding: '70px 24px 85px', textAlign: 'center', overflow: 'hidden', zIndex: 1 }}>
         <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', width: 800, height: 400, background: 'radial-gradient(ellipse,rgba(2,132,199,0.15) 0%,transparent 70%)', pointerEvents: 'none' }} />
 
-        <div ref={heroRef} style={{ maxWidth: 860, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+        <div ref={heroRef} style={{ maxWidth: 880, margin: '0 auto', position: 'relative', zIndex: 1, willChange: 'transform' }}>
           
           {/* Live Cluster Health Badge */}
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }} style={{ marginBottom: 18 }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 10,
-              background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.35)',
+              background: engineHealth.state === 'standby' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+              border: `1px solid ${engineHealth.state === 'standby' ? 'rgba(245, 158, 11, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`,
               borderRadius: 20, padding: '5px 16px',
-              fontSize: '0.74rem', fontWeight: 800, color: '#34D399', letterSpacing: '0.04em',
+              fontSize: '0.74rem', fontWeight: 800,
+              color: engineHealth.state === 'standby' ? '#FBBF24' : '#34D399',
+              letterSpacing: '0.04em',
               boxShadow: '0 0 16px rgba(16, 185, 129, 0.15)',
             }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 10px #10B981' }} />
-              <span>OFFICIAL INSTITUTIONAL PLATFORM &bull; SECURE PROCTORED TESTING</span>
+              <span style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: engineHealth.state === 'standby' ? '#F59E0B' : '#10B981',
+                boxShadow: `0 0 10px ${engineHealth.state === 'standby' ? '#F59E0B' : '#10B981'}`,
+              }} />
+              <span>
+                OFFICIAL INSTITUTIONAL PLATFORM &bull; v{engineHealth.version} &bull;{' '}
+                {engineHealth.state === 'online' && engineHealth.latencyMs !== null
+                  ? `LIVE ENGINE ONLINE (${engineHealth.latencyMs}ms)`
+                  : engineHealth.state === 'standby'
+                  ? 'ENGINE COLD-WAKE STANDBY'
+                  : 'CONNECTING TO ENGINE...'}
+              </span>
             </div>
           </motion.div>
 
@@ -430,7 +492,7 @@ export default function LandingPage() {
             <form onSubmit={handleQuickEntry} style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
               <input
                 type="text"
-                placeholder="EXAM CODE (e.g. EXAM2026)"
+                placeholder="EXAM CODE (e.g. FSD2026)"
                 value={quickExamCode}
                 onChange={(e) => setQuickExamCode(e.target.value.toUpperCase())}
                 style={{
@@ -518,11 +580,11 @@ export default function LandingPage() {
           </motion.div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(230px,1fr))', gap: 20 }}>
-            <PortalCard icon={<IconLaunch size={32} color="#10B981" />} badge="Exam Entry" badgeColor="#10B981" badgeBg="rgba(16,185,129,0.12)" title="Exam Code Portal" desc="Direct candidate exam access using assigned Exam Code and Roll Number. Zero email/OTP required for pre-registered candidates." href="/enter-exam" btnId="landing-enter-exam-btn" btnLabel="Enter Exam Session" btnGradient="linear-gradient(135deg,#10B981 0%,#059669 100%)" glowColor="#10B981" borderColor="rgba(16,185,129,0.25)" delay={0.04} />
-            <PortalCard icon={<IconGraduation size={32} color="#38BDF8" />} badge="Candidate Gate" badgeColor="#38BDF8" badgeBg="rgba(56,189,248,0.12)" title="Student Portal" desc="Official examination portal for verified candidates. Sign in to view comprehensive performance analytics, scorecards, and ranking history." href="/login" btnId="landing-student-login-btn" btnLabel="Enter Candidate Gate" btnGradient="linear-gradient(135deg,#0284c7 0%,#1d4ed8 100%)" glowColor="#38BDF8" borderColor="rgba(56,189,248,0.25)" delay={0.08} />
-            <PortalCard icon={<IconBuilding size={32} color="#F43F5E" />} badge="Academic Staff" badgeColor="#F43F5E" badgeBg="rgba(244,63,94,0.12)" title="Faculty Portal" desc="Curriculum & question paper setting, section-scoped student management, and assessment creation for accredited trainers." href="/faculty" btnId="landing-faculty-login-btn" btnLabel="Sign In as Faculty" btnGradient="linear-gradient(135deg,#E11D48 0%,#F43F5E 100%)" glowColor="#F43F5E" borderColor="rgba(244,63,94,0.25)" delay={0.12} />
-            <PortalCard icon={<IconRadar size={32} color="#A78BFA" />} badge="Invigilation" badgeColor="#A78BFA" badgeBg="rgba(167,139,250,0.12)" title="Inspector Console" desc="Live invigilation dashboard with real-time leaderboards, violation alerts, whisper messaging, and candidate communication." href="/inspector" btnId="landing-inspector-login-btn" btnLabel="Sign In as Inspector" btnGradient="linear-gradient(135deg,#7C3AED 0%,#8B5CF6 100%)" glowColor="#8B5CF6" borderColor="rgba(139,92,246,0.16)" delay={0.16} />
-            <PortalCard icon={<IconHierarchy size={32} color="#FBBF24" />} badge="Master Authority" badgeColor="#FBBF24" badgeBg="rgba(251,191,36,0.12)" title="Admin Console" desc="Complete administrative control — manage colleges, question papers, academic hierarchy, live exam orchestration, and backups." href="/admin" btnId="landing-admin-login-btn" btnLabel="Sign In as Admin" btnGradient="linear-gradient(135deg,#D97706 0%,#EAA812 100%)" glowColor="#EAA812" borderColor="rgba(234,168,18,0.18)" delay={0.20} />
+            <PortalCard icon={<IconLaunch size={32} color="#10B981" />} badge="Platform I • Exam Entry" badgeColor="#10B981" badgeBg="rgba(16,185,129,0.12)" title="Exam Code Gate" desc="Direct candidate exam access using assigned Exam Code and Hall Ticket Number. Section eligibility is verified server-side with zero OTP friction." specs={['No-OTP Entry', 'Fixed Server Clock', 'SVG Watermark']} href="/enter-exam" btnId="landing-enter-exam-btn" btnLabel="Enter Exam Session" btnGradient="linear-gradient(135deg,#10B981 0%,#059669 100%)" glowColor="#10B981" borderColor="rgba(16,185,129,0.25)" delay={0.04} />
+            <PortalCard icon={<IconGraduation size={32} color="#38BDF8" />} badge="Platform II • Student" badgeColor="#38BDF8" badgeBg="rgba(56,189,248,0.12)" title="Student Intelligence" desc="Authenticated candidate hub with upcoming section-matched exams, 5-Sector Holo Practice Arena, 4-page performance dossiers, and rank tracking." specs={['5-Sector Arena', '4-Page Dossier', 'Live Ranks']} href="/login" btnId="landing-student-login-btn" btnLabel="Enter Candidate Gate" btnGradient="linear-gradient(135deg,#0284c7 0%,#1d4ed8 100%)" glowColor="#38BDF8" borderColor="rgba(56,189,248,0.25)" delay={0.08} />
+            <PortalCard icon={<IconBuilding size={32} color="#F43F5E" />} badge="Platform III • Faculty" badgeColor="#F43F5E" badgeBg="rgba(244,63,94,0.12)" title="Faculty Mentorship" desc="Zero-trust section-scoped command for accredited department faculty: review assigned sections, author papers, and track cohort accuracy." specs={['Section Scoping', 'Paper Authoring', 'Cohort Metrics']} href="/faculty" btnId="landing-faculty-login-btn" btnLabel="Sign In as Faculty" btnGradient="linear-gradient(135deg,#E11D48 0%,#F43F5E 100%)" glowColor="#F43F5E" borderColor="rgba(244,63,94,0.25)" delay={0.12} />
+            <PortalCard icon={<IconRadar size={32} color="#A78BFA" />} badge="Platform IV • Proctor" badgeColor="#A78BFA" badgeBg="rgba(167,139,250,0.12)" title="Inspector Command" desc="Live invigilation bridge with waiting hall release controls, authoritative exam start dispatch, dynamic 1–10 tab strike policy, and violation feed." specs={['Sync Start', '1-10 Tab Strikes', 'Release Queue']} href="/inspector" btnId="landing-inspector-login-btn" btnLabel="Sign In as Inspector" btnGradient="linear-gradient(135deg,#7C3AED 0%,#8B5CF6 100%)" glowColor="#8B5CF6" borderColor="rgba(139,92,246,0.16)" delay={0.16} />
+            <PortalCard icon={<IconHierarchy size={32} color="#FBBF24" />} badge="Platform V • Master" badgeColor="#FBBF24" badgeBg="rgba(251,191,36,0.12)" title="Super Admin Hub" desc="Complete multi-tenant governance — manage colleges, academic hierarchy, 5-sector banks, bulk XLSX rosters, RBAC staff, and Drive backups." specs={['College Taxonomy', 'Bulk XLSX', 'Audit & Backups']} href="/admin" btnId="landing-admin-login-btn" btnLabel="Sign In as Admin" btnGradient="linear-gradient(135deg,#D97706 0%,#EAA812 100%)" glowColor="#EAA812" borderColor="rgba(234,168,18,0.18)" delay={0.20} />
           </div>
         </div>
       </section>
@@ -670,32 +732,40 @@ export default function LandingPage() {
               borderRadius: 16, padding: '24px 20px',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 10 }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#EAA812', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Live Rank Telemetry</span>
-                <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981' }} /> ACTIVE
+                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#EAA812', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Deterministic Tie-Break Pipeline</span>
+                <span style={{ fontSize: '0.72rem', color: engineHealth.state === 'standby' ? '#FBBF24' : '#10B981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: engineHealth.state === 'standby' ? '#F59E0B' : '#10B981' }} />
+                  {engineHealth.state === 'online' && engineHealth.latencyMs !== null ? `LIVE • ${engineHealth.latencyMs}ms` : 'VERIFIED ENGINE'}
                 </span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(234,168,18,0.12)', borderRadius: 8, border: '1px solid rgba(234,168,18,0.3)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 12px', background: 'rgba(234,168,18,0.12)', borderRadius: 8, border: '1px solid rgba(234,168,18,0.3)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontWeight: 800, color: '#EAA812', fontSize: '0.9rem' }}>#1</span>
-                    <span style={{ fontWeight: 700, color: '#FFFFFF', fontSize: '0.85rem' }}>Rank 1 Contender</span>
+                    <span style={{ fontWeight: 800, color: '#EAA812', fontSize: '0.86rem' }}>01</span>
+                    <span style={{ fontWeight: 700, color: '#FFFFFF', fontSize: '0.84rem' }}>Net Score &amp; Negative Marking</span>
                   </div>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#EAA812', fontSize: '0.85rem' }}>98.5% Accuracy</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#EAA812', fontSize: '0.76rem' }}>Primary Key</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontWeight: 800, color: '#94A3B8', fontSize: '0.9rem' }}>#2</span>
-                    <span style={{ fontWeight: 600, color: '#E2E8F0', fontSize: '0.85rem' }}>Rank 2 Contender</span>
+                    <span style={{ fontWeight: 800, color: '#38BDF8', fontSize: '0.86rem' }}>02</span>
+                    <span style={{ fontWeight: 600, color: '#E2E8F0', fontSize: '0.84rem' }}>Correctness Accuracy %</span>
                   </div>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#CBD5E1', fontSize: '0.85rem' }}>95.0% Accuracy</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#94A3B8', fontSize: '0.76rem' }}>Tie-Break 1</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontWeight: 800, color: '#94A3B8', fontSize: '0.9rem' }}>#3</span>
-                    <span style={{ fontWeight: 600, color: '#E2E8F0', fontSize: '0.85rem' }}>Rank 3 Contender</span>
+                    <span style={{ fontWeight: 800, color: '#10B981', fontSize: '0.86rem' }}>03</span>
+                    <span style={{ fontWeight: 600, color: '#E2E8F0', fontSize: '0.84rem' }}>Elapsed Submission Velocity</span>
                   </div>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#CBD5E1', fontSize: '0.85rem' }}>92.5% Accuracy</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#94A3B8', fontSize: '0.76rem' }}>Lowest Time</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontWeight: 800, color: '#A78BFA', fontSize: '0.86rem' }}>04</span>
+                    <span style={{ fontWeight: 600, color: '#E2E8F0', fontSize: '0.84rem' }}>Set A / B / C / D Seed Integrity</span>
+                  </div>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#94A3B8', fontSize: '0.76rem' }}>SHA-256 Seed</span>
                 </div>
               </div>
             </div>
@@ -793,11 +863,29 @@ export default function LandingPage() {
           </motion.div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 16 }}>
-            <SectorCard sectorId="sector-quant" color="#F59E0B" badge="Quantitative Velocity" name="Sector 1: Quant" desc="Arithmetic acceleration, algebraic transformations, geometric logic, probabilistic models." delay={0} />
-            <SectorCard sectorId="sector-logic" color="#8B5CF6" badge="Deductive Logic" name="Sector 2: Logic" desc="Constraint satisfaction, inductive sequences, syllogistic deduction, Boolean matrices." delay={0.07} />
-            <SectorCard sectorId="sector-core-cs" color="#10B981" badge="Core CS & Systems" name="Sector 3: Core CS" desc="OS scheduling, paging, thread synchronization, TCP/IP networking, SQL indexing." delay={0.14} />
-            <SectorCard sectorId="sector-dsa" color="#38BDF8" badge="Algorithms & DSA" name="Sector 4: DSA" desc="Dynamic programming, graph traversals, amortized complexity, algorithmic velocity." delay={0.21} />
-            <SectorCard sectorId="sector-fullstack" color="#F43F5E" badge="Full-Stack & Cloud" name="Sector 5: Cloud" desc="Distributed architectures, microservices, cloud scaling, concurrency, fault tolerance." delay={0.28} />
+            <SectorCard sectorId="sector-quant" color="#F59E0B" badge="10 Qs • 10 Marks • 80%" name="Sector 1: Quantitative Velocity" desc="Relative speed, angular geometry, probability, combinatorics, and ratio velocity." delay={0} />
+            <SectorCard sectorId="sector-logic" color="#8B5CF6" badge="10 Qs • 10 Marks • 85%" name="Sector 2: Deductive Logic" desc="Pattern decryption, constraint networks, syllogistic deduction, and truth tables." delay={0.07} />
+            <SectorCard sectorId="sector-core-cs" color="#10B981" badge="10 Qs • 15 Marks • 75%" name="Sector 3: Core CS & OS" desc="Page fault replacement (FIFO/LRU), Banker's deadlock safety, TCP/IP, and memory paging." delay={0.14} />
+            <SectorCard sectorId="sector-dsa" color="#38BDF8" badge="10 Qs • 20 Marks • 80%" name="Sector 4: Algorithms & DSA" desc="Longest increasing subsequence, monotonic stacks, dynamic programming, and MSTs." delay={0.21} />
+            <SectorCard sectorId="sector-fullstack" color="#F43F5E" badge="5 Qs • 15 Marks • 80%" name="Sector 5: Cloud & Full-Stack" desc="Token bucket rate limiters, Node event loop microtasks, REST/GraphQL caching, and locks." delay={0.28} />
+          </div>
+
+          <div style={{
+            marginTop: 22,
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 12,
+            padding: '12px 18px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+            fontSize: '0.8rem',
+            color: '#94A3B8',
+          }}>
+            <span><strong style={{ color: '#F8FAFC' }}>Standard Blueprint:</strong> 45 Total Questions &bull; 70 Max Marks &bull; 80% Overall Competency Target</span>
+            <span style={{ color: '#34D399', fontWeight: 700 }}>Sets A / B / C / D Deterministic Permutation</span>
           </div>
 
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} style={{ textAlign: 'center', marginTop: 36 }}>
@@ -868,9 +956,9 @@ export default function LandingPage() {
                 Administrative &amp; Helpdesk Email
               </h3>
               <p style={{ fontSize: '0.84rem', color: '#94A3B8', lineHeight: 1.6, margin: '0 0 12px' }}>
-                Primary: admin@logicwhilelire.com<br />
+                Primary Admin: admin@logicwhilelire.com<br />
                 Inspector Desk: inspector@logicwhilelire.com<br />
-                Inquiries: contact@logicwhile.com
+                Support Desk: support@logicwhilelire.com
               </p>
               <div style={{ fontSize: '0.78rem', color: '#38BDF8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <IconFlash size={14} color="#38BDF8" /> 24/7 Monitored Dispatch
