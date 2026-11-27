@@ -43,15 +43,21 @@ interface ResultData {
   is_terminated?: boolean
   termination_reason?: string
   score: number
-  totalMarks: number
+  totalMarks?: number
+  max_score?: number
   percentage: number
+  passing_percentage?: number
   rank?: number
   totalCandidates?: number
   timeTaken?: number
+  time_taken_seconds?: number
   correctAnswers?: number
+  correct_count?: number
   wrongAnswers?: number
+  wrong_count?: number
   unanswered?: number
   topicBreakdown?: Record<string, number>
+  topic_breakdown?: Record<string, any>
   qrToken?: string
   codeAnswers?: Record<string, string>
   code_answers?: Record<string, string>
@@ -180,7 +186,7 @@ export default function ResultECPage() {
     })
   }
 
-  const activeResult = result || {
+  const activeResult: ResultData = result || {
     score: 0,
     totalMarks: 0,
     percentage: 0,
@@ -193,10 +199,27 @@ export default function ResultECPage() {
     topicBreakdown: {},
   }
 
-  const pct = activeResult.percentage ?? 0
-  const rankTarget = activeResult.rank || 3
-  const totalCandidates = activeResult.totalCandidates || 148
-  const scoreColor = pct >= 80 ? '#10B981' : pct >= 60 ? '#F59E0B' : '#EF4444'
+  const resolvedTotalMarks = activeResult.totalMarks ?? activeResult.max_score ?? 0
+  const resolvedCorrect = activeResult.correctAnswers ?? activeResult.correct_count
+  const resolvedWrong = activeResult.wrongAnswers ?? activeResult.wrong_count
+  const resolvedTimeTaken = activeResult.timeTaken ?? activeResult.time_taken_seconds ?? 0
+  const resolvedTopicBreakdown = activeResult.topicBreakdown ?? activeResult.topic_breakdown ?? {}
+
+  const lbIdx = hallTicket
+    ? leaderboard.findIndex((r) => String(r.hall_ticket || '').toUpperCase() === hallTicket.toUpperCase())
+    : -1
+  const resolvedRank = (activeResult.rank && activeResult.rank > 0)
+    ? activeResult.rank
+    : (lbIdx >= 0 ? lbIdx + 1 : 0)
+  const resolvedTotalCandidates = (activeResult.totalCandidates && activeResult.totalCandidates > 0)
+    ? activeResult.totalCandidates
+    : leaderboard.length
+
+  const pct = activeResult.percentage ?? (resolvedTotalMarks > 0 ? Math.round(((activeResult.score ?? 0) / resolvedTotalMarks) * 100) : 0)
+  const rankTarget = resolvedRank
+  const totalCandidates = resolvedTotalCandidates
+  const passingThreshold = activeResult.passing_percentage ?? 40
+  const scoreColor = pct >= 80 ? '#10B981' : pct >= passingThreshold ? '#F59E0B' : '#EF4444'
 
   const resolvedCodeAnswers: Record<string, string> =
     rawState?.codeAnswers ||
@@ -235,14 +258,14 @@ export default function ResultECPage() {
   const effectiveMcqMaxMarks =
     activeResult.mcq_max_score ??
     activeResult.mcqMaxMarks ??
-    (hasCodingQuestions ? Math.max(1, (activeResult.totalMarks ?? 35) - codingMarksTotal) : (activeResult.totalMarks ?? 100))
+    (hasCodingQuestions ? Math.max(1, (resolvedTotalMarks || 35) - codingMarksTotal) : (resolvedTotalMarks || 0))
 
   const effectiveMcqScore = activeResult.mcq_score ?? activeResult.mcqScore ?? activeResult.score ?? 0
   const effectiveMcqPct = effectiveMcqMaxMarks > 0 ? Math.round((effectiveMcqScore / effectiveMcqMaxMarks) * 1000) / 10 : 0
   const animatedMcqPct = useAnimatedCounter(effectiveMcqPct, 1400)
   const animatedMcqScore = useAnimatedCounter(effectiveMcqScore, 1200)
-  const mcqScoreColor = effectiveMcqPct >= 80 ? '#10B981' : effectiveMcqPct >= 50 ? '#F59E0B' : '#EF4444'
-  const mcqPassed = effectiveMcqPct >= 40
+  const mcqScoreColor = effectiveMcqPct >= 80 ? '#10B981' : effectiveMcqPct >= passingThreshold ? '#F59E0B' : '#EF4444'
+  const mcqPassed = effectiveMcqPct >= passingThreshold
 
   const isTerminated = Boolean(
     activeResult.is_terminated ||
@@ -253,13 +276,13 @@ export default function ResultECPage() {
     rawState?.isTerminated
   )
 
-  const passed = isTerminated ? false : (hasCodingQuestions ? mcqPassed : pct >= 60)
+  const passed = isTerminated ? false : (hasCodingQuestions ? mcqPassed : pct >= passingThreshold)
 
   const animatedPct = useAnimatedCounter(pct, 1400)
   const animatedScore = useAnimatedCounter(activeResult.score ?? 0, 1200)
-  const { rank: animatedRank, settled: rankSettled } = useRankCounter(rankTarget, totalCandidates, 1500)
-  const animatedCorrect = useAnimatedCounter(activeResult.correctAnswers ?? 0, 1000)
-  const animatedWrong = useAnimatedCounter(activeResult.wrongAnswers ?? 0, 1000)
+  const { rank: animatedRank, settled: rankSettled } = useRankCounter(rankTarget, Math.max(1, totalCandidates), 1500)
+  const animatedCorrect = useAnimatedCounter(resolvedCorrect ?? 0, 1000)
+  const animatedWrong = useAnimatedCounter(resolvedWrong ?? 0, 1000)
 
   if (loading) return (
     <div className="page-center" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -320,26 +343,26 @@ export default function ResultECPage() {
   }
 
   const normalizedTopics: Record<string, number> = {};
-  if (activeResult.topicBreakdown && typeof activeResult.topicBreakdown === 'object') {
-    for (const [key, val] of Object.entries(activeResult.topicBreakdown)) {
+  if (resolvedTopicBreakdown && typeof resolvedTopicBreakdown === 'object') {
+    for (const [key, val] of Object.entries(resolvedTopicBreakdown)) {
       if (typeof val === 'number') {
         normalizedTopics[key] = Math.round(val);
       } else if (val && typeof val === 'object') {
         const item = val as { score?: number; maxScore?: number };
         const maxSc = Number(item.maxScore) || 0;
         const sc = Number(item.score) || 0;
-        const pct = maxSc > 0 ? Math.round((sc / maxSc) * 100) : 0;
-        normalizedTopics[key] = pct;
+        const itemPct = maxSc > 0 ? Math.round((sc / maxSc) * 100) : 0;
+        normalizedTopics[key] = itemPct;
       }
     }
   }
 
   const TOPICS = Object.keys(normalizedTopics).length > 0 ? normalizedTopics : {
-    'Quantitative Aptitude': 86,
-    'Logical Reasoning': 92,
-    'Core Computer Science': 78,
-    'Data Structures & Algorithms': 84,
-    'Full-Stack & Systems': 88,
+    'Quantitative Aptitude': 0,
+    'Logical Reasoning': 0,
+    'Core Computer Science': 0,
+    'Data Structures & Algorithms': 0,
+    'Full-Stack & Systems': 0,
   };
 
   return (
@@ -521,7 +544,9 @@ export default function ResultECPage() {
                     transition={{ duration: 0.4 }}
                     style={{ color: '#2563EB', fontWeight: 700 }}
                   >
-                    Rank #{animatedRank} of {totalCandidates}
+                    {rankTarget > 0 && totalCandidates > 0
+                      ? `Rank #${animatedRank} of ${totalCandidates}`
+                      : 'Rank Pending'}
                   </motion.span>
                 </div>
               </div>
@@ -695,10 +720,10 @@ export default function ResultECPage() {
                     GRADE
                   </div>
                   <div style={{ fontSize: '1.4rem', fontWeight: 900, color: scoreColor, lineHeight: 1.1 }}>
-                    {pct >= 85 ? 'A+' : pct >= 75 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : 'PASS'}
+                    {isTerminated ? 'DQ' : !passed ? 'F' : pct >= 85 ? 'A+' : pct >= 75 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : 'PASS'}
                   </div>
                   <div style={{ fontSize: '0.65rem', color: '#CBD5E1', fontWeight: 700, marginTop: 2 }}>
-                    {pct >= 75 ? 'Distinction' : pct >= 60 ? 'First Class' : 'Qualified'}
+                    {isTerminated ? 'Disqualified' : !passed ? 'Not Qualified' : pct >= 75 ? 'Distinction' : pct >= 60 ? 'First Class' : 'Qualified'}
                   </div>
                 </div>
               </motion.div>
@@ -743,14 +768,16 @@ export default function ResultECPage() {
                 boxShadow: '0 1px 4px rgba(0,0,0,0.06)'
               }}
             >
-              <span>Score: <strong>{Math.round(animatedScore)}</strong> / {activeResult.totalMarks ?? 100} marks</span>
+              <span>Score: <strong>{Math.round(animatedScore)}</strong> / {resolvedTotalMarks} marks</span>
               <span style={{ opacity: 0.35 }}>•</span>
               <motion.span
                 animate={rankSettled ? { scale: [1, 1.18, 1] } : {}}
                 transition={{ duration: 0.45, ease: 'easeOut' }}
                 style={{ color: '#2563eb', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}
               >
-                Rank #{animatedRank} of {totalCandidates}
+                {rankTarget > 0 && totalCandidates > 0
+                  ? `Rank #${animatedRank} of ${totalCandidates}`
+                  : 'Rank Pending'}
               </motion.span>
             </motion.div>
           </motion.div>
@@ -759,11 +786,11 @@ export default function ResultECPage() {
         {/* ─── STATS CARDS (Solid Surfaces) ─── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 48 }}>
           {[
-            { icon: <IconCheck size={28} color="#10B981" />, label: hasCodingQuestions ? 'Correct (MCQ)' : 'Correct', value: activeResult.correctAnswers !== undefined ? Math.round(animatedCorrect) : '-', color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)' },
-            { icon: <IconCross size={28} color="#EF4444" />, label: hasCodingQuestions ? 'Wrong (MCQ)' : 'Wrong',   value: activeResult.wrongAnswers !== undefined ? Math.round(animatedWrong) : '-',   color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)' },
-            { icon: <span style={{ width: 22, height: 22, border: '2px solid #F59E0B', borderRadius: 4, display: 'inline-block' }} />, label: 'Skipped', value: activeResult.unanswered ?? '-',     color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)' },
+            { icon: <IconCheck size={28} color="#10B981" />, label: hasCodingQuestions ? 'Correct (MCQ)' : 'Correct', value: resolvedCorrect !== undefined ? Math.round(animatedCorrect) : 0, color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)' },
+            { icon: <IconCross size={28} color="#EF4444" />, label: hasCodingQuestions ? 'Wrong (MCQ)' : 'Wrong',   value: resolvedWrong !== undefined ? Math.round(animatedWrong) : 0,   color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)' },
+            { icon: <span style={{ width: 22, height: 22, border: '2px solid #F59E0B', borderRadius: 4, display: 'inline-block' }} />, label: 'Skipped', value: activeResult.unanswered ?? 0,     color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)' },
             { icon: <IconClock size={28} color="#2563EB" />, label: 'Time Taken',
-              value: activeResult.timeTaken ? `${Math.floor(activeResult.timeTaken / 60)}m` : '-',
+              value: resolvedTimeTaken > 0 ? (resolvedTimeTaken >= 60 ? `${Math.floor(resolvedTimeTaken / 60)}m` : `${resolvedTimeTaken}s`) : '—',
               color: '#2563EB', bg: 'rgba(37, 99, 235, 0.12)' },
           ].map((s, i) => (
             <motion.div key={i}
@@ -812,35 +839,35 @@ export default function ResultECPage() {
                 {
                   sector: 'Quantitative Aptitude',
                   short: 'Quant',
-                  score: TOPICS['Quantitative Aptitude'] ?? TOPICS['Sector 1: Quant'] ?? TOPICS['Quantitative Velocity'] ?? 86,
+                  score: TOPICS['Quantitative Aptitude'] ?? TOPICS['Sector 1: Quant'] ?? TOPICS['Quantitative Velocity'] ?? 0,
                   benchmark: 72,
                   color: '#F59E0B'
                 },
                 {
                   sector: 'Logical Reasoning',
                   short: 'Logic',
-                  score: TOPICS['Logical Reasoning'] ?? TOPICS['Sector 2: Logic'] ?? TOPICS['Deductive Logic'] ?? 92,
+                  score: TOPICS['Logical Reasoning'] ?? TOPICS['Sector 2: Logic'] ?? TOPICS['Deductive Logic'] ?? 0,
                   benchmark: 76,
                   color: '#8B5CF6'
                 },
                 {
                   sector: 'Core Computer Science',
                   short: 'Core CS',
-                  score: TOPICS['Core Computer Science'] ?? TOPICS['Sector 3: Core CS'] ?? TOPICS['Systems & OS'] ?? 78,
+                  score: TOPICS['Core Computer Science'] ?? TOPICS['Sector 3: Core CS'] ?? TOPICS['Systems & OS'] ?? 0,
                   benchmark: 68,
                   color: '#10B981'
                 },
                 {
                   sector: 'Data Structures & Algorithms',
                   short: 'DSA',
-                  score: TOPICS['Data Structures & Algorithms'] ?? TOPICS['Sector 4: DSA'] ?? TOPICS['Algorithms & Structures'] ?? 84,
+                  score: TOPICS['Data Structures & Algorithms'] ?? TOPICS['Sector 4: DSA'] ?? TOPICS['Algorithms & Structures'] ?? 0,
                   benchmark: 64,
                   color: '#38BDF8'
                 },
                 {
                   sector: 'Full-Stack & Systems',
                   short: 'Full-Stack',
-                  score: TOPICS['Full-Stack & Systems'] ?? TOPICS['Sector 5: Cloud'] ?? TOPICS['Full-Stack Architecture'] ?? 88,
+                  score: TOPICS['Full-Stack & Systems'] ?? TOPICS['Sector 5: Cloud'] ?? TOPICS['Full-Stack Architecture'] ?? 0,
                   benchmark: 71,
                   color: '#F43F5E'
                 },

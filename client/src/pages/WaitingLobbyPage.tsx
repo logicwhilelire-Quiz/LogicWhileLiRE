@@ -353,12 +353,16 @@ export default function WaitingLobbyPage() {
             localStorage.getItem(`admin_exam_started_at_${contestId}`) ||
             localStorage.getItem(`admin_exam_started_at_${contestId.toUpperCase()}`) ||
             String(Date.now());
-          const startedAt = Number(startedAtStr) || Date.now();
+          const rawStartedAt = Number(startedAtStr) || Date.now();
           // Use the real duration fetched from server; fall back to 3600 only as last resort
           const durationSec =
             Number(localStorage.getItem(`admin_exam_duration_${contestId}`)) ||
             Number(localStorage.getItem(`admin_exam_duration_${contestId.toUpperCase()}`)) ||
             examDurationSeconds;
+          // Ignore stale timestamps older than full exam duration
+          const startedAt = (Date.now() - rawStartedAt) < durationSec * 1000 && rawStartedAt <= Date.now()
+            ? rawStartedAt
+            : Date.now();
           setExamStarted(true);
           setStartPayload({
             event: 'EXAM_STARTED',

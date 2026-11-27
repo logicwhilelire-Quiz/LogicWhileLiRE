@@ -170,34 +170,64 @@ const handleExamCodeStart = async (req: any, res: any) => {
       }
     }
 
-    // Enforce candidate release / lobby status
+    // Enforce candidate release / lobby status & prevent re-entering submitted attempts
+    let existingAttemptStartMs: number | null = null;
     if (!isDemoExam) {
       const { data: attemptRecord } = await supabase
         .from('exam_code_attempts')
-        .select('id, status')
+        .select('id, status, start_time, override_reason')
         .eq('exam_code', effectiveCode)
         .eq('hall_ticket_no', hallTicket)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (attemptRecord && attemptRecord.status === 'waiting_verification') {
-        if (isExamStarted || startedState) {
-          // Exam is live by central dispatch: student auto-enters live exam
-          await supabase
-            .from('exam_code_attempts')
-            .update({ status: 'in_progress', start_time: new Date().toISOString() })
-            .eq('id', attemptRecord.id);
-        } else {
+      if (attemptRecord) {
+        if (['completed', 'submitted', 'auto_submitted_expired'].includes(attemptRecord.status)) {
+          return res.status(409).json({
+            success: false,
+            error: 'You have already completed this exam. Each student can attempt only once.',
+            code: 'ALREADY_ATTEMPTED',
+          });
+        }
+        if (['terminated', 'Terminated - violation', 'terminated_cheating', 'terminated_violation', 'blocked', 'rejected'].includes(attemptRecord.status)) {
           return res.status(403).json({
             success: false,
-            error: 'You have not been released by your administrator or inspector yet. Please wait in the waiting lobby.',
-            code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
-            waiting_list: true,
-            exam_name: exam.exam_name || exam.name || code,
-            duration_minutes: exam.duration_minutes || 60,
-            total_questions: exam.total_questions || 15,
+            error: `Your examination attempt is ${attemptRecord.status} and cannot be resumed.`,
+            code: 'ATTEMPT_BLOCKED',
           });
+        }
+        if (attemptRecord.status === 'waiting_verification' || attemptRecord.status === 'in_lobby') {
+          if (isExamStarted || startedState) {
+            // Exam is live by central dispatch: student auto-enters live exam
+            const freshStartIso = new Date().toISOString();
+            await supabase
+              .from('exam_code_attempts')
+              .update({ status: 'in_progress', override_reason: 'status:released', start_time: freshStartIso })
+              .eq('id', attemptRecord.id);
+            existingAttemptStartMs = Date.now();
+          } else {
+            return res.status(403).json({
+              success: false,
+              error: 'You have not been released by your administrator or inspector yet. Please wait in the waiting lobby.',
+              code: 'EXAM_NOT_STARTED_BY_INSPECTOR',
+              waiting_list: true,
+              exam_name: exam.exam_name || exam.name || code,
+              duration_minutes: exam.duration_minutes || 60,
+              total_questions: exam.total_questions || 15,
+            });
+          }
+        } else if (attemptRecord.status === 'released' || attemptRecord.override_reason === 'status:released') {
+          // Released from lobby: start attempt timer cleanly if not yet started in_progress
+          const relStartMs = attemptRecord.start_time ? new Date(attemptRecord.start_time).getTime() : 0;
+          const durMs = (exam?.duration_minutes || exam?.duration || 60) * 60 * 1000;
+          if (!relStartMs || Date.now() - relStartMs >= durMs) {
+            existingAttemptStartMs = Date.now();
+          } else {
+            existingAttemptStartMs = relStartMs;
+          }
+        } else if (attemptRecord.status === 'in_progress' && attemptRecord.start_time) {
+          existingAttemptStartMs = new Date(attemptRecord.start_time).getTime();
         }
       }
     }
@@ -261,10 +291,26 @@ const handleExamCodeStart = async (req: any, res: any) => {
       };
     });
 
-    const officialStartTime = startedState?.server_start_time || (exam?.start_time ? new Date(exam.start_time).getTime() : Date.now());
-    const durationMinutes = exam?.duration_minutes || exam?.duration || 45;
+    const nowMs = Date.now();
+    const durationMinutes = exam?.duration_minutes || exam?.duration || 60;
     const durationSec = startedState?.duration_seconds || (durationMinutes * 60);
-    const endTimeIso = new Date(officialStartTime + durationSec * 1000).toISOString();
+    const durationMs = durationSec * 1000;
+
+    // Never use scheduled window opening `exam.start_time` as the candidate's live attempt timer start.
+    // Prefer live inspector dispatch time, recent exam.started_at, or active attempt start_time.
+    let officialStartTime = nowMs;
+    const examStartedAtMs = exam?.started_at ? new Date(exam.started_at).getTime() : 0;
+
+    if (startedState?.server_start_time && (nowMs - startedState.server_start_time) < durationMs) {
+      officialStartTime = startedState.server_start_time;
+    } else if (examStartedAtMs > 0 && (nowMs - examStartedAtMs) >= 0 && (nowMs - examStartedAtMs) < durationMs) {
+      officialStartTime = examStartedAtMs;
+    } else if (existingAttemptStartMs && (nowMs - existingAttemptStartMs) >= 0 && (nowMs - existingAttemptStartMs) < durationMs) {
+      officialStartTime = existingAttemptStartMs;
+    }
+
+    const timeLeftSeconds = Math.max(1, Math.floor((officialStartTime + durationMs - nowMs) / 1000));
+    const endTimeIso = new Date(officialStartTime + durationMs).toISOString();
 
     // Record active attempt in exam_code_attempts
     try {
@@ -282,12 +328,15 @@ const handleExamCodeStart = async (req: any, res: any) => {
       success: true,
       server_shuffled: true,
       questions_shuffled: true,
-      sessionId: `sess_${effectiveCode}_${hallTicket}_${Date.now()}`,
+      server_time: nowMs,
+      time_left_seconds: timeLeftSeconds,
+      sessionId: `sess_${effectiveCode}_${hallTicket}_${nowMs}`,
       exam: {
         ...(exam || {}),
         exam_name: exam?.exam_name || exam?.name || effectiveCode,
         duration_minutes: durationMinutes,
         duration_seconds: durationSec,
+        time_left_seconds: timeLeftSeconds,
         total_questions: formattedQuestions.length,
         server_start_time: officialStartTime,
         started_at: new Date(officialStartTime).toISOString(),

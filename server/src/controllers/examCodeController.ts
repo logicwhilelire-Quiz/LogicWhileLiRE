@@ -1933,7 +1933,7 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
   const durationMinutes = examData?.duration_minutes || 60;
   const extraTime = attempt.extra_time_seconds || 0;
   const totalAllowedSec = durationMinutes * 60 + extraTime;
-  const startTime = attempt.created_at ? new Date(attempt.created_at).getTime() : Date.now();
+  const startTime = attempt.start_time ? new Date(attempt.start_time).getTime() : (attempt.created_at ? new Date(attempt.created_at).getTime() : Date.now());
   const allowedEndTime = startTime + (totalAllowedSec * 1000) + (30 * 1000); // 30s grace window
   const isGraceExpired = Date.now() > allowedEndTime;
 
@@ -2159,21 +2159,65 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
     scheduleThrottledRoomUpdate(code);
   } catch { }
 
+  const computedTimeTaken = timeTakenSeconds > 0
+    ? Number(timeTakenSeconds)
+    : Math.max(1, Math.round((Date.now() - startTime) / 1000));
+  const unansweredCount = Math.max(
+    0,
+    questions.length - correctCount - wrongCount - codingQuestionsList.filter((c) => c.submitted).length
+  );
+
+  // Compute live cohort rank for this attempt
+  let computedRank = 0;
+  let totalRankedCandidates = 0;
+  try {
+    const { data: allAttempts } = await supabase
+      .from('exam_code_attempts')
+      .select('id, hall_ticket_no, score, time_taken_seconds, status')
+      .eq('exam_code', effectiveCode)
+      .in('status', ['completed', 'submitted', 'auto_submitted_expired']);
+
+    if (Array.isArray(allAttempts) && allAttempts.length > 0) {
+      const sorted = [...allAttempts].sort((a: any, b: any) => {
+        const sDiff = Number(b.score || 0) - Number(a.score || 0);
+        if (sDiff !== 0) return sDiff;
+        return Number(a.time_taken_seconds || 0) - Number(b.time_taken_seconds || 0);
+      });
+      totalRankedCandidates = sorted.length;
+      const idx = sorted.findIndex((a: any) => a.id === attempt.id || String(a.hall_ticket_no || '').toUpperCase() === canonicalCandidate);
+      computedRank = idx >= 0 ? idx + 1 : 0;
+    }
+  } catch { }
+
+  const pctValue = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+
   res.json({
     success: true,
     result: {
       score: totalScore,
+      totalMarks: maxScore,
       max_score: maxScore,
+      correctAnswers: correctCount,
       correct_count: correctCount,
+      wrongAnswers: wrongCount,
       wrong_count: wrongCount,
-      percentage: maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0,
+      unanswered: unansweredCount,
+      timeTaken: computedTimeTaken,
+      time_taken_seconds: computedTimeTaken,
+      percentage: pctValue,
+      rank: computedRank,
+      totalCandidates: totalRankedCandidates,
+      passing_percentage: Number((exam as any).passing_percentage) || 40,
+      topicBreakdown,
       topic_breakdown: topicBreakdown,
       status: finalStatus,
+      is_terminated: isTerminatedViolation,
+      termination_reason: terminationReason,
       expired_grace: isGraceExpired,
       code_answers: codeAnswers || {},
       mcq_score: mcqScore,
       mcq_max_score: mcqMaxScore > 0 ? mcqMaxScore : maxScore,
-      mcq_percentage: mcqMaxScore > 0 ? Math.round((mcqScore / mcqMaxScore) * 100) : (maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0),
+      mcq_percentage: mcqMaxScore > 0 ? Math.round((mcqScore / mcqMaxScore) * 100) : pctValue,
       coding_questions: codingQuestionsList,
       has_coding_questions: codingQuestionsList.length > 0,
     },
@@ -4034,10 +4078,11 @@ export async function releaseStudentForExam(req: Request, res: Response): Promis
   if (all) {
     let updatedAttempts: Array<{ id: string; hall_ticket_no: string }> = [];
 
-    // 1. Update any existing waiting attempts
+    // 1. Update any existing waiting attempts and reset start_time to release timestamp
+    const releaseIso = new Date().toISOString();
     let { data: updated, error } = await supabase
       .from('exam_code_attempts')
-      .update({ status: 'released', override_reason: 'status:released' })
+      .update({ status: 'released', override_reason: 'status:released', start_time: releaseIso })
       .eq('exam_code', code)
       .in('status', ['waiting_verification', 'in_lobby', 'waiting'])
       .select('id, hall_ticket_no');
@@ -4045,8 +4090,9 @@ export async function releaseStudentForExam(req: Request, res: Response): Promis
     if (error && error.code === '23514') {
       const fallback = await supabase
         .from('exam_code_attempts')
-        .update({ override_reason: 'status:released' })
+        .update({ override_reason: 'status:released', start_time: releaseIso })
         .eq('exam_code', code)
+        .in('status', ['waiting_verification', 'in_lobby', 'waiting'])
         .select('id, hall_ticket_no');
       updated = fallback.data;
     }
@@ -4148,9 +4194,10 @@ export async function releaseStudentForExam(req: Request, res: Response): Promis
   let finalAttempt: { id: string; hall_ticket_no: string } | null = null;
 
   if (existingAttempt) {
+    const releaseIso = new Date().toISOString();
     const upd1 = await supabase
       .from('exam_code_attempts')
-      .update({ status: 'released', override_reason: 'status:released' })
+      .update({ status: 'released', override_reason: 'status:released', start_time: releaseIso })
       .eq('id', existingAttempt.id)
       .select('id, hall_ticket_no')
       .maybeSingle();
@@ -4158,7 +4205,7 @@ export async function releaseStudentForExam(req: Request, res: Response): Promis
     if (upd1.error && upd1.error.code === '23514') {
       const upd2 = await supabase
         .from('exam_code_attempts')
-        .update({ override_reason: 'status:released' })
+        .update({ override_reason: 'status:released', start_time: releaseIso })
         .eq('id', existingAttempt.id)
         .select('id, hall_ticket_no')
         .maybeSingle();

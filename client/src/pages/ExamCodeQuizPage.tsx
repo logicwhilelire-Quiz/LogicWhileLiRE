@@ -150,6 +150,7 @@ export default function QuizPage() {
   const sessionIdRef = useRef<string | undefined>(undefined)
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const serverClockOffsetRef = useRef<number>(0)
+  const sessionStartedAtRef = useRef<number>(0)
   const debounceSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   /* ── Inspector Remote Actions & Integrity State ── */
@@ -272,23 +273,38 @@ export default function QuizPage() {
         sessionIdRef.current = data.sessionId || data.session_id
         const proctoringMode: 'webcam' | 'screen' | 'dual' = exam?.proctoring_mode || 'webcam'
         const fullDuration = (exam?.duration_minutes || 60) * 60
+        const serverRemaining = Number(data.time_left_seconds ?? exam?.time_left_seconds)
         let initialTimeLeft: number
         const nowSynced = Date.now() + serverClockOffsetRef.current
 
-        if (routerServerStartTime && routerDurationSeconds) {
-          // Accurate: router state populated by WaitingLobbyPage from EXAM_STARTED
+        if (!Number.isNaN(serverRemaining) && serverRemaining > 0) {
+          // Single source of truth from server /start response
+          initialTimeLeft = Math.min(fullDuration, Math.max(1, Math.floor(serverRemaining)))
+        } else if (routerServerStartTime && routerDurationSeconds) {
           const elapsed = Math.floor((nowSynced - routerServerStartTime) / 1000)
-          initialTimeLeft = Math.max(0, routerDurationSeconds - elapsed)
+          initialTimeLeft = elapsed >= 0 && elapsed < routerDurationSeconds
+            ? Math.max(1, routerDurationSeconds - elapsed)
+            : fullDuration
         } else if (exam?.started_at) {
-          // Started by inspector via POST /start
           const startedAtMs = new Date(exam.started_at).getTime()
           const elapsed = Math.floor((nowSynced - startedAtMs) / 1000)
-          initialTimeLeft = Math.max(0, fullDuration - elapsed)
+          initialTimeLeft = !Number.isNaN(startedAtMs) && elapsed >= 0 && elapsed < fullDuration
+            ? Math.max(1, fullDuration - elapsed)
+            : fullDuration
         } else {
           // Standard full duration for this exam attempt (e.g. 30 or 60 min)
           initialTimeLeft = fullDuration
         }
 
+        // Clear any stale 'stopped' flag from an earlier test run before launching active quiz
+        try {
+          const stKeyUpper = `admin_exam_state_${examCode.toUpperCase()}`
+          const stKeyRaw = `admin_exam_state_${examCode}`
+          if (localStorage.getItem(stKeyUpper) === 'stopped') localStorage.removeItem(stKeyUpper)
+          if (localStorage.getItem(stKeyRaw) === 'stopped') localStorage.removeItem(stKeyRaw)
+        } catch {}
+
+        sessionStartedAtRef.current = Date.now()
         const computedEndTimeMs = nowSynced + (initialTimeLeft * 1000)
 
         const portalRules = (() => {
@@ -663,6 +679,9 @@ export default function QuizPage() {
         hallTicket,
         answers: { ...answers },
         codeAnswers: { ...codeAnswers },
+        timeTakenSeconds: sessionStartedAtRef.current > 0
+          ? Math.max(1, Math.round((Date.now() - sessionStartedAtRef.current) / 1000))
+          : 1,
       }
 
       // Retry queue with backoff if network drops (silent offline buffering per Rule 7)
@@ -1265,7 +1284,7 @@ export default function QuizPage() {
 
   // ── Administrator Command Real-Time Synchronizer (Pause, Resume, Conclude) ──
   useEffect(() => {
-    if (!examCode || isTerminated || submitting) return
+    if (!examCode || !session || isInWaitingList || isTerminated || submitting) return
 
     const checkAdminState = () => {
       try {
@@ -1316,7 +1335,7 @@ export default function QuizPage() {
       window.removeEventListener('storage', checkAdminState)
       bc?.close()
     }
-  }, [examCode, isTerminated, submitting, handleSubmit])
+  }, [examCode, session, isInWaitingList, isTerminated, submitting, handleSubmit])
 
   // ── Dual-Layer Continuous Answer Auto-Save Vault ──
   useEffect(() => {
@@ -1335,18 +1354,14 @@ export default function QuizPage() {
 
   /* ── Timer (Sprint 2, Item 2 & 3: Server-authoritative countdown) ── */
   useEffect(() => {
-    if (!session) return
+    if (!session || isInWaitingList) return
     timerRef.current = setInterval(() => {
       if (isExamPausedRef.current) return // Timer freezes while exam is paused by inspector!
       setTimeLeft(prev => {
         let rem: number
         const nowSynced = Date.now() + serverClockOffsetRef.current
-        if (routerServerStartTime && routerDurationSeconds) {
-          // Continuous sync against server start time: immune to background tab throttling
-          const elapsed = Math.floor((nowSynced - routerServerStartTime) / 1000)
-          rem = Math.max(0, routerDurationSeconds - elapsed)
-        } else if (session.endTimeMs) {
-          // Continuous sync against server end_time with server clock synchronization
+        if (session.endTimeMs) {
+          // Single authoritative deadline anchored from server time_left_seconds / started_at
           rem = Math.max(0, Math.floor((session.endTimeMs - nowSynced) / 1000))
         } else {
           rem = Math.max(0, prev - 1)
@@ -1360,7 +1375,7 @@ export default function QuizPage() {
       })
     }, 1000)
     return () => clearInterval(timerRef.current)
-  }, [session, routerServerStartTime, routerDurationSeconds, handleSubmit])
+  }, [session, isInWaitingList, handleSubmit])
 
 
 

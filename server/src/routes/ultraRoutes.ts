@@ -891,38 +891,49 @@ router.post('/exam-code/:code/screen-thumbnail', async (req: Request, res: Respo
 // ─── RESULT (GET) ─────────────────────────────────────────────
 router.get('/exam-code/:code/result', async (req: Request, res: Response) => {
   try {
-    const { code } = req.params;
-    const { hallTicket } = req.query;
+    const code = String(req.params.code || '').toUpperCase().trim();
+    const htRaw = String(req.query.hallTicket || req.query.hall_ticket || '').toUpperCase().trim();
 
-    const { data: attempt } = await supabase
+    let attemptQuery = supabase
       .from('exam_code_attempts')
       .select('*')
-      .eq('exam_code', code)
-      .eq('hall_ticket', hallTicket as string)
-      .order('submitted_at', { ascending: false })
+      .eq('exam_code', code);
+
+    if (htRaw) {
+      attemptQuery = attemptQuery.or(`hall_ticket_no.ilike.${htRaw},hall_ticket.ilike.${htRaw}`);
+    }
+
+    const { data: attempt } = await attemptQuery
+      .order('end_time', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (!attempt) {
-      // Return a demo score result if in demo mode
-      return res.json({
-        success: true,
-        data: {
-          score: 85,
-          totalMarks: 100,
-          percentage: 85,
-          correctAnswers: 12,
-          wrongAnswers: 2,
-          unanswered: 1,
-          timeTaken: 1420,
-          qrToken: `cert_${code}_${hallTicket || 'DEMO'}`,
-          code_answers: {},
-          mcq_score: 85,
-          mcq_max_score: 100,
-          mcq_percentage: 85,
-          coding_questions: [],
-          has_coding_questions: false,
-        },
+      if (code.includes('DEMO')) {
+        return res.json({
+          success: true,
+          data: {
+            score: 85,
+            totalMarks: 100,
+            percentage: 85,
+            correctAnswers: 12,
+            wrongAnswers: 2,
+            unanswered: 1,
+            timeTaken: 1420,
+            qrToken: `cert_${code}_${htRaw || 'DEMO'}`,
+            code_answers: {},
+            mcq_score: 85,
+            mcq_max_score: 100,
+            mcq_percentage: 85,
+            coding_questions: [],
+            has_coding_questions: false,
+          },
+        });
+      }
+      return res.status(404).json({
+        success: false,
+        error: 'No completed assessment attempt found.',
       });
     }
 
@@ -953,28 +964,61 @@ router.get('/exam-code/:code/result', async (req: Request, res: Response) => {
     });
 
     const hasCoding = codingQList.length > 0;
-    const mcqScore = attempt.score || 0;
-    const mcqPercentage = mcqMaxMarks > 0 ? Math.round((mcqScore / mcqMaxMarks) * 100) : (attempt.percentage || 0);
+    const mcqScore = Number(attempt.score || 0);
+    const totalMax = Number(attempt.total_marks || attempt.max_score || mcqMaxMarks || 0);
+    const mcqPercentage = mcqMaxMarks > 0 ? Math.round((mcqScore / mcqMaxMarks) * 100) : (totalMax > 0 ? Math.round((mcqScore / totalMax) * 100) : 0);
+    const overallPct = attempt.percentage !== undefined && attempt.percentage !== null
+      ? Number(attempt.percentage)
+      : (totalMax > 0 ? Math.round((mcqScore / totalMax) * 100) : 0);
 
     const isTerminated = attempt.status === 'terminated_cheating' || attempt.status === 'terminated' || attempt.status === 'Terminated - violation';
+    const correctCnt = Number(attempt.correct_answers ?? attempt.correct_count ?? 0);
+    const wrongCnt = Number(attempt.wrong_answers ?? attempt.wrong_count ?? 0);
+    const totalQs = (qList || []).length;
+    const unansweredCnt = attempt.unanswered !== undefined && attempt.unanswered !== null
+      ? Number(attempt.unanswered)
+      : Math.max(0, totalQs - correctCnt - wrongCnt - codingQList.filter((c) => c.submitted).length);
+
+    let rankNum = 0;
+    let totalCands = 0;
+    try {
+      const { data: cohortAttempts } = await supabase
+        .from('exam_code_attempts')
+        .select('id, hall_ticket_no, score, time_taken_seconds, status')
+        .eq('exam_code', code)
+        .in('status', ['completed', 'submitted', 'auto_submitted_expired']);
+      if (Array.isArray(cohortAttempts) && cohortAttempts.length > 0) {
+        const sorted = [...cohortAttempts].sort((a: any, b: any) => {
+          const sDiff = Number(b.score || 0) - Number(a.score || 0);
+          if (sDiff !== 0) return sDiff;
+          return Number(a.time_taken_seconds || 0) - Number(b.time_taken_seconds || 0);
+        });
+        totalCands = sorted.length;
+        const idx = sorted.findIndex((a: any) => a.id === attempt.id);
+        rankNum = idx >= 0 ? idx + 1 : 0;
+      }
+    } catch { }
 
     res.json({
       success: true,
       data: {
         status: attempt.status,
         is_terminated: isTerminated,
-        termination_reason: attempt.termination_reason || (isTerminated ? 'Proctoring security violation' : null),
-        score: isTerminated ? 0 : (attempt.score || 0),
-        totalMarks: attempt.total_marks || attempt.max_score || 100,
-        percentage: isTerminated ? 0 : (attempt.percentage || 0),
-        correctAnswers: attempt.correct_answers || attempt.correct_count || 0,
-        wrongAnswers: attempt.wrong_answers || attempt.wrong_count || 0,
-        unanswered: attempt.unanswered || 0,
-        timeTaken: attempt.time_taken || attempt.time_taken_seconds || 0,
-        qrToken: attempt.qr_token || `token_${code}_${attempt.hall_ticket}`,
+        termination_reason: attempt.termination_reason || attempt.override_reason || (isTerminated ? 'Proctoring security violation' : null),
+        score: isTerminated ? 0 : mcqScore,
+        totalMarks: totalMax,
+        percentage: isTerminated ? 0 : overallPct,
+        correctAnswers: correctCnt,
+        wrongAnswers: wrongCnt,
+        unanswered: unansweredCnt,
+        timeTaken: Number(attempt.time_taken || attempt.time_taken_seconds || 0),
+        rank: rankNum,
+        totalCandidates: totalCands,
+        topicBreakdown: attempt.topic_breakdown || {},
+        qrToken: attempt.qr_token || `token_${code}_${attempt.hall_ticket_no || attempt.hall_ticket}`,
         code_answers: codeAns,
         mcq_score: isTerminated ? 0 : mcqScore,
-        mcq_max_score: mcqMaxMarks > 0 ? mcqMaxMarks : (attempt.total_marks || attempt.max_score || 100),
+        mcq_max_score: mcqMaxMarks > 0 ? mcqMaxMarks : totalMax,
         mcq_percentage: isTerminated ? 0 : mcqPercentage,
         coding_questions: codingQList,
         has_coding_questions: hasCoding,
