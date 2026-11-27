@@ -454,12 +454,21 @@ router.post('/mail-logs/dispatch', requireRole('super_admin', 'admin'), auditLog
 router.get('/results', requireRole('super_admin', 'admin', 'inspector', 'faculty'), async (req, res) => {
   try {
     const rawExamCode = ((req.query.examCode as string) || '').trim().toUpperCase();
+    const filterCollegeId = ((req.query.college_id as string) || '').trim();
+    const filterBranch = ((req.query.branch as string) || '').trim().toUpperCase();
+    const filterSection = ((req.query.section as string) || '').trim().toLowerCase().replace(/^section\s*/i, '');
 
     // 1. Fetch available exams for selector
-    const { data: examList } = await supabase
+    let examsQuery = supabase
       .from('exam_codes')
       .select('id, college_id, exam_code, exam_name, branch, passout_year, section_id, section_ids, duration_minutes, total_questions, total_marks, is_active, results_published, created_at, college:college_id ( college_name, college_code )')
       .order('created_at', { ascending: false });
+
+    if (filterCollegeId && filterCollegeId !== 'ALL') {
+      examsQuery = examsQuery.eq('college_id', filterCollegeId);
+    }
+
+    const { data: examList } = await examsQuery;
 
     const exams = examList || [];
 
@@ -565,15 +574,27 @@ router.get('/results', requireRole('super_admin', 'admin', 'inspector', 'faculty
       };
     });
 
+    const filteredFormattedResults = formattedResults.filter((item) => {
+      if (filterBranch && filterBranch !== 'ALL') {
+        const itemBranch = String(item.branch || '').toUpperCase();
+        if (itemBranch !== filterBranch) return false;
+      }
+      if (filterSection && filterSection !== 'all') {
+        const itemSec = String(item.section || '').toLowerCase().replace(/^section\s*/i, '');
+        if (itemSec !== filterSection && !itemSec.endsWith(`-${filterSection}`)) return false;
+      }
+      return true;
+    });
+
     // 4. Calculate Aggregate Stats
-    const totalCount = formattedResults.length;
+    const totalCount = filteredFormattedResults.length;
     const avgScore = totalCount > 0
-      ? (formattedResults.reduce((acc, r) => acc + r.final_score, 0) / totalCount).toFixed(1)
+      ? (filteredFormattedResults.reduce((acc, r) => acc + r.final_score, 0) / totalCount).toFixed(1)
       : '0.0';
 
-    const passCount = formattedResults.filter((r) => r.status === 'passed').length;
+    const passCount = filteredFormattedResults.filter((r) => r.status === 'passed').length;
     const passRate = totalCount > 0 ? Math.round((passCount / totalCount) * 100) : 0;
-    const totalViolations = formattedResults.reduce((acc, r) => acc + r.violations, 0);
+    const totalViolations = filteredFormattedResults.reduce((acc, r) => acc + r.violations, 0);
 
     res.json({
       success: true,
@@ -590,7 +611,7 @@ router.get('/results', requireRole('super_admin', 'admin', 'inspector', 'faculty
         total_marks: e.total_marks,
         results_published: Boolean(e.results_published),
       })),
-      results: formattedResults,
+      results: filteredFormattedResults,
       count: totalCount,
       stats: {
         average_score: Number(avgScore),

@@ -1452,13 +1452,14 @@ input[type="text"], input[type="password"], input[type="email"], input[type="num
   to   { stroke-dashoffset: 0;    opacity: 1; }
 }
 
-.animate-fade-in   { animation: fadeIn 0.5s ease both; }
-.animate-slide-up  { animation: slideUp 0.5s var(--ease-spring) both; }
-.animate-slide-in  { animation: slideIn 0.4s ease both; }
-.animate-float     { animation: floatSlow 4s ease-in-out infinite; }
-.animate-pulse-glow { animation: pulseGlow 2s infinite; }
-.animate-shimmer-text { animation: shimmerSweep 3s linear infinite; }
-.shake-animation   { animation: shake 0.45s var(--ease-std) both; }
+.animate-fade-in   { animation: fadeIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-slide-up  { animation: slideUp 0.38s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-slide-in  { animation: slideIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-float     { transform: none; }
+.animate-pulse-glow { box-shadow: none; }
+.animate-shimmer-text { background-clip: border-box; }
+.shake-animation   { animation: shake 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.tabular-nums      { font-variant-numeric: tabular-nums; }
 
 /* Stagger utilities */
 .stagger-1 { animation-delay: 0.1s; }

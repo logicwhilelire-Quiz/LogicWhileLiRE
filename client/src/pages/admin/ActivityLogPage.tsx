@@ -144,36 +144,36 @@ export default function ActivityLogPage() {
           )}
 
           {/* Stats Bar */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24, fontVariantNumeric: 'tabular-nums' }}>
             <div className="card card-sm">
-              <div className="text-muted text-xs font-mono" style={{ textTransform: 'uppercase', marginBottom: 4 }}>
-                Total Recorded Events
+              <div className="text-muted text-xs" style={{ marginBottom: 4 }}>
+                Total recorded events
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>
+              <div style={{ fontSize: '1.75rem', fontWeight: 600 }}>
                 <AnimatedCounter value={logs.length} />
               </div>
             </div>
             <div className="card card-sm" style={{ borderLeft: '3px solid #10B981' }}>
-              <div className="text-muted text-xs font-mono" style={{ textTransform: 'uppercase', marginBottom: 4 }}>
-                Faculty Actions
+              <div className="text-muted text-xs" style={{ marginBottom: 4 }}>
+                Faculty actions
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#34D399' }}>
+              <div style={{ fontSize: '1.75rem', fontWeight: 600, color: '#34D399' }}>
                 <AnimatedCounter value={facultyActionsCount} />
               </div>
             </div>
             <div className="card card-sm" style={{ borderLeft: '3px solid #F59E0B' }}>
-              <div className="text-muted text-xs font-mono" style={{ textTransform: 'uppercase', marginBottom: 4 }}>
-                Inspector Actions
+              <div className="text-muted text-xs" style={{ marginBottom: 4 }}>
+                Inspector actions
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#FBBF24' }}>
+              <div style={{ fontSize: '1.75rem', fontWeight: 600, color: '#FBBF24' }}>
                 <AnimatedCounter value={inspectorActionsCount} />
               </div>
             </div>
             <div className="card card-sm" style={{ borderLeft: '3px solid #3B82F6' }}>
-              <div className="text-muted text-xs font-mono" style={{ textTransform: 'uppercase', marginBottom: 4 }}>
-                Authentication Events
+              <div className="text-muted text-xs" style={{ marginBottom: 4 }}>
+                Authentication events
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#60A5FA' }}>
+              <div style={{ fontSize: '1.75rem', fontWeight: 600, color: '#60A5FA' }}>
                 <AnimatedCounter value={loginEventsCount} />
               </div>
             </div>

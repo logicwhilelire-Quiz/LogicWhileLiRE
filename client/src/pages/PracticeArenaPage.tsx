@@ -1212,11 +1212,11 @@ export default function PracticeArenaPage() {
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#60A5FA', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#60A5FA' }}>
                       Sector Practice Sprints
                     </div>
-                    <span style={{ fontSize: '0.74rem', color: '#64748B' }}>
-                      {filteredChallenges.length} Available
+                    <span style={{ fontSize: '0.74rem', color: '#94A3B8', fontVariantNumeric: 'tabular-nums' }}>
+                      {filteredChallenges.length} available
                     </span>
                   </div>
 
@@ -1347,11 +1347,11 @@ export default function PracticeArenaPage() {
                 <div style={{ marginBottom: 16, display: 'inline-flex', padding: 16, background: 'rgba(239, 68, 68, 0.15)', borderRadius: 20 }}>
                   <IconFlash size={36} color="#EF4444" />
                 </div>
-                <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff', margin: '0 0 10px', fontFamily: "'Space Grotesk', sans-serif" }}>
+                <h2 style={{ fontSize: '1.8rem', fontWeight: 600, color: '#fff', margin: '0 0 10px', fontFamily: "'Space Grotesk', sans-serif" }}>
                   60-Second Sector Rapid Sprint
                 </h2>
                 <p style={{ color: '#94A3B8', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: 28 }}>
-                  Rapid-fire questions sampled across all 5 technical sectors. Test speed, analytical reflexes, and earn bonus XP!
+                  Rapid-fire questions sampled across all 5 technical sectors to test analytical speed and earn bonus XP.
                 </p>
                 <button
                   onClick={() => {
@@ -1427,14 +1427,14 @@ export default function PracticeArenaPage() {
                 <div style={{ marginBottom: 12, display: 'inline-flex', padding: 14, background: 'rgba(234, 179, 8, 0.15)', borderRadius: 16 }}>
                   <IconTrophy size={40} color="#FACC15" />
                 </div>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fff', margin: '0 0 8px', fontFamily: "'Space Grotesk', sans-serif" }}>
-                  Sector Sprint Complete!
+                <h2 style={{ fontSize: '1.6rem', fontWeight: 600, color: '#fff', margin: '0 0 8px', fontFamily: "'Space Grotesk', sans-serif" }}>
+                  Sector Sprint Complete
                 </h2>
-                <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#34D399', margin: '16px 0', fontFamily: "'Space Grotesk', sans-serif" }}>
+                <div style={{ fontSize: '2.4rem', fontWeight: 600, color: '#34D399', margin: '16px 0', fontFamily: "'Space Grotesk', sans-serif", fontVariantNumeric: 'tabular-nums' }}>
                   {blitzScore}/100 Points
                 </div>
                 <p style={{ color: '#94A3B8', fontSize: '0.92rem', marginBottom: 28 }}>
-                  +50 XP Bonus credited! Your multi-sector analytical reflexes have been recorded.
+                  +50 XP bonus credited. Your multi-sector analytical reflexes have been recorded.
                 </p>
                 <button
                   onClick={() => {

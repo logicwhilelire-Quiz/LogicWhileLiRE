@@ -22,15 +22,13 @@ export default function AboutPage() {
             <div
               style={{
                 display: 'inline-block',
-                padding: '6px 18px',
-                borderRadius: 999,
-                background: '#002147',
-                color: '#EAA812',
-                border: '1px solid #EAA812',
-                fontWeight: 800,
-                fontSize: '0.85rem',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
+                padding: '4px 12px',
+                borderRadius: 8,
+                background: 'rgba(10, 28, 104, 0.08)',
+                color: '#B45309',
+                border: '1px solid rgba(234, 168, 18, 0.35)',
+                fontWeight: 600,
+                fontSize: '0.8rem',
                 marginBottom: 16,
               }}
             >
@@ -40,10 +38,10 @@ export default function AboutPage() {
             <h1
               style={{
                 fontFamily: "var(--font-display, 'Space Grotesk', sans-serif)",
-                fontSize: 'clamp(2rem, 4vw, 2.8rem)',
-                fontWeight: 800,
+                fontSize: 'clamp(2rem, 4vw, 2.75rem)',
+                fontWeight: 600,
                 color: 'var(--color-text)',
-                lineHeight: 1.2,
+                lineHeight: 1.15,
                 marginBottom: 16,
               }}
             >

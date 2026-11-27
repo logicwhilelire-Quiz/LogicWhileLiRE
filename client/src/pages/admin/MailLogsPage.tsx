@@ -14,9 +14,15 @@ import {
   IconPlus,
 } from '../../components/icons/HumanIcons';
 
-import { listMailLogs, resendMailLog, type MailLog, extractErrorMessage } from '../../lib/api';
+import { listMailLogs, resendMailLog, listColleges, type MailLog, extractErrorMessage } from '../../lib/api';
 import axios from 'axios';
 import { API_BASE_URL } from '../../lib/config';
+import {
+  COURSE_OPTIONS,
+  getBranchesForCourse,
+  inferCourseFromBranch,
+  buildSectionChoices,
+} from '../../constants/academicCatalog';
 
 const TEMPLATE_OPTIONS = [
   { value: 'all', label: 'All Role Templates' },
@@ -55,6 +61,58 @@ export default function MailLogsPage() {
   const [composeBody, setComposeBody] = useState('<p>Dear Candidate,</p><p>This is an official assessment notification regarding your upcoming examination session on LogicWhile LiRE.</p><p>Please log in with your hall ticket to ensure your clearance.</p>');
   const [sendingEmail, setSendingEmail] = useState(false);
 
+  // Cohort Targeting State
+  const [colleges, setColleges] = useState<Array<{ id: string | number; college_name: string }>>([]);
+  const [targetCollegeId, setTargetCollegeId] = useState<string>('ALL');
+  const [targetCourse, setTargetCourse] = useState<string>('ALL');
+  const [targetBranch, setTargetBranch] = useState<string>('ALL');
+  const [targetSection, setTargetSection] = useState<string>('ALL');
+  const [loadingCohort, setLoadingCohort] = useState(false);
+  const [cohortMatchCount, setCohortMatchCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    listColleges()
+      .then((res) => setColleges(res.data?.colleges || []))
+      .catch(() => {});
+  }, []);
+
+  const handleLoadCohortRecipients = async () => {
+    setLoadingCohort(true);
+    setCohortMatchCount(null);
+    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/admin/students`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const students: any[] = res.data?.students || [];
+      const matched = students.filter((st) => {
+        if (st.is_blocked) return false;
+        if (targetCollegeId !== 'ALL' && String(st.college_id || '') !== String(targetCollegeId)) return false;
+        const stBranch = (st.branch_code || st.branch || '').toUpperCase();
+        if (targetCourse !== 'ALL' && inferCourseFromBranch(stBranch) !== targetCourse) return false;
+        if (targetBranch !== 'ALL' && stBranch !== targetBranch.toUpperCase()) return false;
+        if (targetSection !== 'ALL') {
+          const sA = String(st.section || '').toUpperCase().replace(/^SECTION\s*/i, '').trim();
+          const sB = targetSection.toUpperCase().replace(/^SECTION\s*/i, '').trim();
+          if (sA !== sB && !sA.endsWith(`-${sB}`)) return false;
+        }
+        return Boolean(st.email && String(st.email).includes('@'));
+      });
+      const emails = Array.from(new Set(matched.map((s) => String(s.email).trim())));
+      setCohortMatchCount(emails.length);
+      if (emails.length > 0) {
+        setComposeTo(emails.join(', '));
+        showToast(`Loaded ${emails.length} matching cohort recipient email${emails.length === 1 ? '' : 's'}.`, 'success');
+      } else {
+        showToast('No active students matched the selected College/Course/Branch/Section filter.', 'error');
+      }
+    } catch (err) {
+      showToast(extractErrorMessage(err, 'Failed to load cohort recipients'), 'error');
+    } finally {
+      setLoadingCohort(false);
+    }
+  };
+
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4500);
@@ -80,7 +138,7 @@ export default function MailLogsPage() {
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
       if (res.data?.success) {
-        showToast('Official email dispatched successfully!', 'success');
+        showToast('Official email dispatched successfully.', 'success');
         setIsComposeOpen(false);
         setComposeTo('');
         fetchLogs();
@@ -127,7 +185,7 @@ export default function MailLogsPage() {
     try {
       const res = await resendMailLog(logId);
       if (res.data?.success) {
-        showToast('Email successfully re-dispatched via Resend API!', 'success');
+        showToast('Email re-dispatched via Resend API.', 'success');
         // Refresh logs list
         fetchLogs();
       } else {
@@ -498,7 +556,7 @@ export default function MailLogsPage() {
                                 }}
                               >
                                 {resendingId === item.id ? (
-                                  <span>⏳ Sending...</span>
+                                  <span>Sending...</span>
                                 ) : (
                                   <>
                                     <IconRefresh size={14} />
@@ -685,6 +743,71 @@ export default function MailLogsPage() {
             </div>
 
             <form onSubmit={handleDirectDispatch} style={{ padding: '20px 24px' }}>
+              {/* Cohort Recipient Loader */}
+              <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 10, background: '#070d1e', border: '1px solid rgba(56,189,248,0.22)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#38BDF8' }}>
+                    Cohort Recipient Targeting (Optional)
+                  </span>
+                  {cohortMatchCount !== null && (
+                    <span style={{ fontSize: '0.74rem', color: '#94A3B8', fontVariantNumeric: 'tabular-nums' }}>
+                      {cohortMatchCount} matched
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, marginBottom: 8 }}>
+                  <select
+                    className="form-input form-input-sm"
+                    value={targetCollegeId}
+                    onChange={(e) => setTargetCollegeId(e.target.value)}
+                  >
+                    <option value="ALL">All Colleges</option>
+                    {colleges.map((c) => (
+                      <option key={c.id} value={String(c.id)}>{c.college_name}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="form-input form-input-sm"
+                    value={targetCourse}
+                    onChange={(e) => { setTargetCourse(e.target.value); setTargetBranch('ALL'); }}
+                  >
+                    <option value="ALL">All Courses</option>
+                    {COURSE_OPTIONS.map((c) => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="form-input form-input-sm"
+                    value={targetBranch}
+                    onChange={(e) => setTargetBranch(e.target.value)}
+                  >
+                    <option value="ALL">All Branches</option>
+                    {getBranchesForCourse(targetCourse).map((b) => (
+                      <option key={b.code} value={b.code}>{b.code}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="form-input form-input-sm"
+                    value={targetSection}
+                    onChange={(e) => setTargetSection(e.target.value)}
+                  >
+                    <option value="ALL">All Sections</option>
+                    {buildSectionChoices([], targetBranch).map((sec) => (
+                      <option key={sec} value={sec}>{sec}</option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLoadCohortRecipients}
+                  disabled={loadingCohort}
+                  className="btn btn-xs btn-secondary"
+                  style={{ width: '100%', padding: '6px 10px' }}
+                >
+                  {loadingCohort ? 'Loading Matching Cohort...' : 'Load Matching Student Emails into Recipient Field'}
+                </button>
+              </div>
+
               <div style={{ marginBottom: 16 }}>
                 <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e2e8f0', marginBottom: 6, display: 'block' }}>
                   Template Type

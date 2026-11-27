@@ -138,24 +138,24 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
           marginBottom: 18,
         }}
       >
-        <div style={{ fontSize: '0.64rem', color: '#94A3B8', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 3 }}>
-          <span style={{ color: '#FF7A00' }}>LogicWhile</span> › LiRE Sub-Branch
+        <div style={{ fontSize: '0.7rem', color: '#94A3B8', fontWeight: 500, marginBottom: 4 }}>
+          <span style={{ color: '#FF7A00', fontWeight: 600 }}>LogicWhile</span> › LiRE Sub-Branch
         </div>
-        <div style={{ fontSize: '0.68rem', color: isSuperAdmin ? '#FFD000' : isInspector ? '#FB923C' : '#60A5FA', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          {isSuperAdmin ? 'SUPER ADMIN ACCESS' : isInspector ? 'INSPECTOR CONSOLE' : 'FACULTY PORTAL'}
+        <div style={{ fontSize: '0.72rem', color: isSuperAdmin ? '#FFB400' : isInspector ? '#FB923C' : '#60A5FA', fontWeight: 600 }}>
+          {isSuperAdmin ? 'Super Admin Access' : isInspector ? 'Inspector Console' : 'Faculty Portal'}
         </div>
-        <div style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--color-text, #FFFFFF)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
+        <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-text, #FFFFFF)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
           {currentUser.name || currentUser.email || (isInspector ? 'College Inspector' : 'Super Administrator')}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
           <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: isSuperAdmin ? '#FFB400' : isInspector ? '#FF7A00' : '#3B82F6' }} />
-          <span style={{ fontSize: '0.7rem', color: isSuperAdmin ? '#FDE68A' : isInspector ? '#FDBA74' : '#93C5FD', fontWeight: 600 }}>{roleTitle}</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted, #94A3B8)', fontWeight: 500 }}>{roleTitle}</span>
         </div>
       </div>
 
       {/* Navigation Links */}
-      <div className="admin-sidebar-title" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-faint)', marginBottom: 8 }}>
-        {isInspector ? 'INSPECTION CENTER' : 'CONTROL CENTER'}
+      <div className="admin-sidebar-title" style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--color-text-faint)', marginTop: 8, marginBottom: 8 }}>
+        {isInspector ? 'Inspection center' : 'Control center'}
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
@@ -170,21 +170,22 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
-                padding: '10px 14px',
+                height: 36,
+                padding: '0 12px',
                 borderRadius: 8,
                 fontSize: '0.86rem',
-                fontWeight: isActive ? 700 : 500,
+                fontWeight: isActive ? 600 : 500,
                 color: isActive ? '#FFFFFF' : 'var(--color-text-muted)',
-                background: isActive ? 'linear-gradient(90deg, rgba(255, 180, 0, 0.20) 0%, rgba(255, 122, 0, 0.10) 100%)' : 'transparent',
-                border: isActive ? '1px solid rgba(255, 180, 0, 0.45)' : '1px solid transparent',
+                background: isActive ? 'rgba(255, 180, 0, 0.14)' : 'transparent',
+                border: isActive ? '1px solid rgba(255, 180, 0, 0.35)' : '1px solid transparent',
                 cursor: 'pointer',
                 textAlign: 'left',
                 width: '100%',
-                transition: 'all 0.15s ease',
+                transition: 'background-color 150ms cubic-bezier(0.22, 1, 0.36, 1), color 150ms cubic-bezier(0.22, 1, 0.36, 1), border-color 150ms cubic-bezier(0.22, 1, 0.36, 1)',
               }}
             >
-              <span style={{ color: isActive ? '#FFB400' : 'inherit', display: 'inline-flex' }}>{item.icon}</span>
-              <span>{item.label}</span>
+              <span style={{ color: isActive ? '#FFB400' : 'var(--color-text-faint)', display: 'inline-flex', width: 18, justifyContent: 'center', flexShrink: 0 }}>{item.icon}</span>
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
             </button>
           );
         })}

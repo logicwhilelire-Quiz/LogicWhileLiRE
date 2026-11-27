@@ -27,6 +27,12 @@ import {
 import { SOCKET_URL, API_BASE_URL } from "../../lib/config";
 import { supabase } from "../../lib/supabaseClient";
 import {
+  COURSE_OPTIONS,
+  getBranchesForCourse,
+  inferCourseFromBranch,
+  buildSectionChoices,
+} from "../../constants/academicCatalog";
+import {
   IconLaunch,
   IconStop,
   IconTrophy,
@@ -57,6 +63,7 @@ interface ExamOption {
   id: string;
   title?: string;
   exam_code?: string;
+  branch?: string | null;
   duration_minutes?: number;
   is_active?: boolean;
 }
@@ -64,6 +71,7 @@ interface ExamOption {
 interface WaitingStudent {
   hall_ticket_no: string;
   student_name: string;
+  branch?: string;
   section?: string;
   joined_at?: string;
   status?: string;
@@ -110,6 +118,8 @@ export default function InstructorConsolePage() {
   const [examList, setExamList] = useState<ExamOption[]>([]);
   const [selectedExamCode, setSelectedExamCode] = useState<string>(routeExamCode || "");
   const [sectionsList, setSectionsList] = useState<string[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<string>("ALL");
+  const [selectedBranch, setSelectedBranch] = useState<string>("ALL");
   const [selectedSection, setSelectedSection] = useState<string>("ALL");
 
   // Real-time telemetry state
@@ -190,6 +200,7 @@ export default function InstructorConsolePage() {
                 id: ec.id,
                 exam_code: ec.exam_code,
                 title: ec.exam_name || ec.subject || ec.exam_code,
+                branch: ec.branch || null,
                 duration_minutes: ec.duration_minutes || 60,
                 is_active: ec.is_active,
               });
@@ -202,6 +213,7 @@ export default function InstructorConsolePage() {
                   id: ex.id,
                   exam_code: ex.exam_code || `EX-${ex.id.slice(0, 6).toUpperCase()}`,
                   title: ex.title,
+                  branch: ex.branch || null,
                   duration_minutes: ex.duration_minutes || 60,
                   is_active: ex.is_active,
                 });
@@ -216,28 +228,18 @@ export default function InstructorConsolePage() {
             }
           }
 
-          const secs: string[] = [];
+          const rawSections: Array<{ section_name?: string; name?: string }> = [];
           if (Array.isArray(res.data.sections)) {
             for (const s of res.data.sections) {
-              const secName = s.section_name || s.name;
-              if (secName && !secs.includes(secName)) {
-                secs.push(secName);
-              }
+              rawSections.push({ section_name: s.section_name || s.name });
             }
           }
           if (Array.isArray(res.data.enrolled_students)) {
             for (const stu of res.data.enrolled_students) {
-              const stuSec = stu.section ? (stu.section.length === 1 ? `Section ${stu.section.toUpperCase()}` : stu.section) : null;
-              if (stuSec && !secs.includes(stuSec)) {
-                secs.push(stuSec);
-              }
+              if (stu.section) rawSections.push({ section_name: stu.section });
             }
           }
-          if (secs.length === 0) {
-            secs.push('Section A', 'Section B', 'Section C', 'Section D');
-          }
-          secs.sort();
-          setSectionsList(secs);
+          setSectionsList(buildSectionChoices(rawSections, selectedBranch !== "ALL" ? selectedBranch : null));
         }
       } catch (err: any) {
         if (err?.response?.status === 401 || err?.response?.status === 403) {
@@ -323,7 +325,7 @@ export default function InstructorConsolePage() {
     // Exam started broadcast confirmation
     socket.on("EXAM_STARTED", (data: any) => {
       setExamStarted(true);
-      addLog(`[START] EXAM_STARTED broadcast confirmed for ${currentCode}!`);
+      addLog(`[START] EXAM_STARTED broadcast confirmed for ${currentCode}`);
     });
 
     // Real-time proctor violation telemetry
@@ -344,12 +346,33 @@ export default function InstructorConsolePage() {
     socket.on("proctor:violation", handleIncomingViolation);
     socket.on("violation:new", handleIncomingViolation);
 
-    // Initial check from REST stats
+    // Initial check from authenticated monitor snapshot + REST lobby stats
+    axios
+      .get(`${BASE}/api/admin/monitor/${encodeURIComponent(currentCode)}/snapshot`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      })
+      .then((snapRes) => {
+        if (snapRes.data?.success) {
+          if (Array.isArray(snapRes.data.waiting_lobby)) {
+            setWaitingStudents(snapRes.data.waiting_lobby);
+            setQueueCount(snapRes.data.waiting_lobby.length);
+          }
+          if (Array.isArray(snapRes.data.roster)) {
+            setEnrolledStudents(snapRes.data.roster);
+            setTotalEnrolled(snapRes.data.roster.length);
+          }
+          if (snapRes.data.exam?.is_launched || snapRes.data.exam?.started_at) {
+            setExamStarted(true);
+          }
+        }
+      })
+      .catch(() => {});
+
     getExamLobbyStats(currentCode)
       .then((res) => {
         if (res.data) {
           setJoinedCount(res.data.connected || 0);
-          setTotalEnrolled(res.data.enrolled || 0);
+          if (res.data.enrolled) setTotalEnrolled(res.data.enrolled);
           if (res.data.exam_started) setExamStarted(true);
         }
       })
@@ -397,7 +420,7 @@ export default function InstructorConsolePage() {
         setExamStarted(true);
         setConfirmOpen(false);
         setActiveTab("leaderboard");
-        addLog(`[DISPATCH] EXAM_STARTED broadcast confirmed for ${currentCode}!`);
+        addLog(`[DISPATCH] EXAM_STARTED broadcast confirmed for ${currentCode}`);
       }
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.message || "Exam start failed";
@@ -502,22 +525,22 @@ export default function InstructorConsolePage() {
   const normalizeSec = (sec?: string | null) =>
     (sec || "").trim().toLowerCase().replace(/^section\s*/i, "");
 
-  // Section Filtering
-  const filteredQueue = useMemo(() => {
-    if (selectedSection === "ALL") return waitingStudents;
-    const target = normalizeSec(selectedSection);
-    return waitingStudents.filter(
-      (s) => normalizeSec(s.section) === target
-    );
-  }, [waitingStudents, selectedSection]);
+  // Course / Branch / Section Filtering
+  const matchesAcademicScope = (item: { branch?: string; branch_code?: string; section?: string }) => {
+    const itemBranch = (item.branch || item.branch_code || "").toUpperCase();
+    if (selectedCourse !== "ALL" && itemBranch && inferCourseFromBranch(itemBranch) !== selectedCourse) return false;
+    if (selectedBranch !== "ALL" && itemBranch && itemBranch !== selectedBranch.toUpperCase()) return false;
+    if (selectedSection !== "ALL") {
+      const target = normalizeSec(selectedSection);
+      const val = normalizeSec(item.section);
+      if (val !== target && !val.endsWith(`-${target}`) && !target.endsWith(`-${val}`)) return false;
+    }
+    return true;
+  };
 
-  const filteredEnrolled = useMemo(() => {
-    if (selectedSection === "ALL") return enrolledStudents;
-    const target = normalizeSec(selectedSection);
-    return enrolledStudents.filter(
-      (s) => normalizeSec(s.section) === target
-    );
-  }, [enrolledStudents, selectedSection]);
+  const filteredQueue = useMemo(() => waitingStudents.filter(matchesAcademicScope), [waitingStudents, selectedCourse, selectedBranch, selectedSection]);
+
+  const filteredEnrolled = useMemo(() => enrolledStudents.filter(matchesAcademicScope), [enrolledStudents, selectedCourse, selectedBranch, selectedSection]);
 
   const fmtTime = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -721,10 +744,69 @@ export default function InstructorConsolePage() {
               </select>
             </div>
 
+            {/* Course Filter */}
+            <div>
+              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "#94A3B8", marginBottom: 6 }}>
+                Course
+              </label>
+              <select
+                id="inspector-course-filter"
+                value={selectedCourse}
+                onChange={(e) => {
+                  setSelectedCourse(e.target.value);
+                  setSelectedBranch("ALL");
+                }}
+                style={{
+                  width: "100%",
+                  padding: "9px 12px",
+                  borderRadius: 8,
+                  background: "#0B1226",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  color: "#FFFFFF",
+                  fontSize: "0.88rem",
+                  fontWeight: 500,
+                  outline: "none",
+                }}
+              >
+                <option value="ALL">All Courses</option>
+                {COURSE_OPTIONS.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Branch Filter */}
+            <div>
+              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "#94A3B8", marginBottom: 6 }}>
+                Branch
+              </label>
+              <select
+                id="inspector-branch-filter"
+                value={selectedBranch}
+                onChange={(e) => setSelectedBranch(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "9px 12px",
+                  borderRadius: 8,
+                  background: "#0B1226",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  color: "#FFFFFF",
+                  fontSize: "0.88rem",
+                  fontWeight: 500,
+                  outline: "none",
+                }}
+              >
+                <option value="ALL">All Branches</option>
+                {getBranchesForCourse(selectedCourse).map((b) => (
+                  <option key={b.code} value={b.code}>{b.code}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Section Filter */}
             <div>
-              <label style={{ display: "block", fontSize: "0.74rem", fontWeight: 700, color: "#94A3B8", marginBottom: 6, textTransform: "uppercase" }}>
-                Filter by Section
+              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "#94A3B8", marginBottom: 6 }}>
+                Section
               </label>
               <select
                 id="inspector-section-filter"
@@ -738,12 +820,15 @@ export default function InstructorConsolePage() {
                   border: "1px solid rgba(255,255,255,0.12)",
                   color: "#FFFFFF",
                   fontSize: "0.88rem",
-                  fontWeight: 600,
+                  fontWeight: 500,
                   outline: "none",
                 }}
               >
                 <option value="ALL">All Sections (Entire Cohort)</option>
-                {sectionsList.map((sec) => (
+                {buildSectionChoices(
+                  sectionsList.map((s) => ({ section_name: s })),
+                  selectedBranch !== "ALL" ? selectedBranch : null
+                ).map((sec) => (
                   <option key={sec} value={sec}>
                     {sec}
                   </option>

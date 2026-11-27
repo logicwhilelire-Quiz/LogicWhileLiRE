@@ -8,6 +8,11 @@ import AdminSidebar from '../../components/layout/AdminSidebar';
 import BrandLogo from '../../components/BrandLogo';
 import { generateSystemBackupArchive, exportRosterCsvString } from '../../lib/adminRosterStore';
 import {
+  COURSE_OPTIONS,
+  getBranchesForCourse,
+  inferCourseFromBranch,
+} from '../../constants/academicCatalog';
+import {
   IconLock,
   IconPlus,
   IconFlash,
@@ -30,6 +35,8 @@ import {
   IconCheck,
   IconCross,
   IconFileText,
+  IconLaunch,
+  IconClock,
 } from '../../components/icons/HumanIcons';
 
 
@@ -37,6 +44,9 @@ interface ExamItem {
   id: string;
   title: string;
   exam_code?: string;
+  college_name?: string;
+  branch?: string | null;
+  sections?: string[];
   duration_minutes: number;
   passing_percentage?: number;
   is_active: boolean;
@@ -57,6 +67,8 @@ export default function ExamControl() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<ExamItem | null>(null);
+  const [courseFilter, setCourseFilter] = useState<string>('ALL');
+  const [branchFilter, setBranchFilter] = useState<string>('ALL');
 
   // Master Exam Command State
   const [selectedControlCode, setSelectedControlCode] = useState<string>('');
@@ -108,16 +120,16 @@ export default function ExamControl() {
     try {
       await startExam(selectedControlCode, { allow_late_join: false }).catch(() => {});
     } catch {}
-    broadcastExamCommand(selectedControlCode, 'started', `▶️ EXAM STARTED: Administrator has dispatched the official start command! All student assessment timers are live.`, selectedExam?.duration_minutes);
+    broadcastExamCommand(selectedControlCode, 'started', `EXAM STARTED: Administrator dispatched the official start command for ${selectedControlCode}. Student assessment timers are live.`, selectedExam?.duration_minutes);
   };
 
 
   const handlePauseExamCommand = () => {
-    broadcastExamCommand(selectedControlCode, 'paused', `⏸️ EXAM PAUSED: All active student testing screens have been frozen by Administrator.`);
+    broadcastExamCommand(selectedControlCode, 'paused', `EXAM PAUSED: Active student testing screens for ${selectedControlCode} are frozen by Administrator.`);
   };
 
   const handleResumeExamCommand = () => {
-    broadcastExamCommand(selectedControlCode, 'started', `▶️ EXAM RESUMED: Student screens are unlocked and countdown has resumed.`);
+    broadcastExamCommand(selectedControlCode, 'started', `EXAM RESUMED: Student screens for ${selectedControlCode} are unlocked and countdown has resumed.`);
   };
 
   const handleStopExamCommand = () => {
@@ -215,22 +227,65 @@ export default function ExamControl() {
 
   const loadExams = () => {
     setLoading(true);
-    listExams()
-      .then((r) => {
+    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    Promise.all([
+      listExams().catch(() => ({ data: { exams: [] } })),
+      axios.get(`${API_BASE_URL}/api/admin/exam-codes`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }).catch(() => ({ data: { exam_codes: [] } })),
+    ])
+      .then(([r, ecRes]) => {
         const raw = r.data.exams || [];
-        const mapped = raw.map((e: any) => ({
-          ...e,
-          exam_code: e.exam_code || `LW-${e.id.slice(0, 6).toUpperCase()}`,
-          passing_percentage: e.passing_percentage ?? 40,
-          is_launched: e.is_launched ?? e.is_active,
-          results_published: e.results_published ?? false,
-          proctoring_enabled: e.proctoring_enabled ?? true,
-          leaderboard_enabled: e.leaderboard_enabled ?? true,
-          negative_marking: e.negative_marking ?? 0,
-          shuffle_questions: e.shuffle_questions ?? true,
-          fullscreen_lock: e.fullscreen_lock ?? true,
-          tab_switch_detection: e.tab_switch_detection ?? true,
-        }));
+        const ecList: any[] = ecRes.data?.exam_codes || ecRes.data?.data || [];
+        const ecMap = new Map<string, any>();
+        for (const ec of ecList) {
+          if (ec.exam_code) ecMap.set(String(ec.exam_code).toUpperCase(), ec);
+        }
+        const mapped = raw.map((e: any) => {
+          const code = (e.exam_code || `LW-${e.id.slice(0, 6).toUpperCase()}`).toUpperCase();
+          const ecMeta = ecMap.get(code);
+          return {
+            ...e,
+            exam_code: code,
+            college_name: e.college_name || ecMeta?.college?.college_name || ecMeta?.college_name || undefined,
+            branch: e.branch || ecMeta?.branch || null,
+            sections: e.sections || ecMeta?.section_ids || (ecMeta?.section_id ? [ecMeta.section_id] : []),
+            passing_percentage: e.passing_percentage ?? 40,
+            is_launched: e.is_launched ?? e.is_active,
+            results_published: e.results_published ?? false,
+            proctoring_enabled: e.proctoring_enabled ?? true,
+            leaderboard_enabled: e.leaderboard_enabled ?? true,
+            negative_marking: e.negative_marking ?? 0,
+            shuffle_questions: e.shuffle_questions ?? true,
+            fullscreen_lock: e.fullscreen_lock ?? true,
+            tab_switch_detection: e.tab_switch_detection ?? true,
+          };
+        });
+        for (const ec of ecList) {
+          const code = String(ec.exam_code || '').toUpperCase();
+          if (code && !mapped.some((m: ExamItem) => (m.exam_code || '').toUpperCase() === code)) {
+            mapped.push({
+              id: ec.id || code,
+              title: ec.exam_name || ec.subject || code,
+              exam_code: code,
+              college_name: ec.college?.college_name || ec.college_name || undefined,
+              branch: ec.branch || null,
+              sections: ec.section_ids || (ec.section_id ? [ec.section_id] : []),
+              duration_minutes: ec.duration_minutes || 60,
+              passing_percentage: 40,
+              is_active: Boolean(ec.is_active),
+              is_launched: Boolean(ec.is_launched ?? ec.is_active),
+              results_published: Boolean(ec.results_published),
+              proctoring_enabled: true,
+              leaderboard_enabled: true,
+              negative_marking: 0,
+              shuffle_questions: true,
+              fullscreen_lock: true,
+              tab_switch_detection: true,
+              created_at: ec.created_at || new Date().toISOString(),
+            });
+          }
+        }
         setExams(mapped);
         if (mapped.length > 0) {
           setSelectedControlCode(mapped[0].exam_code || mapped[0].id);
@@ -590,14 +645,14 @@ export default function ExamControl() {
                     {!selectedControlCode || exams.length === 0
                       ? 'NO ACTIVE EXAM'
                       : examLifeState === 'started'
-                      ? 'EXAM IN PROGRESS (ACTIVE)'
+                      ? 'Exam in progress (active)'
                       : examLifeState === 'paused'
-                      ? '⏸️ EXAM PAUSED (SCREENS FROZEN)'
+                      ? 'Exam paused (screens frozen)'
                       : examLifeState === 'lobby'
-                      ? 'LOBBY LAUNCHED (WAITING FOR ADMIN)'
+                      ? 'Lobby launched (waiting for admin)'
                       : examLifeState === 'stopped'
-                      ? 'EXAM STOPPED & SUBMITTED'
-                      : 'READY / IDLE'}
+                      ? 'Exam stopped and submitted'
+                      : 'Ready / Idle'}
                   </span>
                 </span>
               </div>
@@ -675,22 +730,22 @@ export default function ExamControl() {
                     disabled={!selectedControlCode || exams.length === 0}
                     className="btn btn-sm"
                     style={{
-                      background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-                      border: 'none',
+                      background: '#059669',
+                      border: '1px solid rgba(16, 185, 129, 0.45)',
                       color: '#FFFFFF',
-                      fontWeight: 900,
+                      fontWeight: 600,
                       padding: '9px 18px',
                       borderRadius: 8,
                       display: 'flex',
                       alignItems: 'center',
                       gap: 6,
-                      boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)',
                       opacity: (!selectedControlCode || exams.length === 0) ? 0.4 : 1,
                       cursor: (!selectedControlCode || exams.length === 0) ? 'not-allowed' : 'pointer',
                     }}
                     title="Dispatches live start command to all students in lobby"
                   >
-                    <span>▶️</span> 2. Start Exam Now
+                    <IconLaunch size={14} color="#FFFFFF" />
+                    <span>2. Start Exam Now</span>
                   </button>
 
                   {/* 3. Pause / Freeze */}
@@ -701,10 +756,10 @@ export default function ExamControl() {
                       disabled={!selectedControlCode || exams.length === 0}
                       className="btn btn-sm"
                       style={{
-                        background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                        background: '#D97706',
                         border: 'none',
                         color: '#FFFFFF',
-                        fontWeight: 800,
+                        fontWeight: 600,
                         padding: '9px 16px',
                         borderRadius: 8,
                         display: 'flex',
@@ -715,7 +770,8 @@ export default function ExamControl() {
                       }}
                       title="Resume exam and unfreeze student screens"
                     >
-                      <span>▶️</span> Resume Exam
+                      <IconLaunch size={14} color="#FFFFFF" />
+                      <span>Resume Exam</span>
                     </button>
                   ) : (
                     <button
@@ -724,10 +780,10 @@ export default function ExamControl() {
                       disabled={!selectedControlCode || exams.length === 0}
                       className="btn btn-sm"
                       style={{
-                        background: 'rgba(245, 158, 11, 0.15)',
-                        border: '1.5px solid rgba(245, 158, 11, 0.5)',
+                        background: 'rgba(245, 158, 11, 0.14)',
+                        border: '1px solid rgba(245, 158, 11, 0.4)',
                         color: '#FBBF24',
-                        fontWeight: 800,
+                        fontWeight: 600,
                         padding: '9px 16px',
                         borderRadius: 8,
                         display: 'flex',
@@ -738,7 +794,8 @@ export default function ExamControl() {
                       }}
                       title="Freeze all student screens immediately"
                     >
-                      <span>⏸️</span> 3. Pause / Freeze
+                      <IconClock size={14} color="#FBBF24" />
+                      <span>3. Pause / Freeze</span>
                     </button>
                   )}
 
@@ -897,14 +954,56 @@ export default function ExamControl() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {exams.map((exam) => (
+              {/* Course & Branch Academic Filter Strip */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: 10, background: 'rgba(15, 23, 42, 0.72)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#94A3B8' }}>Scope Filter:</span>
+                  <select
+                    className="form-input form-input-sm"
+                    value={courseFilter}
+                    onChange={(e) => { setCourseFilter(e.target.value); setBranchFilter('ALL'); }}
+                    style={{ minWidth: 130 }}
+                  >
+                    <option value="ALL">All Courses</option>
+                    {COURSE_OPTIONS.map((c) => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="form-input form-input-sm"
+                    value={branchFilter}
+                    onChange={(e) => setBranchFilter(e.target.value)}
+                    style={{ minWidth: 160 }}
+                  >
+                    <option value="ALL">All Branches</option>
+                    {getBranchesForCourse(courseFilter).map((b) => (
+                      <option key={b.code} value={b.code}>{b.code} — {b.label.split('(')[0].trim()}</option>
+                    ))}
+                  </select>
+                </div>
+                <span style={{ fontSize: '0.78rem', color: '#94A3B8', fontVariantNumeric: 'tabular-nums' }}>
+                  Showing {exams.filter((exam) => {
+                    if (courseFilter !== 'ALL' && inferCourseFromBranch(exam.branch) !== courseFilter) return false;
+                    if (branchFilter !== 'ALL' && (exam.branch || '').toUpperCase() !== branchFilter.toUpperCase()) return false;
+                    return true;
+                  }).length} of {exams.length} exams
+                </span>
+              </div>
+
+              {exams
+                .filter((exam) => {
+                  if (courseFilter !== 'ALL' && inferCourseFromBranch(exam.branch) !== courseFilter) return false;
+                  if (branchFilter !== 'ALL' && (exam.branch || '').toUpperCase() !== branchFilter.toUpperCase()) return false;
+                  return true;
+                })
+                .map((exam) => (
                 <div
                   key={exam.id}
                   className="card"
                   style={{
                     padding: '24px 28px',
                     borderRadius: 14,
-                    border: `1px solid ${exam.is_active ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255, 194, 0, 0.2)'}`,
+                    border: `1px solid ${exam.is_active ? 'rgba(16, 185, 129, 0.35)' : 'rgba(255, 194, 0, 0.2)'}`,
                     background: exam.is_active ? 'rgba(16, 185, 129, 0.04)' : 'rgba(11, 18, 38, 0.75)',
                     display: 'flex',
                     flexDirection: 'column',
@@ -928,14 +1027,16 @@ export default function ExamControl() {
                             border: `1px solid ${exam.is_active ? '#10B98150' : 'transparent'}`,
                           }}
                         >
-                          {exam.is_active ? 'LIVE' : 'DRAFT'}
+                          {exam.is_active ? 'Live' : 'Draft'}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: '0.82rem', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: '0.82rem', color: 'var(--color-text-muted)', flexWrap: 'wrap', fontVariantNumeric: 'tabular-nums' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconKey size={13} color='#FFC200' /><span>Code: <strong style={{ color: '#FFC200' }}>{exam.exam_code}</strong></span></span>
-                        <span>⏱️ Duration: <strong>{exam.duration_minutes} mins</strong></span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconClock size={13} color='#94A3B8' /><span>Duration: <strong>{exam.duration_minutes} mins</strong></span></span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconTarget size={13} color='#38BDF8' /><span>Pass Criteria: <strong>{exam.passing_percentage}%</strong></span></span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconAlert size={13} color='#F59E0B' /><span>Negative: <strong>{exam.negative_marking ? `-${exam.negative_marking}` : 'None'}</strong></span></span>
+                        {exam.branch && <span>Scope: <strong style={{ color: '#E2E8F0' }}>{inferCourseFromBranch(exam.branch)} · {exam.branch}</strong></span>}
+                        {exam.college_name && <span>College: <strong style={{ color: '#CBD5E1' }}>{exam.college_name}</strong></span>}
                       </div>
                     </div>
 

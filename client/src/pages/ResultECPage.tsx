@@ -226,8 +226,8 @@ export default function ResultECPage() {
       ? initialCodingQuestions
       : hasCodingQuestions
       ? [
-          { id: `${(examCode || 'cs2026').toLowerCase()}-code-01`, title: 'CODING CHALLENGE: Two Sum', marks: 10 },
-          { id: `${(examCode || 'cs2026').toLowerCase()}-code-02`, title: 'CODING CHALLENGE: Valid Anagram', marks: 10 },
+          { id: `${(examCode || 'exam').toLowerCase()}-code-01`, title: 'CODING CHALLENGE: Question 1', marks: 10 },
+          { id: `${(examCode || 'exam').toLowerCase()}-code-02`, title: 'CODING CHALLENGE: Question 2', marks: 10 },
         ]
       : []
 

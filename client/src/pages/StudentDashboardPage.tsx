@@ -430,67 +430,63 @@ export default function StudentDashboardPage() {
               <span
                 style={{
                   fontSize: '0.76rem',
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.8px',
-                  color: '#FFD000',
+                  fontWeight: 600,
+                  color: '#FFB400',
                   padding: '4px 10px',
-                  background: 'rgba(255, 180, 0, 0.12)',
+                  background: 'rgba(255, 180, 0, 0.1)',
                   borderRadius: 6,
-                  border: '1px solid rgba(255, 180, 0, 0.35)',
+                  border: '1px solid rgba(255, 180, 0, 0.25)',
                 }}
               >
-                Candidate Portal
+                Candidate portal
               </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {/* Active Session Badge */}
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 8,
+                  gap: 6,
                   fontSize: '0.78rem',
-                  color: '#4ade80',
-                  background: 'rgba(34, 197, 94, 0.1)',
+                  color: '#34D399',
+                  background: 'rgba(16, 185, 129, 0.08)',
                   padding: '4px 10px',
-                  borderRadius: 16,
-                  border: '1px solid rgba(34, 197, 94, 0.25)',
+                  borderRadius: 8,
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
                 }}
                 title="Single Active Session strictly enforced across all devices"
               >
                 <span
                   style={{
-                    width: 7,
-                    height: 7,
+                    width: 6,
+                    height: 6,
                     borderRadius: '50%',
-                    background: '#22c55e',
-                    boxShadow: '0 0 8px #22c55e',
+                    background: '#10B981',
                   }}
                 />
-                <span style={{ fontWeight: 600 }}>Active Session</span>
+                <span style={{ fontWeight: 500 }}>Active session</span>
               </div>
 
               <Link
                 to="/practice"
                 className="btn text-xs"
                 style={{
-                  padding: '7px 16px',
+                  padding: '7px 14px',
                   borderRadius: 8,
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 6,
-                  background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(234, 88, 12, 0.2))',
-                  border: '1.5px solid rgba(245, 158, 11, 0.5)',
-                  color: '#F59E0B',
-                  fontWeight: 800,
+                  background: 'rgba(255, 122, 0, 0.12)',
+                  border: '1px solid rgba(255, 122, 0, 0.35)',
+                  color: '#FFB400',
+                  fontWeight: 600,
                   textDecoration: 'none',
-                  boxShadow: '0 0 14px rgba(245, 158, 11, 0.2)',
                 }}
               >
-                <IconTarget size={14} color="#F59E0B" />
-                <span>5 Sectors 3D Arena</span>
+                <IconTarget size={14} color="#FFB400" />
+                <span>5 Sectors Arena</span>
               </Link>
 
               <ThemeToggle className="ml-2" />
@@ -514,34 +510,19 @@ export default function StudentDashboardPage() {
           {/* Candidate Profile Hero Banner */}
           <section
             style={{
-              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.95) 100%)',
-              border: '1px solid rgba(56, 189, 248, 0.25)',
+              background: '#081232',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: 14,
-              padding: '26px 28px',
+              padding: '24px 28px',
               marginBottom: 24,
               position: 'relative',
-              overflow: 'hidden',
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
             }}
           >
-            <div
-              style={{
-                position: 'absolute',
-                top: -60,
-                right: -60,
-                width: 260,
-                height: 260,
-                borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%)',
-                pointerEvents: 'none',
-              }}
-            />
-
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, color: '#f8fafc' }}>
-                    Welcome back, {student.name}!
+                  <h1 style={{ fontSize: '1.65rem', fontWeight: 600, margin: 0, color: '#f8fafc' }}>
+                    Candidate Assessment Hub — {student.name}
                   </h1>
                 </div>
 

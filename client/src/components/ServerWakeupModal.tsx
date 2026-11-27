@@ -284,7 +284,7 @@ export default function ServerWakeupModal({
               fontFamily: "'Rajdhani', sans-serif",
             }}
           >
-            {isAwake ? 'LogicWhile Server Is Online!' : 'Waking Up LogicWhile LiRE Cloud'}
+            {isAwake ? 'LogicWhile Server Is Online' : 'Waking Up LogicWhile LiRE Cloud'}
           </h2>
 
           {/* Body Description */}
@@ -396,7 +396,7 @@ export default function ServerWakeupModal({
               ) : isAwake ? (
                 <>
                   <CheckIcon size={16} color="#0A0E1A" />
-                  <span>Server Connected!</span>
+                  <span>Server Connected</span>
                 </>
               ) : (
                 <>

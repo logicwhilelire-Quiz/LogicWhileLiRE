@@ -97,8 +97,12 @@ export default function ResultControl() {
     setLoading(true);
     try {
       const code = examCodeToFetch !== undefined ? examCodeToFetch : selectedExam;
+      const params: Record<string, string> = {};
+      if (code && code !== 'ALL') params.examCode = code;
+      if (branchFilter !== 'ALL') params.branch = branchFilter;
+      if (sectionFilter !== 'ALL') params.section = sectionFilter;
       const res = await axios.get(`${API_BASE_URL}/api/admin/results`, {
-        params: code && code !== 'ALL' ? { examCode: code } : {},
+        params,
         headers: getAuthHeaders(),
       });
 
@@ -107,8 +111,7 @@ export default function ResultControl() {
         setExams(fetchedExams);
 
         if (!code && fetchedExams.length > 0) {
-          const defaultCode = fetchedExams.find(e => e.exam_code.includes('285G9G') || e.exam_code.includes('28SG9G'))?.exam_code || fetchedExams[0].exam_code;
-          setSelectedExam(defaultCode);
+          setSelectedExam(fetchedExams[0].exam_code);
         } else if (res.data.selectedExam && !examCodeToFetch) {
           setSelectedExam(res.data.selectedExam);
         }
@@ -124,7 +127,7 @@ export default function ResultControl() {
     } finally {
       setLoading(false);
     }
-  }, [selectedExam]);
+  }, [selectedExam, branchFilter, sectionFilter]);
 
   useEffect(() => {
     fetchResults();

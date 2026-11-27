@@ -45,7 +45,15 @@ const MEDAL: Record<number, { bg: string; text: string; label: string }> = {
 
 export default function LeaderboardECPage() {
   const { examCode } = useParams<{ examCode: string }>();
-  const activeCode = examCode || 'CS2026';
+  const activeCode = useMemo(() => {
+    if (examCode) return examCode.toUpperCase();
+    try {
+      const saved = JSON.parse(localStorage.getItem('logicwhilelire_attempt') || '{}');
+      return saved?.examCode ? String(saved.examCode).toUpperCase() : '';
+    } catch {
+      return '';
+    }
+  }, [examCode]);
   const navigate = useNavigate();
 
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
@@ -61,6 +69,12 @@ export default function LeaderboardECPage() {
 
   // Load Leaderboard data
   async function load(silent = false) {
+    if (!activeCode) {
+      setRows([]);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     if (!silent) setLoading(true);
     else {
       setRefreshing(true);
@@ -83,16 +97,17 @@ export default function LeaderboardECPage() {
   // Supabase Realtime Subscription
   useEffect(() => {
     load();
+    if (!activeCode) return;
 
     const channelName = `realtime:leaderboard-${activeCode}`;
     const channel = supabase.channel(channelName)
       .on('broadcast', { event: 'leaderboard_update' }, (payload) => {
-        setLiveEventLog(`[LIVE] Submission recorded for ${payload.payload?.hall_ticket || 'student'}`);
+        setLiveEventLog(`Submission recorded for ${payload.payload?.hall_ticket || 'candidate'}`);
         setTimeout(() => setLiveEventLog(null), 4000);
         load(true);
       })
       .on('broadcast', { event: 'score_submitted' }, (payload) => {
-        setLiveEventLog(`[SCORE] ${payload.payload?.name || 'Candidate'} scored ${payload.payload?.score || 0}!`);
+        setLiveEventLog(`${payload.payload?.name || 'Candidate'} scored ${payload.payload?.score || 0}`);
         setTimeout(() => setLiveEventLog(null), 4000);
         load(true);
       })

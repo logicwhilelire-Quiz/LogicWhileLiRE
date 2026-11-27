@@ -293,14 +293,14 @@ export default function InstitutionalStudentReportPage() {
         {/* Report Top Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
           <div>
-            <div style={{ fontSize: '0.73rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 }}>
-              <span style={{ color: '#FF7A00' }}>LogicWhile</span> <span style={{ color: '#64748B' }}>›</span> <span style={{ color: '#FFD000' }}>LiRE Assessment Sub-Branch · Performance Dossier</span>
+            <div style={{ fontSize: '0.76rem', fontWeight: 600, marginBottom: 5 }}>
+              <span style={{ color: '#FF7A00' }}>LogicWhile</span> <span style={{ color: '#64748B' }}>›</span> <span style={{ color: '#FFB400' }}>LiRE Assessment Sub-Branch · Performance Dossier</span>
             </div>
-            <h1 style={{ fontSize: '1.85rem', fontWeight: 900, margin: 0, color: '#FFFFFF', fontFamily: "'Rajdhani', sans-serif" }}>
+            <h1 style={{ fontSize: '1.85rem', fontWeight: 600, margin: 0, color: '#FFFFFF', fontFamily: "'Rajdhani', sans-serif" }}>
               Student Analysis Report: {studentMeta.studentName}
             </h1>
-            <p style={{ margin: '6px 0 0', fontSize: '0.84rem', color: '#94A3B8' }}>
-              Roll Number: <strong style={{ color: '#FFD000' }}>{studentMeta.rollNumber}</strong> &bull; Institution: <strong style={{ color: '#F8FAFC' }}>{studentMeta.college} ({studentMeta.branch}{studentMeta.section !== '—' ? ` - Sec ${studentMeta.section}` : ''})</strong> &bull; Status: <strong style={{ color: hasAttempts ? '#10B981' : '#FFB400' }}>{hasAttempts ? 'Assessed' : 'Pre-Exam Baseline (0 Exams)'}</strong>
+            <p style={{ margin: '6px 0 0', fontSize: '0.84rem', color: '#94A3B8', fontVariantNumeric: 'tabular-nums' }}>
+              Roll Number: <strong style={{ color: '#FFB400', fontWeight: 600 }}>{studentMeta.rollNumber}</strong> · Institution: <strong style={{ color: '#F8FAFC', fontWeight: 600 }}>{studentMeta.college} ({studentMeta.branch}{studentMeta.section !== '—' ? ` - Sec ${studentMeta.section}` : ''})</strong> · Status: <strong style={{ color: hasAttempts ? '#10B981' : '#FFB400', fontWeight: 600 }}>{hasAttempts ? 'Assessed' : 'Pre-Exam Baseline (0 Exams)'}</strong>
             </p>
           </div>
 
@@ -308,32 +308,34 @@ export default function InstitutionalStudentReportPage() {
             <button
               onClick={handleExportCSV}
               style={{
-                background: 'rgba(255, 180, 0, 0.12)',
-                border: '1px solid rgba(255, 180, 0, 0.38)',
-                color: '#FFD000',
+                background: 'rgba(255, 180, 0, 0.1)',
+                border: '1px solid rgba(255, 180, 0, 0.3)',
+                color: '#FFB400',
                 borderRadius: 8,
-                padding: '8px 14px',
-                fontSize: '0.78rem',
-                fontWeight: 700,
+                height: 36,
+                padding: '0 14px',
+                fontSize: '0.8rem',
+                fontWeight: 600,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 7,
               }}
             >
-              <IconDownload size={15} color="#FFD000" />
+              <IconDownload size={15} color="#FFB400" />
               <span>Export CSV</span>
             </button>
             <button
               onClick={handlePrint}
               style={{
-                background: 'linear-gradient(135deg, #0A1C68 0%, #1D4ED8 100%)',
-                border: '1px solid rgba(96, 165, 250, 0.4)',
+                background: '#1D4ED8',
+                border: '1px solid rgba(96, 165, 250, 0.35)',
                 color: '#FFFFFF',
                 borderRadius: 8,
-                padding: '8px 16px',
-                fontSize: '0.78rem',
-                fontWeight: 700,
+                height: 36,
+                padding: '0 16px',
+                fontSize: '0.8rem',
+                fontWeight: 600,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -350,24 +352,24 @@ export default function InstitutionalStudentReportPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 24 }}>
           {[
             { label: 'Total Marks', val: studentMeta.totMarks, sub: hasAttempts ? 'Latest exam max' : 'No exam taken', color: '#E2E8F0' },
-            { label: "Student's Score", val: studentMeta.studentScore, sub: hasAttempts ? 'Scored marks' : 'Pending first exam', color: hasAttempts ? '#FFD000' : '#94A3B8' },
-            { label: 'Batch Average', val: studentMeta.batchAverageScore, sub: hasAttempts && cohortStats?.batchAverageScore !== null ? 'Cohort mean' : 'Awaiting cohort data', color: hasAttempts && cohortStats?.batchAverageScore !== null ? '#34D399' : '#64748B' },
-            { label: 'Accuracy', val: studentMeta.accuracy, sub: hasAttempts ? 'Verified accuracy' : 'Not recorded', color: hasAttempts ? '#10B981' : '#64748B' },
+            { label: "Student's Score", val: studentMeta.studentScore, sub: hasAttempts ? 'Scored marks' : 'Pending first exam', color: hasAttempts ? '#FFB400' : '#94A3B8' },
+            { label: 'Batch Average', val: studentMeta.batchAverageScore, sub: hasAttempts && cohortStats?.batchAverageScore !== null ? 'Cohort mean' : 'Awaiting cohort data', color: hasAttempts && cohortStats?.batchAverageScore !== null ? '#34D399' : '#94A3B8' },
+            { label: 'Accuracy', val: studentMeta.accuracy, sub: hasAttempts ? 'Verified accuracy' : 'Not recorded', color: hasAttempts ? '#10B981' : '#94A3B8' },
             { label: 'Cohort Rank', val: studentMeta.rankInBatch, sub: hasAttempts ? 'In active exam' : 'Awaiting submission', color: '#FFB400' },
             { label: hasAttempts ? 'Top Score' : 'Exams Taken', val: hasAttempts ? studentMeta.topPerformer : `${studentMeta.examsCompleted}`, sub: hasAttempts ? 'Cohort highest' : 'Completed attempts', color: '#FB923C' },
           ].map((kpi, idx) => (
             <div
               key={idx}
               style={{
-                background: 'rgba(8, 18, 50, 0.85)',
-                border: '1px solid rgba(255, 180, 0, 0.18)',
+                background: '#081232',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
                 borderRadius: 12,
-                padding: '13px 15px',
+                padding: '14px 16px',
               }}
             >
-              <div style={{ fontSize: '0.67rem', color: '#94A3B8', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>{kpi.label}</div>
-              <div style={{ fontSize: '1.35rem', fontWeight: 900, color: kpi.color, marginTop: 4, fontFamily: "'Rajdhani', sans-serif" }}>{kpi.val}</div>
-              <div style={{ fontSize: '0.68rem', color: '#64748B', marginTop: 2 }}>{kpi.sub}</div>
+              <div style={{ fontSize: '0.72rem', color: '#94A3B8', fontWeight: 500 }}>{kpi.label}</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 600, color: kpi.color, marginTop: 4, fontFamily: "'Rajdhani', sans-serif", fontVariantNumeric: 'tabular-nums' }}>{kpi.val}</div>
+              <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: 2 }}>{kpi.sub}</div>
             </div>
           ))}
         </div>

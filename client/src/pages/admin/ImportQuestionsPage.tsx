@@ -1,6 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import axios from 'axios';
 import { validateAndPreviewQuestions, confirmImportQuestions, listExams } from '../../lib/api';
+import { API_BASE_URL } from '../../lib/config';
+import {
+  COURSE_OPTIONS,
+  getBranchesForCourse,
+  inferCourseFromBranch,
+} from '../../constants/academicCatalog';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedPage from '../../components/AnimatedPage';
 import {
@@ -41,7 +48,9 @@ export default function ImportQuestionsPage() {
   const defaultExamId = searchParams.get('examId') || searchParams.get('code') || '';
 
   const [examCode, setExamCode] = useState(defaultExamId);
-  const [availableExams, setAvailableExams] = useState<Array<{ id: string; exam_code?: string; title?: string }>>([]);
+  const [courseFilter, setCourseFilter] = useState<string>('ALL');
+  const [branchFilter, setBranchFilter] = useState<string>('ALL');
+  const [availableExams, setAvailableExams] = useState<Array<{ id: string; exam_code?: string; title?: string; branch?: string | null; college_name?: string | null }>>([]);
   const [file, setFile] = useState<File | null>(null);
   const [validating, setValidating] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -65,17 +74,59 @@ export default function ImportQuestionsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    listExams(1, 50)
-      .then((res) => {
-        if (res.data?.exams) {
-          setAvailableExams(res.data.exams);
-          if (!defaultExamId && res.data.exams.length > 0) {
-            setExamCode(res.data.exams[0].exam_code || res.data.exams[0].id);
+    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    Promise.all([
+      listExams(1, 50).catch(() => ({ data: { exams: [] } })),
+      axios.get(`${API_BASE_URL}/api/admin/exam-codes`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }).catch(() => ({ data: { exam_codes: [] } })),
+    ])
+      .then(([res, ecRes]) => {
+        const merged: Array<{ id: string; exam_code?: string; title?: string; branch?: string | null; college_name?: string | null }> = [];
+        const ecList: any[] = ecRes.data?.exam_codes || ecRes.data?.data || [];
+        const ecByCode = new Map<string, any>();
+        for (const ec of ecList) {
+          const code = String(ec.exam_code || '').toUpperCase();
+          if (code) {
+            ecByCode.set(code, ec);
+            merged.push({
+              id: ec.id || code,
+              exam_code: code,
+              title: ec.exam_name || ec.subject || code,
+              branch: ec.branch || null,
+              college_name: ec.college?.college_name || ec.college_name || null,
+            });
           }
+        }
+        if (Array.isArray(res.data?.exams)) {
+          for (const ex of res.data.exams) {
+            const code = String(ex.exam_code || ex.id || '').toUpperCase();
+            if (code && !ecByCode.has(code)) {
+              merged.push({
+                id: ex.id,
+                exam_code: code,
+                title: ex.title || code,
+                branch: ex.branch || null,
+                college_name: ex.college_name || null,
+              });
+            }
+          }
+        }
+        setAvailableExams(merged);
+        if (!defaultExamId && merged.length > 0) {
+          setExamCode(merged[0].exam_code || merged[0].id);
         }
       })
       .catch(() => {});
   }, [defaultExamId]);
+
+  const filteredExams = useMemo(() => {
+    return availableExams.filter((ex) => {
+      if (courseFilter !== 'ALL' && inferCourseFromBranch(ex.branch) !== courseFilter) return false;
+      if (branchFilter !== 'ALL' && (ex.branch || '').toUpperCase() !== branchFilter.toUpperCase()) return false;
+      return true;
+    });
+  }, [availableExams, courseFilter, branchFilter]);
 
   function handleFile(f: File) {
     if (!f.name.endsWith('.xlsx') && !f.name.endsWith('.csv')) {
@@ -156,7 +207,11 @@ export default function ImportQuestionsPage() {
       setGeneralError('No validated questions available for import.');
       return;
     }
-    const targetCode = examCode.trim() || 'DEFAULT';
+    const targetCode = examCode.trim().toUpperCase();
+    if (!targetCode) {
+      setGeneralError('Please enter or select a target Exam Code before importing.');
+      return;
+    }
     const validQuestions = previewData.preview.filter((q) => q.valid);
 
     if (validQuestions.length === 0) {
@@ -176,7 +231,7 @@ export default function ImportQuestionsPage() {
 
       if (res.data?.success) {
         const count = res.data.imported_count || validQuestions.length;
-        setImportSuccess(`Successfully imported ${count} questions into exam "${targetCode}"!`);
+        setImportSuccess(`Imported ${count} verified questions into exam "${targetCode}".`);
         if (res.data.invalid_rows && res.data.invalid_rows.length > 0) {
           setSkippedRows(res.data.invalid_rows);
         } else {
@@ -255,36 +310,60 @@ export default function ImportQuestionsPage() {
               {/* Target Exam Selection */}
               <div>
                 <label className="form-label" htmlFor="import-exam-selector" style={{ fontWeight: 700, fontSize: '0.85rem' }}>
-                  Target Exam Code / Subject
+                  Target Exam Code / Cohort Scope
                 </label>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                  <select
+                    className="form-input form-input-sm"
+                    value={courseFilter}
+                    onChange={(e) => { setCourseFilter(e.target.value); setBranchFilter('ALL'); }}
+                    style={{ minWidth: 120 }}
+                  >
+                    <option value="ALL">All Courses</option>
+                    {COURSE_OPTIONS.map((c) => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="form-input form-input-sm"
+                    value={branchFilter}
+                    onChange={(e) => setBranchFilter(e.target.value)}
+                    style={{ minWidth: 140 }}
+                  >
+                    <option value="ALL">All Branches</option>
+                    {getBranchesForCourse(courseFilter).map((b) => (
+                      <option key={b.code} value={b.code}>{b.code}</option>
+                    ))}
+                  </select>
+                </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input
                     id="import-exam-selector"
                     className="form-input font-mono"
                     type="text"
-                    placeholder="e.g. FSD2026 or EXAM01"
+                    placeholder="e.g. GR-RVIT-XXXXXX"
                     value={examCode}
                     onChange={(e) => setExamCode(e.target.value.toUpperCase())}
                     style={{ flex: 1 }}
                   />
-                  {availableExams.length > 0 && (
+                  {filteredExams.length > 0 && (
                     <select
                       className="form-input"
-                      style={{ maxWidth: 160 }}
+                      style={{ maxWidth: 210 }}
                       onChange={(e) => setExamCode(e.target.value)}
                       value={examCode}
                     >
-                      <option value="">Choose Exam...</option>
-                      {availableExams.map((ex) => (
+                      <option value="">Choose Exam ({filteredExams.length})</option>
+                      {filteredExams.map((ex) => (
                         <option key={ex.id} value={ex.exam_code || ex.id}>
-                          {ex.exam_code || ex.title || ex.id}
+                          {ex.exam_code || ex.id}{ex.branch ? ` · ${ex.branch}` : ''}
                         </option>
                       ))}
                     </select>
                   )}
                 </div>
                 <span className="text-muted text-xs" style={{ display: 'block', marginTop: 4 }}>
-                  Questions will be bound to this exam code for student assessment delivery.
+                  Questions are bound directly to the selected exam code and cohort scope.
                 </span>
               </div>
 
@@ -488,10 +567,10 @@ export default function ImportQuestionsPage() {
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc' }}>
-                    Ready to commit verified questions to "{examCode.trim() || 'DEFAULT'}"?
+                  <div style={{ fontSize: '1.05rem', fontWeight: 600, color: '#f8fafc' }}>
+                    Ready to commit verified questions to "{examCode.trim() || 'selected exam'}"
                   </div>
-                  <div className="text-muted text-xs" style={{ marginTop: 2 }}>
+                  <div className="text-muted text-xs" style={{ marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
                     {previewData.valid_count} verified question{previewData.valid_count !== 1 ? 's' : ''} will be imported into the active exam.
                     {previewData.invalid_count > 0 && (
                       <span style={{ color: '#fca5a5', marginLeft: 4 }}>
@@ -507,7 +586,7 @@ export default function ImportQuestionsPage() {
                   onClick={handleConfirmImport}
                   disabled={importing || previewData.valid_count === 0}
                   className="btn btn-primary"
-                  style={{ padding: '12px 28px', fontWeight: 800, fontSize: '0.92rem', boxShadow: '0 0 15px rgba(59, 130, 246, 0.5)' }}
+                  style={{ padding: '10px 22px', fontWeight: 600, fontSize: '0.9rem' }}
                 >
                   {importing ? (
                     <>

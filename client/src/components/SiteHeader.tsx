@@ -114,33 +114,32 @@ export default function SiteHeader() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span
               style={{
-                width: 7,
-                height: 7,
+                width: 6,
+                height: 6,
                 borderRadius: '50%',
                 background: '#FF7A00',
-                boxShadow: '0 0 8px #FF7A00',
                 display: 'inline-block',
               }}
             />
-            <span style={{ letterSpacing: '0.04em', fontWeight: 900 }}>
-              <span style={{ color: '#FF7A00' }}>LOGIC</span>
-              <span style={{ color: '#FFFFFF' }}>WHILE</span>
+            <span style={{ fontWeight: 600, fontSize: '12px' }}>
+              <span style={{ color: '#FF7A00' }}>Logic</span>
+              <span style={{ color: '#FFFFFF' }}>While</span>
             </span>
             <span style={{ color: '#64748B' }}>›</span>
-            <span style={{ color: '#FFD000', fontWeight: 700, letterSpacing: '0.04em' }}>
-              LiRE ASSESSMENT SUB-BRANCH
+            <span style={{ color: '#FFB400', fontWeight: 500, fontSize: '12px' }}>
+              LiRE Assessment Sub-Branch
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: '11px' }}>
-            <span>
-              STATUS: <strong style={{ color: '#10B981' }}>OPERATIONAL</strong>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '11.5px', fontVariantNumeric: 'tabular-nums' }}>
+            <span style={{ color: '#94A3B8' }}>
+              Status: <strong style={{ color: '#34D399', fontWeight: 600 }}>Operational</strong>
             </span>
-            <span style={{ color: '#475569' }}>|</span>
-            <span>
-              CLOCK: <strong style={{ color: '#FFB400' }}>SERVER-AUTHORITATIVE</strong>
+            <span style={{ color: 'rgba(255,255,255,0.16)' }}>|</span>
+            <span style={{ color: '#94A3B8' }}>
+              Clock: <strong style={{ color: '#FFB400', fontWeight: 600 }}>Server-Authoritative</strong>
             </span>
-            <span style={{ color: '#475569' }}>|</span>
+            <span style={{ color: 'rgba(255,255,255,0.16)' }}>|</span>
             <button
               onClick={() => {
                 window.dispatchEvent(new CustomEvent('toggle-horizonx'));
@@ -148,23 +147,22 @@ export default function SiteHeader() {
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 5,
-                background: 'rgba(255, 180, 0, 0.14)',
-                border: '1px solid rgba(255, 180, 0, 0.42)',
-                borderRadius: 4,
+                gap: 6,
+                background: 'rgba(255, 180, 0, 0.1)',
+                border: '1px solid rgba(255, 180, 0, 0.28)',
+                borderRadius: 6,
                 padding: '2px 8px',
                 color: '#FFD000',
-                fontSize: '10.5px',
-                fontWeight: 700,
-                fontFamily: "'Space Grotesk', monospace",
+                fontSize: '11px',
+                fontWeight: 600,
+                fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
                 cursor: 'pointer',
-                letterSpacing: '0.04em',
-                transition: 'all 0.18s ease',
+                transition: 'background-color 150ms cubic-bezier(0.22, 1, 0.36, 1), border-color 150ms cubic-bezier(0.22, 1, 0.36, 1)',
               }}
               title="Toggle HorizonX Architectural Blueprint Inspect Mode (Key: H)"
             >
-              <IconHierarchy size={11} color="#FFD000" />
-              <span>HORIZONX [H]</span>
+              <IconHierarchy size={12} color="#FFD000" />
+              <span>HorizonX [H]</span>
             </button>
           </div>
         </div>
@@ -174,17 +172,16 @@ export default function SiteHeader() {
       <header
         className={`site-header ${scrolled ? 'scrolled' : ''}`}
         style={{
-          background: scrolled
-            ? 'linear-gradient(90deg, #050B22 0%, #07134B 50%, #050B22 100%)'
-            : 'linear-gradient(90deg, #07134B 0%, #0A1C68 50%, #07134B 100%)',
-          borderBottom: '3px solid #FFB400',
-          height: '74px',
+          background: scrolled ? '#050B22' : '#07134B',
+          borderBottom: '2px solid rgba(255, 180, 0, 0.65)',
+          height: '64px',
           padding: '0 24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           width: '100%',
           position: 'relative',
+          transition: 'background-color 180ms cubic-bezier(0.22, 1, 0.36, 1)',
         }}
       >
         <div
