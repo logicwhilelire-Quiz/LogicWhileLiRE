@@ -7,6 +7,7 @@ import ThemeToggle from "../components/ui/ThemeToggle";
 import { getAssessmentSystemCheck, authLogout, getExamLobbyStats, getAttemptStatus } from "../lib/api";
 import { SOCKET_URL } from "../lib/config";
 import HoloProctorDeskModal from "../components/HoloProctorDeskModal";
+import { inferCourseFromBranch } from "../constants/academicCatalog";
 import {
   IconClock,
   IconLaunch,
@@ -43,6 +44,7 @@ interface CandidateProfile {
   section?: string;
   email?: string;
   contact_number?: string;
+  student_gate_pass?: string;
 }
 
 interface LobbyMeta {
@@ -617,13 +619,18 @@ export default function WaitingLobbyPage() {
     return list;
   }, [participants, candidate, displayName, isReleased, location.state]);
 
+  // Normalize section label so e.g. 'Section A', 'A', and 'CSE-A' group consistently
+  const normalizeSectionLabel = (raw?: string | null) => {
+    const up = (raw || 'A').toUpperCase().trim().replace(/^SECTION\s*/i, '');
+    return up.length === 1 ? `SECTION ${up}` : up;
+  };
+
   // Derive section counts for filtering and breakdown cards
   const sectionCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     if (Array.isArray(examMeta.sections) && examMeta.sections.length > 0) {
       examMeta.sections.forEach((s) => {
-        const raw = s.toUpperCase().trim();
-        const clean = raw.startsWith('SEC') ? raw : `SECTION ${raw}`;
+        const clean = normalizeSectionLabel(s);
         if (clean) counts[clean] = 0;
       });
     } else {
@@ -631,8 +638,7 @@ export default function WaitingLobbyPage() {
       counts['SECTION B'] = 0;
     }
     allParticipants.forEach((p) => {
-      const rawSec = (p.section || candidate?.section || 'Section A').toUpperCase().trim();
-      const secKey = rawSec.startsWith('SEC') ? rawSec : `SECTION ${rawSec}`;
+      const secKey = normalizeSectionLabel(p.section || candidate?.section || 'A');
       counts[secKey] = (counts[secKey] || 0) + 1;
     });
     return counts;
@@ -645,8 +651,7 @@ export default function WaitingLobbyPage() {
 
   const filteredParticipants = useMemo(() => {
     return allParticipants.filter((p) => {
-      const rawSec = (p.section || candidate?.section || 'Section A').toUpperCase().trim();
-      const sec = rawSec.startsWith('SEC') ? rawSec : `SECTION ${rawSec}`;
+      const sec = normalizeSectionLabel(p.section || candidate?.section || 'A');
       const matchesSection = selectedSection === 'ALL' || sec === selectedSection;
       const q = searchQuery.toLowerCase().trim();
       const matchesQuery =
@@ -993,9 +998,9 @@ export default function WaitingLobbyPage() {
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: "0.66rem", color: "#94A3B8", textTransform: "uppercase", fontWeight: 700 }}>Department / Branch</div>
+                    <div style={{ fontSize: "0.66rem", color: "#94A3B8", textTransform: "uppercase", fontWeight: 700 }}>Course &amp; Branch</div>
                     <div style={{ fontSize: "0.82rem", color: "#E2E8F0", fontWeight: 700 }}>
-                      {candidate?.branch_code || "CSE"}
+                      {inferCourseFromBranch(examMeta.branch || candidate?.branch_code)} • {examMeta.branch || candidate?.branch_code || "CSE"}
                     </div>
                   </div>
                   <div>
@@ -1022,7 +1027,7 @@ export default function WaitingLobbyPage() {
                 >
                   <span style={{ color: "#94A3B8" }}>Gate Pass Auth:</span>
                   <span style={{ fontFamily: "monospace", color: "#EAA812", fontWeight: 800 }}>
-                    GP-{String(candidate?.roll_number || "STU").slice(-6).toUpperCase()}-CLEARANCE
+                    {candidate?.student_gate_pass || "Verified Session Clearance"}
                   </span>
                 </div>
               </div>

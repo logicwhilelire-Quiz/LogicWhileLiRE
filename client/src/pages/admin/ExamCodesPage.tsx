@@ -370,6 +370,10 @@ export default function ExamCodesPage() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          <button id={`monitor-ec-${ec.id}`} className="btn btn-primary btn-sm" onClick={() => navigate(`/admin/monitor/${ec.exam_code}`)} title="Live Monitor & Waiting Lobby" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <IconFlash size={13} />
+                            <span>Lobby</span>
+                          </button>
                           <button id={`qr-${ec.id}`} className="btn btn-secondary btn-sm" onClick={() => openQR(ec)} title="View QR & Share" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                             <IconQrCode size={13} />
                             <span>QR</span>

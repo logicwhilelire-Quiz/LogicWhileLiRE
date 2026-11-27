@@ -16,12 +16,18 @@ export interface StudentTile {
   id: string
   name: string
   hallTicket?: string
-  status: 'active' | 'idle' | 'cheating' | 'terminated' | 'offline'
+  status: 'waiting' | 'active' | 'idle' | 'cheating' | 'terminated' | 'offline'
   score?: number
   flagCount?: number
   joinedAt?: string
   lastSeen?: string
   currentQuestion?: number
+  branch?: string
+  section?: string
+  course?: string
+  collegeName?: string
+  batch?: string
+  attemptId?: string
 }
 
 interface LiveGridWallProps {
@@ -34,9 +40,11 @@ interface LiveGridWallProps {
   onExtendTime?: (s: StudentTile) => void
   onPauseResume?: (s: StudentTile) => void
   onOpenDossier?: (s: StudentTile) => void
+  onReleaseStudent?: (s: StudentTile) => void
 }
 
 export const STATUS_CONFIG: Record<StudentTile['status'], { color: string; label: string; dot: string; bg: string }> = {
+  waiting:    { color: '#38BDF8', label: 'In Lobby',   dot: 'status-waiting',    bg: 'rgba(56,189,248,0.14)' },
   active:     { color: '#10B981', label: 'Active',     dot: 'status-active',     bg: 'rgba(16,185,129,0.12)' },
   idle:       { color: '#F59E0B', label: 'Idle',       dot: 'status-idle',       bg: 'rgba(245,158,11,0.12)' },
   cheating:   { color: '#EF4444', label: 'Flagged!',   dot: 'status-cheating',   bg: 'rgba(239,68,68,0.15)' },
@@ -54,6 +62,7 @@ export default function LiveGridWall({
   onExtendTime,
   onPauseResume,
   onOpenDossier,
+  onReleaseStudent,
 }: LiveGridWallProps) {
   const [selected, setSelected] = useState<string | null>(selectedId || null)
   const [filter, setFilter] = useState<StudentTile['status'] | 'all'>('all')
@@ -64,6 +73,7 @@ export default function LiveGridWall({
 
   const counts = useMemo(() => ({
     all:      students.length,
+    waiting:  students.filter(s => s.status === 'waiting').length,
     active:   students.filter(s => s.status === 'active').length,
     idle:     students.filter(s => s.status === 'idle').length,
     cheating: students.filter(s => s.status === 'cheating').length,
@@ -92,7 +102,7 @@ export default function LiveGridWall({
         
         {/* Left: Filter Buttons */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-          {(['all', 'active', 'idle', 'cheating', 'offline'] as const).map(f => {
+          {(['all', 'waiting', 'active', 'idle', 'cheating', 'offline'] as const).map(f => {
             const isAll = f === 'all'
             const cfg = !isAll ? STATUS_CONFIG[f] : null
             const isActive = filter === f
@@ -229,8 +239,9 @@ export default function LiveGridWall({
               const cfg = STATUS_CONFIG[student.status] || STATUS_CONFIG.offline
               const isCheating = student.status === 'cheating'
               const isIdle = student.status === 'idle'
+              const isWaiting = student.status === 'waiting'
               const isSelected = activeSelected === student.id
-              const confidence = isCheating ? '44.8%' : isIdle ? '68.2%' : '98.6%'
+              const confidence = isCheating ? '44.8%' : isIdle ? '68.2%' : isWaiting ? 'LOBBY' : '98.6%'
               const audioDb = isCheating ? -14 : isIdle ? -36 : -48
 
               return (
@@ -308,7 +319,7 @@ export default function LiveGridWall({
                         color: isCheating ? '#EF4444' : isIdle ? '#F59E0B' : '#00F2FE',
                         whiteSpace: 'nowrap',
                       }}>
-                        {isCheating ? 'MULTIPLE FACES' : isIdle ? 'GAZE DEVIATED' : `CONF: ${confidence}`}
+                        {isCheating ? 'MULTIPLE FACES' : isIdle ? 'GAZE DEVIATED' : isWaiting ? 'WAITING IN LOBBY' : `CONF: ${confidence}`}
                       </span>
                     </div>
 
@@ -333,12 +344,12 @@ export default function LiveGridWall({
 
                       <div style={{
                         display: 'flex', alignItems: 'center', gap: 4,
-                        background: student.status === 'offline' ? 'rgba(100, 116, 139, 0.7)' : 'rgba(239, 68, 68, 0.85)',
+                        background: student.status === 'offline' ? 'rgba(100, 116, 139, 0.7)' : isWaiting ? 'rgba(56, 189, 248, 0.85)' : 'rgba(239, 68, 68, 0.85)',
                         padding: '2px 6px', borderRadius: 999,
                         fontSize: '0.56rem', fontWeight: 800, color: '#FFF',
                       }}>
                         <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#FFF' }} />
-                        <span>{student.status === 'offline' ? 'SUBMITTED' : 'REC • LIVE'}</span>
+                        <span>{student.status === 'offline' ? 'SUBMITTED' : isWaiting ? 'IN LOBBY' : 'REC • LIVE'}</span>
                       </div>
                     </div>
 
@@ -386,14 +397,36 @@ export default function LiveGridWall({
                       </span>
                     </div>
 
+                    {(student.branch || student.section) && (
+                      <div style={{ fontSize: '0.64rem', color: '#CBD5E1', marginBottom: 4, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {student.course && <span style={{ color: '#FDE68A', fontWeight: 700 }}>{student.course}</span>}
+                        {student.branch && <span>{student.branch}</span>}
+                        {student.section && <span style={{ color: '#C084FC', fontWeight: 700 }}>Sec {student.section}</span>}
+                      </div>
+                    )}
+
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.66rem', color: '#94A3B8', marginBottom: 8 }}>
-                      <span>Progress: <strong>Q{student.currentQuestion || 1}/15</strong></span>
-                      <span>Score: <strong style={{ color: '#38BDF8' }}>{student.score !== undefined ? `${student.score}%` : 'Evaluating'}</strong></span>
+                      <span>{isWaiting ? 'Queue: Waiting' : `Progress: Q${student.currentQuestion || 1}/15`}</span>
+                      <span>Score: <strong style={{ color: '#38BDF8' }}>{student.score !== undefined ? `${student.score}%` : isWaiting ? 'Pre-Exam' : 'Evaluating'}</strong></span>
                       <span>Flags: <strong style={{ color: (student.flagCount || 0) > 0 ? '#EF4444' : '#10B981' }}>{student.flagCount || 0}</strong></span>
                     </div>
 
                     {/* 1-Click Inspector Quick Actions */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isWaiting && onReleaseStudent ? '1.3fr 1fr 1fr' : 'repeat(4, 1fr)', gap: 4 }}>
+                      {isWaiting && onReleaseStudent && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onReleaseStudent(student) }}
+                          title="Release Student from Waiting Lobby into Exam"
+                          style={{
+                            padding: '4px 4px', borderRadius: 4, border: '1px solid rgba(16, 185, 129, 0.5)',
+                            background: 'rgba(16, 185, 129, 0.16)', color: '#34D399', fontSize: '0.62rem', fontWeight: 800, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
+                          }}
+                        >
+                          <IconCheck size={10} color="#34D399" />
+                          <span>Release</span>
+                        </button>
+                      )}
                       <button
                         onClick={(e) => { e.stopPropagation(); onWarnStudent?.(student) }}
                         title="Send Instant Warning to Student"
@@ -406,30 +439,34 @@ export default function LiveGridWall({
                         <IconAlert size={10} color="#FBBF24" />
                         <span>Warn</span>
                       </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onExtendTime?.(student) }}
-                        title="Grant +5 Minutes Extension"
-                        style={{
-                          padding: '4px 2px', borderRadius: 4, border: '1px solid rgba(56, 189, 248, 0.4)',
-                          background: 'rgba(56, 189, 248, 0.1)', color: '#38BDF8', fontSize: '0.62rem', fontWeight: 700, cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
-                        }}
-                      >
-                        <IconClock size={10} color="#38BDF8" />
-                        <span>+5m</span>
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onPauseResume?.(student) }}
-                        title="Pause or Resume Student Exam"
-                        style={{
-                          padding: '4px 2px', borderRadius: 4, border: '1px solid rgba(168, 85, 247, 0.4)',
-                          background: 'rgba(168, 85, 247, 0.1)', color: '#C084FC', fontSize: '0.62rem', fontWeight: 700, cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
-                        }}
-                      >
-                        <IconStop size={10} color="#C084FC" />
-                        <span>Pause</span>
-                      </button>
+                      {!isWaiting && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onExtendTime?.(student) }}
+                          title="Grant +5 Minutes Extension"
+                          style={{
+                            padding: '4px 2px', borderRadius: 4, border: '1px solid rgba(56, 189, 248, 0.4)',
+                            background: 'rgba(56, 189, 248, 0.1)', color: '#38BDF8', fontSize: '0.62rem', fontWeight: 700, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
+                          }}
+                        >
+                          <IconClock size={10} color="#38BDF8" />
+                          <span>+5m</span>
+                        </button>
+                      )}
+                      {!isWaiting && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onPauseResume?.(student) }}
+                          title="Pause or Resume Student Exam"
+                          style={{
+                            padding: '4px 2px', borderRadius: 4, border: '1px solid rgba(168, 85, 247, 0.4)',
+                            background: 'rgba(168, 85, 247, 0.1)', color: '#C084FC', fontSize: '0.62rem', fontWeight: 700, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
+                          }}
+                        >
+                          <IconStop size={10} color="#C084FC" />
+                          <span>Pause</span>
+                        </button>
+                      )}
                       <button
                         onClick={(e) => { e.stopPropagation(); onOpenDossier ? onOpenDossier(student) : handleSelect(student) }}
                         title="Inspect Full Candidate Dossier"

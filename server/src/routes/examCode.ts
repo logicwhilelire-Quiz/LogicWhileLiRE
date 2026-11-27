@@ -45,6 +45,7 @@ import {
   rejectStudentEntry,
   blockStudentEntry,
   resetStudentAttempt,
+  getAdminMonitorSnapshot,
 } from '../controllers/examCodeController';
 import { enrollRateLimit, answerRateLimit, enterExamRateLimit } from '../middleware/rateLimiter';
 import { validateBody, verifyExamEntrySchema, saveExamCodeAnswerSchema, submitExamCodeSchema } from '../middleware/validate';
@@ -397,6 +398,8 @@ router.get('/admin/attempts/:id/violations', adminAuth, getAttemptViolations);
 router.patch('/admin/attempts/:id/violations/:violationId/review', adminAuth, requireRole('super_admin'), auditLog('REVIEW_VIOLATION', 'proctor_logs'), reviewAttemptViolation);
 
 // Phase 3: Live Monitor, Analytics & Results Vault
+router.get('/admin/monitor/:code/snapshot', adminAuth, requireRole('super_admin', 'inspector', 'faculty'), getAdminMonitorSnapshot);
+router.get('/admin/exam-codes/:code/monitor-snapshot', adminAuth, requireRole('super_admin', 'inspector', 'faculty'), getAdminMonitorSnapshot);
 router.post('/admin/attempts/:id/extend-time', adminAuth, requireRole('super_admin', 'inspector'), auditLog('EXTEND_ATTEMPT_TIME', 'exam_code_attempts'), extendAttemptTime);
 router.post('/admin/attempts/:id/force-submit', adminAuth, requireRole('super_admin', 'inspector'), auditLog('FORCE_SUBMIT_ATTEMPT', 'exam_code_attempts'), forceSubmitAttempt);
 

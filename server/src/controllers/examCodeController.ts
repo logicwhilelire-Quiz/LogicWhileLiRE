@@ -4342,4 +4342,250 @@ export async function resetStudentAttempt(req: Request, res: Response): Promise<
   res.json({ success: true, message: `Attempt for student ${updated.hall_ticket_no} has been reset to Waiting Hall`, attempt: updated });
 }
 
+/**
+ * GET /api/admin/monitor/:code/snapshot
+ * Authoritative live telemetry snapshot combining exam metadata, college-scoped roster,
+ * exam_code_attempts (including waiting lobby), Socket.IO waiting queue, and proctor_logs.
+ */
+export async function getAdminMonitorSnapshot(req: Request, res: Response): Promise<void> {
+  const code = String(req.params.code || req.params.id || '').toUpperCase().trim();
+  if (!code) {
+    res.status(400).json({ success: false, error: 'Exam code is required' });
+    return;
+  }
+
+  try {
+    const admin = (req as any).admin;
+
+    const [{ data: examCodeRow }, { data: legacyExamRow }] = await Promise.all([
+      supabase
+        .from('exam_codes')
+        .select('*, college:college_id ( id, college_name, college_code )')
+        .eq('exam_code', code)
+        .maybeSingle(),
+      supabase
+        .from('exams')
+        .select('id, title, exam_code, college_id, branch, passout_year, section_id, section_ids, duration_minutes, total_questions, is_active')
+        .eq('exam_code', code)
+        .maybeSingle(),
+    ]);
+
+    const examMeta: any = examCodeRow || legacyExamRow || null;
+    if (
+      admin?.role === 'inspector' &&
+      admin?.college_id &&
+      examMeta?.college_id &&
+      Number(examMeta.college_id) !== Number(admin.college_id)
+    ) {
+      res.status(403).json({ success: false, error: 'Forbidden: exam belongs to another college' });
+      return;
+    }
+
+    const [{ data: attemptsData }, { data: violationsData }, { data: studentsData }] = await Promise.all([
+      supabase
+        .from('exam_code_attempts')
+        .select('id, exam_code, hall_ticket_no, student_name, status, score, max_score, correct_count, wrong_count, violation_count, time_taken_seconds, start_time, end_time, override_reason, created_at, updated_at')
+        .eq('exam_code', code)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('proctor_logs')
+        .select('id, exam_id, candidate_id, event_type, metadata, created_at')
+        .eq('exam_id', code)
+        .order('created_at', { ascending: false })
+        .limit(80),
+      examMeta?.college_id
+        ? supabase
+            .from('students')
+            .select('id, name, first_name, last_name, roll_number, hall_ticket, email, college_id, college_name, branch_code, section, batch, year_of_passing, is_verified, is_blocked')
+            .eq('college_id', examMeta.college_id)
+            .order('roll_number', { ascending: true })
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+
+    const { getWaitingStudents, getLobbyStats, getExamStartedState } = await import('../services/socketService');
+    const socketWaiting = getWaitingStudents(code);
+    const lobbyStats = getLobbyStats(code);
+    const startedState = getExamStartedState(code);
+
+    // Index students by roll number / hall ticket for fast enrichment
+    const studentByRoll = new Map<string, any>();
+    for (const s of studentsData || []) {
+      const r1 = String(s.roll_number || '').toUpperCase().trim();
+      const r2 = String(s.hall_ticket || '').toUpperCase().trim();
+      if (r1) studentByRoll.set(r1, s);
+      if (r2) studentByRoll.set(r2, s);
+    }
+
+    // Fetch missing student profiles if some attempt roll numbers belong outside college filter
+    const missingRolls = Array.from(
+      new Set(
+        [
+          ...(attemptsData || []).map((a: any) => String(a.hall_ticket_no || '').toUpperCase().trim()),
+          ...socketWaiting.map((w) => String(w.hallTicket || '').toUpperCase().trim()),
+        ].filter((r) => r && !studentByRoll.has(r))
+      )
+    );
+    if (missingRolls.length > 0) {
+      const { data: extraStudents } = await supabase
+        .from('students')
+        .select('id, name, first_name, last_name, roll_number, hall_ticket, email, college_id, college_name, branch_code, section, batch, year_of_passing, is_verified, is_blocked')
+        .in('roll_number', missingRolls.slice(0, 150));
+      for (const s of extraStudents || []) {
+        const r = String(s.roll_number || s.hall_ticket || '').toUpperCase().trim();
+        if (r) studentByRoll.set(r, s);
+      }
+    }
+
+    // Index violations per candidate
+    const flagMap = new Map<string, number>();
+    for (const v of violationsData || []) {
+      const cid = String(v.candidate_id || '').toUpperCase().trim();
+      if (cid) flagMap.set(cid, (flagMap.get(cid) || 0) + 1);
+    }
+
+    const attempts = (attemptsData || []).map((a: any) => {
+      const ht = String(a.hall_ticket_no || '').toUpperCase().trim();
+      const stu = studentByRoll.get(ht);
+      const overrideStr = String(a.override_reason || '').toLowerCase();
+      const rawStatus = String(a.status || 'in_progress').toLowerCase();
+      const isWaiting =
+        rawStatus === 'waiting_verification' ||
+        rawStatus === 'in_lobby' ||
+        rawStatus === 'waiting' ||
+        (rawStatus === 'in_progress' && overrideStr.includes('status:waiting_verification'));
+      const flags = Math.max(Number(a.violation_count || 0), flagMap.get(ht) || 0);
+      const pct = (a.max_score || 0) > 0 ? Math.round(((a.score || 0) / a.max_score) * 100) : undefined;
+
+      return {
+        id: a.id,
+        hall_ticket: ht,
+        name: a.student_name || stu?.name || `${stu?.first_name || ''} ${stu?.last_name || ''}`.trim() || ht,
+        email: stu?.email || '',
+        college_id: stu?.college_id || examMeta?.college_id || null,
+        college_name: stu?.college_name || examMeta?.college?.college_name || 'Unassigned',
+        branch: stu?.branch_code || examMeta?.branch || 'CSE',
+        section: stu?.section || 'A',
+        batch: stu?.batch || (stu?.year_of_passing ? `Batch ${stu.year_of_passing}` : 'Batch 1'),
+        passout_year: stu?.year_of_passing || examMeta?.passout_year || null,
+        status: isWaiting ? 'waiting' : rawStatus,
+        score: pct,
+        raw_score: a.score ?? 0,
+        max_score: a.max_score ?? 0,
+        flag_count: flags,
+        started_at: a.start_time || a.created_at,
+        submitted_at: a.end_time || null,
+      };
+    });
+
+    // Build unified Waiting Lobby queue (DB waiting attempts + live Socket waiting students)
+    const waitingMap = new Map<string, any>();
+    for (const a of attempts) {
+      if (a.status === 'waiting') {
+        waitingMap.set(a.hall_ticket, {
+          hall_ticket_no: a.hall_ticket,
+          student_name: a.name,
+          section: a.section,
+          branch: a.branch,
+          college_name: a.college_name,
+          joined_at: a.started_at,
+          attempt_id: a.id,
+          source: 'db',
+          status: 'waiting',
+        });
+      }
+    }
+    for (const sockStu of socketWaiting) {
+      const ht = String(sockStu.hallTicket || '').toUpperCase().trim();
+      const stu = studentByRoll.get(ht);
+      const prev = waitingMap.get(ht);
+      waitingMap.set(ht, {
+        hall_ticket_no: ht,
+        student_name: sockStu.studentName || prev?.student_name || stu?.name || ht,
+        section: stu?.section || sockStu.section || prev?.section || 'A',
+        branch: stu?.branch_code || prev?.branch || examMeta?.branch || 'CSE',
+        college_name: stu?.college_name || prev?.college_name || examMeta?.college?.college_name || 'Unassigned',
+        joined_at: new Date(sockStu.joinedAt).toISOString(),
+        attempt_id: prev?.attempt_id || null,
+        source: 'live_socket',
+        status: 'waiting',
+      });
+    }
+
+    // Eligible college roster matching exam branch & target sections (if set)
+    const attemptByHt = new Map(attempts.map((a) => [a.hall_ticket, a]));
+    const targetSections: string[] = Array.isArray(examMeta?.section_ids) && examMeta.section_ids.length > 0
+      ? examMeta.section_ids.map((s: any) => String(s).toUpperCase().trim())
+      : examMeta?.section_id
+        ? [String(examMeta.section_id).toUpperCase().trim()]
+        : [];
+    const targetBranch = examMeta?.branch ? String(examMeta.branch).toUpperCase().trim() : '';
+
+    const eligibleRoster = (studentsData || [])
+      .filter((stu: any) => {
+        if (targetBranch && stu.branch_code && String(stu.branch_code).toUpperCase().trim() !== targetBranch) {
+          return false;
+        }
+        if (targetSections.length > 0 && !targetSections.includes('ALL') && stu.section) {
+          const secUpper = String(stu.section).toUpperCase().trim().replace(/^SECTION\s*/i, '');
+          const matchesSec = targetSections.some((ts) => ts.replace(/^SECTION\s*/i, '') === secUpper || ts.endsWith(`-${secUpper}`));
+          if (!matchesSec) return false;
+        }
+        return true;
+      })
+      .map((stu: any) => {
+        const ht = String(stu.roll_number || stu.hall_ticket || '').toUpperCase().trim();
+        const att = attemptByHt.get(ht);
+        const inLobby = waitingMap.has(ht);
+        return {
+          id: stu.id,
+          hall_ticket: ht,
+          name: stu.name || `${stu.first_name || ''} ${stu.last_name || ''}`.trim() || ht,
+          email: stu.email || '',
+          college_name: stu.college_name || examMeta?.college?.college_name || 'Unassigned',
+          branch: stu.branch_code || 'CSE',
+          section: stu.section || 'A',
+          batch: stu.batch || 'Batch 1',
+          passout_year: stu.year_of_passing || null,
+          presence: inLobby ? 'in_lobby' : att ? att.status : 'not_joined',
+          score: att?.score,
+          flag_count: att?.flag_count || 0,
+        };
+      });
+
+    res.json({
+      success: true,
+      exam_code: code,
+      exam: examMeta
+        ? {
+            id: examMeta.id,
+            exam_code: examMeta.exam_code || code,
+            exam_name: examMeta.exam_name || examMeta.title || code,
+            subject: examMeta.subject || 'Institutional Assessment',
+            college_id: examMeta.college_id || null,
+            college_name: examMeta.college?.college_name || 'Unassigned',
+            college_code: examMeta.college?.college_code || '',
+            branch: examMeta.branch || null,
+            passout_year: examMeta.passout_year || null,
+            sections: targetSections,
+            duration_minutes: examMeta.duration_minutes || 60,
+            total_questions: examMeta.total_questions || 30,
+            is_active: Boolean(examMeta.is_active),
+            is_launched: Boolean(examMeta.is_launched || startedState),
+            started_at: examMeta.started_at || (startedState ? new Date(startedState.server_start_time).toISOString() : null),
+          }
+        : null,
+      lobby_stats: {
+        connected: Math.max(lobbyStats.connected, waitingMap.size),
+        waiting_count: waitingMap.size,
+        enrolled_count: Math.max(eligibleRoster.length, attempts.length, waitingMap.size),
+      },
+      waiting_students: Array.from(waitingMap.values()),
+      attempts,
+      eligible_roster: eligibleRoster,
+      violations: violationsData || [],
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to load monitor snapshot' });
+  }
+}
 

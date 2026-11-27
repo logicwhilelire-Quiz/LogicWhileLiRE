@@ -2283,13 +2283,48 @@ export async function getInspectorDashboardData(req: Request, res: Response): Pr
     }
     const { data: enrolledStudents } = await stuQuery.order('roll_number');
 
-    // 6. Fetch live waiting queue / lobby participants
+    // 6. Fetch live waiting queue / lobby participants from DB + live Socket.IO rooms
     let queueQuery = supabase
       .from('exam_code_attempts')
-      .select('id, exam_code_id, roll_number, student_name, college_id, status, joined_at, ping_at')
-      .in('status', ['waiting', 'in_lobby', 'active', 'ready'])
-      .limit(50);
+      .select('id, exam_code, hall_ticket_no, student_name, status, override_reason, start_time, created_at')
+      .in('status', ['waiting_verification', 'waiting', 'in_lobby', 'in_progress', 'active', 'ready'])
+      .order('created_at', { ascending: false })
+      .limit(100);
     const { data: waitingQueue } = await queueQuery;
+
+    const { getWaitingStudents } = await import('../services/socketService');
+    const allowedCodes = new Set(
+      (examCodes || []).map((ec: any) => String(ec.exam_code || '').toUpperCase()).filter(Boolean)
+    );
+    const mergedQueueMap = new Map<string, any>();
+    for (const q of waitingQueue || []) {
+      const ecCode = String((q as any).exam_code || '').toUpperCase();
+      if (allowedCodes.size > 0 && !allowedCodes.has(ecCode) && admin?.role !== 'super_admin') continue;
+      const ht = String((q as any).hall_ticket_no || '').toUpperCase();
+      mergedQueueMap.set(`${ecCode}:${ht}`, {
+        ...q,
+        roll_number: ht,
+        joined_at: (q as any).start_time || (q as any).created_at,
+      });
+    }
+    for (const code of allowedCodes) {
+      for (const sockStu of getWaitingStudents(code)) {
+        const ht = String(sockStu.hallTicket || '').toUpperCase();
+        const key = `${code}:${ht}`;
+        if (!mergedQueueMap.has(key)) {
+          mergedQueueMap.set(key, {
+            id: sockStu.socketId,
+            exam_code: code,
+            hall_ticket_no: ht,
+            roll_number: ht,
+            student_name: sockStu.studentName,
+            section: sockStu.section,
+            status: 'waiting_verification',
+            joined_at: new Date(sockStu.joinedAt).toISOString(),
+          });
+        }
+      }
+    }
 
     res.json({
       success: true,
@@ -2297,7 +2332,7 @@ export async function getInspectorDashboardData(req: Request, res: Response): Pr
       exams: exams || [],
       exam_codes: examCodes || [],
       sections: sections || [],
-      waiting_queue: waitingQueue || [],
+      waiting_queue: Array.from(mergedQueueMap.values()),
       enrolled_students: (enrolledStudents || []).map((s: any) => {
         const roll = s.roll_number || s.hall_ticket || 'STUDENT';
         const idSlug = String(s.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || '2026';

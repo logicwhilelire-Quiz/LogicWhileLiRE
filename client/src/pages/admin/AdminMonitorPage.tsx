@@ -1,9 +1,17 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
-import { API_BASE_URL } from '../../lib/config'
+import { io as connectSocket, type Socket } from 'socket.io-client'
+import { API_BASE_URL, SOCKET_URL } from '../../lib/config'
 import { supabase } from '../../lib/supabaseClient'
+import { getHierarchyOverview, startExam } from '../../lib/api'
+import {
+  COURSE_OPTIONS,
+  getBranchesForCourse,
+  inferCourseFromBranch,
+  buildSectionChoices,
+} from '../../constants/academicCatalog'
 import LiveGridWall, { type StudentTile } from '../../components/3d/LiveGridWall'
 import GlowCard from '../../components/3d/GlowCard'
 import MagneticButton from '../../components/3d/MagneticButton'
@@ -67,19 +75,72 @@ function playWarningChime() {
 }
 
 
+interface ExamCodeOption {
+  exam_code: string
+  exam_name?: string
+  subject?: string
+  college_id?: number | string | null
+  college_name?: string
+  branch?: string | null
+  passout_year?: number | null
+  sections?: string[]
+  is_active?: boolean
+  is_launched?: boolean
+  duration_minutes?: number
+}
+
+interface WaitingLobbyItem {
+  hall_ticket_no: string
+  student_name: string
+  section?: string
+  branch?: string
+  college_name?: string
+  joined_at?: string
+  attempt_id?: string | null
+  source?: string
+  status: string
+}
+
+interface EligibleRosterItem {
+  id: string
+  hall_ticket: string
+  name: string
+  email?: string
+  college_name?: string
+  branch?: string
+  section?: string
+  batch?: string
+  passout_year?: number | null
+  presence: string
+  score?: number
+  flag_count?: number
+}
+
+function adminHeaders() {
+  const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token') || localStorage.getItem('inspector_token')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 /* ── Main Monitor Component ───────────────────────────── */
 export default function AdminMonitorPage() {
   const { examId } = useParams<{ examId: string }>()
   const navigate = useNavigate()
 
-  const defaultExamCode = (examId || '').toUpperCase()
+  const defaultExamCode = (examId || '').toUpperCase().trim()
   const [examCode, setExamCode] = useState(defaultExamCode)
   const [inputCode, setInputCode] = useState(defaultExamCode)
   const [students, setStudents] = useState<StudentTile[]>([])
+  const [waitingQueue, setWaitingQueue] = useState<WaitingLobbyItem[]>([])
+  const [eligibleRoster, setEligibleRoster] = useState<EligibleRosterItem[]>([])
+  const [activeExamMeta, setActiveExamMeta] = useState<ExamCodeOption | null>(null)
+  const [examStarted, setExamStarted] = useState(false)
   const [events, setEvents] = useState<ProctoringEvent[]>([])
   const [selectedStudent, setSelectedStudent] = useState<StudentTile | null>(null)
+  const [monitorTab, setMonitorTab] = useState<'wall' | 'lobby' | 'roster'>('wall')
   const [connected, setConnected] = useState(false)
+  const [socketConnected, setSocketConnected] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [releasingLobby, setReleasingLobby] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [actionNotice, setActionNotice] = useState('')
   const [timelineCandidate, setTimelineCandidate] = useState<StudentTile | null>(null)
@@ -90,10 +151,14 @@ export default function AdminMonitorPage() {
   const [whisperMessage, setWhisperMessage] = useState('')
   const [isRoomFrozen, setIsRoomFrozen] = useState(false)
 
-  /* ── College & Exam Scoping State ── */
+  /* ── College, Course, Branch, Section & Exam Scoping State ── */
   const [colleges, setColleges] = useState<Array<{ id: number; college_name: string; college_code: string }>>([])
+  const [hierarchySections, setHierarchySections] = useState<any[]>([])
   const [selectedCollege, setSelectedCollege] = useState<string>('ALL')
-  const [availableExamCodes, setAvailableExamCodes] = useState<string[]>([])
+  const [selectedCourse, setSelectedCourse] = useState<string>('ALL')
+  const [selectedBranch, setSelectedBranch] = useState<string>('ALL')
+  const [selectedSection, setSelectedSection] = useState<string>('ALL')
+  const [availableExams, setAvailableExams] = useState<ExamCodeOption[]>([])
 
   /* ── Outbound Email Hub State ── */
   const [emailHubOpen, setEmailHubOpen] = useState(false)
@@ -104,27 +169,82 @@ export default function AdminMonitorPage() {
 
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const socketRef = useRef<Socket | null>(null)
   const idleTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
   const simTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  /* ── Initial Mount: Load Colleges & Active Exam Codes ── */
+  /* ── Initial Mount: Load Colleges, Sections & Active Exam Codes ── */
   useEffect(() => {
-    axios.get(`${BASE_URL}/api/colleges`)
+    const headers = adminHeaders()
+    axios.get(`${BASE_URL}/api/colleges`, { withCredentials: true, headers })
       .then(res => {
         if (res.data?.colleges) setColleges(res.data.colleges)
       })
       .catch(() => {
-        axios.get(`${BASE_URL}/api/exam-code/colleges`)
+        axios.get(`${BASE_URL}/api/exam-code/colleges`, { withCredentials: true, headers })
           .then(res => { if (res.data?.colleges) setColleges(res.data.colleges) })
           .catch(() => {})
       })
 
-    supabase.from('exam_codes').select('code, title').then(({ data }) => {
-      if (data && data.length > 0) {
-        setAvailableExamCodes(Array.from(new Set(data.map(d => d.code).filter(Boolean))))
-      }
-    })
-  }, [])
+    getHierarchyOverview()
+      .then(res => {
+        if (res.data?.success && Array.isArray(res.data.sections)) {
+          setHierarchySections(res.data.sections)
+        }
+      })
+      .catch(() => {})
+
+    axios.get(`${BASE_URL}/api/admin/exam-codes`, { withCredentials: true, headers })
+      .then(res => {
+        const raw = res.data?.exam_codes || []
+        const formatted: ExamCodeOption[] = raw.map((ec: any) => ({
+          exam_code: String(ec.exam_code || '').toUpperCase(),
+          exam_name: ec.exam_name || ec.subject || ec.exam_code,
+          subject: ec.subject,
+          college_id: ec.college_id ?? ec.college?.id ?? null,
+          college_name: ec.college?.college_name || '',
+          branch: ec.branch || null,
+          passout_year: ec.passout_year || null,
+          sections: Array.isArray(ec.section_ids) && ec.section_ids.length > 0
+            ? ec.section_ids
+            : ec.section_id ? [ec.section_id] : [],
+          is_active: ec.is_active,
+          is_launched: ec.is_launched,
+          duration_minutes: ec.duration_minutes,
+        })).filter((e: ExamCodeOption) => Boolean(e.exam_code))
+
+        setAvailableExams(formatted)
+        if (!defaultExamCode && formatted.length > 0) {
+          const preferred = formatted.find(e => e.is_active) || formatted[0]
+          setExamCode(preferred.exam_code)
+          setInputCode(preferred.exam_code)
+        }
+      })
+      .catch(() => {
+        axios.get(`${BASE_URL}/api/admin/exams`, { withCredentials: true, headers })
+          .then(r => {
+            const raw = r.data?.exams || []
+            const formatted: ExamCodeOption[] = raw
+              .filter((e: any) => Boolean(e.exam_code))
+              .map((e: any) => ({
+                exam_code: String(e.exam_code).toUpperCase(),
+                exam_name: e.title,
+                college_id: e.college_id,
+                branch: e.branch,
+                passout_year: e.passout_year,
+                sections: Array.isArray(e.section_ids) ? e.section_ids : e.section_id ? [e.section_id] : [],
+                is_active: e.is_active,
+                duration_minutes: e.duration_minutes,
+              }))
+            setAvailableExams(formatted)
+            if (!defaultExamCode && formatted.length > 0) {
+              setExamCode(formatted[0].exam_code)
+              setInputCode(formatted[0].exam_code)
+            }
+          })
+          .catch(() => {})
+      })
+  }, [defaultExamCode])
 
   /* ── Mark student idle after 30s of no activity ── */
   const resetIdleTimer = useCallback((candidateId: string) => {
@@ -150,64 +270,96 @@ export default function AdminMonitorPage() {
     }
   }, [soundEnabled])
 
-  /* ── Load initial snapshot from DB ── */
-  const loadSnapshot = useCallback(async (code: string) => {
-    if (!code) return
-    setLoading(true)
+  /* ── Load authoritative snapshot from backend Admin Monitor API ── */
+  const loadSnapshot = useCallback(async (code: string, quiet: boolean = false) => {
+    const cleanCode = code.trim().toUpperCase()
+    if (!cleanCode) return
+    if (!quiet) setLoading(true)
     try {
-      const { data: attempts } = await supabase
-        .from('exam_code_attempts')
-        .select('hall_ticket, score, percentage, started_at, submitted_at, status')
-        .eq('exam_code', code)
-
-      const { data: violations } = await supabase
-        .from('proctor_logs')
-        .select('candidate_id, event_type, created_at, metadata')
-        .eq('exam_id', code)
-
-      const flagMap = new Map<string, number>()
-      ;(violations || []).forEach(v => {
-        flagMap.set(v.candidate_id, (flagMap.get(v.candidate_id) || 0) + 1)
+      const res = await axios.get(`${BASE_URL}/api/admin/monitor/${encodeURIComponent(cleanCode)}/snapshot`, {
+        withCredentials: true,
+        headers: adminHeaders(),
       })
 
-      if (attempts && attempts.length > 0) {
-        const tiles: StudentTile[] = attempts.map(a => {
-          const flags = flagMap.get(a.hall_ticket) || 0
-          const isTerminated = a.status === 'terminated_cheating' || a.status === 'terminated' || a.status === 'Terminated - violation'
+      if (res.data?.success) {
+        if (res.data.exam) {
+          setActiveExamMeta(res.data.exam)
+          setExamStarted(Boolean(res.data.exam.is_launched))
+        }
+        const rawWaiting: WaitingLobbyItem[] = Array.isArray(res.data.waiting_students) ? res.data.waiting_students : []
+        setWaitingQueue(rawWaiting)
+
+        const rawRoster: EligibleRosterItem[] = Array.isArray(res.data.eligible_roster) ? res.data.eligible_roster : []
+        setEligibleRoster(rawRoster)
+
+        const rawAttempts: any[] = Array.isArray(res.data.attempts) ? res.data.attempts : []
+        const tileMap = new Map<string, StudentTile>()
+
+        for (const a of rawAttempts) {
+          const flags = Number(a.flag_count || 0)
+          const st = String(a.status || '').toLowerCase()
+          const isTerminated = st === 'terminated_cheating' || st === 'terminated' || st === 'terminated - violation'
+          const isWaiting = st === 'waiting' || st === 'waiting_verification' || st === 'in_lobby'
           const isCheating = !isTerminated && flags >= 3
-          const isDone = !!a.submitted_at || a.status === 'completed'
-          return {
-            id: a.hall_ticket,
-            name: a.hall_ticket,
+          const isDone = Boolean(a.submitted_at) || st === 'completed' || st === 'submitted' || st === 'auto_submitted_expired'
+
+          const tile: StudentTile = {
+            id: String(a.hall_ticket || a.id),
+            attemptId: a.id ? String(a.id) : undefined,
+            name: a.name || a.hall_ticket,
             hallTicket: a.hall_ticket,
-            status: isTerminated ? 'terminated' : isCheating ? 'cheating' : isDone ? 'offline' : 'active',
-            score: a.percentage ? Math.round(a.percentage) : undefined,
+            status: isTerminated ? 'terminated' : isWaiting ? 'waiting' : isCheating ? 'cheating' : isDone ? 'offline' : 'active',
+            score: a.score !== undefined && a.score !== null ? Math.round(Number(a.score)) : undefined,
             flagCount: flags,
             joinedAt: a.started_at,
+            branch: a.branch,
+            section: a.section,
+            course: inferCourseFromBranch(a.branch),
+            collegeName: a.college_name,
+            batch: a.batch,
           }
-        })
-        setStudents(tiles)
-      } else {
-        setStudents([])
-      }
+          if (tile.hallTicket) tileMap.set(tile.hallTicket, tile)
+        }
 
-      if (violations && violations.length > 0) {
-        setEvents((violations as unknown as ProctoringEvent[]).slice(0, 50))
-      }
+        // Merge any live socket waiting students not yet present in attempts map
+        for (const w of rawWaiting) {
+          const ht = String(w.hall_ticket_no || '').toUpperCase().trim()
+          if (ht && !tileMap.has(ht)) {
+            tileMap.set(ht, {
+              id: ht,
+              attemptId: w.attempt_id || undefined,
+              name: w.student_name || ht,
+              hallTicket: ht,
+              status: 'waiting',
+              flagCount: 0,
+              joinedAt: w.joined_at,
+              branch: w.branch || res.data.exam?.branch || 'CSE',
+              section: w.section || 'A',
+              course: inferCourseFromBranch(w.branch || res.data.exam?.branch),
+              collegeName: w.college_name || res.data.exam?.college_name || 'Unassigned',
+            })
+          }
+        }
 
+        setStudents(Array.from(tileMap.values()))
+
+        if (Array.isArray(res.data.violations)) {
+          setEvents(res.data.violations.slice(0, 60))
+        }
+      }
       setConnected(true)
     } catch (err) {
       console.error('[Monitor] Snapshot load error', err)
-      setStudents([])
       setConnected(true)
     } finally {
-      setLoading(false)
+      if (!quiet) setLoading(false)
     }
   }, [])
 
-  /* ── Connect to Supabase Realtime Channels ── */
+  /* ── Connect to Supabase Realtime Channels + Socket.IO Rooms ── */
   const subscribe = useCallback((code: string) => {
-    if (!code) return
+    const cleanCode = code.trim().toUpperCase()
+    if (!cleanCode) return
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current)
       channelRef.current = null
@@ -216,51 +368,119 @@ export default function AdminMonitorPage() {
       supabase.removeChannel(broadcastChannelRef.current)
       broadcastChannelRef.current = null
     }
+    if (socketRef.current) {
+      socketRef.current.disconnect()
+      socketRef.current = null
+    }
 
-    setExamCode(code)
-    loadSnapshot(code)
+    setExamCode(cleanCode)
+    setInputCode(cleanCode)
+    if ((examId || '').toUpperCase() !== cleanCode) {
+      navigate(`/admin/monitor/${encodeURIComponent(cleanCode)}`, { replace: true })
+    }
+    loadSnapshot(cleanCode)
+
+    // 0. Connect Socket.IO to join monitor + lobby rooms for instant waiting lobby visibility
+    const token = localStorage.getItem('admin_token') || localStorage.getItem('inspector_token') || ''
+    const sock = connectSocket(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1200,
+      auth: { token: token || undefined },
+    })
+    socketRef.current = sock
+
+    sock.on('connect', () => {
+      setSocketConnected(true)
+      sock.emit('monitor:join', { examCode: cleanCode })
+      sock.emit('lobby:join', { examCode: cleanCode })
+    })
+    sock.on('disconnect', () => setSocketConnected(false))
+
+    sock.on('telemetry:update', (data: any) => {
+      if (String(data?.exam_code || '').toUpperCase() !== cleanCode) return
+      if (Array.isArray(data.waiting_students)) {
+        setWaitingQueue(prev => {
+          const byHt = new Map(prev.map(w => [String(w.hall_ticket_no || '').toUpperCase(), w]))
+          for (const sw of data.waiting_students) {
+            const ht = String(sw.hall_ticket_no || '').toUpperCase()
+            if (!ht) continue
+            const prevItem = byHt.get(ht)
+            byHt.set(ht, {
+              hall_ticket_no: ht,
+              student_name: sw.student_name || prevItem?.student_name || ht,
+              section: sw.section || prevItem?.section || 'A',
+              branch: prevItem?.branch || activeExamMeta?.branch || 'CSE',
+              college_name: prevItem?.college_name || activeExamMeta?.college_name || 'Unassigned',
+              joined_at: sw.joined_at || prevItem?.joined_at || new Date().toISOString(),
+              status: sw.status || 'waiting',
+            })
+          }
+          return Array.from(byHt.values())
+        })
+        setStudents(prev => {
+          const next = [...prev]
+          for (const sw of data.waiting_students) {
+            const ht = String(sw.hall_ticket_no || '').toUpperCase()
+            if (ht && !next.some(s => s.id === ht)) {
+              next.unshift({
+                id: ht,
+                name: sw.student_name || ht,
+                hallTicket: ht,
+                status: 'waiting',
+                flagCount: 0,
+                joinedAt: sw.joined_at,
+                section: sw.section || 'A',
+              })
+            }
+          }
+          return next
+        })
+      }
+    })
+
+    sock.on('lobby:update', (data: any) => {
+      if (Array.isArray(data?.participants)) {
+        loadSnapshot(cleanCode, true)
+      }
+    })
+
+    sock.on('EXAM_STARTED', () => {
+      setExamStarted(true)
+      loadSnapshot(cleanCode, true)
+    })
+
+    sock.on('proctor:violation', (v: any) => {
+      const cid = String(v?.hall_ticket || v?.candidate_id || '').toUpperCase()
+      if (!cid) return
+      recordEvent({
+        id: v.id || `sock-${Date.now()}`,
+        candidate_id: cid,
+        event_type: v.violation_type || v.eventType || 'proctor_alert',
+        metadata: { message: v.details || v.message },
+        created_at: new Date().toISOString(),
+      })
+    })
 
     // Channel 1: Database Postgres changes (exam_code_attempts & proctor_logs)
     const attemptsChannel = supabase
-      .channel(`monitor-db-${code}`)
+      .channel(`monitor-db-${cleanCode}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'exam_code_attempts', filter: `exam_code=eq.${code}` },
+        { event: '*', schema: 'public', table: 'exam_code_attempts', filter: `exam_code=eq.${cleanCode}` },
         payload => {
           const row = (payload.new || payload.old) as Record<string, unknown>
-          const hallTicket = (row.hall_ticket || row.hall_ticket_no) as string
+          const hallTicket = String(row.hall_ticket_no || row.hall_ticket || '').toUpperCase()
           if (!hallTicket) return
-
+          loadSnapshot(cleanCode, true)
           if (payload.eventType === 'INSERT') {
-            setStudents(prev => {
-              if (prev.find(s => s.id === hallTicket)) return prev
-              return [{
-                id: hallTicket,
-                name: hallTicket,
-                hallTicket,
-                status: 'active',
-                flagCount: 0,
-                joinedAt: new Date().toISOString(),
-              }, ...prev]
-            })
             resetIdleTimer(hallTicket)
-          }
-
-          if (payload.eventType === 'UPDATE') {
-            const submitted = !!(row.submitted_at || row.end_time)
-            const pct = row.percentage ? Math.round(row.percentage as number) : undefined
-            setStudents(prev =>
-              prev.map(s => s.id === hallTicket
-                ? { ...s, status: submitted ? 'offline' : s.status, score: pct !== undefined ? pct : s.score }
-                : s
-              )
-            )
           }
         }
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'proctor_logs', filter: `exam_id=eq.${code}` },
+        { event: 'INSERT', schema: 'public', table: 'proctor_logs', filter: `exam_id=eq.${cleanCode}` },
         payload => {
           const row = payload.new as ProctoringEvent
           if (!row) return
@@ -285,38 +505,40 @@ export default function AdminMonitorPage() {
 
     // Channel 2: Realtime Broadcast Channel (instant sub-100ms peer events)
     const broadcastChannel = supabase
-      .channel(`realtime:monitor-${code}`)
+      .channel(`realtime:monitor-${cleanCode}`)
       .on('broadcast', { event: 'student_heartbeat' }, payload => {
         const data = payload.payload as { hallTicket: string; currentQuestion?: number; answeredCount?: number }
         if (!data?.hallTicket) return
+        const ht = data.hallTicket.toUpperCase()
 
         setStudents(prev => {
-          const exists = prev.find(s => s.id === data.hallTicket)
+          const exists = prev.find(s => s.id === ht)
           if (!exists) {
             return [{
-              id: data.hallTicket,
-              name: data.hallTicket,
-              hallTicket: data.hallTicket,
+              id: ht,
+              name: ht,
+              hallTicket: ht,
               status: 'active',
               flagCount: 0,
               currentQuestion: data.currentQuestion,
               joinedAt: new Date().toISOString(),
             }, ...prev]
           }
-          return prev.map(s => s.id === data.hallTicket
+          return prev.map(s => s.id === ht
             ? { ...s, status: s.status === 'cheating' ? 'cheating' : 'active', currentQuestion: data.currentQuestion, lastSeen: new Date().toISOString() }
             : s
           )
         })
-        resetIdleTimer(data.hallTicket)
+        resetIdleTimer(ht)
       })
       .on('broadcast', { event: 'student_violation' }, payload => {
         const data = payload.payload as { hallTicket: string; eventType: string; message: string; violationCount: number }
         if (!data?.hallTicket) return
+        const ht = data.hallTicket.toUpperCase()
 
         recordEvent({
           id: `ev-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          candidate_id: data.hallTicket,
+          candidate_id: ht,
           event_type: data.eventType,
           metadata: { message: data.message },
           created_at: new Date().toISOString(),
@@ -324,7 +546,7 @@ export default function AdminMonitorPage() {
 
         setStudents(prev =>
           prev.map(s => {
-            if (s.id !== data.hallTicket) return s
+            if (s.id !== ht) return s
             const flags = (s.flagCount || 0) + 1
             return {
               ...s,
@@ -338,17 +560,21 @@ export default function AdminMonitorPage() {
 
     channelRef.current = attemptsChannel
     broadcastChannelRef.current = broadcastChannel
-  }, [loadSnapshot, recordEvent, resetIdleTimer])
+  }, [examId, loadSnapshot, navigate, recordEvent, resetIdleTimer, activeExamMeta?.branch, activeExamMeta?.college_name])
 
   useEffect(() => {
+    if (!examCode) return
     subscribe(examCode)
+    const poll = setInterval(() => loadSnapshot(examCode, true), 6000)
     return () => {
+      clearInterval(poll)
       if (channelRef.current) supabase.removeChannel(channelRef.current)
       if (broadcastChannelRef.current) supabase.removeChannel(broadcastChannelRef.current)
+      if (socketRef.current) socketRef.current.disconnect()
       if (simTimerRef.current) clearInterval(simTimerRef.current)
       idleTimers.current.forEach(t => clearTimeout(t))
     }
-  }, [examCode, subscribe])
+  }, [examCode])
 
 
 
@@ -586,15 +812,135 @@ export default function AdminMonitorPage() {
     }
   }
 
+  /* ── Waiting Lobby Actions (Release / Start / Block / Reject) ── */
+  const handleReleaseStudent = async (hallTicket?: string, releaseAll: boolean = false) => {
+    if (!examCode) return
+    setReleasingLobby(true)
+    try {
+      await axios.post(
+        `${BASE_URL}/api/admin/exam-codes/${encodeURIComponent(examCode)}/release-student`,
+        releaseAll ? { all: true } : { hallTicket },
+        { withCredentials: true, headers: adminHeaders() }
+      )
+      setActionNotice(releaseAll ? `Released all waiting lobby candidates for ${examCode}!` : `Released ${hallTicket} from Waiting Lobby!`)
+      await loadSnapshot(examCode, true)
+    } catch (err: any) {
+      setActionNotice(`Release notice: ${err?.response?.data?.error || err.message}`)
+    } finally {
+      setReleasingLobby(false)
+      setTimeout(() => setActionNotice(''), 3500)
+    }
+  }
+
+  const handleRejectLobbyStudent = async (hallTicket: string) => {
+    if (!examCode || !window.confirm(`Reject ${hallTicket} from Waiting Lobby?`)) return
+    try {
+      await axios.post(
+        `${BASE_URL}/api/admin/exam-codes/${encodeURIComponent(examCode)}/reject-student`,
+        { hallTicket, reason: 'Entry rejected from Live Monitor Lobby' },
+        { withCredentials: true, headers: adminHeaders() }
+      )
+      setActionNotice(`Rejected ${hallTicket} from Waiting Lobby`)
+      await loadSnapshot(examCode, true)
+    } catch {}
+    setTimeout(() => setActionNotice(''), 3500)
+  }
+
+  const handleBlockLobbyStudent = async (hallTicket: string) => {
+    if (!examCode || !window.confirm(`Block ${hallTicket} from taking ${examCode}?`)) return
+    try {
+      await axios.post(
+        `${BASE_URL}/api/admin/exam-codes/${encodeURIComponent(examCode)}/block-student`,
+        { hallTicket, reason: 'Blocked by administrator' },
+        { withCredentials: true, headers: adminHeaders() }
+      )
+      setActionNotice(`Blocked ${hallTicket}`)
+      await loadSnapshot(examCode, true)
+    } catch {}
+    setTimeout(() => setActionNotice(''), 3500)
+  }
+
+  const handleStartExamFromMonitor = async () => {
+    if (!examCode) return
+    setReleasingLobby(true)
+    try {
+      await startExam(examCode, { allow_late_join: true })
+      setExamStarted(true)
+      setActionNotice(`LIVE LAUNCH DISPATCHED: ${examCode} started and all Waiting Lobby candidates unlocked!`)
+      await loadSnapshot(examCode, true)
+    } catch (err: any) {
+      setActionNotice(`Start failed: ${err?.response?.data?.error || err.message}`)
+    } finally {
+      setReleasingLobby(false)
+      setTimeout(() => setActionNotice(''), 4500)
+    }
+  }
+
+  /* ── Filtered Monitor Collections (College / Course / Branch / Section) ── */
+  const matchesScopeFilters = useCallback((item: { college_name?: string; branch?: string; section?: string }) => {
+    if (selectedCollege !== 'ALL' && item.college_name && !item.college_name.toLowerCase().includes(selectedCollege.toLowerCase())) {
+      return false
+    }
+    if (selectedCourse !== 'ALL' && inferCourseFromBranch(item.branch) !== selectedCourse) {
+      return false
+    }
+    if (selectedBranch !== 'ALL' && (item.branch || '').toUpperCase() !== selectedBranch.toUpperCase()) {
+      return false
+    }
+    if (selectedSection !== 'ALL') {
+      const secA = (item.section || '').toUpperCase().replace(/^SECTION\s*/i, '').trim()
+      const secB = selectedSection.toUpperCase().replace(/^SECTION\s*/i, '').trim()
+      if (secA !== secB && !secA.endsWith(`-${secB}`) && !secB.endsWith(`-${secA}`)) {
+        return false
+      }
+    }
+    return true
+  }, [selectedCollege, selectedCourse, selectedBranch, selectedSection])
+
+  const filteredStudents = useMemo(
+    () => students.filter(s => matchesScopeFilters({ college_name: s.collegeName, branch: s.branch, section: s.section })),
+    [students, matchesScopeFilters]
+  )
+  const filteredWaiting = useMemo(
+    () => waitingQueue.filter(w => matchesScopeFilters({ college_name: w.college_name, branch: w.branch, section: w.section })),
+    [waitingQueue, matchesScopeFilters]
+  )
+  const filteredRoster = useMemo(
+    () => eligibleRoster.filter(r => matchesScopeFilters({ college_name: r.college_name, branch: r.branch, section: r.section })),
+    [eligibleRoster, matchesScopeFilters]
+  )
+
+  const filteredExamOptions = useMemo(() => {
+    const selectedColObj = colleges.find(c => c.college_name === selectedCollege)
+    const list = availableExams.filter(ec => {
+      if (selectedCollege === 'ALL' || !selectedColObj) return true
+      return Number(ec.college_id) === Number(selectedColObj.id) || ec.exam_code === examCode
+    })
+    if (examCode && !list.some(e => e.exam_code === examCode)) {
+      return [{ exam_code: examCode, exam_name: activeExamMeta?.exam_name || examCode }, ...list]
+    }
+    return list
+  }, [availableExams, colleges, selectedCollege, examCode, activeExamMeta])
+
+  const sectionFilterChoices = useMemo(() => {
+    const selectedColObj = colleges.find(c => c.college_name === selectedCollege)
+    const scopedSecs = selectedColObj
+      ? hierarchySections.filter(sec => Number(sec.college_id) === Number(selectedColObj.id))
+      : hierarchySections
+    const metaSecs = (activeExamMeta?.sections || []).map(s => ({ section_name: s }))
+    return buildSectionChoices([...scopedSecs, ...metaSecs], selectedBranch !== 'ALL' ? selectedBranch : activeExamMeta?.branch)
+  }, [colleges, selectedCollege, hierarchySections, activeExamMeta, selectedBranch])
+
   /* ── Stats ── */
   const stats = {
-    total:    students.length,
-    active:   students.filter(s => s.status === 'active').length,
-    idle:     students.filter(s => s.status === 'idle').length,
-    cheat:    students.filter(s => s.status === 'cheating').length,
-    done:     students.filter(s => s.status === 'offline').length,
-    avgScore: students.filter(s => s.score !== undefined).length > 0
-      ? Math.round(students.reduce((sum, s) => sum + (s.score || 0), 0) / students.filter(s => s.score !== undefined).length)
+    total:    Math.max(filteredRoster.length, filteredStudents.length, filteredWaiting.length),
+    waiting:  filteredWaiting.length,
+    active:   filteredStudents.filter(s => s.status === 'active').length,
+    idle:     filteredStudents.filter(s => s.status === 'idle').length,
+    cheat:    filteredStudents.filter(s => s.status === 'cheating').length,
+    done:     filteredStudents.filter(s => s.status === 'offline').length,
+    avgScore: filteredStudents.filter(s => s.score !== undefined).length > 0
+      ? Math.round(filteredStudents.reduce((sum, s) => sum + (s.score || 0), 0) / filteredStudents.filter(s => s.score !== undefined).length)
       : 0,
   }
 
@@ -671,43 +1017,101 @@ export default function AdminMonitorPage() {
           </div>
 
           {/* Quick exam picker + Action Buttons */}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {availableExamCodes.slice(0, 4).map(code => (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {filteredExamOptions.slice(0, 4).map(item => (
                 <button
-                  key={code}
-                  onClick={() => { setInputCode(code); subscribe(code) }}
+                  key={item.exam_code}
+                  type="button"
+                  onClick={() => subscribe(item.exam_code)}
                   style={{
-                    padding: '4px 10px', borderRadius: 'var(--radius-sm)',
+                    padding: '6px 10px', borderRadius: 'var(--radius-sm)',
                     fontSize: '0.74rem', fontFamily: 'var(--font-mono)', fontWeight: 700,
                     border: '1px solid',
-                    borderColor: examCode === code ? 'var(--color-primary)' : 'var(--color-border)',
-                    background: examCode === code ? 'rgba(43,127,255,0.2)' : 'rgba(0,0,0,0.2)',
-                    color: examCode === code ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    borderColor: examCode === item.exam_code ? 'var(--color-primary)' : 'var(--color-border)',
+                    background: examCode === item.exam_code ? 'rgba(43,127,255,0.2)' : 'rgba(0,0,0,0.2)',
+                    color: examCode === item.exam_code ? 'var(--color-primary)' : 'var(--color-text-muted)',
                     cursor: 'pointer',
                   }}
                 >
-                  {code}
+                  {item.exam_code}
                 </button>
               ))}
             </div>
 
-            <input
-              className="form-input"
-              style={{ width: 140, fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', fontSize: '0.85rem', padding: '6px 10px' }}
-              placeholder="Code..."
-              value={inputCode}
-              onChange={e => setInputCode(e.target.value.toUpperCase())}
-              onKeyDown={e => e.key === 'Enter' && inputCode && subscribe(inputCode)}
-            />
-            <MagneticButton
-              className="btn btn-primary btn-sm"
-              onClick={() => inputCode && subscribe(inputCode)}
-              disabled={loading || !inputCode}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-            >
-              {loading ? <span className="btn-spinner" /> : <><IconRadio size={14} /> Connect</>}
-            </MagneticButton>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <input
+                className="form-input"
+                style={{ width: 195, fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', fontSize: '0.84rem', padding: '7px 12px' }}
+                placeholder="Exam Code..."
+                value={inputCode}
+                onChange={e => setInputCode(e.target.value.toUpperCase())}
+                onKeyDown={e => e.key === 'Enter' && inputCode && subscribe(inputCode)}
+              />
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => inputCode && subscribe(inputCode)}
+                disabled={loading || !inputCode}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', whiteSpace: 'nowrap' }}
+              >
+                {loading ? <span className="btn-spinner" /> : <><IconRadio size={14} /> <span>Connect</span></>}
+              </button>
+            </div>
+
+            {examCode && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleStartExamFromMonitor}
+                  disabled={releasingLobby}
+                  style={{
+                    padding: '7px 14px', borderRadius: 'var(--radius-sm)',
+                    border: '1px solid rgba(16,185,129,0.6)',
+                    background: examStarted ? 'rgba(16,185,129,0.22)' : 'linear-gradient(135deg, #059669, #10B981)',
+                    color: '#FFFFFF', fontSize: '0.76rem', fontWeight: 800,
+                    cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
+                  }}
+                >
+                  <IconLaunch size={14} color="#FFFFFF" />
+                  <span>{examStarted ? 'Exam Live (Re-Sync Start)' : 'Start Exam & Unlock Lobby'}</span>
+                </button>
+
+                {filteredWaiting.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleReleaseStudent(undefined, true)}
+                    disabled={releasingLobby}
+                    style={{
+                      padding: '7px 14px', borderRadius: 'var(--radius-sm)',
+                      border: '1px solid rgba(56,189,248,0.5)',
+                      background: 'rgba(56,189,248,0.16)',
+                      color: '#38BDF8', fontSize: '0.76rem', fontWeight: 800,
+                      cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
+                    }}
+                  >
+                    <IconCheck size={14} color="#38BDF8" />
+                    <span>Release Lobby ({filteredWaiting.length})</span>
+                  </button>
+                )}
+
+                <a
+                  href={`/waiting-lobby/${encodeURIComponent(examCode)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    padding: '7px 12px', borderRadius: 'var(--radius-sm)',
+                    border: '1px solid rgba(234,168,18,0.45)',
+                    background: 'rgba(234,168,18,0.12)',
+                    color: '#FDE68A', fontSize: '0.76rem', fontWeight: 700,
+                    textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6,
+                  }}
+                >
+                  <IconUsers size={14} color="#FDE68A" />
+                  <span>View Student Lobby ↗</span>
+                </a>
+              </>
+            )}
 
             {/* Sound Toggle */}
             <button
@@ -814,52 +1218,96 @@ export default function AdminMonitorPage() {
           </div>
         </div>
 
-        {/* ─── College & Exam Scoping Control Bar ─── */}
+        {/* ─── College, Course, Branch, Section & Exam Scoping Control Bar ─── */}
         <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap',
           background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: 14, padding: '14px 20px', marginBottom: 20,
+          borderRadius: 14, padding: '14px 18px', marginBottom: 18,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-primary, #38BDF8)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <IconBuilding size={14} color="var(--color-primary, #38BDF8)" />
-                <span>Active College:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--color-primary, #38BDF8)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <IconBuilding size={13} color="var(--color-primary, #38BDF8)" />
+                <span>College:</span>
               </span>
               <select
                 value={selectedCollege}
-                onChange={(e) => setSelectedCollege(e.target.value)}
+                onChange={(e) => { setSelectedCollege(e.target.value); setSelectedSection('ALL') }}
                 style={{
                   background: '#0B1120', border: '1px solid rgba(255, 255, 255, 0.18)',
-                  color: '#FFF', padding: '6px 12px', borderRadius: 8, fontSize: '0.86rem', fontWeight: 600,
-                  cursor: 'pointer',
+                  color: '#FFF', padding: '6px 10px', borderRadius: 8, fontSize: '0.84rem', fontWeight: 600,
+                  cursor: 'pointer', maxWidth: 220,
                 }}
               >
-                <option value="ALL">All Colleges (Global Admin Scope)</option>
+                <option value="ALL">All Colleges</option>
                 {colleges.map(c => (
                   <option key={c.id} value={c.college_name}>{c.college_name} ({c.college_code})</option>
                 ))}
               </select>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <IconKey size={14} color="#F59E0B" />
-                <span>Exam Code:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: '0.76rem', fontWeight: 800, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <IconKey size={13} color="#F59E0B" />
+                <span>Exam:</span>
               </span>
               <select
                 value={examCode}
-                onChange={(e) => {
-                  setInputCode(e.target.value)
-                  subscribe(e.target.value)
-                }}
+                onChange={(e) => subscribe(e.target.value)}
                 style={{
                   background: '#0B1120', border: '1px solid rgba(255, 255, 255, 0.18)',
-                  color: '#38BDF8', padding: '6px 12px', borderRadius: 8, fontSize: '0.86rem', fontWeight: 700, fontFamily: 'var(--font-mono)'
+                  color: '#38BDF8', padding: '6px 10px', borderRadius: 8, fontSize: '0.84rem', fontWeight: 700, fontFamily: 'var(--font-mono)'
                 }}
               >
-                {Array.from(new Set(['CS2026', ...availableExamCodes])).map(code => (
-                  <option key={code} value={code}>{code}</option>
+                {filteredExamOptions.length === 0 ? (
+                  <option value="">No Exam Codes</option>
+                ) : (
+                  filteredExamOptions.map(ec => (
+                    <option key={ec.exam_code} value={ec.exam_code}>
+                      {ec.exam_code}{ec.exam_name && ec.exam_name !== ec.exam_code ? ` — ${ec.exam_name}` : ''}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#FDE68A', textTransform: 'uppercase' }}>Course:</span>
+              <select
+                aria-label="Filter monitor by course"
+                value={selectedCourse}
+                onChange={(e) => { setSelectedCourse(e.target.value); setSelectedBranch('ALL') }}
+                style={{ background: '#0B1120', border: '1px solid rgba(255, 255, 255, 0.18)', color: '#FFF', padding: '6px 10px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600 }}
+              >
+                <option value="ALL">All Courses</option>
+                {COURSE_OPTIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>Branch:</span>
+              <select
+                aria-label="Filter monitor by branch"
+                value={selectedBranch}
+                onChange={(e) => setSelectedBranch(e.target.value)}
+                style={{ background: '#0B1120', border: '1px solid rgba(255, 255, 255, 0.18)', color: '#FFF', padding: '6px 10px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600 }}
+              >
+                <option value="ALL">All Branches</option>
+                {getBranchesForCourse(selectedCourse).map(b => <option key={b.code} value={b.code}>{b.code}</option>)}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#C084FC', textTransform: 'uppercase' }}>Section:</span>
+              <select
+                aria-label="Filter monitor by section"
+                value={selectedSection}
+                onChange={(e) => setSelectedSection(e.target.value)}
+                style={{ background: '#0B1120', border: '1px solid rgba(255, 255, 255, 0.18)', color: '#FFF', padding: '6px 10px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600 }}
+              >
+                <option value="ALL">All Sections</option>
+                {sectionFilterChoices.map(sec => (
+                  <option key={sec} value={sec}>{sec.length === 1 ? `Section ${sec}` : sec}</option>
                 ))}
               </select>
             </div>
@@ -867,7 +1315,8 @@ export default function AdminMonitorPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-              Monitored Scope: <strong style={{ color: '#10B981' }}>{selectedCollege === 'ALL' ? 'All Verified Colleges' : selectedCollege}</strong> &bull; Exam: <strong style={{ color: '#38BDF8', fontFamily: 'var(--font-mono)' }}>{examCode}</strong>
+              Scope: <strong style={{ color: '#10B981' }}>{selectedCollege === 'ALL' ? (activeExamMeta?.college_name || 'All Verified Colleges') : selectedCollege}</strong> &bull; Exam: <strong style={{ color: '#38BDF8', fontFamily: 'var(--font-mono)' }}>{examCode || '—'}</strong>
+              {activeExamMeta?.branch && <> &bull; <strong style={{ color: '#FDE68A' }}>{inferCourseFromBranch(activeExamMeta.branch)} {activeExamMeta.branch}</strong></>}
             </span>
           </div>
         </div>
@@ -908,7 +1357,7 @@ export default function AdminMonitorPage() {
               animation: connected ? 'blink 1.5s infinite' : 'none',
             }} />
             {connected
-              ? `REALTIME LIVE — Monitoring "${examCode}" (${stats.total} Candidates)`
+              ? `REALTIME LIVE (${socketConnected ? 'SOCKET + DB SYNC' : 'DB SYNC'}) — Monitoring "${examCode}" • ${stats.waiting} in Lobby • ${stats.active} Active`
               : 'Connecting to Realtime stream...'}
           </div>
 
@@ -934,14 +1383,15 @@ export default function AdminMonitorPage() {
           </div>
         </div>
 
-        {/* ─── 5-Stats Cards ─── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 20 }}>
+        {/* ─── 6-Stats Cards (Including Waiting Lobby) ─── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: 10, marginBottom: 20 }}>
           {[
-            { label: 'Total Enrolled', value: stats.total,   color: 'var(--color-primary)',  icon: <IconUsers size={20} color="var(--color-primary)" /> },
-            { label: 'Active Answering',value: stats.active, color: '#10B981',               icon: <IconFlash size={20} color="#10B981" /> },
-            { label: 'Idle / Paused',  value: stats.idle,    color: '#F59E0B',               icon: <IconClock size={20} color="#F59E0B" /> },
-            { label: 'Flagged Cheating',value: stats.cheat,  color: '#EF4444',               icon: <IconAlert size={20} color="#EF4444" /> },
-            { label: 'Completed',     value: stats.done,     color: '#64748B',               icon: <IconCheck size={20} color="#64748B" /> },
+            { label: 'Eligible Enrolled', value: stats.total,   color: 'var(--color-primary)',  icon: <IconUsers size={20} color="var(--color-primary)" /> },
+            { label: 'In Waiting Lobby',  value: stats.waiting, color: '#38BDF8',               icon: <IconRadio size={20} color="#38BDF8" /> },
+            { label: 'Active Answering',  value: stats.active,  color: '#10B981',               icon: <IconFlash size={20} color="#10B981" /> },
+            { label: 'Idle / Paused',     value: stats.idle,    color: '#F59E0B',               icon: <IconClock size={20} color="#F59E0B" /> },
+            { label: 'Flagged Cheating',  value: stats.cheat,   color: '#EF4444',               icon: <IconAlert size={20} color="#EF4444" /> },
+            { label: 'Completed',         value: stats.done,    color: '#64748B',               icon: <IconCheck size={20} color="#64748B" /> },
           ].map(({ label, value, color, icon }) => (
             <GlowCard key={label} glowColor={color + '25'} style={{ padding: '12px 14px', textAlign: 'center' }}>
               <div style={{ fontSize: '1.1rem', marginBottom: 2, display: 'flex', justifyContent: 'center' }}>{icon}</div>
@@ -960,6 +1410,96 @@ export default function AdminMonitorPage() {
           ))}
         </div>
 
+        {/* ─── Monitor & Waiting Lobby View Switcher ─── */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          {[
+            { id: 'wall', label: `Live Proctor Wall (${filteredStudents.length})`, color: '#38BDF8' },
+            { id: 'lobby', label: `Waiting Lobby Queue (${filteredWaiting.length})`, color: '#FBBF24' },
+            { id: 'roster', label: `Eligible College Roster (${filteredRoster.length})`, color: '#10B981' },
+          ].map(t => {
+            const active = monitorTab === t.id
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setMonitorTab(t.id as any)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 10,
+                  border: active ? `1.5px solid ${t.color}` : '1px solid rgba(255,255,255,0.1)',
+                  background: active ? `${t.color}20` : 'rgba(15, 23, 42, 0.7)',
+                  color: active ? t.color : '#94A3B8',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                }}
+              >
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* ─── Inline Waiting Lobby Strip (Visible whenever candidates wait on Proctor Wall tab) ─── */}
+        {monitorTab === 'wall' && filteredWaiting.length > 0 && (
+          <GlowCard glowColor="rgba(56,189,248,0.25)" style={{ padding: '14px 18px', marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <IconRadio size={16} color="#38BDF8" />
+                <strong style={{ color: '#38BDF8', fontSize: '0.9rem' }}>
+                  Pre-Exam Waiting Lobby ({filteredWaiting.length} awaiting release)
+                </strong>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setMonitorTab('lobby')}
+                  className="btn btn-ghost btn-sm"
+                  style={{ fontSize: '0.76rem', color: '#FDE68A', border: '1px solid rgba(234,168,18,0.35)' }}
+                >
+                  Inspect Full Lobby Queue →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleReleaseStudent(undefined, true)}
+                  disabled={releasingLobby}
+                  className="btn btn-primary btn-sm"
+                  style={{ fontSize: '0.76rem' }}
+                >
+                  Release All Waiting
+                </button>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {filteredWaiting.slice(0, 10).map(w => (
+                <div
+                  key={w.hall_ticket_no}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    padding: '6px 10px', borderRadius: 8,
+                    background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.3)',
+                    fontSize: '0.76rem',
+                  }}
+                >
+                  <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#38BDF8' }}>{w.hall_ticket_no}</span>
+                  <span style={{ color: '#E2E8F0' }}>{w.student_name}</span>
+                  <span style={{ color: '#C084FC', fontSize: '0.7rem', fontWeight: 700 }}>Sec {w.section || 'A'}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleReleaseStudent(w.hall_ticket_no)}
+                    style={{
+                      padding: '2px 8px', borderRadius: 4, border: 'none',
+                      background: '#10B981', color: '#052E16', fontWeight: 800, fontSize: '0.68rem', cursor: 'pointer',
+                    }}
+                  >
+                    Release
+                  </button>
+                </div>
+              ))}
+            </div>
+          </GlowCard>
+        )}
+
         {/* ─── 3D Orbital Candidate Radar Matrix (When toggled) ─── */}
         <AnimatePresence>
           {show3DMatrix && (
@@ -970,7 +1510,7 @@ export default function AdminMonitorPage() {
               style={{ marginBottom: 18 }}
             >
               <InspectorRadarMatrix3D
-                students={students}
+                students={filteredStudents}
                 onSelectStudent={s => setSelectedStudent(s)}
                 selectedId={selectedStudent?.id}
                 height={380}
@@ -979,22 +1519,213 @@ export default function AdminMonitorPage() {
           )}
         </AnimatePresence>
 
-        {/* ─── Main 2-Column: LiveGridWall + Event/Inspector Stream ─── */}
+        {/* ─── Main 2-Column: Active Tab Content + Event/Inspector Stream ─── */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 310px', gap: 16, alignItems: 'start' }}>
 
-          {/* Student Grid Wall */}
-          <GlowCard noPadding style={{ padding: 18 }}>
-            <LiveGridWall
-              students={students}
-              selectedId={selectedStudent?.id}
-              onSelectStudent={s => setSelectedStudent(s)}
-              onWarnStudent={handleSendWarning}
-              onTerminateStudent={handleTerminateStudent}
-              onExtendTime={s => handleExtendTime(s, 5)}
-              onPauseResume={handlePauseResume}
-              onOpenDossier={s => setTimelineCandidate(s)}
-            />
-          </GlowCard>
+          {/* Left Column: Wall OR Waiting Lobby Queue OR Eligible Roster */}
+          {monitorTab === 'wall' ? (
+            <GlowCard noPadding style={{ padding: 18 }}>
+              <LiveGridWall
+                students={filteredStudents}
+                selectedId={selectedStudent?.id}
+                onSelectStudent={s => setSelectedStudent(s)}
+                onWarnStudent={handleSendWarning}
+                onTerminateStudent={handleTerminateStudent}
+                onExtendTime={s => handleExtendTime(s, 5)}
+                onPauseResume={handlePauseResume}
+                onOpenDossier={s => setTimelineCandidate(s)}
+                onReleaseStudent={s => handleReleaseStudent(s.hallTicket || s.id)}
+              />
+            </GlowCard>
+          ) : monitorTab === 'lobby' ? (
+            <GlowCard style={{ padding: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#F8FAFC' }}>
+                    Waiting Lobby Queue — {examCode}
+                  </h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#94A3B8' }}>
+                    Candidates connected to the waiting room awaiting supervisor release or simultaneous exam launch.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => handleReleaseStudent(undefined, true)}
+                    disabled={releasingLobby || filteredWaiting.length === 0}
+                    className="btn btn-primary btn-sm"
+                  >
+                    Release All ({filteredWaiting.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleStartExamFromMonitor}
+                    disabled={releasingLobby}
+                    className="btn btn-secondary btn-sm"
+                    style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#34D399' }}
+                  >
+                    Start Exam Now
+                  </button>
+                </div>
+              </div>
+
+              {filteredWaiting.length === 0 ? (
+                <div style={{ padding: 40, textAlign: 'center', color: '#94A3B8', background: 'rgba(0,0,0,0.2)', borderRadius: 10 }}>
+                  <div style={{ fontWeight: 700, color: '#E2E8F0', marginBottom: 6 }}>No candidates currently waiting in lobby</div>
+                  <div style={{ fontSize: '0.8rem', marginBottom: 14 }}>
+                    When students enter via Enter Exam or Student Dashboard before exam start, they appear here in real time.
+                  </div>
+                  {examCode && (
+                    <a
+                      href={`/waiting-lobby/${encodeURIComponent(examCode)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-secondary btn-sm"
+                    >
+                      Open Waiting Lobby Page ↗
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="data-table" style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th>Hall Ticket</th>
+                        <th>Candidate</th>
+                        <th>Course / Branch</th>
+                        <th>Section</th>
+                        <th>Joined</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredWaiting.map(w => (
+                        <tr key={w.hall_ticket_no}>
+                          <td style={{ fontFamily: 'monospace', fontWeight: 800, color: '#38BDF8' }}>{w.hall_ticket_no}</td>
+                          <td>
+                            <div style={{ fontWeight: 700, color: '#F8FAFC' }}>{w.student_name}</div>
+                            <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>{w.college_name || activeExamMeta?.college_name || 'Unassigned'}</div>
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '0.76rem', color: '#FDE68A', fontWeight: 700 }}>
+                              {inferCourseFromBranch(w.branch)}
+                            </span>{' '}
+                            <span style={{ fontSize: '0.76rem', color: '#CBD5E1' }}>• {w.branch || 'CSE'}</span>
+                          </td>
+                          <td>
+                            <span style={{ padding: '2px 8px', borderRadius: 6, background: 'rgba(168,85,247,0.16)', color: '#E9D5FF', fontSize: '0.74rem', fontWeight: 700 }}>
+                              Sec {w.section || 'A'}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: '0.76rem', color: '#94A3B8' }}>
+                            {w.joined_at ? new Date(w.joined_at).toLocaleTimeString() : 'Just now'}
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button
+                                type="button"
+                                onClick={() => handleReleaseStudent(w.hall_ticket_no)}
+                                className="btn btn-primary btn-sm"
+                                style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                              >
+                                Release
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleBlockLobbyStudent(w.hall_ticket_no)}
+                                className="btn btn-danger btn-sm"
+                                style={{ fontSize: '0.72rem', padding: '4px 8px' }}
+                              >
+                                Block
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRejectLobbyStudent(w.hall_ticket_no)}
+                                className="btn btn-ghost btn-sm"
+                                style={{ fontSize: '0.72rem', padding: '4px 8px' }}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </GlowCard>
+          ) : (
+            <GlowCard style={{ padding: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#F8FAFC' }}>
+                    Eligible College Roster ({filteredRoster.length})
+                  </h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#94A3B8' }}>
+                    Full roster matching this exam&apos;s College, Course, Branch &amp; Target Sections.
+                  </p>
+                </div>
+              </div>
+              {filteredRoster.length === 0 ? (
+                <div style={{ padding: 36, textAlign: 'center', color: '#94A3B8' }}>
+                  No enrolled students match the current College / Course / Branch / Section filter.
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto', maxHeight: 520, overflowY: 'auto' }}>
+                  <table className="data-table" style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th>Hall Ticket</th>
+                        <th>Name</th>
+                        <th>Course / Branch</th>
+                        <th>Section</th>
+                        <th>Presence</th>
+                        <th>Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRoster.map(r => {
+                        const pColor = r.presence === 'in_progress' || r.presence === 'active'
+                          ? '#10B981'
+                          : r.presence === 'in_lobby'
+                            ? '#38BDF8'
+                            : r.presence === 'completed' || r.presence === 'submitted'
+                              ? '#A78BFA'
+                              : '#64748B'
+                        return (
+                          <tr key={r.id}>
+                            <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#38BDF8' }}>{r.hall_ticket}</td>
+                            <td>
+                              <div style={{ fontWeight: 700, color: '#F8FAFC' }}>{r.name}</div>
+                              <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>{r.college_name}</div>
+                            </td>
+                            <td style={{ fontSize: '0.78rem' }}>
+                              <strong style={{ color: '#FDE68A' }}>{inferCourseFromBranch(r.branch)}</strong> • {r.branch}
+                            </td>
+                            <td>
+                              <span style={{ padding: '2px 8px', borderRadius: 6, background: 'rgba(168,85,247,0.14)', color: '#E9D5FF', fontSize: '0.74rem', fontWeight: 700 }}>
+                                Sec {r.section || 'A'}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ padding: '3px 8px', borderRadius: 999, fontSize: '0.7rem', fontWeight: 800, background: `${pColor}20`, color: pColor }}>
+                                {r.presence === 'in_lobby' ? 'IN WAITING LOBBY' : r.presence.replace(/_/g, ' ').toUpperCase()}
+                              </span>
+                            </td>
+                            <td style={{ fontWeight: 700, color: '#F8FAFC' }}>
+                              {r.score !== undefined ? `${r.score}%` : '—'}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </GlowCard>
+          )}
 
           {/* Right Column: Selected Inspector + Live Events */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

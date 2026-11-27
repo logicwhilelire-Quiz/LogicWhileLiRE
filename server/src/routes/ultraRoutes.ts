@@ -1282,6 +1282,14 @@ router.post(
 interface LobbyDbCacheEntry {
   enrolledCount: number;
   durationSec: number;
+  examRowData: any;
+  dbWaitingList: Array<{
+    hall_ticket_no: string;
+    student_name: string;
+    section: string;
+    joined_at: string;
+    status: string;
+  }>;
   timestamp: number;
 }
 const lobbyDbCache = new Map<string, LobbyDbCacheEntry>();
@@ -1293,10 +1301,10 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
     const { getLobbyStats, getExamStartedState, getWaitingStudents } = await import('../services/socketService');
     // Socket stats are 100% in-memory and real-time
     const stats = getLobbyStats(code);
-    const waitingList = getWaitingStudents(code).map((s) => ({
-      hall_ticket_no: s.hallTicket,
-      student_name: s.studentName,
-      section: s.section,
+    const socketWaiting = getWaitingStudents(code).map((s) => ({
+      hall_ticket_no: String(s.hallTicket || '').toUpperCase(),
+      student_name: s.studentName || s.hallTicket,
+      section: s.section || 'A',
       joined_at: new Date(s.joinedAt).toISOString(),
       status: 'waiting',
     }));
@@ -1304,34 +1312,50 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
     // Real-time started state from memory (used to auto-unblock students who refreshed)
     const startedState = getExamStartedState(code);
 
-    // Fetch enrolled count and duration from short-lived memory cache to ensure sub-2ms responses
+    // Fetch enrolled count, exam metadata, and DB waiting attempts via short-lived cache
     const now = Date.now();
-    let cached = lobbyDbCache.get(code);
+    const cached = lobbyDbCache.get(code);
     let enrolledCount = stats.enrolled;
     let durationSec = 3600;
-
     let examRowData: any = null;
+    let dbWaitingList: LobbyDbCacheEntry['dbWaitingList'] = [];
 
     if (cached && now - cached.timestamp < LOBBY_CACHE_TTL_MS) {
       enrolledCount = cached.enrolledCount;
       durationSec = cached.durationSec;
+      examRowData = cached.examRowData;
+      dbWaitingList = cached.dbWaitingList;
     } else {
       try {
-        const [enrolled, examRow] = await Promise.all([
+        const [enrolled, examRow, waitingRows] = await Promise.all([
           supabase
             .from('exam_code_attempts')
             .select('id', { count: 'exact', head: true })
             .eq('exam_code', code),
           supabase
             .from('exam_codes')
-            .select('id, exam_code, exam_name, subject, total_questions, total_marks, duration_minutes, start_time, is_active, is_launched, started_at, branch, passout_year, section_id, section_ids')
+            .select('id, college_id, exam_code, exam_name, subject, total_questions, total_marks, duration_minutes, start_time, is_active, is_launched, started_at, branch, passout_year, section_id, section_ids')
             .eq('exam_code', code)
             .maybeSingle(),
+          supabase
+            .from('exam_code_attempts')
+            .select('hall_ticket_no, student_name, status, override_reason, start_time, created_at')
+            .eq('exam_code', code)
+            .in('status', ['waiting_verification', 'in_lobby', 'waiting', 'released'])
+            .order('created_at', { ascending: false })
+            .limit(100),
         ]);
 
         examRowData = examRow.data;
-        enrolledCount = (enrolled.data as any)?.count ?? stats.enrolled;
+        enrolledCount = Math.max(enrolled.count ?? stats.enrolled, socketWaiting.length);
         durationSec = ((examRow.data as any)?.duration_minutes || 60) * 60;
+        dbWaitingList = (waitingRows.data || []).map((w: any) => ({
+          hall_ticket_no: String(w.hall_ticket_no || '').toUpperCase(),
+          student_name: w.student_name || w.hall_ticket_no || 'Candidate',
+          section: 'A',
+          joined_at: w.start_time || w.created_at || new Date().toISOString(),
+          status: w.status || 'waiting',
+        }));
 
         // If exam was started in DB but memory cache was empty (e.g. server restart), restore startedState
         const wasStartedInDb = Boolean(
@@ -1352,21 +1376,36 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
         lobbyDbCache.set(code, {
           enrolledCount,
           durationSec,
+          examRowData,
+          dbWaitingList,
           timestamp: now,
         });
       } catch {
         enrolledCount = cached ? cached.enrolledCount : stats.enrolled;
         durationSec = cached ? cached.durationSec : 3600;
+        examRowData = cached ? cached.examRowData : null;
+        dbWaitingList = cached ? cached.dbWaitingList : [];
       }
     }
 
+    // Merge live socket waiting students with DB waiting rows (deduplicated by hall ticket)
+    const mergedMap = new Map<string, LobbyDbCacheEntry['dbWaitingList'][number]>();
+    for (const item of dbWaitingList) {
+      if (item.hall_ticket_no) mergedMap.set(item.hall_ticket_no, item);
+    }
+    for (const item of socketWaiting) {
+      if (item.hall_ticket_no) mergedMap.set(item.hall_ticket_no, item);
+    }
+    const waitingList = Array.from(mergedMap.values());
+
     const finalStartedState = getExamStartedState(code) || startedState;
     const rawSections = (examRowData as any)?.section_ids || ((examRowData as any)?.section_id ? [(examRowData as any)?.section_id] : ['A']);
-    const targetSections = Array.isArray(rawSections) ? rawSections : [String(rawSections)];
+    const targetSections = Array.isArray(rawSections) && rawSections.length > 0 ? rawSections : ['A'];
 
     res.json({
       success: true,
       exam_code: code,
+      college_id: (examRowData as any)?.college_id || null,
       exam_name: (examRowData as any)?.exam_name || code,
       subject: (examRowData as any)?.subject || 'Core Curriculum',
       total_questions: (examRowData as any)?.total_questions || 36,
@@ -1374,10 +1413,10 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
       branch: (examRowData as any)?.branch || 'CSE',
       passout_year: (examRowData as any)?.passout_year || 2026,
       sections: targetSections,
-      enrolled: enrolledCount,
-      connected: stats.connected,
-      queue_count: stats.queue_count ?? stats.connected,
-      pending: Math.max(0, enrolledCount - stats.connected),
+      enrolled: Math.max(enrolledCount, waitingList.length),
+      connected: Math.max(stats.connected, waitingList.length),
+      queue_count: waitingList.length,
+      pending: Math.max(0, Math.max(enrolledCount, waitingList.length) - Math.max(stats.connected, waitingList.length)),
       duration_seconds: durationSec,
       waiting_students: waitingList,
       // Exam started state — null if not yet started
