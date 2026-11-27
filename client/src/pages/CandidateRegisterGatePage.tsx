@@ -6,6 +6,11 @@ import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import { API_BASE_URL } from '../lib/config';
 import { IconBuilding, IconMail, IconAlert, IconCheck, IconCross } from '../components/icons/HumanIcons';
+import {
+  COURSE_OPTIONS,
+  getBranchesForCourse,
+  buildSectionChoices,
+} from '../constants/academicCatalog';
 
 interface DynamicCollege {
   id: string;
@@ -17,12 +22,14 @@ interface DynamicBranch {
   id: number | string;
   code: string;
   label: string;
+  degree?: string;
   college_id?: string;
   year_of_passing?: number;
 }
 
 interface DynamicSection {
   id: number | string;
+  college_id?: string;
   cohort_id?: number | string;
   name: string;
 }
@@ -51,6 +58,7 @@ export default function CandidateRegisterGatePage() {
   const [allBranches, setAllBranches] = useState<DynamicBranch[]>([]);
   const [allBatches, setAllBatches] = useState<number[]>([]);
   const [allSections, setAllSections] = useState<DynamicSection[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<string>('B.Tech');
   const [loadingMetadata, setLoadingMetadata] = useState(true);
 
   const [form, setForm] = useState({
@@ -135,42 +143,59 @@ export default function CandidateRegisterGatePage() {
       .catch(() => setWsStatus('READY'));
   }, []);
 
-  // Filtered branches for currently selected college merged with all standard institutional engineering branches
+  // Filtered branches for currently selected college & course merged with institutional branch catalog
   const availableBranches = (() => {
     const list: DynamicBranch[] = [];
     const seen = new Set<string>();
+    const courseBranches = getBranchesForCourse(selectedCourse);
+    const allowedCodes = new Set(courseBranches.map((cb) => cb.code.toUpperCase()));
 
     // 1. Any college-specific cohorts from database
     for (const b of allBranches) {
       if (b.college_id && String(b.college_id) === String(form.college_id)) {
         const codeUpper = (b.code || '').toUpperCase();
-        if (codeUpper && !seen.has(codeUpper)) {
+        const matchesCourse =
+          selectedCourse === 'ALL' ||
+          (b.degree && b.degree.toLowerCase() === selectedCourse.toLowerCase()) ||
+          allowedCodes.has(codeUpper);
+        if (codeUpper && matchesCourse && !seen.has(codeUpper)) {
           seen.add(codeUpper);
           list.push(b);
         }
       }
     }
 
-    // 2. Any general cohorts from database
-    for (const b of allBranches) {
-      if (!b.college_id) {
-        const codeUpper = (b.code || '').toUpperCase();
-        if (codeUpper && !seen.has(codeUpper)) {
-          seen.add(codeUpper);
-          list.push(b);
-        }
+    // 2. Matching catalog branches for selected course
+    for (const cb of courseBranches) {
+      const codeUpper = cb.code.toUpperCase();
+      if (!seen.has(codeUpper)) {
+        seen.add(codeUpper);
+        list.push({ id: `cat-${cb.code}`, code: cb.code, label: cb.label });
       }
     }
 
-    // 3. Full institutional branch catalog
-    for (const b of INSTITUTIONAL_BRANCH_LIST) {
-      if (!seen.has(b.code)) {
-        seen.add(b.code);
-        list.push(b);
+    // 3. Fallback general institutional branches if needed
+    if (selectedCourse === 'ALL') {
+      for (const b of INSTITUTIONAL_BRANCH_LIST) {
+        if (!seen.has(b.code)) {
+          seen.add(b.code);
+          list.push(b);
+        }
       }
     }
 
     return list;
+  })();
+
+  // College-scoped sections merged with standard/branch presets
+  const availableSections = (() => {
+    const collegeSecs = allSections.filter(
+      (sec) => !sec.college_id || !form.college_id || String(sec.college_id) === String(form.college_id)
+    );
+    return buildSectionChoices(
+      collegeSecs.map((sec) => ({ section_name: sec.name })),
+      form.branch_code
+    );
   })();
 
   // Capitalize first letter helper
@@ -205,11 +230,20 @@ export default function CandidateRegisterGatePage() {
     const matchingBranches = allBranches.filter(
       (b) => !b.college_id || String(b.college_id) === String(selectedId)
     );
+    const collegeSecs = allSections.filter(
+      (sec) => !sec.college_id || String(sec.college_id) === String(selectedId)
+    );
+    const nextBranch = matchingBranches[0]?.code || form.branch_code;
+    const nextSections = buildSectionChoices(
+      collegeSecs.map((sec) => ({ section_name: sec.name })),
+      nextBranch
+    );
     setForm((prev) => ({
       ...prev,
       college_id: selectedId,
       college_name: found ? found.name : selectedId,
-      branch_code: matchingBranches[0]?.code || prev.branch_code,
+      branch_code: nextBranch,
+      section: nextSections[0] || prev.section,
     }));
   };
 
@@ -791,8 +825,40 @@ export default function CandidateRegisterGatePage() {
                     </select>
                   </div>
 
-                  {/* Branch, Batch, Section Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                  {/* Course, Branch, Batch, Section Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 16 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                        COURSE / PROGRAM <span style={{ color: '#EF4444' }}>*</span>
+                      </label>
+                      <select
+                        id="gate-course"
+                        value={selectedCourse}
+                        onChange={(e) => {
+                          const nextCourse = e.target.value;
+                          setSelectedCourse(nextCourse);
+                          const matching = getBranchesForCourse(nextCourse);
+                          const nextBranch = matching[0]?.code || form.branch_code;
+                          setForm((prev) => ({ ...prev, branch_code: nextBranch }));
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          borderRadius: 6,
+                          border: '1px solid #CBD5E1',
+                          fontSize: '0.92rem',
+                          boxSizing: 'border-box',
+                        }}
+                      >
+                        <option value="ALL">All Programs</option>
+                        {COURSE_OPTIONS.map((c) => (
+                          <option key={c.value} value={c.value}>
+                            {c.label} — {c.fullName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
                     <div>
                       <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
                         BRANCH / COHORT <span style={{ color: '#EF4444' }}>*</span>
@@ -862,7 +928,7 @@ export default function CandidateRegisterGatePage() {
 
                     <div>
                       <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                        ACADEMIC SECTION <span style={{ color: '#EF4444' }}>*</span>
+                        COLLEGE SECTION <span style={{ color: '#EF4444' }}>*</span>
                       </label>
                       <select
                         id="gate-section"
@@ -878,25 +944,11 @@ export default function CandidateRegisterGatePage() {
                           boxSizing: 'border-box',
                         }}
                       >
-                        {allSections.length > 0 ? (
-                          allSections.map((sec) => {
-                            const raw = String(sec.name || '').trim();
-                            const clean = raw.replace(/^Section\s*/i, '').replace(/^SEC\s*[-_]?/i, '');
-                            const parts = clean.split(/[-_]/);
-                            const val = parts[parts.length - 1].trim() || 'A';
-                            return (
-                              <option key={sec.id || sec.name} value={val}>
-                                Section {val}
-                              </option>
-                            );
-                          })
-                        ) : (
-                          ['A', 'B', 'C', 'D', 'E'].map((s) => (
-                            <option key={s} value={s}>
-                              Section {s}
-                            </option>
-                          ))
-                        )}
+                        {availableSections.map((sec) => (
+                          <option key={sec} value={sec}>
+                            {sec.length === 1 ? `Section ${sec}` : sec}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>

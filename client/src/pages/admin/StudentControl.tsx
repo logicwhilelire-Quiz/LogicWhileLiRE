@@ -21,7 +21,6 @@ import {
   IconFlash,
   IconLock,
   IconCheck,
-  IconAlert,
   IconMail,
   IconClipboard,
   IconRefresh,
@@ -246,6 +245,22 @@ export default function StudentControl() {
   // Student list comes only from the server (database) — nothing is cached locally
   const [students, setStudents] = useState<StudentRosterItem[]>([]);
 
+  // Add single student state (gate passes are issued by the server on creation)
+  const [newStudent, setNewStudent] = useState({
+    hall_ticket: '',
+    name: '',
+    email: '',
+    course: 'B.Tech',
+    branch: 'CSE',
+    college_id: '' as string | number,
+    college_name: 'Unassigned',
+    section: 'CSE-A',
+    batch: 'Batch 1',
+    passout_year: 2026,
+    student_gate_pass: '',
+    candidate_gate_pass: '',
+  });
+
   // Load real colleges and students on mount
   useEffect(() => {
     const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
@@ -327,21 +342,6 @@ export default function StudentControl() {
       .catch(() => {});
   }, []);
 
-  // Add single student state (gate passes are issued by the server on creation)
-  const [newStudent, setNewStudent] = useState({
-    hall_ticket: '',
-    name: '',
-    email: '',
-    course: 'B.Tech',
-    branch: 'CSE',
-    college_id: '' as string | number,
-    college_name: 'Unassigned',
-    section: 'CSE-A',
-    batch: 'Batch 1',
-    passout_year: 2026,
-    student_gate_pass: '',
-    candidate_gate_pass: '',
-  });
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkFeedback, setBulkFeedback] = useState<string | null>(null);
@@ -1505,7 +1505,7 @@ export default function StudentControl() {
                       )}
                     </td>
                     <td style={{ padding: '14px 16px' }}>
-                      <div style={{ fontWeight: 600, color: '#E2E8F0', fontSize: '0.84rem' }}>{s.college_name || 'VR Siddhartha Eng College'}</div>
+                      <div style={{ fontWeight: 600, color: '#E2E8F0', fontSize: '0.84rem' }}>{s.college_name || 'Unassigned'}</div>
                       <div style={{ fontSize: '0.76rem', color: 'var(--color-text-faint)' }}>
                         Branch: <strong>{s.branch}</strong> &bull; Sec: <strong>{s.section || 'A'}</strong> &bull; Group: <strong>{s.batch || 'Batch 1'}</strong>
                       </div>

@@ -468,6 +468,10 @@ export const createHierarchyStudent = (data: {
   cohort_id?: number;
   section_id: number;
   batch_id: number;
+  branch_code?: string;
+  year_of_passing?: number;
+  section?: string;
+  batch?: string;
 }) => api.post<{ success: boolean; message: string; student: HierarchyStudent; temporaryPassword?: string }>('/api/admin/students', data);
 
 export const bulkImportStudents = (file: File, options?: { college_id?: number; section_id?: number; batch_id?: number }) => {

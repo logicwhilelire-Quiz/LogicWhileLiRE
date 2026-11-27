@@ -72,7 +72,7 @@ router.get('/metadata', async (_req, res) => {
     // Fetch sections
     const { data: sections } = await supabase
       .from('sections')
-      .select('id, cohort_id, name, section_name');
+      .select('id, college_id, cohort_id, name, section_name');
 
     const formattedColleges = (colleges || []).map((c: any) => ({
       id: String(c.id),
@@ -103,6 +103,7 @@ router.get('/metadata', async (_req, res) => {
       label: ch.branch && ch.name && ch.branch !== ch.name
         ? `${ch.branch} — ${ch.name}`
         : (ch.name || ch.branch || 'General'),
+      degree: ch.degree || undefined,
       college_id: ch.college_id ? String(ch.college_id) : undefined,
       year_of_passing: ch.year_of_passing || ch.yop,
     }));
@@ -132,8 +133,9 @@ router.get('/metadata', async (_req, res) => {
 
     const formattedSections = (sections || []).map((s: any) => ({
       id: s.id,
+      college_id: s.college_id ? String(s.college_id) : undefined,
       cohort_id: s.cohort_id,
-      name: s.name || s.section_name || 'Section A',
+      name: s.section_name || s.name || 'Section A',
     }));
 
     res.json({

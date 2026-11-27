@@ -7,6 +7,7 @@ import {
   resetStaffPassword,
   updateStaffPermissions,
   deleteStaff,
+  getHierarchyOverview,
   type StaffMember,
 } from '../../lib/api';
 import AdminSidebar from '../../components/layout/AdminSidebar';
@@ -67,6 +68,7 @@ export const FACULTY_PERMISSIONS = [
 export default function StaffManagementPage() {
   const navigate = useNavigate();
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [colleges, setColleges] = useState<Array<{ id: number; college_name: string; college_code?: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   
@@ -107,9 +109,23 @@ export default function StaffManagementPage() {
   async function fetchStaff() {
     setLoading(true);
     try {
-      const res = await listStaff();
+      const [res, hierRes] = await Promise.all([
+        listStaff(),
+        getHierarchyOverview().catch(() => null),
+      ]);
       if (res.data?.staff) {
         setStaff(res.data.staff);
+      }
+      if (hierRes?.data?.success && Array.isArray(hierRes.data.colleges)) {
+        setColleges(hierRes.data.colleges);
+        if (hierRes.data.colleges.length > 0) {
+          setForm((prev) => ({
+            ...prev,
+            college_id: hierRes.data.colleges.some((c: any) => c.id === prev.college_id)
+              ? prev.college_id
+              : hierRes.data.colleges[0].id,
+          }));
+        }
       }
     } catch (err: any) {
       if (err?.response?.status === 401) {
@@ -547,8 +563,15 @@ export default function StaffManagementPage() {
                       value={form.college_id}
                       onChange={(e) => setForm({ ...form, college_id: Number(e.target.value) })}
                     >
-                      <option value={1}>VR Siddhartha Engineering College (#1)</option>
-                      <option value={2}>KL University (#2)</option>
+                      {colleges.length > 0 ? (
+                        colleges.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.college_name} {c.college_code ? `(${c.college_code})` : `(#${c.id})`}
+                          </option>
+                        ))
+                      ) : (
+                        <option value={form.college_id}>Default College (#{form.college_id})</option>
+                      )}
                     </select>
                   </div>
                 )}

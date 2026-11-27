@@ -382,6 +382,9 @@ export default function HierarchyManagementPage() {
     }
 
     try {
+      const activeCohort = cohorts.find((c) => c.id === selectedCohortId);
+      const activeSection = sections.find((s) => s.id === selectedSectionId);
+      const activeBatch = batches.find((b) => b.id === selectedBatchId);
       const res = await createHierarchyStudent({
         roll_number: studentForm.roll_number.trim(),
         name: studentForm.name.trim(),
@@ -392,6 +395,10 @@ export default function HierarchyManagementPage() {
         cohort_id: selectedCohortId || undefined,
         section_id: selectedSectionId,
         batch_id: selectedBatchId,
+        branch_code: activeCohort?.branch || undefined,
+        year_of_passing: activeCohort?.yop || activeCohort?.year_of_passing || undefined,
+        section: activeSection?.section_name || undefined,
+        batch: activeBatch?.batch_name || undefined,
       });
 
       setShowAddStudentModal(false);
@@ -1346,10 +1353,22 @@ export default function HierarchyManagementPage() {
           {showAddStudentModal && (
             <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
               <div className="card" style={{ width: 460, padding: 24, borderRadius: 12, background: '#0F172A', border: '1px solid var(--color-border)' }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', color: '#FFF' }}>Add Student</h3>
-                <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginBottom: 14 }}>
-                  Section: <strong>{sections.find((s) => s.id === selectedSectionId)?.section_name}</strong> | Batch: <strong>{batches.find((b) => b.id === selectedBatchId)?.batch_name}</strong>
-                </div>
+                <h3 style={{ margin: '0 0 10px 0', fontSize: '1.2rem', color: '#FFF' }}>Add Student</h3>
+                {(() => {
+                  const activeCohort = cohorts.find((c) => c.id === selectedCohortId);
+                  return (
+                    <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginBottom: 14, lineHeight: 1.5 }}>
+                      {activeCohort && (
+                        <div>
+                          Course / Branch: <strong style={{ color: '#FDE68A' }}>{activeCohort.degree || 'B.Tech'} • {activeCohort.branch || 'CSE'}</strong> (YOP {activeCohort.yop})
+                        </div>
+                      )}
+                      <div>
+                        Section: <strong>{sections.find((s) => s.id === selectedSectionId)?.section_name}</strong> | Batch: <strong>{batches.find((b) => b.id === selectedBatchId)?.batch_name}</strong>
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 18 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>Roll Number / Hall Ticket *</label>
@@ -1378,6 +1397,16 @@ export default function HierarchyManagementPage() {
                       value={studentForm.email}
                       onChange={(e) => setStudentForm({ ...studentForm, email: e.target.value })}
                       placeholder="student@college.edu"
+                      style={{ width: '100%', padding: '10px', borderRadius: 8, background: '#1E293B', color: '#FFF', border: '1px solid var(--color-border)' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>Mobile Number (Optional)</label>
+                    <input
+                      type="tel"
+                      value={studentForm.phone}
+                      onChange={(e) => setStudentForm({ ...studentForm, phone: e.target.value })}
+                      placeholder="9876543210"
                       style={{ width: '100%', padding: '10px', borderRadius: 8, background: '#1E293B', color: '#FFF', border: '1px solid var(--color-border)' }}
                     />
                   </div>
