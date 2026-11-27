@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import AnimatedPage from '../../components/AnimatedPage';
 import AdminSidebar from '../../components/layout/AdminSidebar';
+import { API_BASE_URL } from '../../lib/config';
 import {
   IconCheck,
   IconCross,
@@ -90,6 +92,7 @@ export default function QuestionControl() {
   // Questions and Colleges
   const [questions, setQuestions] = useState<QuestionItem[]>(INITIAL_FALLBACK_QUESTIONS);
   const [colleges, setColleges] = useState<Array<{ id: number; college_name: string; college_code: string }>>([]);
+  const [examCodesList, setExamCodesList] = useState<Array<{ exam_code: string; exam_name?: string; branch?: string }>>([]);
   const [loading, setLoading] = useState(false);
   const [actionMsg, setActionMsg] = useState('');
 
@@ -121,12 +124,26 @@ export default function QuestionControl() {
     ],
   });
 
-  // Fetch colleges once
+  // Fetch colleges and live exam codes once
   useEffect(() => {
     listColleges()
       .then((res) => {
         if (res.data?.colleges && Array.isArray(res.data.colleges)) {
           setColleges(res.data.colleges);
+        }
+      })
+      .catch(() => {});
+
+    const token = localStorage.getItem('admin_token') || localStorage.getItem('faculty_token') || '';
+    axios.get(`${API_BASE_URL}/api/admin/exam-codes`, {
+      withCredentials: true,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then((res) => {
+        const list = res.data?.exam_codes || [];
+        if (Array.isArray(list) && list.length > 0) {
+          setExamCodesList(list);
+          setForm((prev) => prev.exam_code === 'CS2026' ? { ...prev, exam_code: list[0].exam_code } : prev);
         }
       })
       .catch(() => {});
@@ -179,7 +196,7 @@ export default function QuestionControl() {
       sector: SECTOR_OPTIONS[0],
       diagram_url: '',
       tags: '',
-      exam_code: 'CS2026',
+      exam_code: examCodesList[0]?.exam_code || '',
       test_cases: [
         { id: 'tc-1', input_text: '', expected_output: '', marks: 5, is_hidden: false },
         { id: 'tc-2', input_text: '', expected_output: '', marks: 5, is_hidden: true },
@@ -1014,11 +1031,19 @@ export default function QuestionControl() {
                     <div>
                       <label className="form-label">Target Exam Code</label>
                       <input
+                        list="question-exam-codes-list"
                         className="form-input font-mono"
                         value={form.exam_code}
                         onChange={(e) => setForm({ ...form, exam_code: e.target.value.toUpperCase() })}
-                        placeholder="e.g. CS2026"
+                        placeholder="Select or type exam code..."
                       />
+                      <datalist id="question-exam-codes-list">
+                        {examCodesList.map((ec) => (
+                          <option key={ec.exam_code} value={ec.exam_code}>
+                            {ec.exam_name || ec.exam_code}{ec.branch ? ` (${ec.branch})` : ''}
+                          </option>
+                        ))}
+                      </datalist>
                     </div>
                   </div>
 

@@ -1,8 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AnimatedPage from '../../components/AnimatedPage';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import { API_BASE_URL } from '../../lib/config';
+import {
+  COURSE_OPTIONS,
+  getBranchesForCourse,
+  inferCourseFromBranch,
+  buildSectionChoices,
+} from '../../constants/academicCatalog';
 import {
   IconRefresh,
   IconFlash,
@@ -16,6 +23,10 @@ import {
 interface ExamOption {
   exam_code: string;
   exam_name?: string;
+  college_name?: string;
+  branch?: string | null;
+  passout_year?: number | null;
+  sections?: string[];
   total_questions?: number;
   total_marks?: number;
   results_published?: boolean;
@@ -27,6 +38,11 @@ interface ResultItem {
   exam_code: string;
   hall_ticket: string;
   name: string;
+  college_name?: string;
+  branch?: string;
+  section?: string;
+  batch?: string;
+  passout_year?: number | null;
   raw_score: number;
   grace_marks: number;
   score_override?: number;
@@ -50,7 +66,11 @@ interface ExamStats {
 }
 
 export default function ResultControl() {
-  const [selectedExam, setSelectedExam] = useState<string>('CS2026');
+  const navigate = useNavigate();
+  const [selectedExam, setSelectedExam] = useState<string>('');
+  const [courseFilter, setCourseFilter] = useState<string>('ALL');
+  const [branchFilter, setBranchFilter] = useState<string>('ALL');
+  const [sectionFilter, setSectionFilter] = useState<string>('ALL');
   const [exams, setExams] = useState<ExamOption[]>([]);
   const [results, setResults] = useState<ResultItem[]>([]);
   const [stats, setStats] = useState<ExamStats>({
@@ -220,10 +240,38 @@ export default function ResultControl() {
     }
   };
 
+  const filteredResults = useMemo(() => {
+    return results.filter((r) => {
+      if (courseFilter !== 'ALL' && inferCourseFromBranch(r.branch) !== courseFilter) return false;
+      if (branchFilter !== 'ALL' && (r.branch || '').toUpperCase() !== branchFilter.toUpperCase()) return false;
+      if (sectionFilter !== 'ALL') {
+        const secA = (r.section || '').toUpperCase().replace(/^SECTION\s*/i, '').trim();
+        const secB = sectionFilter.toUpperCase().replace(/^SECTION\s*/i, '').trim();
+        if (secA !== secB && !secA.endsWith(`-${secB}`) && !secB.endsWith(`-${secA}`)) return false;
+      }
+      return true;
+    });
+  }, [results, courseFilter, branchFilter, sectionFilter]);
+
+  const activeExamObj = exams.find((e) => e.exam_code === selectedExam);
+  const sectionChoices = buildSectionChoices(
+    [
+      ...(activeExamObj?.sections || []).map((s) => ({ section_name: s })),
+      ...results.map((r) => ({ section_name: r.section || '' })),
+    ],
+    branchFilter !== 'ALL' ? branchFilter : activeExamObj?.branch
+  );
+
   const maxScoreDisplay = stats.max_score || 10;
-  const avgScore = stats.average_score.toFixed(1);
-  const passRate = stats.pass_rate;
-  const totalViolations = stats.total_violations;
+  const avgScore = filteredResults.length > 0
+    ? (filteredResults.reduce((acc, r) => acc + ((r.score_override ?? r.raw_score) + r.grace_marks), 0) / filteredResults.length).toFixed(1)
+    : stats.average_score.toFixed(1);
+  const passRate = filteredResults.length > 0
+    ? Math.round((filteredResults.filter((r) => r.status === 'passed').length / filteredResults.length) * 100)
+    : stats.pass_rate;
+  const totalViolations = filteredResults.length > 0
+    ? filteredResults.reduce((acc, r) => acc + (r.violations || 0), 0)
+    : stats.total_violations;
 
   return (
     <AnimatedPage>
@@ -305,7 +353,7 @@ export default function ResultControl() {
               <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#F8FAFC' }}>Selected Examination:</span>
             </div>
 
-            <div style={{ flex: '1 1 300px', maxWidth: 420 }}>
+            <div style={{ flex: '1 1 280px', maxWidth: 400 }}>
               <select
                 id="exam-select-dropdown"
                 value={selectedExam}
@@ -325,12 +373,44 @@ export default function ResultControl() {
               >
                 {exams.map((ex) => (
                   <option key={ex.exam_code} value={ex.exam_code}>
-                    {ex.exam_code} — {ex.exam_name || 'Examination'} ({ex.total_questions || 10} Qs / {ex.total_marks || 10} M)
+                    {ex.exam_code} — {ex.exam_name || 'Examination'}{ex.branch ? ` (${inferCourseFromBranch(ex.branch)} ${ex.branch})` : ''}
                   </option>
                 ))}
                 <option value="ALL">All Examinations (Combined View)</option>
               </select>
             </div>
+
+            <select
+              aria-label="Filter results by course"
+              value={courseFilter}
+              onChange={(e) => { setCourseFilter(e.target.value); setBranchFilter('ALL'); }}
+              style={{ background: 'rgba(30, 41, 59, 0.95)', border: '1px solid rgba(234, 168, 18, 0.35)', color: '#FDE68A', borderRadius: 8, padding: '8px 10px', fontSize: '0.84rem', fontWeight: 700 }}
+            >
+              <option value="ALL">All Courses</option>
+              {COURSE_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+
+            <select
+              aria-label="Filter results by branch"
+              value={branchFilter}
+              onChange={(e) => setBranchFilter(e.target.value)}
+              style={{ background: 'rgba(30, 41, 59, 0.95)', border: '1px solid rgba(255,255,255,0.16)', color: '#FFFFFF', borderRadius: 8, padding: '8px 10px', fontSize: '0.84rem', fontWeight: 600 }}
+            >
+              <option value="ALL">All Branches</option>
+              {getBranchesForCourse(courseFilter).map((b) => <option key={b.code} value={b.code}>{b.code}</option>)}
+            </select>
+
+            <select
+              aria-label="Filter results by section"
+              value={sectionFilter}
+              onChange={(e) => setSectionFilter(e.target.value)}
+              style={{ background: 'rgba(30, 41, 59, 0.95)', border: '1px solid rgba(168, 85, 247, 0.35)', color: '#E9D5FF', borderRadius: 8, padding: '8px 10px', fontSize: '0.84rem', fontWeight: 700 }}
+            >
+              <option value="ALL">All Sections</option>
+              {sectionChoices.map((sec) => (
+                <option key={sec} value={sec}>{sec.length === 1 ? `Section ${sec}` : sec}</option>
+              ))}
+            </select>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
               <button
@@ -368,7 +448,7 @@ export default function ResultControl() {
               <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--color-primary, #38BDF8)', marginTop: 4 }}>
                 {avgScore} / {maxScoreDisplay}
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-faint)', marginTop: 2 }}>Normalized across {results.length} candidate(s)</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-faint)', marginTop: 2 }}>Normalized across {filteredResults.length} candidate(s)</div>
             </div>
 
             <div className="card" style={{ padding: '18px 22px', borderRadius: 10, background: 'rgba(11, 18, 38, 0.7)', border: '1px solid var(--color-border)' }}>
@@ -408,7 +488,7 @@ export default function ResultControl() {
               </div>
               <div>Loading real candidate attempts and scores from database...</div>
             </div>
-          ) : results.length === 0 ? (
+          ) : filteredResults.length === 0 ? (
             <div
               className="card"
               style={{
@@ -442,6 +522,7 @@ export default function ResultControl() {
                 <thead>
                   <tr style={{ background: 'rgba(255, 255, 255, 0.03)', borderBottom: '1px solid var(--color-border)' }}>
                     <th style={{ padding: '12px 18px', textAlign: 'left', color: 'var(--color-text-faint)', fontWeight: 600 }}>Candidate</th>
+                    <th style={{ padding: '12px 18px', textAlign: 'left', color: 'var(--color-text-faint)', fontWeight: 600 }}>Course / Section</th>
                     <th style={{ padding: '12px 18px', textAlign: 'left', color: 'var(--color-text-faint)', fontWeight: 600 }}>Exam Code</th>
                     <th style={{ padding: '12px 18px', textAlign: 'left', color: 'var(--color-text-faint)', fontWeight: 600 }}>Auto-Graded</th>
                     <th style={{ padding: '12px 18px', textAlign: 'left', color: 'var(--color-text-faint)', fontWeight: 600 }}>Grace</th>
@@ -451,7 +532,7 @@ export default function ResultControl() {
                   </tr>
                 </thead>
                 <tbody>
-                  {results.map((r) => {
+                  {filteredResults.map((r) => {
                     const finalScore = (r.score_override ?? r.raw_score) + r.grace_marks;
                     return (
                       <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
@@ -459,6 +540,14 @@ export default function ResultControl() {
                           <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{r.name}</div>
                           <div style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono, monospace)', color: 'var(--color-primary, #38BDF8)' }}>
                             {r.hall_ticket}
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 18px' }}>
+                          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#FDE68A' }}>
+                            {inferCourseFromBranch(r.branch)} • {r.branch || 'CSE'}
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: '#C084FC' }}>
+                            Sec {r.section || 'A'}{r.college_name ? ` • ${r.college_name}` : ''}
                           </div>
                         </td>
                         <td style={{ padding: '14px 18px', color: 'var(--color-text-muted)' }}>
@@ -514,6 +603,14 @@ export default function ResultControl() {
                         </td>
                         <td style={{ padding: '14px 18px', textAlign: 'right' }}>
                           <div style={{ display: 'inline-flex', gap: 6 }}>
+                            <button
+                              onClick={() => navigate(`/reports/student/${encodeURIComponent(r.hall_ticket)}`)}
+                              className="btn btn-ghost btn-sm"
+                              style={{ fontSize: '0.75rem', border: '1px solid rgba(16, 185, 129, 0.35)', color: '#34D399' }}
+                              title="Open Full 5-Sector Student Analysis Report"
+                            >
+                              Dossier
+                            </button>
                             <button
                               onClick={() => handleAddGrace(r, 2)}
                               className="btn btn-ghost btn-sm"

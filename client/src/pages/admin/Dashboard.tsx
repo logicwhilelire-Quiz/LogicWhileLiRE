@@ -372,9 +372,9 @@ export default function Dashboard() {
                 color: '#10B981',
               },
               {
-                title: 'Live Monitor Wall (100 Tiles)',
-                desc: 'Observe all active candidate screens, face mesh alerts, trigger warnings, or extend exam time +10m.',
-                action: 'Open Monitor Wall',
+                title: 'Live Monitor & Waiting Lobby',
+                desc: 'Monitor active candidate screens, inspect Waiting Lobby queues, release candidates, or extend exam time.',
+                action: 'Open Monitor & Lobby',
                 route: '/admin/monitor',
                 color: '#EC4899',
               },
@@ -504,11 +504,11 @@ export default function Dashboard() {
                             {exam.is_active ? 'Deactivate' : 'Launch'}
                           </button>
                           <button
-                            onClick={() => navigate('/admin/monitor')}
+                            onClick={() => navigate(`/admin/monitor/${exam.exam_code || exam.id}`)}
                             className="btn btn-ghost btn-sm"
                             style={{ fontSize: '0.78rem' }}
                           >
-                            Monitor
+                            Monitor &amp; Lobby
                           </button>
                         </div>
                       </td>

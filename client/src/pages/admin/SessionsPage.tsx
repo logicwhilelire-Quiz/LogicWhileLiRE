@@ -11,6 +11,7 @@ import {
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedPage from '../../components/AnimatedPage';
 import BulkEnrollModal from '../../components/BulkEnrollModal';
+import { COURSE_OPTIONS, getBranchesForCourse, inferCourseFromBranch } from '../../constants/academicCatalog';
 import {
   IconUsers,
   IconShield,
@@ -69,8 +70,10 @@ const STATUS_BADGE: Record<string, string> = {
 export default function SessionsPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [exams, setExams] = useState<{ id: string; title: string }[]>([]);
+  const [exams, setExams] = useState<{ id: string; title: string; branch?: string }[]>([]);
   const [selectedExamId, setSelectedExamId] = useState(searchParams.get('examId') || '');
+  const [courseFilter, setCourseFilter] = useState('ALL');
+  const [branchFilter, setBranchFilter] = useState('ALL');
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activities, setActivities] = useState<SuspiciousActivity[]>([]);
   const [activeTab, setActiveTab] = useState<'sessions' | 'fingerprints'>('sessions');
@@ -196,18 +199,54 @@ export default function SessionsPage() {
             )}
           </div>
 
-          <div className="form-group" style={{ maxWidth: 400, marginBottom: 24 }}>
-            <label className="form-label" htmlFor="sessions-exam-select">Select Exam</label>
-            <select
-              id="sessions-exam-select"
-              className="form-input"
-              value={selectedExamId}
-              onChange={(e) => setSelectedExamId(e.target.value)}
-              style={{ cursor: 'pointer' }}
-            >
-              <option value="">-- Choose an exam --</option>
-              {exams.map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}
-            </select>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end', marginBottom: 24 }}>
+            <div className="form-group" style={{ margin: 0, minWidth: 150 }}>
+              <label className="form-label">Course</label>
+              <select
+                aria-label="Filter sessions by course"
+                className="form-input"
+                value={courseFilter}
+                onChange={(e) => { setCourseFilter(e.target.value); setBranchFilter('ALL'); }}
+              >
+                <option value="ALL">All Courses</option>
+                {COURSE_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </div>
+            <div className="form-group" style={{ margin: 0, minWidth: 140 }}>
+              <label className="form-label">Branch</label>
+              <select
+                aria-label="Filter sessions by branch"
+                className="form-input"
+                value={branchFilter}
+                onChange={(e) => setBranchFilter(e.target.value)}
+              >
+                <option value="ALL">All Branches</option>
+                {getBranchesForCourse(courseFilter).map((b) => <option key={b.code} value={b.code}>{b.code}</option>)}
+              </select>
+            </div>
+            <div className="form-group" style={{ margin: 0, flex: '1 1 280px', maxWidth: 420 }}>
+              <label className="form-label" htmlFor="sessions-exam-select">Select Exam</label>
+              <select
+                id="sessions-exam-select"
+                className="form-input"
+                value={selectedExamId}
+                onChange={(e) => setSelectedExamId(e.target.value)}
+                style={{ cursor: 'pointer' }}
+              >
+                <option value="">-- Choose an exam --</option>
+                {exams
+                  .filter((e) => {
+                    if (courseFilter !== 'ALL' && e.branch && inferCourseFromBranch(e.branch) !== courseFilter) return false;
+                    if (branchFilter !== 'ALL' && e.branch && e.branch.toUpperCase() !== branchFilter.toUpperCase()) return false;
+                    return true;
+                  })
+                  .map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.title}{e.branch ? ` (${inferCourseFromBranch(e.branch)} ${e.branch})` : ''}
+                    </option>
+                  ))}
+              </select>
+            </div>
           </div>
 
           {selectedExamId && (

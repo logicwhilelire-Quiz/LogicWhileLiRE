@@ -458,7 +458,7 @@ router.get('/results', requireRole('super_admin', 'admin', 'inspector', 'faculty
     // 1. Fetch available exams for selector
     const { data: examList } = await supabase
       .from('exam_codes')
-      .select('id, exam_code, exam_name, duration_minutes, total_questions, total_marks, is_active, results_published, created_at')
+      .select('id, college_id, exam_code, exam_name, branch, passout_year, section_id, section_ids, duration_minutes, total_questions, total_marks, is_active, results_published, created_at, college:college_id ( college_name, college_code )')
       .order('created_at', { ascending: false });
 
     const exams = examList || [];
@@ -468,9 +468,13 @@ router.get('/results', requireRole('super_admin', 'admin', 'inspector', 'faculty
     let selectedExamData = exams.find((e) => e.exam_code === targetCode);
 
     if (!targetCode && exams.length > 0) {
-      // Prefer exam with attempts or default to first
       targetCode = exams[0].exam_code;
       selectedExamData = exams[0];
+    }
+
+    const examByCode = new Map<string, any>();
+    for (const ex of exams) {
+      if (ex.exam_code) examByCode.set(String(ex.exam_code).toUpperCase(), ex);
     }
 
     const searchCodes: string[] = [];
@@ -498,23 +502,21 @@ router.get('/results', requireRole('super_admin', 'admin', 'inspector', 'faculty
     const { data: attempts } = await query.limit(200);
     const rows = attempts || [];
 
-    // 3. Enrich student names from students table if missing
+    // 3. Enrich student names & academic metadata from students table
     const hallTickets = Array.from(new Set(rows.map((r) => r.hall_ticket_no || r.hall_ticket).filter(Boolean)));
-    const studentMap: Record<string, string> = {};
+    const studentMap: Record<string, any> = {};
 
     if (hallTickets.length > 0) {
       try {
         const { data: students } = await supabase
           .from('students')
-          .select('name, roll_number, hall_ticket')
+          .select('name, roll_number, hall_ticket, college_id, college_name, branch_code, section, batch, year_of_passing')
           .or(hallTickets.map((ht) => `hall_ticket.eq.${ht},roll_number.eq.${ht}`).join(','));
 
         if (students) {
           for (const st of students) {
-            if (st.name) {
-              if (st.hall_ticket) studentMap[String(st.hall_ticket).toUpperCase()] = st.name;
-              if (st.roll_number) studentMap[String(st.roll_number).toUpperCase()] = st.name;
-            }
+            if (st.hall_ticket) studentMap[String(st.hall_ticket).toUpperCase()] = st;
+            if (st.roll_number) studentMap[String(st.roll_number).toUpperCase()] = st;
           }
         }
       } catch (stuErr) {
@@ -526,7 +528,9 @@ router.get('/results', requireRole('super_admin', 'admin', 'inspector', 'faculty
 
     const formattedResults = rows.map((r: any) => {
       const ht = String(r.hall_ticket_no || r.hall_ticket || 'UNKNOWN').toUpperCase();
-      const rawName = r.student_name && r.student_name !== ht ? r.student_name : (studentMap[ht] || ht);
+      const stu = studentMap[ht];
+      const examMeta = examByCode.get(String(r.exam_code || '').toUpperCase());
+      const rawName = r.student_name && r.student_name !== ht ? r.student_name : (stu?.name || ht);
       const rawScore = Number(r.score || 0);
       const graceMarks = Number(r.grace_marks || 0);
       const overrideScore = r.score_override !== null && r.score_override !== undefined ? Number(r.score_override) : undefined;
@@ -540,6 +544,11 @@ router.get('/results', requireRole('super_admin', 'admin', 'inspector', 'faculty
         exam_code: r.exam_code,
         hall_ticket: ht,
         name: rawName,
+        college_name: stu?.college_name || examMeta?.college?.college_name || 'Unassigned',
+        branch: stu?.branch_code || examMeta?.branch || 'CSE',
+        section: stu?.section || 'A',
+        batch: stu?.batch || (stu?.year_of_passing ? `Batch ${stu.year_of_passing}` : 'Batch 1'),
+        passout_year: stu?.year_of_passing || examMeta?.passout_year || null,
         raw_score: rawScore,
         grace_marks: graceMarks,
         score_override: overrideScore,
@@ -569,9 +578,14 @@ router.get('/results', requireRole('super_admin', 'admin', 'inspector', 'faculty
     res.json({
       success: true,
       selectedExam: targetCode,
-      exams: exams.map((e) => ({
+      exams: exams.map((e: any) => ({
         exam_code: e.exam_code,
         exam_name: e.exam_name,
+        college_id: e.college_id,
+        college_name: e.college?.college_name || null,
+        branch: e.branch || null,
+        passout_year: e.passout_year || null,
+        sections: Array.isArray(e.section_ids) && e.section_ids.length > 0 ? e.section_ids : e.section_id ? [e.section_id] : [],
         total_questions: e.total_questions,
         total_marks: e.total_marks,
         results_published: Boolean(e.results_published),

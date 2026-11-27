@@ -19,6 +19,11 @@ import {
   getParticipantHistory,
   adminLogout,
 } from '../../lib/api';
+import {
+  COURSE_OPTIONS,
+  getBranchesForCourse,
+  inferCourseFromBranch,
+} from '../../constants/academicCatalog';
 import BrandLogo from '../../components/BrandLogo';
 import AnimatedPage from '../../components/AnimatedPage';
 import AdminSidebar from '../../components/layout/AdminSidebar';
@@ -33,6 +38,8 @@ import {
 interface Exam {
   id: string;
   title: string;
+  branch?: string;
+  exam_code?: string;
 }
 
 interface QuestionStat {
@@ -96,6 +103,8 @@ export default function AnalyticsPage() {
 
   const [exams, setExams] = useState<Exam[]>([]);
   const [selectedExamId, setSelectedExamId] = useState<string>(routeExamId || '');
+  const [courseFilter, setCourseFilter] = useState<string>('ALL');
+  const [branchFilter, setBranchFilter] = useState<string>('ALL');
   const [loading, setLoading] = useState(false);
 
   const [questionStats, setQuestionStats] = useState<QuestionStat[]>([]);
@@ -261,21 +270,49 @@ export default function AnalyticsPage() {
               </p>
             </div>
 
-            {/* Exam selector */}
-            <div style={{ minWidth: 260 }}>
+            {/* Course, Branch & Exam selector */}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               <select
-                id="analytics-exam-select"
+                aria-label="Filter analytics by course"
                 className="form-input"
-                value={selectedExamId}
-                onChange={(e) => handleExamChange(e.target.value)}
-                style={{ cursor: 'pointer', background: 'var(--color-surface-2)' }}
+                value={courseFilter}
+                onChange={(e) => { setCourseFilter(e.target.value); setBranchFilter('ALL'); }}
+                style={{ width: 'auto', cursor: 'pointer', background: 'var(--color-surface-2)' }}
               >
-                {exams.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.title}
-                  </option>
-                ))}
+                <option value="ALL">All Courses</option>
+                {COURSE_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
+              <select
+                aria-label="Filter analytics by branch"
+                className="form-input"
+                value={branchFilter}
+                onChange={(e) => setBranchFilter(e.target.value)}
+                style={{ width: 'auto', cursor: 'pointer', background: 'var(--color-surface-2)' }}
+              >
+                <option value="ALL">All Branches</option>
+                {getBranchesForCourse(courseFilter).map((b) => <option key={b.code} value={b.code}>{b.code}</option>)}
+              </select>
+              <div style={{ minWidth: 260 }}>
+                <select
+                  id="analytics-exam-select"
+                  className="form-input"
+                  value={selectedExamId}
+                  onChange={(e) => handleExamChange(e.target.value)}
+                  style={{ cursor: 'pointer', background: 'var(--color-surface-2)' }}
+                >
+                  {exams
+                    .filter((e) => {
+                      if (courseFilter !== 'ALL' && e.branch && inferCourseFromBranch(e.branch) !== courseFilter) return false;
+                      if (branchFilter !== 'ALL' && e.branch && e.branch.toUpperCase() !== branchFilter.toUpperCase()) return false;
+                      return true;
+                    })
+                    .map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.title}{e.branch ? ` (${inferCourseFromBranch(e.branch)} ${e.branch})` : ''}
+                      </option>
+                    ))}
+                </select>
+              </div>
             </div>
           </div>
 

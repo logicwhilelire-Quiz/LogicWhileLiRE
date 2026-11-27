@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { listExams, getExcelReportUrl, getPdfReportUrl } from '../../lib/api';
+import { API_BASE_URL } from '../../lib/config';
+import {
+  COURSE_OPTIONS,
+  getBranchesForCourse,
+  inferCourseFromBranch,
+  buildSectionChoices,
+} from '../../constants/academicCatalog';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedPage from '../../components/AnimatedPage';
 import {
@@ -22,6 +30,10 @@ interface ExamItem {
   id: string;
   title: string;
   exam_code?: string;
+  college_name?: string;
+  branch?: string | null;
+  passout_year?: number | null;
+  sections?: string[];
   total_questions?: number;
   duration_minutes?: number;
   is_published?: boolean;
@@ -34,19 +46,62 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [courseFilter, setCourseFilter] = useState('ALL');
+  const [branchFilter, setBranchFilter] = useState('ALL');
+  const [sectionFilter, setSectionFilter] = useState('ALL');
 
   useEffect(() => {
-    listExams()
-      .then((r) => {
-        if (r.data?.exams) {
-          setExams(r.data.exams);
-          if (r.data.exams.length > 0) {
-            setSelectedExamId(r.data.exams[0].id);
+    const token = localStorage.getItem('admin_token') || localStorage.getItem('inspector_token') || '';
+    Promise.all([
+      listExams().catch(() => ({ data: { exams: [] } })),
+      axios.get(`${API_BASE_URL}/api/admin/exam-codes`, {
+        withCredentials: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }).catch(() => ({ data: { exam_codes: [] } })),
+    ])
+      .then(([r, ecRes]) => {
+        const legacyExams: ExamItem[] = r.data?.exams || [];
+        const codeRows: any[] = ecRes.data?.exam_codes || [];
+        const byCode = new Map<string, any>();
+        for (const ec of codeRows) {
+          if (ec.exam_code) byCode.set(String(ec.exam_code).toUpperCase(), ec);
+        }
+
+        const merged = legacyExams.map((ex) => {
+          const ec = ex.exam_code ? byCode.get(ex.exam_code.toUpperCase()) : undefined;
+          const secs = ec
+            ? (Array.isArray(ec.section_ids) && ec.section_ids.length > 0 ? ec.section_ids : ec.section_id ? [ec.section_id] : [])
+            : [];
+          return {
+            ...ex,
+            college_name: ec?.college?.college_name || undefined,
+            branch: (ex as any).branch || ec?.branch || null,
+            passout_year: (ex as any).passout_year || ec?.passout_year || null,
+            sections: secs,
+          };
+        });
+
+        for (const ec of codeRows) {
+          if (!merged.some((m) => m.exam_code?.toUpperCase() === String(ec.exam_code || '').toUpperCase())) {
+            const secs = Array.isArray(ec.section_ids) && ec.section_ids.length > 0 ? ec.section_ids : ec.section_id ? [ec.section_id] : [];
+            merged.push({
+              id: String(ec.id),
+              title: ec.exam_name || ec.subject || ec.exam_code,
+              exam_code: ec.exam_code,
+              college_name: ec.college?.college_name || undefined,
+              branch: ec.branch || null,
+              passout_year: ec.passout_year || null,
+              sections: secs,
+              total_questions: ec.total_questions,
+              duration_minutes: ec.duration_minutes,
+            });
           }
         }
-      })
-      .catch((err) => {
-        console.warn('Could not load exams for reports:', err);
+
+        setExams(merged);
+        if (merged.length > 0) {
+          setSelectedExamId(merged[0].id);
+        }
       })
       .finally(() => setLoading(false));
   }, []);
@@ -58,11 +113,19 @@ export default function ReportsPage() {
 
   const selectedExam = exams.find((e) => e.id === selectedExamId);
 
-  const filteredExams = exams.filter(
-    (e) =>
+  const filteredExams = exams.filter((e) => {
+    if (courseFilter !== 'ALL' && inferCourseFromBranch(e.branch) !== courseFilter) return false;
+    if (branchFilter !== 'ALL' && (e.branch || '').toUpperCase() !== branchFilter.toUpperCase()) return false;
+    if (sectionFilter !== 'ALL' && Array.isArray(e.sections) && e.sections.length > 0) {
+      const target = sectionFilter.toUpperCase().replace(/^SECTION\s*/i, '');
+      const hasSec = e.sections.some((s) => s.toUpperCase().replace(/^SECTION\s*/i, '') === target);
+      if (!hasSec) return false;
+    }
+    return (
       e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (e.exam_code && e.exam_code.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+    );
+  });
 
   const handleCopyLink = (url: string, type: string) => {
     navigator.clipboard.writeText(url);
@@ -189,7 +252,36 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <select
+                aria-label="Filter report exams by course"
+                value={courseFilter}
+                onChange={(e) => { setCourseFilter(e.target.value); setBranchFilter('ALL'); }}
+                style={{ padding: '9px 12px', borderRadius: 8, background: '#090E1D', border: '1px solid rgba(234, 168, 18, 0.35)', color: '#FDE68A', fontSize: '0.84rem', fontWeight: 700 }}
+              >
+                <option value="ALL">All Courses</option>
+                {COURSE_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+              <select
+                aria-label="Filter report exams by branch"
+                value={branchFilter}
+                onChange={(e) => setBranchFilter(e.target.value)}
+                style={{ padding: '9px 12px', borderRadius: 8, background: '#090E1D', border: '1px solid rgba(255,255,255,0.14)', color: '#F8FAFC', fontSize: '0.84rem' }}
+              >
+                <option value="ALL">All Branches</option>
+                {getBranchesForCourse(courseFilter).map((b) => <option key={b.code} value={b.code}>{b.code}</option>)}
+              </select>
+              <select
+                aria-label="Filter report exams by section"
+                value={sectionFilter}
+                onChange={(e) => setSectionFilter(e.target.value)}
+                style={{ padding: '9px 12px', borderRadius: 8, background: '#090E1D', border: '1px solid rgba(168,85,247,0.35)', color: '#E9D5FF', fontSize: '0.84rem', fontWeight: 700 }}
+              >
+                <option value="ALL">All Sections</option>
+                {buildSectionChoices((selectedExam?.sections || []).map((s) => ({ section_name: s })), branchFilter !== 'ALL' ? branchFilter : selectedExam?.branch).map((sec) => (
+                  <option key={sec} value={sec}>{sec.length === 1 ? `Section ${sec}` : sec}</option>
+                ))}
+              </select>
               <input
                 type="text"
                 placeholder="Filter exam title or code..."
@@ -202,7 +294,7 @@ export default function ReportsPage() {
                   border: '1px solid rgba(255, 255, 255, 0.14)',
                   color: '#F8FAFC',
                   fontSize: '0.84rem',
-                  width: 220,
+                  width: 200,
                 }}
               />
             </div>
@@ -232,10 +324,11 @@ export default function ReportsPage() {
                     Exam Designation
                   </div>
                   <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', marginTop: 4 }}>
-                    {selectedExam.exam_code || 'CS-2026'}
+                    {selectedExam.exam_code || '—'}
                   </div>
                   <div style={{ fontSize: '0.75rem', color: '#EAA812', marginTop: 2, fontWeight: 600 }}>
-                    Official LiRE Code
+                    {selectedExam.branch ? `${inferCourseFromBranch(selectedExam.branch)} • ${selectedExam.branch}` : 'Official LiRE Code'}
+                    {selectedExam.sections && selectedExam.sections.length > 0 ? ` • Sec ${selectedExam.sections.join(', ')}` : ''}
                   </div>
                 </div>
 
