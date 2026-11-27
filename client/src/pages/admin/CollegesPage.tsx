@@ -5,6 +5,12 @@ import axios from 'axios';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import { API_BASE_URL } from '../../lib/config';
 import {
+  COURSE_OPTIONS,
+  getBranchesForCourse,
+  inferCourseFromBranch,
+  buildSectionChoices,
+} from '../../constants/academicCatalog';
+import {
   IconBuilding,
   IconCheck,
   IconCross,
@@ -139,11 +145,13 @@ export default function CollegesPage() {
 
   // Search & Filter for main college table
   const [collegeSearch, setCollegeSearch] = useState('');
+  const [courseFilter, setCourseFilter] = useState('ALL');
 
   // Deep-dive Inspector Modal State
   const [inspectCollege, setInspectCollege] = useState<College | null>(null);
   const [inspectTab, setInspectTab] = useState<'branches' | 'passout' | 'live' | 'students'>('branches');
   const [studentSearch, setStudentSearch] = useState('');
+  const [filterCourse, setFilterCourse] = useState('ALL');
   const [filterBranch, setFilterBranch] = useState('ALL');
   const [filterSection, setFilterSection] = useState('ALL');
   const [filterPassoutYear, setFilterPassoutYear] = useState('ALL');
@@ -478,20 +486,30 @@ export default function CollegesPage() {
 
   // Filtered colleges list for main table
   const filteredColleges = useMemo(() => {
-    if (!collegeSearch.trim()) return colleges;
-    const q = collegeSearch.toLowerCase().trim();
-    return colleges.filter(c =>
-      c.college_name.toLowerCase().includes(q) ||
-      c.college_code.toLowerCase().includes(q) ||
-      (c.city && c.city.toLowerCase().includes(q)) ||
-      (c.branches && c.branches.some(b => b.branch_code.toLowerCase().includes(q) || b.branch_name.toLowerCase().includes(q)))
-    );
-  }, [colleges, collegeSearch]);
+    return colleges.filter(c => {
+      if (courseFilter !== 'ALL') {
+        const courseBranches = new Set(getBranchesForCourse(courseFilter).map(b => b.code.toUpperCase()));
+        const hasCourseBranch =
+          (c.branches || []).some(b => courseBranches.has((b.branch_code || '').toUpperCase())) ||
+          (c.students || []).some(s => inferCourseFromBranch(s.branch) === courseFilter);
+        if (!hasCourseBranch) return false;
+      }
+      if (!collegeSearch.trim()) return true;
+      const q = collegeSearch.toLowerCase().trim();
+      return (
+        c.college_name.toLowerCase().includes(q) ||
+        c.college_code.toLowerCase().includes(q) ||
+        (c.city && c.city.toLowerCase().includes(q)) ||
+        (c.branches && c.branches.some(b => b.branch_code.toLowerCase().includes(q) || b.branch_name.toLowerCase().includes(q)))
+      );
+    });
+  }, [colleges, collegeSearch, courseFilter]);
 
   // Filtered students for inspect modal
   const filteredStudents = useMemo(() => {
     if (!inspectCollege || !inspectCollege.students) return [];
     return inspectCollege.students.filter(s => {
+      if (filterCourse !== 'ALL' && inferCourseFromBranch(s.branch) !== filterCourse) return false;
       if (filterBranch !== 'ALL' && s.branch !== filterBranch) return false;
       if (filterSection !== 'ALL' && s.section !== filterSection) return false;
       if (filterPassoutYear !== 'ALL' && String(s.passout_year) !== filterPassoutYear) return false;
@@ -514,7 +532,7 @@ export default function CollegesPage() {
       }
       return true;
     });
-  }, [inspectCollege, studentSearch, filterBranch, filterSection, filterPassoutYear, filterLiveStatus]);
+  }, [inspectCollege, studentSearch, filterCourse, filterBranch, filterSection, filterPassoutYear, filterLiveStatus]);
 
   // Overall totals across all loaded colleges
   const totalRegisteredStudents = overallSummary?.total_students ?? colleges.reduce((acc, c) => acc + (c.total_students || c.students?.length || 0), 0);
@@ -663,9 +681,21 @@ export default function CollegesPage() {
               style={{ paddingLeft: 14, background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255,255,255,0.1)' }}
             />
           </div>
-          {collegeSearch && (
-            <button className="btn btn-ghost btn-sm" onClick={() => setCollegeSearch('')} style={{ fontSize: '0.8rem' }}>
-              Clear Search
+          <select
+            aria-label="Filter colleges by course"
+            className="form-input"
+            value={courseFilter}
+            onChange={e => setCourseFilter(e.target.value)}
+            style={{ width: 'auto', minWidth: 180, background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <option value="ALL">All Courses</option>
+            {COURSE_OPTIONS.map(c => (
+              <option key={c.value} value={c.value}>{c.label} — {c.fullName}</option>
+            ))}
+          </select>
+          {(collegeSearch || courseFilter !== 'ALL') && (
+            <button className="btn btn-ghost btn-sm" onClick={() => { setCollegeSearch(''); setCourseFilter('ALL'); }} style={{ fontSize: '0.8rem' }}>
+              Reset Filters
             </button>
           )}
         </div>
@@ -905,6 +935,16 @@ export default function CollegesPage() {
                           </button>
 
                           <button
+                            id={`hierarchy-college-${college.id}`}
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => navigate(`/admin/hierarchy?college=${college.id}`)}
+                            style={{ fontSize: '0.78rem', padding: '5px 10px', display: 'inline-flex', alignItems: 'center', gap: 4, borderColor: 'rgba(234, 168, 18, 0.35)', color: '#FDE68A' }}
+                            title="Configure courses, cohorts, sections & batches for this college"
+                          >
+                            <IconLayers size={12} /> Sections
+                          </button>
+
+                          <button
                             id={`edit-college-${college.id}`}
                             className="btn btn-secondary btn-sm"
                             onClick={() => openEdit(college)}
@@ -1013,7 +1053,19 @@ export default function CollegesPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => {
+                      const cid = inspectCollege.id;
+                      setInspectCollege(null);
+                      navigate(`/admin/hierarchy?college=${cid}`);
+                    }}
+                    style={{ background: '#002147', border: '1px solid #EAA812', color: '#FDE68A', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                    title="Manage courses, branches, and college sections in Hierarchy Control"
+                  >
+                    <IconLayers size={13} /> Manage Sections & Courses
+                  </button>
                   <button
                     className="btn btn-secondary btn-sm"
                     onClick={() => exportCollegeStudentsCSV(inspectCollege)}
@@ -1190,9 +1242,14 @@ export default function CollegesPage() {
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                           <div>
-                            <span style={{ fontSize: '0.9rem', fontWeight: 800, background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(56, 189, 248, 0.3)' }}>
-                              {b.branch_code}
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '0.9rem', fontWeight: 800, background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                                {b.branch_code}
+                              </span>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 700, background: 'rgba(234, 168, 18, 0.16)', color: '#FDE68A', padding: '2px 7px', borderRadius: 6, border: '1px solid rgba(234, 168, 18, 0.3)' }}>
+                                {inferCourseFromBranch(b.branch_code)}
+                              </span>
+                            </div>
                             <div style={{ fontWeight: 700, fontSize: '1rem', color: '#f8fafc', marginTop: 6 }}>
                               {b.branch_name}
                             </div>
@@ -1472,6 +1529,20 @@ export default function CollegesPage() {
                       />
                     </div>
 
+                    {/* Course Filter */}
+                    <select
+                      aria-label="Filter candidates by course"
+                      className="form-input"
+                      value={filterCourse}
+                      onChange={e => setFilterCourse(e.target.value)}
+                      style={{ width: 'auto', padding: '7px 10px', fontSize: '0.82rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
+                    >
+                      <option value="ALL">All Courses</option>
+                      {COURSE_OPTIONS.map(c => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
+                      ))}
+                    </select>
+
                     {/* Branch Filter */}
                     <select
                       className="form-input"
@@ -1493,7 +1564,10 @@ export default function CollegesPage() {
                       style={{ width: 'auto', padding: '7px 10px', fontSize: '0.82rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
                     >
                       <option value="ALL">All Sections</option>
-                      {(inspectCollege.sections || ['A', 'B', 'C', 'D', 'E']).map(sec => (
+                      {buildSectionChoices(
+                        (inspectCollege.sections || []).map((sec) => ({ section_name: sec })),
+                        filterBranch !== 'ALL' ? filterBranch : undefined
+                      ).map(sec => (
                         <option key={sec} value={sec}>Sec {sec}</option>
                       ))}
                     </select>
@@ -1705,15 +1779,15 @@ export default function CollegesPage() {
                     error.toLowerCase().includes('token') ||
                     error.toLowerCase().includes('authentication') ||
                     error.toLowerCase().includes('session')) && (
-                    <button
-                      type="button"
-                      onClick={() => navigate('/admin/login')}
-                      className="btn btn-sm btn-primary"
-                      style={{ whiteSpace: 'nowrap', padding: '4px 12px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    >
-                      <IconKey size={14} /> Log In
-                    </button>
-                  )}
+                      <button
+                        type="button"
+                        onClick={() => navigate('/admin/login')}
+                        className="btn btn-sm btn-primary"
+                        style={{ whiteSpace: 'nowrap', padding: '4px 12px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      >
+                        <IconKey size={14} /> Log In
+                      </button>
+                    )}
                 </div>
               )}
 

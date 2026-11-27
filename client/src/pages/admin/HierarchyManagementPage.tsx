@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import {
+  COURSE_OPTIONS,
+  getBranchesForCourse,
+  buildSectionChoices,
+} from '../../constants/academicCatalog';
 import {
   getHierarchyOverview,
   listAcademicYears,
@@ -59,12 +64,17 @@ export default function HierarchyManagementPage() {
     }
   })();
 
+  const [searchParams, setSearchParams] = useSearchParams();
   const isSuperAdmin = currentUser.role === 'super_admin' || currentUser.role === 'admin';
   const isInspector = currentUser.role === 'inspector' || currentUser.role === 'college_admin';
 
   // State: Colleges & Hierarchy Tree
   const [colleges, setColleges] = useState<any[]>([]);
-  const [selectedCollegeId, setSelectedCollegeId] = useState<number>(currentUser.college_id || 1);
+  const [selectedCollegeId, setSelectedCollegeId] = useState<number>(() => {
+    const urlCollege = Number(searchParams.get('college'));
+    if (isSuperAdmin && Number.isFinite(urlCollege) && urlCollege > 0) return urlCollege;
+    return currentUser.college_id || 1;
+  });
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
@@ -128,11 +138,16 @@ export default function HierarchyManagementPage() {
     try {
       const res = await getHierarchyOverview();
       if (res.data?.success) {
-        setColleges(res.data.colleges || []);
-        // Determine active college
+        const fetchedColleges = res.data.colleges || [];
+        setColleges(fetchedColleges);
+        // Determine active college (prefer URL ?college= for super admin)
+        const urlCollege = Number(searchParams.get('college'));
         let collegeId = currentUser.college_id;
-        if (!collegeId && res.data.colleges?.length > 0) {
-          collegeId = res.data.colleges[0].id;
+        if (isSuperAdmin && Number.isFinite(urlCollege) && urlCollege > 0 && fetchedColleges.some((c: any) => c.id === urlCollege)) {
+          collegeId = urlCollege;
+        }
+        if (!collegeId && fetchedColleges.length > 0) {
+          collegeId = fetchedColleges[0].id;
         }
         if (collegeId) {
           setSelectedCollegeId(collegeId);
@@ -624,7 +639,10 @@ export default function HierarchyManagementPage() {
                   Active College Scope
                 </div>
                 <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF' }}>
-                  {colleges.find((c) => c.id === selectedCollegeId)?.name || `College #${selectedCollegeId}`}
+                  {(() => {
+                    const activeCol = colleges.find((c) => c.id === selectedCollegeId);
+                    return activeCol ? `${activeCol.college_name || activeCol.name}${activeCol.college_code || activeCol.code ? ` (${activeCol.college_code || activeCol.code})` : ''}` : `College #${selectedCollegeId}`;
+                  })()}
                   {isInspector && (
                     <span style={{ marginLeft: 8, fontSize: '0.72rem', background: '#EAB308', color: '#000', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
                       INSPECTOR ENFORCED
@@ -639,7 +657,11 @@ export default function HierarchyManagementPage() {
                 <label style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Switch College:</label>
                 <select
                   value={selectedCollegeId}
-                  onChange={(e) => handleSelectCollege(Number(e.target.value))}
+                  onChange={(e) => {
+                    const nextId = Number(e.target.value);
+                    setSearchParams(nextId ? { college: String(nextId) } : {});
+                    handleSelectCollege(nextId);
+                  }}
                   style={{
                     padding: '8px 14px',
                     borderRadius: 8,
@@ -652,7 +674,7 @@ export default function HierarchyManagementPage() {
                 >
                   {colleges.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name} ({c.code})
+                      {c.college_name || c.name} ({c.college_code || c.code})
                     </option>
                   ))}
                 </select>
@@ -788,10 +810,18 @@ export default function HierarchyManagementPage() {
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
+                      gap: 8,
                     }}
                   >
-                    <span>{c.cohort_name}</span>
-                    <span style={{ fontSize: '0.72rem', color: '#C4B5FD', fontWeight: 700 }}>YOP {c.yop}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <span>{c.cohort_name}</span>
+                      {(c.degree || c.branch) && (
+                        <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>
+                          {c.degree || 'B.Tech'}{c.branch ? ` • ${c.branch}` : ''}
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: '#C4B5FD', fontWeight: 700, whiteSpace: 'nowrap' }}>YOP {c.yop}</span>
                   </button>
                 ))}
                 {cohorts.length === 0 && <div style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)' }}>Select a year to view cohorts.</div>}
@@ -1123,11 +1153,11 @@ export default function HierarchyManagementPage() {
                     type="text"
                     value={cohortName}
                     onChange={(e) => setCohortName(e.target.value)}
-                    placeholder="B.Tech CSE - 2028 Batch"
+                    placeholder={`${cohortDegree || 'B.Tech'} ${cohortBranch || 'CSE'} - ${cohortYop} Batch`}
                     style={{ width: '100%', padding: '10px', borderRadius: 8, background: '#1E293B', color: '#FFF', border: '1px solid var(--color-border)' }}
                   />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '0.8fr 1.1fr 1.1fr', gap: 10, marginBottom: 16 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 6 }}>YOP</label>
                     <input
@@ -1138,22 +1168,83 @@ export default function HierarchyManagementPage() {
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 6 }}>Degree</label>
-                    <input
-                      type="text"
-                      value={cohortDegree}
-                      onChange={(e) => setCohortDegree(e.target.value)}
+                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 6 }}>Course / Program</label>
+                    <select
+                      value={COURSE_OPTIONS.some((c) => c.value === cohortDegree) ? cohortDegree : 'CUSTOM'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'CUSTOM') {
+                          setCohortDegree('');
+                          return;
+                        }
+                        setCohortDegree(val);
+                        const matchingBranches = getBranchesForCourse(val);
+                        const nextBranch = matchingBranches[0]?.code || 'CSE';
+                        setCohortBranch(nextBranch);
+                        if (!cohortName.trim() || COURSE_OPTIONS.some((c) => cohortName.startsWith(c.value))) {
+                          setCohortName(`${val} ${nextBranch} - ${cohortYop} Batch`);
+                        }
+                      }}
                       style={{ width: '100%', padding: '10px', borderRadius: 8, background: '#1E293B', color: '#FFF', border: '1px solid var(--color-border)' }}
-                    />
+                    >
+                      {COURSE_OPTIONS.map((c) => (
+                        <option key={c.value} value={c.value}>
+                          {c.label} — {c.fullName}
+                        </option>
+                      ))}
+                      <option value="CUSTOM">Custom Course...</option>
+                    </select>
+                    {!COURSE_OPTIONS.some((c) => c.value === cohortDegree) && (
+                      <input
+                        type="text"
+                        value={cohortDegree}
+                        onChange={(e) => setCohortDegree(e.target.value)}
+                        placeholder="Enter course (e.g. Ph.D)"
+                        style={{ width: '100%', marginTop: 6, padding: '8px', borderRadius: 8, background: '#1E293B', color: '#FFF', border: '1px solid var(--color-border)', fontSize: '0.82rem' }}
+                      />
+                    )}
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 6 }}>Branch</label>
-                    <input
-                      type="text"
-                      value={cohortBranch}
-                      onChange={(e) => setCohortBranch(e.target.value)}
-                      style={{ width: '100%', padding: '10px', borderRadius: 8, background: '#1E293B', color: '#FFF', border: '1px solid var(--color-border)' }}
-                    />
+                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 6 }}>Branch / Specialization</label>
+                    {(() => {
+                      const availableBranches = getBranchesForCourse(cohortDegree);
+                      const isKnown = availableBranches.some((b) => b.code === cohortBranch);
+                      return (
+                        <>
+                          <select
+                            value={isKnown ? cohortBranch : 'CUSTOM'}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === 'CUSTOM') {
+                                setCohortBranch('');
+                                return;
+                              }
+                              setCohortBranch(val);
+                              if (!cohortName.trim() || COURSE_OPTIONS.some((c) => cohortName.startsWith(c.value))) {
+                                setCohortName(`${cohortDegree || 'B.Tech'} ${val} - ${cohortYop} Batch`);
+                              }
+                            }}
+                            style={{ width: '100%', padding: '10px', borderRadius: 8, background: '#1E293B', color: '#FFF', border: '1px solid var(--color-border)' }}
+                          >
+                            {availableBranches.map((b) => (
+                              <option key={b.code} value={b.code}>
+                                {b.code} — {b.label}
+                              </option>
+                            ))}
+                            <option value="CUSTOM">Custom Branch...</option>
+                          </select>
+                          {!isKnown && (
+                            <input
+                              type="text"
+                              value={cohortBranch}
+                              onChange={(e) => setCohortBranch(e.target.value.toUpperCase())}
+                              placeholder="Enter branch code"
+                              style={{ width: '100%', marginTop: 6, padding: '8px', borderRadius: 8, background: '#1E293B', color: '#FFF', border: '1px solid var(--color-border)', fontSize: '0.82rem' }}
+                            />
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
@@ -1167,37 +1258,48 @@ export default function HierarchyManagementPage() {
           {/* Modal: Add Section */}
           {showAddSectionModal && (
             <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-              <div className="card" style={{ width: 420, padding: 24, borderRadius: 12, background: '#0F172A', border: '1px solid var(--color-border)' }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', color: '#FFF' }}>Add Section</h3>
-                
-                {/* Quick Presets for Sections A, B, C, D, E */}
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: '0.78rem', color: '#EAA812', fontWeight: 700, marginBottom: 6 }}>
-                    Quick Section Presets (A, B, C, D, E):
-                  </label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {['A', 'B', 'C', 'D', 'E'].map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setSectionName(s)}
-                        style={{
-                          padding: '5px 14px',
-                          fontSize: '0.82rem',
-                          borderRadius: 6,
-                          background: sectionName === s ? '#002147' : '#1E293B',
-                          color: sectionName === s ? '#FFFFFF' : '#CBD5E1',
-                          border: sectionName === s ? '1.5px solid #EAA812' : '1px solid rgba(255,255,255,0.1)',
-                          cursor: 'pointer',
-                          fontWeight: sectionName === s ? 800 : 500,
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        Section {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              <div className="card" style={{ width: 460, padding: 24, borderRadius: 12, background: '#0F172A', border: '1px solid var(--color-border)' }}>
+                <h3 style={{ margin: '0 0 10px 0', fontSize: '1.2rem', color: '#FFF' }}>Add College Section</h3>
+                {(() => {
+                  const activeCohort = cohorts.find((c) => c.id === selectedCohortId);
+                  const presets = buildSectionChoices([], activeCohort?.branch);
+                  return (
+                    <>
+                      {activeCohort && (
+                        <div style={{ fontSize: '0.78rem', color: '#94A3B8', marginBottom: 12 }}>
+                          Cohort: <strong style={{ color: '#FDE68A' }}>{activeCohort.degree || 'B.Tech'} • {activeCohort.branch || 'CSE'}</strong> (YOP {activeCohort.yop})
+                        </div>
+                      )}
+                      <div style={{ marginBottom: 14 }}>
+                        <label style={{ display: 'block', fontSize: '0.78rem', color: '#EAA812', fontWeight: 700, marginBottom: 6 }}>
+                          Quick Section Presets:
+                        </label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {presets.map((s) => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => setSectionName(s)}
+                              style={{
+                                padding: '5px 12px',
+                                fontSize: '0.8rem',
+                                borderRadius: 6,
+                                background: sectionName === s ? '#002147' : '#1E293B',
+                                color: sectionName === s ? '#FFFFFF' : '#CBD5E1',
+                                border: sectionName === s ? '1.5px solid #EAA812' : '1px solid rgba(255,255,255,0.1)',
+                                cursor: 'pointer',
+                                fontWeight: sectionName === s ? 800 : 500,
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
 
                 <div style={{ marginBottom: 16 }}>
                   <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 6 }}>Section Name</label>

@@ -4,6 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import { API_BASE_URL } from '../../lib/config';
+import { getHierarchyOverview } from '../../lib/api';
+import {
+  COURSE_OPTIONS,
+  getBranchesForCourse,
+  buildSectionChoices,
+} from '../../constants/academicCatalog';
 import {
   IconKey,
   IconFlash,
@@ -51,6 +57,10 @@ interface ExamCode {
   exam_code: string;
   exam_name: string;
   subject: string;
+  branch?: string | null;
+  passout_year?: number | null;
+  section_id?: string | null;
+  section_ids?: string[] | null;
   total_questions: number;
   duration_minutes: number;
   start_time: string;
@@ -67,6 +77,7 @@ export default function ExamCodesPage() {
 
   const [examCodes, setExamCodes] = useState<ExamCode[]>([]);
   const [colleges, setColleges] = useState<College[]>([]);
+  const [hierarchySections, setHierarchySections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -86,6 +97,10 @@ export default function ExamCodesPage() {
     college_id: filterCollegeId || '',
     exam_name: '',
     subject: '',
+    course: 'B.Tech',
+    branch: '',
+    passout_year: '',
+    section_ids: [] as string[],
     total_questions: '30',
     duration_minutes: '60',
     start_time: '',
@@ -111,6 +126,14 @@ export default function ExamCodesPage() {
       if (filterCollegeId) codes = codes.filter((c: ExamCode) => c.college && String((c as any).college_id) === filterCollegeId);
       setExamCodes(codes);
       setColleges(colRes?.data?.colleges || []);
+      try {
+        const hierRes = await getHierarchyOverview();
+        if (hierRes.data?.success && Array.isArray(hierRes.data.sections)) {
+          setHierarchySections(hierRes.data.sections);
+        }
+      } catch {
+        // Optional hierarchy preload
+      }
     } catch {
       // Silently maintain existing state
     } finally {
@@ -125,7 +148,20 @@ export default function ExamCodesPage() {
     setSaving(true);
     setError('');
     try {
-      const res = await api('/api/admin/exam-codes', { method: 'POST', data: form });
+      const payload = {
+        college_id: form.college_id,
+        exam_name: form.exam_name,
+        subject: form.subject,
+        branch: form.branch || undefined,
+        passout_year: form.passout_year ? Number(form.passout_year) : undefined,
+        section_id: form.section_ids[0] || undefined,
+        section_ids: form.section_ids.length > 0 ? form.section_ids : undefined,
+        total_questions: form.total_questions,
+        duration_minutes: form.duration_minutes,
+        start_time: form.start_time,
+        end_time: form.end_time,
+      };
+      const res = await api('/api/admin/exam-codes', { method: 'POST', data: payload });
       setSuccess(`Exam code ${res.data.exam_code.exam_code} created!`);
       setShowForm(false);
       load();
@@ -299,7 +335,28 @@ export default function ExamCodesPage() {
                         </span>
                       </td>
                       <td className="text-muted text-sm">{ec.college?.college_name || '—'}</td>
-                      <td className="font-bold text-sm">{ec.exam_name}</td>
+                      <td>
+                        <div className="font-bold text-sm">{ec.exam_name}</div>
+                        {(ec.branch || ec.passout_year || (ec.section_ids && ec.section_ids.length > 0) || ec.section_id) && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                            {ec.branch && (
+                              <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(56, 189, 248, 0.14)', color: '#38bdf8' }}>
+                                {ec.branch}
+                              </span>
+                            )}
+                            {ec.passout_year && (
+                              <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(234, 179, 8, 0.14)', color: '#facc15' }}>
+                                YOP {ec.passout_year}
+                              </span>
+                            )}
+                            {((ec.section_ids && ec.section_ids.length > 0) ? ec.section_ids : (ec.section_id ? [ec.section_id] : [])).map((sec) => (
+                              <span key={sec} style={{ fontSize: '0.68rem', fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(168, 85, 247, 0.14)', color: '#c084fc' }}>
+                                Sec {sec}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
                       <td className="text-muted text-xs" style={{ whiteSpace: 'nowrap' }}>
                         <div>{formatDateTime(ec.start_time)}</div>
                         <div style={{ color: '#64748b' }}>→ {formatDateTime(ec.end_time)}</div>
@@ -354,7 +411,7 @@ export default function ExamCodesPage() {
               <form id="exam-code-form" onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">College *</label>
-                  <select className="form-input" value={form.college_id} onChange={e => setForm(p => ({ ...p, college_id: e.target.value }))} required
+                  <select className="form-input" value={form.college_id} onChange={e => setForm(p => ({ ...p, college_id: e.target.value, section_ids: [] }))} required
                     style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)' }}>
                     <option value="">Select College</option>
                     {colleges.map(c => <option key={c.id} value={c.id}>{c.college_name} ({c.college_code})</option>)}
@@ -366,6 +423,95 @@ export default function ExamCodesPage() {
                       <button type="button" className="btn-ghost" style={{ color: '#a29bfe', cursor: 'pointer', border: 'none', background: 'transparent', fontSize: '0.78rem', padding: 0, textDecoration: 'underline' }} onClick={() => { setShowForm(false); navigate('/admin/colleges'); }}>Add College first</button>
                     </div>
                   )}
+                </div>
+
+                {/* Course, Branch & Passout Year Selection */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 0.8fr', gap: 10 }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">Course</label>
+                    <select
+                      aria-label="Exam course program"
+                      className="form-input"
+                      value={form.course}
+                      onChange={e => setForm(p => ({ ...p, course: e.target.value, branch: '' }))}
+                      style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)' }}
+                    >
+                      {COURSE_OPTIONS.map(c => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">Branch Target</label>
+                    <select
+                      aria-label="Exam target branch"
+                      className="form-input"
+                      value={form.branch}
+                      onChange={e => setForm(p => ({ ...p, branch: e.target.value }))}
+                      style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)' }}
+                    >
+                      <option value="">All Branches</option>
+                      {getBranchesForCourse(form.course).map(b => (
+                        <option key={b.code} value={b.code}>{b.code}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">YOP</label>
+                    <select
+                      aria-label="Exam passout year"
+                      className="form-input"
+                      value={form.passout_year}
+                      onChange={e => setForm(p => ({ ...p, passout_year: e.target.value }))}
+                      style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)' }}
+                    >
+                      <option value="">All YOP</option>
+                      {[2025, 2026, 2027, 2028, 2029, 2030].map(yr => (
+                        <option key={yr} value={String(yr)}>{yr}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* College Sections Multi-Select */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label">College Sections (Optional — leave empty for all sections)</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {buildSectionChoices(
+                      form.college_id
+                        ? hierarchySections.filter(sec => Number(sec.college_id) === Number(form.college_id))
+                        : [],
+                      form.branch
+                    ).map(sec => {
+                      const active = form.section_ids.includes(sec);
+                      return (
+                        <button
+                          key={sec}
+                          type="button"
+                          onClick={() =>
+                            setForm(p => ({
+                              ...p,
+                              section_ids: active
+                                ? p.section_ids.filter(s => s !== sec)
+                                : [...p.section_ids, sec],
+                            }))
+                          }
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: 6,
+                            fontSize: '0.78rem',
+                            fontWeight: active ? 700 : 500,
+                            cursor: 'pointer',
+                            background: active ? 'rgba(168, 85, 247, 0.22)' : 'rgba(255,255,255,0.04)',
+                            color: active ? '#e9d5ff' : '#94a3b8',
+                            border: active ? '1px solid #a855f7' : '1px solid rgba(255,255,255,0.1)',
+                          }}
+                        >
+                          {sec}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="form-group" style={{ margin: 0 }}>

@@ -398,7 +398,14 @@ export interface HierarchyStudent {
 }
 
 export const getHierarchyOverview = () =>
-  api.get<{ success: boolean; colleges: any[] }>('/api/admin/hierarchy/overview');
+  api.get<{
+    success: boolean;
+    colleges: any[];
+    academic_years?: AcademicYear[];
+    cohorts?: Cohort[];
+    sections?: Section[];
+    batches?: Batch[];
+  }>('/api/admin/hierarchy/overview');
 
 export const listAcademicYears = (collegeId?: number) =>
   api.get<{ success: boolean; academic_years: AcademicYear[] }>('/api/admin/academic-years', { params: { college_id: collegeId } });

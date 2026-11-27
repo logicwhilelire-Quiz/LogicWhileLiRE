@@ -5,6 +5,13 @@ import AnimatedPage from '../../components/AnimatedPage';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import BrandLogo from '../../components/BrandLogo';
 import { API_BASE_URL } from '../../lib/config';
+import { getHierarchyOverview } from '../../lib/api';
+import {
+  COURSE_OPTIONS,
+  getBranchesForCourse,
+  inferCourseFromBranch,
+  buildSectionChoices,
+} from '../../constants/academicCatalog';
 import {
   IconBuilding,
   IconUsers,
@@ -71,6 +78,7 @@ interface StudentRosterItem {
 export default function StudentControl() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState('');
+  const [courseFilter, setCourseFilter] = useState('ALL');
   const [branchFilter, setBranchFilter] = useState('ALL');
   const [collegeFilter, setCollegeFilter] = useState('ALL');
   const [sectionFilter, setSectionFilter] = useState('ALL');
@@ -81,6 +89,8 @@ export default function StudentControl() {
   const [uploadMsg, setUploadMsg] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [colleges, setColleges] = useState<College[]>([]);
+  const [hierarchySections, setHierarchySections] = useState<any[]>([]);
+  const [hierarchyCohorts, setHierarchyCohorts] = useState<any[]>([]);
   const [copiedPass, setCopiedPass] = useState<string | null>(null);
   const [copiedCreds, setCopiedCreds] = useState<string | null>(null);
   const [previewEmailStudent, setPreviewEmailStudent] = useState<StudentRosterItem | null>(null);
@@ -245,7 +255,20 @@ export default function StudentControl() {
     axios
       .get(`${API_BASE_URL}/api/colleges`, { headers })
       .then((res) => {
-        if (res.data?.colleges) setColleges(res.data.colleges);
+        if (res.data?.colleges) {
+          setColleges(res.data.colleges);
+          if (res.data.colleges.length > 0) {
+            setNewStudent((prev) =>
+              prev.college_name === 'Unassigned' || !prev.college_id
+                ? {
+                    ...prev,
+                    college_id: res.data.colleges[0].id,
+                    college_name: res.data.colleges[0].college_name,
+                  }
+                : prev
+            );
+          }
+        }
       })
       .catch(() => {
         axios
@@ -255,6 +278,16 @@ export default function StudentControl() {
           })
           .catch(() => {});
       });
+
+    // 1b. Fetch College Sections & Cohorts from Hierarchy Overview
+    getHierarchyOverview()
+      .then((res) => {
+        if (res.data?.success) {
+          if (Array.isArray(res.data.sections)) setHierarchySections(res.data.sections);
+          if (Array.isArray(res.data.cohorts)) setHierarchyCohorts(res.data.cohorts);
+        }
+      })
+      .catch(() => {});
 
     // 2. Fetch Students from Admin API
     axios
@@ -299,9 +332,11 @@ export default function StudentControl() {
     hall_ticket: '',
     name: '',
     email: '',
+    course: 'B.Tech',
     branch: 'CSE',
+    college_id: '' as string | number,
     college_name: 'Unassigned',
-    section: 'CSM-A',
+    section: 'CSE-A',
     batch: 'Batch 1',
     passout_year: 2026,
     student_gate_pass: '',
@@ -569,6 +604,25 @@ export default function StudentControl() {
     const cleanRoll = newStudent.hall_ticket.trim();
     const cleanEmail = newStudent.email.trim() || `${cleanRoll.toLowerCase()}@campus.edu`;
     const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+    const matchedCollege =
+      colleges.find((c) => String(c.id) === String(newStudent.college_id)) ||
+      colleges.find((c) => c.college_name === newStudent.college_name);
+    const resolvedCollegeId = matchedCollege?.id || (newStudent.college_id ? Number(newStudent.college_id) : undefined);
+    const matchedCohort = resolvedCollegeId
+      ? hierarchyCohorts.find(
+          (ch) =>
+            Number(ch.college_id) === Number(resolvedCollegeId) &&
+            (!ch.degree || ch.degree.toLowerCase() === (newStudent.course || '').toLowerCase()) &&
+            (!ch.branch || ch.branch.toUpperCase() === (newStudent.branch || '').toUpperCase())
+        )
+      : undefined;
+    const matchedSection = resolvedCollegeId
+      ? hierarchySections.find(
+          (sec) =>
+            Number(sec.college_id) === Number(resolvedCollegeId) &&
+            (sec.section_name || sec.name || '').toUpperCase() === newStudent.section.toUpperCase()
+        )
+      : undefined;
 
     try {
       const res = await axios.post(
@@ -580,7 +634,10 @@ export default function StudentControl() {
           email: cleanEmail,
           branch: newStudent.branch,
           branch_code: newStudent.branch,
-          college_name: newStudent.college_name,
+          college_id: resolvedCollegeId,
+          college_name: matchedCollege?.college_name || newStudent.college_name,
+          cohort_id: matchedCohort?.id,
+          section_id: matchedSection?.id,
           section: newStudent.section,
           batch: newStudent.batch,
           passout_year: Number(newStudent.passout_year),
@@ -615,9 +672,11 @@ export default function StudentControl() {
         hall_ticket: '',
         name: '',
         email: '',
+        course: 'B.Tech',
         branch: 'CSE',
-        college_name: 'Unassigned',
-        section: 'CSM-A',
+        college_id: colleges[0]?.id || '',
+        college_name: colleges[0]?.college_name || 'Unassigned',
+        section: 'CSE-A',
         batch: 'Batch 1',
         passout_year: 2026,
         student_gate_pass: '',
@@ -632,6 +691,7 @@ export default function StudentControl() {
   };
 
   const filtered = students.filter((s) => {
+    const matchesCourse = courseFilter === 'ALL' || inferCourseFromBranch(s.branch) === courseFilter;
     const matchesBranch = branchFilter === 'ALL' || s.branch === branchFilter;
     const matchesCollege = collegeFilter === 'ALL' || (s.college_name && s.college_name.includes(collegeFilter));
     const matchesSection = sectionFilter === 'ALL' || s.section === sectionFilter;
@@ -657,7 +717,7 @@ export default function StudentControl() {
       (s.batch && s.batch.toLowerCase().includes(search.toLowerCase())) ||
       (s.student_gate_pass && s.student_gate_pass.toLowerCase().includes(search.toLowerCase())) ||
       (s.candidate_gate_pass && s.candidate_gate_pass.toLowerCase().includes(search.toLowerCase()));
-    return matchesBranch && matchesCollege && matchesSection && matchesBatch && matchesPassoutYear && matchesLiveStatus && matchesVerification && matchesSearch;
+    return matchesCourse && matchesBranch && matchesCollege && matchesSection && matchesBatch && matchesPassoutYear && matchesLiveStatus && matchesVerification && matchesSearch;
   });
 
   return (
@@ -1093,6 +1153,29 @@ export default function StudentControl() {
               </select>
             </div>
 
+            {/* Course Filter */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: '0.76rem', color: '#FDE68A', fontWeight: 700 }}>COURSE:</span>
+              <select
+                aria-label="Filter candidates by course"
+                className="form-input"
+                style={{ fontSize: '0.84rem', padding: '6px 10px' }}
+                value={courseFilter}
+                onChange={(e) => {
+                  const nextCourse = e.target.value;
+                  setCourseFilter(nextCourse);
+                  setBranchFilter('ALL');
+                }}
+              >
+                <option value="ALL">All Courses</option>
+                {COURSE_OPTIONS.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Branch Filter */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>BRANCH:</span>
@@ -1103,13 +1186,11 @@ export default function StudentControl() {
                 onChange={(e) => setBranchFilter(e.target.value)}
               >
                 <option value="ALL">All Branches</option>
-                <option value="CSE">CSE</option>
-                <option value="CSM">CSM</option>
-                <option value="IT">IT</option>
-                <option value="ECE">ECE</option>
-                <option value="AIML">AIML</option>
-                <option value="MECH">MECH</option>
-                <option value="CIVIL">CIVIL</option>
+                {getBranchesForCourse(courseFilter).map((b) => (
+                  <option key={b.code} value={b.code}>
+                    {b.code}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -1123,16 +1204,20 @@ export default function StudentControl() {
                 onChange={(e) => setSectionFilter(e.target.value)}
               >
                 <option value="ALL">All Sections</option>
-                <option value="CSM-A">CSM-A</option>
-                <option value="CSM-B">CSM-B</option>
-                <option value="CSE-A">CSE-A</option>
-                <option value="CSE-B">CSE-B</option>
-                <option value="CSE-C">CSE-C</option>
-                <option value="A">Section A</option>
-                <option value="B">Section B</option>
-                <option value="C">Section C</option>
-                <option value="D">Section D</option>
-                <option value="E">Section E</option>
+                {(() => {
+                  const selectedColObj = colleges.find((c) => c.college_name === collegeFilter);
+                  const scopedSecs = selectedColObj
+                    ? hierarchySections.filter((sec) => Number(sec.college_id) === Number(selectedColObj.id))
+                    : hierarchySections;
+                  const studentSecs = students
+                    .filter((s) => collegeFilter === 'ALL' || (s.college_name && s.college_name.includes(collegeFilter)))
+                    .map((s) => ({ section_name: s.section || '' }));
+                  return buildSectionChoices([...scopedSecs, ...studentSecs], branchFilter).map((sec) => (
+                    <option key={sec} value={sec}>
+                      {sec.length === 1 ? `Section ${sec}` : sec}
+                    </option>
+                  ));
+                })()}
               </select>
             </div>
 
@@ -1828,17 +1913,29 @@ export default function StudentControl() {
                     <label className="form-label">College / Institution *</label>
                     <select
                       className="form-input"
-                      value={newStudent.college_name}
-                      onChange={(e) => setNewStudent({ ...newStudent, college_name: e.target.value })}
+                      value={String(newStudent.college_id || colleges.find((c) => c.college_name === newStudent.college_name)?.id || '')}
+                      onChange={(e) => {
+                        const selected = colleges.find((c) => String(c.id) === e.target.value);
+                        if (selected) {
+                          const colSecs = hierarchySections.filter((sec) => Number(sec.college_id) === Number(selected.id));
+                          const choices = buildSectionChoices(colSecs, newStudent.branch);
+                          setNewStudent({
+                            ...newStudent,
+                            college_id: selected.id,
+                            college_name: selected.college_name,
+                            section: choices[0] || newStudent.section,
+                          });
+                        }
+                      }}
                     >
                       {colleges.length > 0 ? (
                         colleges.map((c) => (
-                          <option key={c.id} value={c.college_name}>
+                          <option key={c.id} value={c.id}>
                             {c.college_name} ({c.college_code})
                           </option>
                         ))
                       ) : (
-                        <option value="VR Siddhartha Engineering College">VR Siddhartha Engineering College</option>
+                        <option value="">No colleges found</option>
                       )}
                     </select>
                   </div>
@@ -1886,21 +1983,60 @@ export default function StudentControl() {
                     />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 0.8fr', gap: 12 }}>
+                    <div>
+                      <label className="form-label">Course / Program *</label>
+                      <select
+                        className="form-input"
+                        value={newStudent.course}
+                        onChange={(e) => {
+                          const nextCourse = e.target.value;
+                          const branches = getBranchesForCourse(nextCourse);
+                          const nextBranch = branches[0]?.code || 'CSE';
+                          const selectedColId = newStudent.college_id || colleges.find((c) => c.college_name === newStudent.college_name)?.id;
+                          const colSecs = selectedColId
+                            ? hierarchySections.filter((sec) => Number(sec.college_id) === Number(selectedColId))
+                            : [];
+                          const secChoices = buildSectionChoices(colSecs, nextBranch);
+                          setNewStudent({
+                            ...newStudent,
+                            course: nextCourse,
+                            branch: nextBranch,
+                            section: secChoices[0] || `${nextBranch}-A`,
+                          });
+                        }}
+                      >
+                        {COURSE_OPTIONS.map((c) => (
+                          <option key={c.value} value={c.value}>
+                            {c.label} — {c.fullName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div>
                       <label className="form-label">Branch *</label>
                       <select
                         className="form-input"
                         value={newStudent.branch}
-                        onChange={(e) => setNewStudent({ ...newStudent, branch: e.target.value })}
+                        onChange={(e) => {
+                          const nextBranch = e.target.value;
+                          const selectedColId = newStudent.college_id || colleges.find((c) => c.college_name === newStudent.college_name)?.id;
+                          const colSecs = selectedColId
+                            ? hierarchySections.filter((sec) => Number(sec.college_id) === Number(selectedColId))
+                            : [];
+                          const secChoices = buildSectionChoices(colSecs, nextBranch);
+                          setNewStudent({
+                            ...newStudent,
+                            branch: nextBranch,
+                            section: secChoices[0] || newStudent.section,
+                          });
+                        }}
                       >
-                        <option value="CSE">CSE (Computer Science)</option>
-                        <option value="CSM">CSM (AI &amp; ML)</option>
-                        <option value="IT">IT (Information Tech)</option>
-                        <option value="ECE">ECE (Electronics)</option>
-                        <option value="AIML">AIML</option>
-                        <option value="MECH">MECH (Mechanical)</option>
-                        <option value="CIVIL">CIVIL</option>
+                        {getBranchesForCourse(newStudent.course).map((b) => (
+                          <option key={b.code} value={b.code}>
+                            {b.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div>
@@ -1910,32 +2046,32 @@ export default function StudentControl() {
                         value={newStudent.passout_year}
                         onChange={(e) => setNewStudent({ ...newStudent, passout_year: Number(e.target.value) })}
                       >
-                        <option value={2025}>2025</option>
-                        <option value={2026}>2026</option>
-                        <option value={2027}>2027</option>
-                        <option value={2028}>2028</option>
-                        <option value={2029}>2029</option>
+                        {[2025, 2026, 2027, 2028, 2029, 2030].map((yr) => (
+                          <option key={yr} value={yr}>{yr}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div>
-                      <label className="form-label">Section *</label>
+                      <label className="form-label">College Section *</label>
                       <select
                         className="form-input"
                         value={newStudent.section}
                         onChange={(e) => setNewStudent({ ...newStudent, section: e.target.value })}
                       >
-                        <option value="CSM-A">CSM-A</option>
-                        <option value="CSM-B">CSM-B</option>
-                        <option value="CSE-A">CSE-A</option>
-                        <option value="CSE-B">CSE-B</option>
-                        <option value="CSE-C">CSE-C</option>
-                        <option value="Section A">Section A</option>
-                        <option value="Section B">Section B</option>
-                        <option value="Section C">Section C</option>
-                        <option value="Section D">Section D</option>
+                        {(() => {
+                          const selectedColId = newStudent.college_id || colleges.find((c) => c.college_name === newStudent.college_name)?.id;
+                          const colSecs = selectedColId
+                            ? hierarchySections.filter((sec) => Number(sec.college_id) === Number(selectedColId))
+                            : [];
+                          return buildSectionChoices(colSecs, newStudent.branch).map((sec) => (
+                            <option key={sec} value={sec}>
+                              {sec.length === 1 ? `Section ${sec}` : sec}
+                            </option>
+                          ));
+                        })()}
                       </select>
                     </div>
                     <div>

@@ -9,6 +9,13 @@ import FlightPathLines from '../../components/3d/FlightPathLines'
 import TypingDots from '../../components/3d/TypingDots'
 import AdminSidebar from '../../components/layout/AdminSidebar'
 import { API_BASE_URL } from '../../lib/config'
+import { getHierarchyOverview } from '../../lib/api'
+import {
+  COURSE_OPTIONS,
+  getBranchesForCourse,
+  inferCourseFromBranch,
+  buildSectionChoices,
+} from '../../constants/academicCatalog'
 import {
   IconBuilding,
   IconGraduation,
@@ -313,7 +320,7 @@ function Step1College({
   )
 }
 
-/* ── Step 2: Target Branch ────────────────────────── */
+/* ── Step 2: Target Course & Branch ───────────────── */
 function Step2Branch({
   selectedBranch,
   onSelect,
@@ -321,21 +328,84 @@ function Step2Branch({
   selectedBranch: string
   onSelect: (branch: string) => void
 }) {
+  const [selectedCourse, setSelectedCourse] = useState<string>(() => inferCourseFromBranch(selectedBranch))
   const [customBranch, setCustomBranch] = useState('')
+  const allowedCodes = new Set(getBranchesForCourse(selectedCourse).map(b => b.code.toUpperCase()))
+  const visibleBranches = selectedCourse === 'ALL'
+    ? STANDARD_BRANCHES
+    : [
+        ...STANDARD_BRANCHES.filter(b => allowedCodes.has(b.code.toUpperCase())),
+        ...getBranchesForCourse(selectedCourse)
+          .filter(cat => !STANDARD_BRANCHES.some(sb => sb.code.toUpperCase() === cat.code.toUpperCase()))
+          .map(cat => ({ code: cat.code, name: cat.label, icon: <IconGraduation size={18} color="#EAA812" /> })),
+      ]
 
   return (
     <div>
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 16 }}>
         <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
-          Step 2: Select Academic Branch
+          Step 2: Select Course &amp; Academic Branch
         </h3>
         <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.86rem', margin: 0 }}>
-          Only students belonging to this branch can discover or access this examination.
+          Choose the degree program (Course) and branch. Only enrolled students in this branch can discover or access this assessment.
         </p>
       </div>
 
+      {/* Course / Program Selector */}
+      <div style={{ marginBottom: 18 }}>
+        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#FDE68A', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+          Course / Degree Program
+        </label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => setSelectedCourse('ALL')}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 8,
+              border: selectedCourse === 'ALL' ? '1.5px solid #EAA812' : '1px solid var(--color-border, #334155)',
+              background: selectedCourse === 'ALL' ? 'rgba(234, 168, 18, 0.16)' : 'rgba(30,41,59,0.4)',
+              color: selectedCourse === 'ALL' ? '#FDE68A' : '#cbd5e1',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            All Courses
+          </button>
+          {COURSE_OPTIONS.map(c => {
+            const active = selectedCourse === c.value
+            return (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => {
+                  setSelectedCourse(c.value)
+                  const matching = getBranchesForCourse(c.value)
+                  if (matching.length > 0 && !matching.some(b => b.code.toUpperCase() === selectedBranch.toUpperCase())) {
+                    onSelect(matching[0].code)
+                  }
+                }}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  border: active ? '1.5px solid #EAA812' : '1px solid var(--color-border, #334155)',
+                  background: active ? '#002147' : 'rgba(30,41,59,0.4)',
+                  color: active ? '#FFFFFF' : '#cbd5e1',
+                  fontSize: '0.8rem',
+                  fontWeight: active ? 800 : 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {c.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14, marginBottom: 20 }}>
-        {STANDARD_BRANCHES.map(b => {
+        {visibleBranches.map(b => {
           const isSelected = selectedBranch.toUpperCase() === b.code.toUpperCase()
           return (
             <motion.div
@@ -487,28 +557,31 @@ function Step3PassoutYear({
 
 /* ── Step 4: Section & Batch Targeting ────────────── */
 function Step4SectionBatch({
+  availableSections,
   selectedSections,
   selectedBatch,
   onToggleSection,
   onSelectAllSections,
   onSelectBatch,
 }: {
+  availableSections: string[]
   selectedSections: string[]
   selectedBatch: string
   onToggleSection: (sec: string) => void
   onSelectAllSections: () => void
   onSelectBatch: (batch: string) => void
 }) {
-  const isAllSelected = STANDARD_SECTIONS.every(s => selectedSections.includes(s))
+  const sectionChoices = availableSections.length > 0 ? availableSections : STANDARD_SECTIONS
+  const isAllSelected = sectionChoices.every(s => selectedSections.includes(s))
 
   return (
     <div>
       <div style={{ marginBottom: 20 }}>
         <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f8fafc' }}>
-          Step 4: Section &amp; Batch Eligibility
+          Step 4: College Section &amp; Batch Eligibility
         </h3>
         <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.86rem', margin: 0 }}>
-          Target specific sections or batches. Students outside this target will receive an HTTP 404 Not Found response and cannot tell this exam exists.
+          Target specific college sections or batches. Students outside this target will receive an HTTP 404 Not Found response and cannot tell this exam exists.
         </p>
       </div>
 
@@ -516,7 +589,7 @@ function Step4SectionBatch({
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#f8fafc' }}>
-            Target Sections *
+            Target College Sections *
           </label>
           <button
             type="button"
@@ -531,7 +604,7 @@ function Step4SectionBatch({
         </div>
 
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          {STANDARD_SECTIONS.map(sec => {
+          {sectionChoices.map(sec => {
             const isSelected = selectedSections.includes(sec)
             return (
               <motion.button
@@ -541,18 +614,18 @@ function Step4SectionBatch({
                 whileTap={{ scale: 0.96 }}
                 onClick={() => onToggleSection(sec)}
                 style={{
-                  width: 58, height: 58, borderRadius: 12,
+                  minWidth: 64, height: 58, padding: '0 12px', borderRadius: 12,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                   border: isSelected ? '2px solid var(--color-primary, #2b7fff)' : '1px solid var(--color-border, #334155)',
                   background: isSelected ? 'rgba(43,127,255,0.2)' : 'rgba(30,41,59,0.4)',
                   color: isSelected ? 'var(--color-primary, #2b7fff)' : '#f8fafc',
-                  fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer',
+                  fontWeight: 800, fontSize: sec.length > 3 ? '0.86rem' : '1.1rem', cursor: 'pointer',
                   boxShadow: isSelected ? '0 0 16px rgba(43,127,255,0.25)' : 'none',
                   transition: 'all 0.2s ease',
                 }}
               >
                 <span>{sec}</span>
-                <span style={{ fontSize: '0.62rem', fontWeight: 600, opacity: 0.8 }}>Sec</span>
+                <span style={{ fontSize: '0.62rem', fontWeight: 600, opacity: 0.8 }}>Section</span>
               </motion.button>
             )
           })}
@@ -1107,6 +1180,7 @@ export default function CreateExamPage() {
   // Hierarchy reference data
   const [colleges, setColleges] = useState<CollegeOption[]>([])
   const [staffList, setStaffList] = useState<StaffOption[]>([])
+  const [hierarchySections, setHierarchySections] = useState<any[]>([])
 
   const defaultPassoutYear = (() => {
     const d = new Date()
@@ -1170,6 +1244,15 @@ export default function CreateExamPage() {
         }
       } catch {
         setStaffList([])
+      }
+
+      try {
+        const hierRes = await getHierarchyOverview()
+        if (hierRes.data?.success && Array.isArray(hierRes.data.sections)) {
+          setHierarchySections(hierRes.data.sections)
+        }
+      } catch {
+        // Preset fallback still active
       }
     }
     loadData()
@@ -1359,30 +1442,38 @@ export default function CreateExamPage() {
                     onSelect={passout_year => setForm(p => ({ ...p, passout_year }))}
                   />
                 )}
-                {step === 4 && (
-                  <Step4SectionBatch
-                    selectedSections={form.section_ids}
-                    selectedBatch={form.batch_id}
-                    onToggleSection={sec => {
-                      setForm(p => {
-                        const exists = p.section_ids.includes(sec)
-                        const nextSecs = exists
-                          ? p.section_ids.filter(s => s !== sec)
-                          : [...p.section_ids, sec]
-                        return { ...p, section_ids: nextSecs, section_id: nextSecs[0] || 'A' }
-                      })
-                    }}
-                    onSelectAllSections={() => {
-                      const allSelected = STANDARD_SECTIONS.every(s => form.section_ids.includes(s))
-                      setForm(p => ({
-                        ...p,
-                        section_ids: allSelected ? ['A'] : [...STANDARD_SECTIONS],
-                        section_id: allSelected ? 'A' : 'A',
-                      }))
-                    }}
-                    onSelectBatch={batch_id => setForm(p => ({ ...p, batch_id }))}
-                  />
-                )}
+                {step === 4 && (() => {
+                  const collegeScopedSecs = hierarchySections.filter(
+                    s => Number(s.college_id) === Number(form.college_id)
+                  )
+                  const sectionChoices = buildSectionChoices(collegeScopedSecs, form.branch)
+                  return (
+                    <Step4SectionBatch
+                      availableSections={sectionChoices}
+                      selectedSections={form.section_ids}
+                      selectedBatch={form.batch_id}
+                      onToggleSection={sec => {
+                        setForm(p => {
+                          const exists = p.section_ids.includes(sec)
+                          const nextSecs = exists
+                            ? p.section_ids.filter(s => s !== sec)
+                            : [...p.section_ids, sec]
+                          return { ...p, section_ids: nextSecs, section_id: nextSecs[0] || sectionChoices[0] || 'A' }
+                        })
+                      }}
+                      onSelectAllSections={() => {
+                        const allSelected = sectionChoices.every(s => form.section_ids.includes(s))
+                        const firstSec = sectionChoices[0] || 'A'
+                        setForm(p => ({
+                          ...p,
+                          section_ids: allSelected ? [firstSec] : [...sectionChoices],
+                          section_id: firstSec,
+                        }))
+                      }}
+                      onSelectBatch={batch_id => setForm(p => ({ ...p, batch_id }))}
+                    />
+                  )
+                })()}
                 {step === 5 && (
                   <Step5QuestionPaper
                     form={form}
