@@ -244,8 +244,8 @@ export default function StudentLoginPage() {
             >
               <IconKey size={13} color="#93C5FD" /> Password
             </label>
-            <Link to="/forgot-password" style={{ fontSize: '0.74rem', color: '#FFD000', textDecoration: 'none', fontWeight: 700 }}>
-              Forgot password?
+            <Link to="/forgot-password?portal=student" style={{ fontSize: '0.74rem', color: '#FFD000', textDecoration: 'none', fontWeight: 700 }}>
+              Forgot ID / Password?
             </Link>
           </div>
           <div style={{ position: 'relative' }}>

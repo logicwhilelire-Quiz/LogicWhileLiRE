@@ -182,20 +182,25 @@ export default function FacultyLoginPage() {
         </div>
 
         <div style={{ marginBottom: 20 }}>
-          <label
-            htmlFor="faculty-password-input"
-            style={{
-              display: 'block',
-              fontSize: '0.74rem',
-              fontWeight: 800,
-              color: '#FB923C',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              marginBottom: 6,
-            }}
-          >
-            Password
-          </label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <label
+              htmlFor="faculty-password-input"
+              style={{
+                display: 'block',
+                fontSize: '0.74rem',
+                fontWeight: 800,
+                color: '#FB923C',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                margin: 0,
+              }}
+            >
+              Password
+            </label>
+            <Link to="/forgot-password?portal=faculty" style={{ fontSize: '0.74rem', color: '#FFB400', textDecoration: 'none', fontWeight: 700 }}>
+              Forgot ID / Password?
+            </Link>
+          </div>
           <div style={{ position: 'relative' }}>
             <input
               id="faculty-password-input"

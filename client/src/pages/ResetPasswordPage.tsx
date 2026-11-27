@@ -28,6 +28,15 @@ export default function ResetPasswordPage() {
     if (emailParam) setForm((prev) => ({ ...prev, email: emailParam }));
   }, [tokenParam, emailParam]);
 
+  const passwordRules = [
+    { label: 'At least 8 characters', ok: form.new_password.length >= 8 },
+    { label: 'One uppercase letter (A-Z)', ok: /[A-Z]/.test(form.new_password) },
+    { label: 'One lowercase letter (a-z)', ok: /[a-z]/.test(form.new_password) },
+    { label: 'One digit (0-9)', ok: /[0-9]/.test(form.new_password) },
+    { label: 'One special symbol (!@#$...)', ok: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(form.new_password) },
+  ];
+  const allRulesSatisfied = passwordRules.every((r) => r.ok);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.token.trim()) {
@@ -38,8 +47,9 @@ export default function ResetPasswordPage() {
       setError('Email address is missing.');
       return;
     }
-    if (!form.new_password || form.new_password.length < 6) {
-      setError('Password must be at least 6 characters long.');
+    if (!allRulesSatisfied) {
+      const firstFail = passwordRules.find((r) => !r.ok);
+      setError(`Password policy requirement: ${firstFail?.label || 'strong password required'}.`);
       return;
     }
     if (form.new_password !== form.confirm_password) {
@@ -155,13 +165,30 @@ export default function ResetPasswordPage() {
                     id="reset-new-password"
                     className="form-input"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter at least 6 characters"
+                    placeholder="At least 8 chars (A-z, 0-9, symbol)"
                     value={form.new_password}
                     onChange={(e) => setForm({ ...form, new_password: e.target.value })}
                     autoComplete="new-password"
                     required
                     autoFocus
                   />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 10px', marginTop: 8 }}>
+                    {passwordRules.map((rule) => (
+                      <div
+                        key={rule.label}
+                        style={{
+                          fontSize: '0.72rem',
+                          color: rule.ok ? '#34D399' : '#64748B',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 5,
+                        }}
+                      >
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: rule.ok ? '#10B981' : '#475569' }} />
+                        <span>{rule.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="form-group">

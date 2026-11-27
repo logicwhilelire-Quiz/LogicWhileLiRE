@@ -93,6 +93,7 @@ interface ThrottlerState {
 }
 
 const roomThrottlers = new Map<string, ThrottlerState>();
+const roomExamDurationCache = new Map<string, { durationSec: number; expiresAt: number }>();
 
 export function scheduleThrottledRoomUpdate(examCode: string): void {
   if (!examCode) return;
@@ -104,15 +105,19 @@ export function scheduleThrottledRoomUpdate(examCode: string): void {
   }
   state.isDirty = true;
 
+  const connectedSize = lobbyConnections.get(code)?.size ?? 0;
+  // Adaptive cadence for 200-300+ concurrent room sockets to avoid broadcast amplification
+  const throttleWindowMs = connectedSize > 50 ? 2000 : 1000;
+
   const now = Date.now();
   const timeSinceLastEmit = now - state.lastEmitTime;
 
-  if (timeSinceLastEmit >= 1000 && !state.scheduledTimeout) {
+  if (timeSinceLastEmit >= throttleWindowMs && !state.scheduledTimeout) {
     state.lastEmitTime = now;
     state.isDirty = false;
     emitBatchRoomTelemetry(code).catch(() => {});
   } else if (!state.scheduledTimeout) {
-    const delay = Math.max(50, 1000 - timeSinceLastEmit);
+    const delay = Math.max(50, throttleWindowMs - timeSinceLastEmit);
     state.scheduledTimeout = setTimeout(async () => {
       const curr = roomThrottlers.get(code);
       if (curr) {
@@ -166,14 +171,20 @@ export async function emitBatchRoomTelemetry(examCode: string): Promise<void> {
     (a) => a.status === 'terminated_cheating' || a.status === 'terminated' || a.status === 'Terminated - violation'
   ).length;
 
-  // 3. Compute live rankings
-  const { data: examData } = await supabase
-    .from('exam_codes')
-    .select('duration_minutes, is_active')
-    .eq('exam_code', code)
-    .maybeSingle();
-
-  const totalDurationSec = (examData?.duration_minutes ?? 60) * 60;
+  // 3. Compute live rankings (cached exam duration for 30s to avoid repetitive DB reads)
+  let totalDurationSec = 3600;
+  const cachedDur = roomExamDurationCache.get(code);
+  if (cachedDur && cachedDur.expiresAt > Date.now()) {
+    totalDurationSec = cachedDur.durationSec;
+  } else {
+    const { data: examData } = await supabase
+      .from('exam_codes')
+      .select('duration_minutes, is_active')
+      .eq('exam_code', code)
+      .maybeSingle();
+    totalDurationSec = (examData?.duration_minutes ?? 60) * 60;
+    roomExamDurationCache.set(code, { durationSec: totalDurationSec, expiresAt: Date.now() + 30000 });
+  }
 
   const ranked = completedList
     .map((r) => ({
@@ -207,7 +218,7 @@ export async function emitBatchRoomTelemetry(examCode: string): Promise<void> {
     status: 'waiting',
   }));
 
-  const payload = {
+  const monitorPayload = {
     event: 'ROOM_TELEMETRY',
     exam_code: code,
     queue_count: waitingSockets.length,
@@ -220,18 +231,25 @@ export async function emitBatchRoomTelemetry(examCode: string): Promise<void> {
     timestamp: Date.now(),
   };
 
-  // Broadcast unified telemetry to all rooms
-  io.to(`lobby:${code}`).emit('telemetry:update', payload);
-  io.to(`leaderboard:${code}`).emit('telemetry:update', payload);
-  io.to(`monitor:${code}`).emit('telemetry:update', payload);
+  // Lightweight payload for up to 300+ student lobby sockets (avoids multiplying O(N^2) JSON broadcasts)
+  const studentLobbyPayload = {
+    ...monitorPayload,
+    live_ranks: ranked.slice(0, 10),
+    waiting_students: waitingFormatted.slice(0, 25),
+  };
 
-  // Backwards compatibility for existing views
+  // Broadcast scoped telemetry to all rooms
+  io.to(`lobby:${code}`).emit('telemetry:update', studentLobbyPayload);
+  io.to(`leaderboard:${code}`).emit('telemetry:update', monitorPayload);
+  io.to(`monitor:${code}`).emit('telemetry:update', monitorPayload);
+
+  // Backwards compatibility for existing views (counts preserved, list bounded on public lobby room)
   io.to(`lobby:${code}`).emit('lobby:update', {
-    participants: waitingFormatted,
+    participants: waitingFormatted.slice(0, 25),
     meta: {
-      enrolled: payload.total_enrolled,
+      enrolled: monitorPayload.total_enrolled,
       connected: connectedCount,
-      pending: Math.max(0, payload.total_enrolled - connectedCount),
+      pending: Math.max(0, monitorPayload.total_enrolled - connectedCount),
       queue_count: waitingSockets.length,
       submitted_count: completedList.length,
       terminated_count: terminatedCount,
@@ -273,6 +291,12 @@ export function initSocketIO(httpServer: HttpServer): IOServer {
       credentials: true,
     },
     transports: ['websocket', 'polling'],
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    maxHttpBufferSize: 1e6,
+    perMessageDeflate: {
+      threshold: 1024,
+    },
   });
 
   io.on('connection', (socket: Socket) => {

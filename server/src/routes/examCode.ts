@@ -29,6 +29,8 @@ import {
   lockQuestionPaper,
   replaceQuestionPaper,
   validateStudentEligibility,
+  getExamByCodeCached,
+  getQuestionsForExamCached,
 } from '../controllers/examCodeController';
 import {
   verifyExamEntry,
@@ -92,32 +94,7 @@ const handleExamCodeStart = async (req: any, res: any) => {
   const hallTicket = String(req.query.hallTicket || req.body?.hallTicket || 'GUEST').toUpperCase();
 
   try {
-    let { data: exam } = await supabase
-      .from('exam_codes')
-      .select('*')
-      .eq('exam_code', code)
-      .maybeSingle();
-
-    if (!exam) {
-      const altCodes = [
-        code.replace(/5/g, 'S'),
-        code.replace(/S/g, '5'),
-        code.replace(/0/g, 'O'),
-        code.replace(/O/g, '0'),
-      ].filter((c) => c !== code);
-
-      for (const alt of altCodes) {
-        const { data: altExam } = await supabase
-          .from('exam_codes')
-          .select('*')
-          .eq('exam_code', alt)
-          .maybeSingle();
-        if (altExam) {
-          exam = altExam;
-          break;
-        }
-      }
-    }
+    const exam = await getExamByCodeCached(code);
 
     if (!exam) {
       return res.status(404).json({ success: false, error: 'Exam not found or unavailable', code: 'EXAM_NOT_FOUND' });
@@ -232,14 +209,9 @@ const handleExamCodeStart = async (req: any, res: any) => {
       }
     }
 
-    const { data: qData } = await supabase
-      .from('questions_ec')
-      .select('*')
-      .eq('exam_code', effectiveCode)
-      .order('display_order', { ascending: true });
+    let questions = await getQuestionsForExamCached(effectiveCode);
 
     // If no questions found for exact code, fallback to first available questions
-    let questions = qData;
     if (!questions || questions.length === 0) {
       const { data: fallbackQ } = await supabase
         .from('questions_ec')

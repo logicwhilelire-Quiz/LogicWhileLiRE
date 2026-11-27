@@ -182,20 +182,25 @@ export default function InspectorLoginPage() {
         </div>
 
         <div style={{ marginBottom: 20 }}>
-          <label
-            htmlFor="inspector-password-input"
-            style={{
-              display: 'block',
-              fontSize: '0.74rem',
-              fontWeight: 800,
-              color: '#C4B5FD',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              marginBottom: 6,
-            }}
-          >
-            Password
-          </label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <label
+              htmlFor="inspector-password-input"
+              style={{
+                display: 'block',
+                fontSize: '0.74rem',
+                fontWeight: 800,
+                color: '#C4B5FD',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                margin: 0,
+              }}
+            >
+              Password
+            </label>
+            <Link to="/forgot-password?portal=inspector" style={{ fontSize: '0.74rem', color: '#C4B5FD', textDecoration: 'none', fontWeight: 700 }}>
+              Forgot ID / Password?
+            </Link>
+          </div>
           <div style={{ position: 'relative' }}>
             <input
               id="inspector-password-input"

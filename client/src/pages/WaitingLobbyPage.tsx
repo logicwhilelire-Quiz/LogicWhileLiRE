@@ -16,14 +16,11 @@ import {
   IconAlert,
   IconFlash,
   IconUsers,
-  IconTerminal,
-  IconSearch,
   IconBook,
   IconCode,
   IconRadio,
   IconEye,
   IconSpeedometer,
-  IconBuilding,
   IconKey,
   IconFileText,
   IconClipboard,
@@ -70,20 +67,6 @@ interface ExamStartedPayload {
   /** Populated on reconnect-sync: seconds already elapsed at the point the server sent this */
   elapsed_seconds?: number;
 }
-
-const formatRelativeTime = (isoString?: string) => {
-  if (!isoString) return "Just now";
-  try {
-    const diffMs = Date.now() - new Date(isoString).getTime();
-    const diffSec = Math.floor(diffMs / 1000);
-    if (diffSec < 60) return `${Math.max(1, diffSec)}s ago`;
-    const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${diffMin}m ago`;
-    return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return "Just now";
-  }
-};
 
 const LOBBY_EXAM_SECTORS = [
   {
@@ -148,7 +131,7 @@ export default function WaitingLobbyPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [activeTab, setActiveTab] = useState<'sections' | 'syllabus' | 'security' | 'telemetry'>('sections');
+  const [activeTab, setActiveTab] = useState<'format' | 'security'>('format');
 
   const [candidate, setCandidate] = useState<CandidateProfile | null>(() => {
     const locState = (location.state as any) || {};
@@ -187,7 +170,15 @@ export default function WaitingLobbyPage() {
     subject?: string;
     total_questions?: number;
     total_marks?: number;
+    passing_percentage?: number;
     sections?: string[];
+    exam_sections?: Array<{
+      section: string;
+      questions: number;
+      marks: number;
+      mcqCount: number;
+      codeCount: number;
+    }>;
     branch?: string;
   }>({});
 
@@ -195,8 +186,6 @@ export default function WaitingLobbyPage() {
   const [latency, setLatency] = useState<number | null>(null);
   const [lobbyMeta, setLobbyMeta] = useState<LobbyMeta>({ enrolled: 0, connected: 0, pending: 0 });
   const [participants, setParticipants] = useState<LobbyParticipant[]>([]);
-  const [selectedSection, setSelectedSection] = useState<string>('ALL');
-  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const [examStarted, setExamStarted] = useState(false);
   const [startPayload, setStartPayload] = useState<ExamStartedPayload | null>(null);
@@ -287,13 +276,15 @@ export default function WaitingLobbyPage() {
         if (Array.isArray(d?.waiting_students) && d.waiting_students.length > 0) {
           setParticipants(d.waiting_students);
         }
-        if (d?.exam_name || d?.sections) {
+        if (d?.exam_name || d?.sections || d?.exam_sections) {
           setExamMeta({
             exam_name: d.exam_name,
             subject: d.subject,
             total_questions: d.total_questions,
             total_marks: d.total_marks,
+            passing_percentage: d.passing_percentage,
             sections: d.sections,
+            exam_sections: Array.isArray(d.exam_sections) ? d.exam_sections : undefined,
             branch: d.branch,
           });
         }
@@ -333,12 +324,15 @@ export default function WaitingLobbyPage() {
     };
 
     checkIfAlreadyStarted();
-    const interval = setInterval(checkIfAlreadyStarted, 2500);
+    // Jittered interval prevents 200-300 waiting browsers from polling at the exact same millisecond
+    const baseMs = connected ? 6000 : 3000;
+    const jitterMs = Math.floor(Math.random() * 1400);
+    const interval = setInterval(checkIfAlreadyStarted, baseMs + jitterMs);
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [contestId, examStarted, examDurationSeconds]);
+  }, [contestId, examStarted, examDurationSeconds, connected]);
 
   // Real-time Administrator Command Synchronizer (Cross-Window & Broadcast Channel)
   useEffect(() => {
@@ -572,10 +566,11 @@ export default function WaitingLobbyPage() {
       } catch { }
     };
 
-    const interval = setInterval(checkStatus, 3000);
+    const statusIntervalMs = (connected ? 5500 : 3000) + Math.floor(Math.random() * 1200);
+    const interval = setInterval(checkStatus, statusIntervalMs);
     checkStatus();
     return () => clearInterval(interval);
-  }, [contestId, candidate, location.state]);
+  }, [contestId, candidate, location.state, connected]);
 
   useEffect(() => {
     if (examStarted && startPayload) {
@@ -601,75 +596,37 @@ export default function WaitingLobbyPage() {
     navigate("/login");
   };
 
-  // Derive consolidated list of all waiting candidates (ensuring logged-in candidate is represented)
-  const allParticipants = useMemo(() => {
-    const list = [...participants];
-    const myHt = String(
-      candidate?.roll_number ||
-      candidate?.hall_ticket ||
-      (location.state as any)?.hallTicket ||
-      ''
-    ).toUpperCase().trim();
-
-    if (myHt && !list.some((p) => p.hall_ticket_no?.toUpperCase() === myHt)) {
-      list.unshift({
-        hall_ticket_no: myHt,
-        student_name: displayName || 'Current Candidate',
-        section: candidate?.section || 'Section A',
-        status: isReleased ? 'released' : 'waiting',
-        joined_at: new Date().toISOString(),
-      });
-    }
-    return list;
-  }, [participants, candidate, displayName, isReleased, location.state]);
-
-  // Normalize section label so e.g. 'Section A', 'A', and 'CSE-A' group consistently
-  const normalizeSectionLabel = (raw?: string | null) => {
-    const up = (raw || 'A').toUpperCase().trim().replace(/^SECTION\s*/i, '');
-    return up.length === 1 ? `SECTION ${up}` : up;
-  };
-
-  // Derive section counts for filtering and breakdown cards
-  const sectionCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    if (Array.isArray(examMeta.sections) && examMeta.sections.length > 0) {
-      examMeta.sections.forEach((s) => {
-        const clean = normalizeSectionLabel(s);
-        if (clean) counts[clean] = 0;
-      });
-    } else {
-      counts['SECTION A'] = 0;
-      counts['SECTION B'] = 0;
-    }
-    allParticipants.forEach((p) => {
-      const secKey = normalizeSectionLabel(p.section || candidate?.section || 'A');
-      counts[secKey] = (counts[secKey] || 0) + 1;
-    });
-    return counts;
-  }, [allParticipants, examMeta.sections, candidate?.section]);
-
-  const availableSections = useMemo(() => {
-    const secs = Object.keys(sectionCounts).sort();
-    return ['ALL', ...secs];
-  }, [sectionCounts]);
-
-  const filteredParticipants = useMemo(() => {
-    return allParticipants.filter((p) => {
-      const sec = normalizeSectionLabel(p.section || candidate?.section || 'A');
-      const matchesSection = selectedSection === 'ALL' || sec === selectedSection;
-      const q = searchQuery.toLowerCase().trim();
-      const matchesQuery =
-        !q ||
-        p.student_name.toLowerCase().includes(q) ||
-        p.hall_ticket_no.toLowerCase().includes(q) ||
-        sec.toLowerCase().includes(q);
-      return matchesSection && matchesQuery;
-    });
-  }, [allParticipants, candidate?.section, selectedSection, searchQuery]);
-
   const minutes = Math.floor(countdown / 60);
   const seconds = countdown % 60;
   const timeFormatted = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+  const examFormatSections = useMemo(() => {
+    if (Array.isArray(examMeta.exam_sections) && examMeta.exam_sections.length > 0) {
+      const palette = ['#F59E0B', '#8B5CF6', '#10B981', '#38BDF8', '#EC4899'];
+      return examMeta.exam_sections.map((s, idx) => ({
+        id: `live-sec-${idx}`,
+        code: `SECTION 0${idx + 1}`,
+        name: s.section,
+        subtitle: s.codeCount > 0 && s.mcqCount > 0
+          ? `${s.mcqCount} Objective MCQ + ${s.codeCount} Coding Sandbox`
+          : s.codeCount > 0
+            ? 'Live Coding Challenge (Isolated Sandbox)'
+            : 'Objective Multiple Choice (Server-Shuffled)',
+        color: palette[idx % palette.length],
+        questions: `${s.questions} Qs`,
+        marks: `${s.marks} Marks`,
+      }));
+    }
+    return LOBBY_EXAM_SECTORS.map((s) => ({
+      id: s.id,
+      code: s.code,
+      name: s.name,
+      subtitle: s.subtitle,
+      color: s.color,
+      questions: s.questions,
+      marks: s.marks,
+    }));
+  }, [examMeta.exam_sections]);
 
   return (
     <AnimatedPage>
@@ -1198,15 +1155,15 @@ export default function WaitingLobbyPage() {
             </div>
           </div>
 
-          {/* Column 2: Roster Stats, Academic Sections Breakdown, Filter Tabs, Live Table & Live Telemetry */}
+          {/* Column 2: Real Exam Format Summary, Sections Breakdown & Security Protocols */}
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            {/* Visual Connection Counters & Sector Matrix Pills */}
+            {/* Exam Format Telemetry KPI Strip */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
               {[
-                { label: "In Lobby", value: lobbyMeta.connected || allParticipants.length, color: "#38BDF8", icon: <IconRadio size={14} color="#38BDF8" /> },
-                { label: "Enrolled", value: lobbyMeta.enrolled || Math.max(allParticipants.length, 1), color: "#EAA812", icon: <IconUsers size={14} color="#EAA812" /> },
-                { label: "Academic Secs", value: Object.keys(sectionCounts).length, color: "#10B981", icon: <IconBuilding size={14} color="#10B981" /> },
-                { label: "Exam Sectors", value: "5 Sectors", color: "#EC4899", icon: <IconTarget size={14} color="#EC4899" /> },
+                { label: "Waiting Hall", value: Math.max(lobbyMeta.connected || 1, participants.length || 1), color: "#38BDF8", icon: <IconUsers size={14} color="#38BDF8" /> },
+                { label: "Duration", value: `${Math.round(examDurationSeconds / 60)}m`, color: "#EAA812", icon: <IconClock size={14} color="#EAA812" /> },
+                { label: "Questions", value: examMeta.total_questions || "Live", color: "#10B981", icon: <IconBook size={14} color="#10B981" /> },
+                { label: "Sections", value: examFormatSections.length, color: "#EC4899", icon: <IconTarget size={14} color="#EC4899" /> },
               ].map((s) => (
                 <div
                   key={s.label}
@@ -1229,29 +1186,27 @@ export default function WaitingLobbyPage() {
               ))}
             </div>
 
-            {/* Lobby View Control Tabs */}
+            {/* Clean Lobby Tabs (Removed unwanted peer roster & raw Redis debug logs) */}
             <div style={{ display: "flex", gap: 6, background: "#0E1A2E", padding: "6px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", flexWrap: "wrap" }}>
               {[
-                { id: 'sections', label: 'Academic Sections & Roster', icon: <IconUsers size={14} /> },
-                { id: 'syllabus', label: '5-Sector Exam Syllabus', icon: <IconBook size={14} /> },
-                { id: 'security', label: 'Proctoring Protocols', icon: <IconShield size={14} /> },
-                { id: 'telemetry', label: 'Live Telemetry Stream', icon: <IconTerminal size={14} /> },
+                { id: 'format', label: 'Exam Format & Sections', icon: <IconBook size={14} /> },
+                { id: 'security', label: 'Proctoring & Exam Rules', icon: <IconShield size={14} /> },
               ].map((t) => {
                 const isTabActive = activeTab === t.id;
                 return (
                   <button
                     key={t.id}
                     type="button"
-                    onClick={() => setActiveTab(t.id as any)}
+                    onClick={() => setActiveTab(t.id as 'format' | 'security')}
                     style={{
-                      flex: "1 1 140px",
-                      padding: "8px 10px",
+                      flex: "1 1 160px",
+                      padding: "9px 12px",
                       borderRadius: 8,
                       border: isTabActive ? "1px solid #EAA812" : "1px solid transparent",
                       background: isTabActive ? "rgba(234, 168, 18, 0.15)" : "rgba(255,255,255,0.03)",
                       color: isTabActive ? "#EAA812" : "#94A3B8",
                       fontWeight: 800,
-                      fontSize: "0.74rem",
+                      fontSize: "0.78rem",
                       cursor: "pointer",
                       display: "inline-flex",
                       alignItems: "center",
@@ -1267,245 +1222,8 @@ export default function WaitingLobbyPage() {
               })}
             </div>
 
-            {/* TAB 1: ACADEMIC SECTIONS & LIVE ROSTER */}
-            {activeTab === 'sections' && (
-              <div
-                style={{
-                  background: "#0E1A2E",
-                  border: "1px solid rgba(234, 168, 18, 0.25)",
-                  borderRadius: 10,
-                  padding: "14px 16px",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: 10,
-                  }}
-                >
-                  <div style={{ fontSize: "0.78rem", fontWeight: 800, textTransform: "uppercase", color: "#EAA812", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 6 }}>
-                    <IconUsers size={14} color="#EAA812" />
-                    <span>Academic Sections Distribution</span>
-                  </div>
-                  <div style={{ fontSize: "0.7rem", color: "#94A3B8" }}>
-                    {Object.keys(sectionCounts).length} active {Object.keys(sectionCounts).length === 1 ? 'section' : 'sections'}
-                  </div>
-                </div>
-
-                {/* Section Overview Mini-Cards */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8, marginBottom: 14 }}>
-                  {Object.entries(sectionCounts).map(([sec, count]) => {
-                    const isSelected = selectedSection === sec;
-                    return (
-                      <button
-                        key={sec}
-                        type="button"
-                        onClick={() => setSelectedSection(sec)}
-                        style={{
-                          background: isSelected ? "rgba(234, 168, 18, 0.15)" : "rgba(0, 33, 71, 0.3)",
-                          border: isSelected ? "1.5px solid #EAA812" : "1px solid rgba(255,255,255,0.08)",
-                          borderRadius: 8,
-                          padding: "8px 10px",
-                          textAlign: "left",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                        }}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: "0.72rem", fontWeight: 800, color: isSelected ? "#EAA812" : "#CBD5E1" }}>
-                            {sec}
-                          </span>
-                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10B981" }} />
-                        </div>
-                        <div style={{ fontSize: "1.1rem", fontWeight: 900, color: "#FFFFFF", marginTop: 2 }}>
-                          {count} <span style={{ fontSize: "0.66rem", color: "#64748B", fontWeight: 600 }}>waiting</span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Section Filter Tabs */}
-                <div style={{ display: "flex", alignItems: "center", gap: 6, overflowX: "auto", paddingBottom: 6, marginBottom: 12 }}>
-                  {availableSections.map((sec) => {
-                    const isSelected = selectedSection === sec;
-                    const count = sec === 'ALL' ? allParticipants.length : (sectionCounts[sec] || 0);
-                    return (
-                      <button
-                        key={sec}
-                        type="button"
-                        onClick={() => setSelectedSection(sec)}
-                        style={{
-                          padding: "5px 12px",
-                          borderRadius: 6,
-                          background: isSelected ? "#EAA812" : "rgba(255,255,255,0.06)",
-                          color: isSelected ? "#002147" : "#CBD5E1",
-                          border: isSelected ? "1px solid #EAA812" : "1px solid rgba(255,255,255,0.12)",
-                          fontSize: "0.74rem",
-                          fontWeight: 800,
-                          cursor: "pointer",
-                          whiteSpace: "nowrap",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 6,
-                          transition: "all 0.15s ease",
-                        }}
-                      >
-                        <span>{sec === 'ALL' ? 'ALL SECTIONS' : sec}</span>
-                        <span
-                          style={{
-                            background: isSelected ? "rgba(0, 33, 71, 0.25)" : "rgba(255,255,255,0.15)",
-                            color: isSelected ? "#002147" : "#EAA812",
-                            padding: "1px 5px",
-                            borderRadius: 10,
-                            fontSize: "0.64rem",
-                            fontWeight: 800,
-                          }}
-                        >
-                          {count}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Live Room Participants Table */}
-                <div
-                  style={{
-                    background: "rgba(0, 15, 35, 0.5)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 8,
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      padding: "10px 14px",
-                      borderBottom: "1px solid rgba(255,255,255,0.08)",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      background: "rgba(0, 33, 71, 0.3)",
-                    }}
-                  >
-                    <div style={{ fontSize: "0.76rem", fontWeight: 800, color: "#FFFFFF", letterSpacing: "0.03em" }}>
-                      ROSTER ({filteredParticipants.length})
-                    </div>
-                    <div style={{ position: "relative", width: 180, maxWidth: "50%" }}>
-                      <input
-                        type="text"
-                        placeholder="Filter roll / name..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        style={{
-                          width: "100%",
-                          background: "rgba(0, 20, 45, 0.8)",
-                          border: "1px solid rgba(255,255,255,0.14)",
-                          borderRadius: 6,
-                          padding: "4px 8px 4px 26px",
-                          color: "#FFFFFF",
-                          fontSize: "0.72rem",
-                          outline: "none",
-                        }}
-                      />
-                      <span style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
-                        <IconSearch size={12} color="#64748B" />
-                      </span>
-                    </div>
-                  </div>
-
-                  <div style={{ maxHeight: 220, overflowY: "auto" }}>
-                    {filteredParticipants.length === 0 ? (
-                      <div style={{ padding: "24px 16px", textAlign: "center", color: "#64748B" }}>
-                        <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#94A3B8" }}>
-                          No candidates found in this section filter
-                        </div>
-                        <div style={{ fontSize: "0.7rem", marginTop: 4 }}>
-                          Candidates joining room {contestId.toUpperCase()} appear in real time.
-                        </div>
-                      </div>
-                    ) : (
-                      <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.76rem" }}>
-                        <thead>
-                          <tr style={{ background: "rgba(255,255,255,0.03)", borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#94A3B8" }}>
-                            <th style={{ padding: "8px 10px", fontWeight: 700 }}>ROLL NO</th>
-                            <th style={{ padding: "8px 10px", fontWeight: 700 }}>NAME</th>
-                            <th style={{ padding: "8px 10px", fontWeight: 700 }}>SEC</th>
-                            <th style={{ padding: "8px 10px", fontWeight: 700 }}>TIME</th>
-                            <th style={{ padding: "8px 10px", fontWeight: 700 }}>STATUS</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredParticipants.map((p, idx) => {
-                            const myHt = String(
-                              candidate?.roll_number ||
-                              candidate?.hall_ticket ||
-                              (location.state as any)?.hallTicket ||
-                              ''
-                            ).toUpperCase().trim();
-                            const isMe = p.hall_ticket_no?.toUpperCase() === myHt;
-                            return (
-                              <tr
-                                key={`${p.hall_ticket_no}-${idx}`}
-                                style={{
-                                  borderBottom: "1px solid rgba(255,255,255,0.04)",
-                                  background: isMe ? "rgba(234, 168, 18, 0.08)" : "transparent",
-                                }}
-                              >
-                                <td style={{ padding: "7px 10px", fontFamily: "monospace", fontWeight: 700, color: isMe ? "#EAA812" : "#38BDF8" }}>
-                                  {p.hall_ticket_no}
-                                  {isMe && (
-                                    <span style={{ marginLeft: 6, background: "#EAA812", color: "#002147", padding: "1px 4px", borderRadius: 3, fontSize: "0.6rem", fontWeight: 900 }}>
-                                      YOU
-                                    </span>
-                                  )}
-                                </td>
-                                <td style={{ padding: "7px 10px", fontWeight: 600, color: "#F1F5F9" }}>
-                                  {p.student_name}
-                                </td>
-                                <td style={{ padding: "7px 10px" }}>
-                                  <span style={{ background: "rgba(56, 189, 248, 0.12)", border: "1px solid rgba(56, 189, 248, 0.3)", color: "#38BDF8", padding: "1px 6px", borderRadius: 4, fontSize: "0.68rem", fontWeight: 700 }}>
-                                    {p.section || 'General'}
-                                  </span>
-                                </td>
-                                <td style={{ padding: "7px 10px", color: "#64748B", fontSize: "0.7rem" }}>
-                                  {formatRelativeTime(p.joined_at)}
-                                </td>
-                                <td style={{ padding: "7px 10px" }}>
-                                  <span
-                                    style={{
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      gap: 4,
-                                      padding: "2px 6px",
-                                      borderRadius: 4,
-                                      fontSize: "0.66rem",
-                                      fontWeight: 800,
-                                      background: p.status === 'released' ? "rgba(16,185,129,0.15)" : "rgba(234,168,18,0.12)",
-                                      border: p.status === 'released' ? "1px solid rgba(16,185,129,0.35)" : "1px solid rgba(234,168,18,0.3)",
-                                      color: p.status === 'released' ? "#34D399" : "#EAA812",
-                                    }}
-                                  >
-                                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: p.status === 'released' ? "#10B981" : "#EAA812" }} />
-                                    <span>{p.status === 'released' ? 'Released' : 'Waiting Hall'}</span>
-                                  </span>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 2: 5-SECTOR EXAM SYLLABUS & SCORING ARCHITECTURE */}
-            {activeTab === 'syllabus' && (
+            {/* TAB 1: EXAM FORMAT & SECTIONS BREAKDOWN */}
+            {activeTab === 'format' && (
               <div
                 style={{
                   background: "#0E1A2E",
@@ -1518,23 +1236,24 @@ export default function WaitingLobbyPage() {
                   gap: 12,
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                   <div style={{ fontSize: "0.82rem", fontWeight: 800, textTransform: "uppercase", color: "#38BDF8", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 6 }}>
                     <IconBook size={14} color="#38BDF8" />
-                    <span>5-Sector Technical Assessment Architecture</span>
+                    <span>{examMeta.exam_name || contestId.toUpperCase()} — Exam Format &amp; Sections</span>
                   </div>
-                  <span style={{ fontSize: "0.7rem", color: "#94A3B8" }}>
-                    Standard 45-60 min Window
+                  <span style={{ fontSize: "0.72rem", color: "#EAA812", fontWeight: 700 }}>
+                    {Math.round(examDurationSeconds / 60)} Mins • {examMeta.total_marks || 100} Marks • Pass {examMeta.passing_percentage || 40}%
                   </span>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {LOBBY_EXAM_SECTORS.map((sec) => (
+                  {examFormatSections.map((sec) => (
                     <div
                       key={sec.id}
                       style={{
-                        background: "rgba(0, 20, 45, 0.5)",
+                        background: "rgba(0, 20, 45, 0.55)",
                         border: `1px solid ${sec.color}35`,
+                        borderLeft: `3px solid ${sec.color}`,
                         borderRadius: 8,
                         padding: "10px 12px",
                       }}
@@ -1544,20 +1263,20 @@ export default function WaitingLobbyPage() {
                           <span style={{ fontSize: "0.68rem", fontWeight: 800, color: sec.color, background: `${sec.color}18`, padding: "2px 6px", borderRadius: 4, border: `1px solid ${sec.color}40` }}>
                             {sec.code}
                           </span>
-                          <span style={{ fontSize: "0.84rem", fontWeight: 800, color: "#FFFFFF" }}>
+                          <span style={{ fontSize: "0.86rem", fontWeight: 800, color: "#FFFFFF" }}>
                             {sec.name}
                           </span>
                         </div>
                         <div style={{ display: "flex", gap: 6 }}>
-                          <span style={{ fontSize: "0.68rem", color: "#CBD5E1", background: "rgba(255,255,255,0.06)", padding: "2px 6px", borderRadius: 4 }}>
+                          <span style={{ fontSize: "0.7rem", color: "#CBD5E1", background: "rgba(255,255,255,0.06)", padding: "2px 7px", borderRadius: 4 }}>
                             {sec.questions}
                           </span>
-                          <span style={{ fontSize: "0.68rem", color: sec.color, fontWeight: 700, background: "rgba(255,255,255,0.06)", padding: "2px 6px", borderRadius: 4 }}>
+                          <span style={{ fontSize: "0.7rem", color: sec.color, fontWeight: 700, background: "rgba(255,255,255,0.06)", padding: "2px 7px", borderRadius: 4 }}>
                             {sec.marks}
                           </span>
                         </div>
                       </div>
-                      <div style={{ fontSize: "0.72rem", color: "#94A3B8", lineHeight: 1.4 }}>
+                      <div style={{ fontSize: "0.74rem", color: "#94A3B8", lineHeight: 1.4 }}>
                         {sec.subtitle}
                       </div>
                     </div>
@@ -1567,28 +1286,28 @@ export default function WaitingLobbyPage() {
                 {/* Marking & Sandbox Policies */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 4 }}>
                   <div style={{ background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.25)", borderRadius: 6, padding: "8px 10px" }}>
-                    <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "#34D399", display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ fontSize: "0.72rem", fontWeight: 800, color: "#34D399", display: "flex", alignItems: "center", gap: 5 }}>
                       <IconCheck size={12} color="#34D399" />
-                      <span>Marking & Penalty Policy</span>
+                      <span>Timer &amp; Auto-Save</span>
                     </div>
-                    <div style={{ fontSize: "0.68rem", color: "#CBD5E1", marginTop: 2 }}>
-                      +1.0 Correct MCQ • -0.25 Penalty for incorrect responses • Unanswered: 0
+                    <div style={{ fontSize: "0.7rem", color: "#CBD5E1", marginTop: 2 }}>
+                      Server-authoritative clock starts only upon Admin/Inspector dispatch. Answers sync automatically.
                     </div>
                   </div>
                   <div style={{ background: "rgba(56, 189, 248, 0.08)", border: "1px solid rgba(56, 189, 248, 0.25)", borderRadius: 6, padding: "8px 10px" }}>
-                    <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "#38BDF8", display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ fontSize: "0.72rem", fontWeight: 800, color: "#38BDF8", display: "flex", alignItems: "center", gap: 5 }}>
                       <IconCode size={12} color="#38BDF8" />
-                      <span>LiRE Live Code Sandbox</span>
+                      <span>LiRE Exam Runtime</span>
                     </div>
-                    <div style={{ fontSize: "0.68rem", color: "#CBD5E1", marginTop: 2 }}>
-                      Isolated runtime support for Python 3, C (GCC), C++, Java 17, and Node.js
+                    <div style={{ fontSize: "0.7rem", color: "#CBD5E1", marginTop: 2 }}>
+                      Per-candidate randomized options, MCQ navigation, &amp; isolated Code Sandbox when coding questions exist.
                     </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* TAB 3: PROCTORING & DEVICE PROTOCOLS */}
+            {/* TAB 2: PROCTORING & DEVICE PROTOCOLS */}
             {activeTab === 'security' && (
               <div
                 style={{
@@ -1604,15 +1323,15 @@ export default function WaitingLobbyPage() {
               >
                 <div style={{ fontSize: "0.82rem", fontWeight: 800, textTransform: "uppercase", color: "#F87171", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 6 }}>
                   <IconShield size={14} color="#F87171" />
-                  <span>Institutional Proctoring & Lockdown Perimeter</span>
+                  <span>Institutional Proctoring &amp; Lockdown Perimeter</span>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: "0.76rem" }}>
                   {[
-                    { title: "Browser Mutex Lock", desc: "Only one active assessment tab is permitted per candidate. Opening additional tabs or windows automatically terminates previous sessions.", ok: true },
-                    { title: "Anti-Tab Switch Detection", desc: "Window blur, alt-tabbing, and developer console triggers are recorded in the authoritative server audit ledger.", ok: true },
-                    { title: "Clipboard & Hotkey Interception", desc: "Right-click context menu, Copy, Cut, Paste, and PrintScreen keystrokes are intercepted and prohibited.", ok: true },
-                    { title: "Dynamic Option Scrambling", desc: "Every candidate receives an independently randomized option shuffle to eliminate adjacent-screen copying.", ok: true },
+                    { title: "Browser Mutex Lock", desc: "Only one active assessment tab is permitted per candidate. Opening duplicate exam tabs pauses older sessions.", ok: true },
+                    { title: "Anti-Tab Switch Detection", desc: "Window blur, alt-tabbing, and developer tools triggers are logged cleanly under strike limits.", ok: true },
+                    { title: "Clipboard & Hotkey Guard", desc: "Copy, cut, paste, and screen capture shortcuts are intercepted during live evaluation.", ok: true },
+                    { title: "Offline Answer Vault", desc: "Even if Wi-Fi momentarily drops, answers buffer locally and auto-sync upon reconnection.", ok: true },
                   ].map((rule, idx) => (
                     <div key={idx} style={{ background: "rgba(0, 20, 45, 0.4)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "8px 10px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 800, color: "#F1F5F9" }}>
@@ -1628,103 +1347,28 @@ export default function WaitingLobbyPage() {
               </div>
             )}
 
-            {/* TAB 4: LIVE TELEMETRY STREAM */}
-            {activeTab === 'telemetry' && (
-              <div
-                style={{
-                  background: "#07101E",
-                  border: "1px solid rgba(56, 189, 248, 0.25)",
-                  borderRadius: 10,
-                  padding: "16px",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingBottom: 8, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <IconTerminal size={14} color="#38BDF8" />
-                    <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#38BDF8", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                      Authoritative Telemetry & Synchronous Dispatch Stream
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.68rem", color: "#10B981", fontFamily: "monospace" }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10B981", boxShadow: "0 0 6px #10B981" }} />
-                    <span>SOCKET ONLINE</span>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    maxHeight: 280,
-                    overflowY: "auto",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 6,
-                    fontFamily: "monospace",
-                    fontSize: "0.74rem",
-                  }}
-                >
-                  {events.length === 0 ? (
-                    <div style={{ color: "#475569", fontStyle: "italic", padding: "12px 0" }}>Listening for authoritative synchronization packets...</div>
-                  ) : (
-                    events.map((ev) => {
-                      const colorMap = {
-                        success: "#34D399",
-                        alert: "#F87171",
-                        ping: "#FBBF24",
-                        info: "#38BDF8",
-                      };
-                      const badgeColor = colorMap[ev.type] || "#38BDF8";
-                      return (
-                        <div key={ev.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, lineHeight: 1.4 }}>
-                          <span style={{ color: "#64748B", flexShrink: 0 }}>[{ev.time}]</span>
-                          <span style={{ color: badgeColor, fontWeight: 700, flexShrink: 0 }}>[{ev.type.toUpperCase()}]</span>
-                          <span style={{ color: "#CBD5E1", wordBreak: "break-word" }}>{ev.text}</span>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
+            {/* Compact Gateway Strip */}
+            <div
+              style={{
+                background: "#07101E",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 8,
+                padding: "8px 12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                fontSize: "0.72rem",
+                fontFamily: "monospace",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#94A3B8" }}>
+                <IconRadio size={12} color={connected ? "#10B981" : "#F59E0B"} />
+                <span>
+                  Gateway: {connected ? `Live Sync Ready (${latency ?? "-"}ms)` : "Reconnecting socket mesh..."}
+                </span>
               </div>
-            )}
-
-            {/* Persistent Compact Telemetry Status Strip */}
-            {activeTab !== 'telemetry' && (
-              <div
-                style={{
-                  background: "#07101E",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 8,
-                  padding: "8px 12px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  fontSize: "0.7rem",
-                  fontFamily: "monospace",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#94A3B8" }}>
-                  <IconRadio size={12} color={connected ? "#10B981" : "#F59E0B"} />
-                  <span>
-                    Gateway: {connected ? `Authoritative Sync (${latency ?? "-"}ms)` : "Reconnecting socket mesh..."}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('telemetry')}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#38BDF8",
-                    fontSize: "0.7rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    textDecoration: "underline",
-                  }}
-                >
-                  View Terminal &rarr;
-                </button>
-              </div>
-            )}
+              <span style={{ color: "#34D399", fontWeight: 700 }}>Awaiting Admin Start</span>
+            </div>
           </div>
         </div>
 

@@ -192,20 +192,25 @@ export default function AdminLoginPage() {
         </div>
 
         <div style={{ marginBottom: requireTotp ? 14 : 20 }}>
-          <label
-            htmlFor="admin-password-input"
-            style={{
-              display: 'block',
-              fontSize: '0.74rem',
-              fontWeight: 800,
-              color: '#FFD000',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              marginBottom: 6,
-            }}
-          >
-            Password
-          </label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <label
+              htmlFor="admin-password-input"
+              style={{
+                display: 'block',
+                fontSize: '0.74rem',
+                fontWeight: 800,
+                color: '#FFD000',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                margin: 0,
+              }}
+            >
+              Password
+            </label>
+            <Link to="/forgot-password?portal=admin" style={{ fontSize: '0.74rem', color: '#FFD000', textDecoration: 'none', fontWeight: 700 }}>
+              Forgot ID / Password?
+            </Link>
+          </div>
           <div style={{ position: 'relative' }}>
             <input
               id="admin-password-input"

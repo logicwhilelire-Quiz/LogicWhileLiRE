@@ -32,6 +32,7 @@ const testFiles = [
   'test-backup.js',
   'test-section-targeting-and-portal.js',
   'test-admin-is-only-controller.js',
+  'test-concurrency-and-mail.js',
 ];
 
 console.log('================================================================');

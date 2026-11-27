@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import AnimatedPage from '../../components/AnimatedPage';
 import ParticleField from '../../components/3d/ParticleField';
@@ -7,14 +8,26 @@ import {
   IconRefresh,
   IconCheck,
   IconCross,
-  IconAlert,
   IconEye,
   IconShield,
-  IconRocket,
   IconPlus,
+  IconFlash,
+  IconTrash,
 } from '../../components/icons/HumanIcons';
 
-import { listMailLogs, resendMailLog, listColleges, type MailLog, extractErrorMessage } from '../../lib/api';
+import {
+  listMailLogs,
+  resendMailLog,
+  forwardMailLog,
+  listMailForwarders,
+  saveMailForwarder,
+  deleteMailForwarder,
+  getMailStats,
+  listColleges,
+  type MailLog,
+  type MailForwarderRule,
+  extractErrorMessage,
+} from '../../lib/api';
 import axios from 'axios';
 import { API_BASE_URL } from '../../lib/config';
 import {
@@ -26,16 +39,19 @@ import {
 
 const TEMPLATE_OPTIONS = [
   { value: 'all', label: 'All Role Templates' },
+  { value: 'password_reset', label: 'password_reset (Credential & User ID Recovery)' },
+  { value: 'user_id_recovery', label: 'user_id_recovery (Hall Ticket / Username Dispatch)' },
+  { value: 'mail_forwarded', label: 'mail_forwarded (Forwarded & Relay Copies)' },
   { value: 'admin_welcome', label: 'admin_welcome (Admin Console Onboarding)' },
   { value: 'inspector_created', label: 'inspector_created (Invigilator Account)' },
   { value: 'faculty_created', label: 'faculty_created (Faculty & Assigned Sections)' },
   { value: 'student_otp', label: 'student_otp (Sign-Up OTP • 10m Expiry)' },
   { value: 'student_registered', label: 'student_registered (Account Verified)' },
-  { value: 'password_reset', label: 'password_reset (Credential Recovery)' },
   { value: 'exam_scheduled', label: 'exam_scheduled (Targeted Hall Ticket)' },
   { value: 'faculty_paper_allocated', label: 'faculty_paper_allocated (Paper Assignment)' },
   { value: 'result_report', label: 'result_report (Official Scorecard)' },
   { value: 'admin_alert', label: 'admin_alert (Anti-Cheat & Nightly Backup)' },
+  { value: 'custom_broadcast', label: 'custom_broadcast (Direct Broadcasts)' },
 ];
 
 export default function MailLogsPage() {
@@ -56,10 +72,33 @@ export default function MailLogsPage() {
   // Direct Dispatch Modal State
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [composeTo, setComposeTo] = useState('');
+  const [composeCc, setComposeCc] = useState('');
   const [composeSubject, setComposeSubject] = useState('LogicWhile Assessment Update');
   const [composeTemplate, setComposeTemplate] = useState('custom_broadcast');
   const [composeBody, setComposeBody] = useState('<p>Dear Candidate,</p><p>This is an official assessment notification regarding your upcoming examination session on LogicWhile LiRE.</p><p>Please log in with your hall ticket to ensure your clearance.</p>');
   const [sendingEmail, setSendingEmail] = useState(false);
+
+  // Manual Forward Modal State
+  const [forwardModalLog, setForwardModalLog] = useState<MailLog | null>(null);
+  const [forwardTarget, setForwardTarget] = useState('');
+  const [forwardNote, setForwardNote] = useState('');
+  const [forwardingEmail, setForwardingEmail] = useState(false);
+
+  // Mail Forwarder Rules & Live Relay Telemetry
+  const [forwarders, setForwarders] = useState<MailForwarderRule[]>([]);
+  const [showForwardersPanel, setShowForwardersPanel] = useState(true);
+  const [newRuleName, setNewRuleName] = useState('');
+  const [newRuleTemplate, setNewRuleTemplate] = useState('password_reset');
+  const [newRuleEmail, setNewRuleEmail] = useState('');
+  const [newRuleMode, setNewRuleMode] = useState<'forward_copy' | 'bcc'>('forward_copy');
+  const [savingRule, setSavingRule] = useState(false);
+  const [mailRelayStats, setMailRelayStats] = useState<{
+    sentCount: number;
+    dailyCap: number;
+    pending: number;
+    processing: number;
+  }>({ sentCount: 0, dailyCap: 100, pending: 0, processing: 0 });
+  const [dispatchPulse, setDispatchPulse] = useState(false);
 
   // Cohort Targeting State
   const [colleges, setColleges] = useState<Array<{ id: string | number; college_name: string }>>([]);
@@ -131,6 +170,7 @@ export default function MailLogsPage() {
         `${API_BASE_URL}/api/admin/mail-logs/dispatch`,
         {
           to: composeTo.trim(),
+          ...(composeCc.trim() ? { cc: composeCc.trim() } : {}),
           subject: composeSubject.trim(),
           html: composeBody.trim(),
           template: composeTemplate,
@@ -138,10 +178,14 @@ export default function MailLogsPage() {
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
       if (res.data?.success) {
+        setDispatchPulse(true);
+        setTimeout(() => setDispatchPulse(false), 1800);
         showToast('Official email dispatched successfully.', 'success');
         setIsComposeOpen(false);
         setComposeTo('');
+        setComposeCc('');
         fetchLogs();
+        fetchForwardersAndRelay();
       } else {
         showToast(res.data?.error || 'Failed to dispatch email.', 'error');
       }
@@ -149,6 +193,107 @@ export default function MailLogsPage() {
       showToast(err?.response?.data?.error || err.message || 'Dispatch failed.', 'error');
     } finally {
       setSendingEmail(false);
+    }
+  };
+
+  const fetchForwardersAndRelay = useCallback(async () => {
+    try {
+      const [fwdRes, statsRes] = await Promise.all([
+        listMailForwarders().catch(() => null),
+        getMailStats().catch(() => null),
+      ]);
+      if (fwdRes?.data?.forwarders) {
+        setForwarders(fwdRes.data.forwarders);
+      }
+      if (statsRes?.data?.quota || statsRes?.data?.queue) {
+        setMailRelayStats({
+          sentCount: statsRes.data.quota?.sentCount ?? 0,
+          dailyCap: statsRes.data.quota?.dailyCap ?? 100,
+          pending: statsRes.data.queue?.pending ?? 0,
+          processing: statsRes.data.queue?.processing ?? 0,
+        });
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    fetchForwardersAndRelay();
+  }, [fetchForwardersAndRelay]);
+
+  const handleSaveForwarderRule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRuleEmail.trim() || !newRuleEmail.includes('@')) {
+      showToast('Enter a valid destination email address for forwarding.', 'error');
+      return;
+    }
+    setSavingRule(true);
+    try {
+      const res = await saveMailForwarder({
+        name: newRuleName.trim() || `${newRuleTemplate} Forwarder`,
+        template: newRuleTemplate,
+        forwardTo: newRuleEmail.trim(),
+        mode: newRuleMode,
+        enabled: true,
+      });
+      if (res.data?.success) {
+        showToast('Auto-forwarder rule activated.', 'success');
+        setNewRuleName('');
+        setNewRuleEmail('');
+        fetchForwardersAndRelay();
+      }
+    } catch (err) {
+      showToast(extractErrorMessage(err, 'Failed to save forwarder rule'), 'error');
+    } finally {
+      setSavingRule(false);
+    }
+  };
+
+  const handleToggleForwarder = async (rule: MailForwarderRule) => {
+    try {
+      await saveMailForwarder({ ...rule, enabled: !rule.enabled });
+      showToast(`${rule.name} ${rule.enabled ? 'paused' : 'enabled'}.`, 'success');
+      fetchForwardersAndRelay();
+    } catch (err) {
+      showToast(extractErrorMessage(err, 'Failed to update forwarder'), 'error');
+    }
+  };
+
+  const handleDeleteForwarder = async (id: string) => {
+    try {
+      await deleteMailForwarder(id);
+      showToast('Forwarder rule deleted.', 'success');
+      fetchForwardersAndRelay();
+    } catch (err) {
+      showToast(extractErrorMessage(err, 'Failed to remove forwarder'), 'error');
+    }
+  };
+
+  const handleForwardExistingLog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forwardModalLog || !forwardTarget.trim()) {
+      showToast('Enter a target recipient email address.', 'error');
+      return;
+    }
+    setForwardingEmail(true);
+    try {
+      const res = await forwardMailLog(forwardModalLog.id, {
+        forwardTo: forwardTarget.trim(),
+        note: forwardNote.trim() || undefined,
+      });
+      if (res.data?.success) {
+        setDispatchPulse(true);
+        setTimeout(() => setDispatchPulse(false), 1800);
+        showToast(res.data.message || `Forwarded to ${forwardTarget}`, 'success');
+        setForwardModalLog(null);
+        setForwardTarget('');
+        setForwardNote('');
+        fetchLogs();
+        fetchForwardersAndRelay();
+      }
+    } catch (err) {
+      showToast(extractErrorMessage(err, 'Failed to forward email'), 'error');
+    } finally {
+      setForwardingEmail(false);
     }
   };
 
@@ -289,7 +434,17 @@ export default function MailLogsPage() {
                 </p>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowForwardersPanel((v) => !v)}
+                  className="btn btn-sm btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <IconFlash size={14} color="#FFB400" />
+                  <span>{showForwardersPanel ? 'Hide Forwarders' : `Mail Forwarders (${forwarders.length})`}</span>
+                </button>
+
                 <button
                   onClick={() => setIsComposeOpen(true)}
                   className="btn btn-sm btn-primary"
@@ -300,7 +455,7 @@ export default function MailLogsPage() {
                 </button>
 
                 <button
-                  onClick={fetchLogs}
+                  onClick={() => { fetchLogs(); fetchForwardersAndRelay(); }}
                   disabled={loading}
                   className="btn btn-sm btn-secondary"
                   style={{ display: 'flex', alignItems: 'center', gap: 6 }}
@@ -310,6 +465,207 @@ export default function MailLogsPage() {
                 </button>
               </div>
             </div>
+
+            {/* Animated Live Mail Relay & Forwarder Pipeline Visualizer */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+              style={{
+                marginBottom: 22,
+                padding: '18px 20px',
+                borderRadius: 14,
+                background: 'linear-gradient(135deg, rgba(14, 26, 46, 0.96) 0%, rgba(10, 18, 38, 0.98) 100%)',
+                border: dispatchPulse ? '1.5px solid #10B981' : '1px solid rgba(56, 189, 248, 0.28)',
+                boxShadow: dispatchPulse ? '0 0 28px rgba(16, 185, 129, 0.25)' : '0 8px 28px rgba(0,0,0,0.35)',
+                transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <motion.span
+                    animate={{ scale: [1, 1.35, 1], opacity: [0.85, 0.35, 0.85] }}
+                    transition={{ duration: 1.8, repeat: Infinity }}
+                    style={{ width: 9, height: 9, borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 10px #10B981' }}
+                  />
+                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#38BDF8', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+                    Live Mail Relay &amp; Auto-Forwarding Pipeline
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: '0.76rem', fontFamily: 'monospace', color: '#94A3B8' }}>
+                  <span>Daily Quota: <strong style={{ color: '#FFB400' }}>{mailRelayStats.sentCount} / {mailRelayStats.dailyCap}</strong></span>
+                  <span>Queue: <strong style={{ color: '#34D399' }}>{mailRelayStats.pending + mailRelayStats.processing} active</strong></span>
+                  <span>Forwarders: <strong style={{ color: '#A78BFA' }}>{forwarders.filter((f) => f.enabled).length} enabled</strong></span>
+                </div>
+              </div>
+
+              {/* Animated Relay Track */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto 1fr auto 1fr auto', alignItems: 'center', gap: 10 }}>
+                {[
+                  { label: 'App Dispatch', sub: 'Recovery & Alerts', color: '#38BDF8' },
+                  { label: 'Queue Relay', sub: '3x Worker Pool', color: '#FFB400' },
+                  { label: 'Forwarder Bus', sub: `${forwarders.filter((f) => f.enabled).length} Active Rules`, color: '#A78BFA' },
+                  { label: 'Candidate Inbox', sub: 'Resend / SMTP', color: '#10B981' },
+                ].flatMap((node, idx, arr) => {
+                  const nodeEl = (
+                    <motion.div
+                      key={node.label}
+                      whileHover={{ y: -2 }}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 10,
+                        background: `${node.color}14`,
+                        border: `1px solid ${node.color}40`,
+                        textAlign: 'center',
+                        minWidth: 108,
+                      }}
+                    >
+                      <div style={{ fontSize: '0.74rem', fontWeight: 800, color: node.color }}>{node.label}</div>
+                      <div style={{ fontSize: '0.66rem', color: '#94A3B8', marginTop: 2 }}>{node.sub}</div>
+                    </motion.div>
+                  );
+                  if (idx === arr.length - 1) return [nodeEl];
+                  const trackEl = (
+                    <div key={`track-${idx}`} style={{ position: 'relative', height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                      <motion.div
+                        animate={{ x: ['-40%', '140%'] }}
+                        transition={{ duration: dispatchPulse ? 0.75 : 2.1, repeat: Infinity, delay: idx * 0.35, ease: 'linear' }}
+                        style={{
+                          width: '38%',
+                          height: '100%',
+                          borderRadius: 4,
+                          background: `linear-gradient(90deg, transparent, ${node.color}, transparent)`,
+                        }}
+                      />
+                    </div>
+                  );
+                  return [nodeEl, trackEl];
+                })}
+              </div>
+            </motion.div>
+
+            {/* Configurable Mail Forwarders Management Panel */}
+            <AnimatePresence>
+              {showForwardersPanel && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.25 }}
+                  style={{ overflow: 'hidden', marginBottom: 22 }}
+                >
+                  <div className="card" style={{ padding: '18px 20px', border: '1px solid rgba(167, 139, 250, 0.3)', background: 'rgba(13, 24, 53, 0.9)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#F8FAFC', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <IconFlash size={16} color="#A78BFA" />
+                          <span>Automated Mail Forwarders &amp; Routing Rules</span>
+                        </h3>
+                        <p style={{ margin: '3px 0 0', fontSize: '0.78rem', color: '#94A3B8' }}>
+                          Automatically forward copies of Password Resets, User ID Recoveries, Exam Invitations, or Security Alerts to department heads or backup inboxes.
+                        </p>
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleSaveForwarderRule} style={{ display: 'grid', gridTemplateColumns: 'minmax(150px, 1fr) minmax(180px, 1fr) minmax(200px, 1.4fr) minmax(130px, 0.8fr) auto', gap: 10, alignItems: 'center', marginBottom: 14 }}>
+                      <input
+                        type="text"
+                        className="form-input form-input-sm"
+                        placeholder="Rule label (e.g. HOD Copy)"
+                        value={newRuleName}
+                        onChange={(e) => setNewRuleName(e.target.value)}
+                      />
+                      <select
+                        className="form-input form-input-sm"
+                        value={newRuleTemplate}
+                        onChange={(e) => setNewRuleTemplate(e.target.value)}
+                      >
+                        <option value="all">All Outbound Templates</option>
+                        <option value="password_reset">Password Reset Mails</option>
+                        <option value="user_id_recovery">User ID Recovery Mails</option>
+                        <option value="exam_scheduled">Exam Schedule &amp; Invites</option>
+                        <option value="result_report">Official Result Reports</option>
+                        <option value="admin_alert">Security &amp; Proctor Alerts</option>
+                        <option value="custom_broadcast">Direct Broadcasts</option>
+                      </select>
+                      <input
+                        type="text"
+                        className="form-input form-input-sm"
+                        placeholder="Forward to email(s), comma-separated"
+                        value={newRuleEmail}
+                        onChange={(e) => setNewRuleEmail(e.target.value)}
+                        required
+                      />
+                      <select
+                        className="form-input form-input-sm"
+                        value={newRuleMode}
+                        onChange={(e) => setNewRuleMode(e.target.value as 'forward_copy' | 'bcc')}
+                      >
+                        <option value="forward_copy">Forward Copy ([FWD])</option>
+                        <option value="bcc">Silent BCC Copy</option>
+                      </select>
+                      <button type="submit" disabled={savingRule} className="btn btn-sm btn-primary" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <IconPlus size={14} />
+                        <span>{savingRule ? 'Saving...' : 'Add Forwarder'}</span>
+                      </button>
+                    </form>
+
+                    {forwarders.length === 0 ? (
+                      <div style={{ padding: '12px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', fontSize: '0.78rem', color: '#94A3B8', textAlign: 'center' }}>
+                        No automatic mail forwarders active yet. Add a rule above or use the <strong style={{ color: '#38BDF8' }}>Forward</strong> action on any dispatched log row below.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {forwarders.map((rule) => (
+                          <div
+                            key={rule.id}
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              flexWrap: 'wrap',
+                              gap: 10,
+                              padding: '10px 14px',
+                              borderRadius: 10,
+                              background: 'rgba(7, 13, 30, 0.75)',
+                              border: rule.enabled ? '1px solid rgba(167, 139, 250, 0.35)' : '1px solid rgba(255,255,255,0.08)',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                              <span style={{ fontWeight: 800, fontSize: '0.84rem', color: '#F8FAFC' }}>{rule.name}</span>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: 'rgba(56,189,248,0.14)', color: '#38BDF8' }}>
+                                {rule.template}
+                              </span>
+                              <span style={{ fontSize: '0.76rem', color: '#94A3B8' }}>→</span>
+                              <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#FBBF24' }}>{rule.forwardTo}</span>
+                              <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>({rule.mode === 'bcc' ? 'Silent BCC' : 'Forwarded Copy'} • {rule.forwardCount || 0} relayed)</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleForwarder(rule)}
+                                className="btn btn-xs btn-secondary"
+                                style={{ color: rule.enabled ? '#34D399' : '#94A3B8' }}
+                              >
+                                {rule.enabled ? 'Enabled' : 'Paused'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteForwarder(rule.id)}
+                                className="btn btn-xs btn-secondary"
+                                style={{ color: '#F87171', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                              >
+                                <IconTrash size={12} /> Remove
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Toast Notification */}
             {toast && (
@@ -465,9 +821,12 @@ export default function MailLogsPage() {
                         </td>
                       </tr>
                     ) : (
-                      logs.map((item) => (
-                        <tr
+                      logs.map((item, rowIdx) => (
+                        <motion.tr
                           key={item.id}
+                          initial={{ opacity: 0, x: -6 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.2, delay: Math.min(rowIdx * 0.03, 0.25) }}
                           style={{
                             borderBottom: '1px solid rgba(255,255,255,0.05)',
                             transition: 'background 0.15s ease',
@@ -545,6 +904,15 @@ export default function MailLogsPage() {
                               )}
 
                               <button
+                                onClick={() => setForwardModalLog(item)}
+                                className="btn btn-xs btn-secondary"
+                                title="Forward this email transmission to another recipient"
+                                style={{ color: '#A78BFA', borderColor: 'rgba(167,139,250,0.35)' }}
+                              >
+                                Forward
+                              </button>
+
+                              <button
                                 onClick={() => handleResend(item.id)}
                                 disabled={resendingId === item.id}
                                 className="btn btn-xs btn-primary"
@@ -566,7 +934,7 @@ export default function MailLogsPage() {
                               </button>
                             </div>
                           </td>
-                        </tr>
+                        </motion.tr>
                       ))
                     )}
                   </tbody>
@@ -858,6 +1226,20 @@ export default function MailLogsPage() {
 
               <div style={{ marginBottom: 16 }}>
                 <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e2e8f0', marginBottom: 6, display: 'block' }}>
+                  CC / Forward Copy Recipients (Optional)
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. hod@college.edu, examcell@logicwhilelire.com"
+                  value={composeCc}
+                  onChange={(e) => setComposeCc(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: '#070d1e', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e2e8f0', marginBottom: 6, display: 'block' }}>
                   Subject Line
                 </label>
                 <input
@@ -904,6 +1286,83 @@ export default function MailLogsPage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Manual Email Forward Modal */}
+      {forwardModalLog && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0,0,0,0.82)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+          }}
+          onClick={() => setForwardModalLog(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            style={{
+              width: '100%',
+              maxWidth: 520,
+              background: '#0d1835',
+              border: '1.5px solid rgba(167, 139, 250, 0.45)',
+              borderRadius: 16,
+              overflow: 'hidden',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.85)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ padding: '16px 22px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(167,139,250,0.12)' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF' }}>Forward Dispatched Email</h3>
+                <div style={{ fontSize: '0.76rem', color: '#94A3B8', marginTop: 2 }}>Fwd: {forwardModalLog.subject}</div>
+              </div>
+              <button onClick={() => setForwardModalLog(null)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }} aria-label="Close">
+                <IconCross size={18} color="#94A3B8" />
+              </button>
+            </div>
+            <form onSubmit={handleForwardExistingLog} style={{ padding: '20px 22px' }}>
+              <div style={{ marginBottom: 14 }}>
+                <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e2e8f0', marginBottom: 6, display: 'block' }}>
+                  Forward To Email Address(es)
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="coordinator@college.edu, backup@domain.com"
+                  value={forwardTarget}
+                  onChange={(e) => setForwardTarget(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+              <div style={{ marginBottom: 18 }}>
+                <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e2e8f0', marginBottom: 6, display: 'block' }}>
+                  Optional Forwarding Note
+                </label>
+                <textarea
+                  rows={3}
+                  className="form-input"
+                  placeholder="Add an explanatory note above the forwarded message..."
+                  value={forwardNote}
+                  onChange={(e) => setForwardNote(e.target.value)}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setForwardModalLog(null)}>Cancel</button>
+                <button type="submit" disabled={forwardingEmail} className="btn btn-primary" style={{ background: '#7C3AED', fontWeight: 800 }}>
+                  {forwardingEmail ? 'Forwarding...' : 'Send Forwarded Copy →'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
         </div>
       )}
     </AnimatedPage>

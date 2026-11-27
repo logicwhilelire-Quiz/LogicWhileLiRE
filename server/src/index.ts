@@ -24,7 +24,7 @@ import webhookRoutes from './routes/webhooks';
 import { startSessionCron } from './jobs/sessionCron';
 import { startBackupScheduler } from './services/backupScheduler';
 import { validateParams, ExamIdParam } from './middleware/validate';
-import { initSocketIO } from './services/socketService';
+import { initSocketIO, io } from './services/socketService';
 import { verifyDatabaseConnectivity } from './db/supabase';
 
 // ── PRODUCTION BOOT GUARD (must be first — refuses to start with weak secrets) ──
@@ -190,6 +190,7 @@ const handleHealthCheck = async (_req: express.Request, res: express.Response) =
   const dbStatus = await verifyDatabaseConnectivity(6000);
   const isHealthy = dbStatus.connected || isDemo;
   // Always return HTTP 200 on liveness probe so Render orchestrator does not enter boot crash-loop on cold start
+  const mem = process.memoryUsage();
   res.status(200).json({
     status: isHealthy ? 'ok' : 'degraded',
     service: 'LogicWhileLiRE Assessment Engine',
@@ -201,6 +202,12 @@ const handleHealthCheck = async (_req: express.Request, res: express.Response) =
       latency_ms: dbStatus.latencyMs,
       error: dbStatus.error || null,
       mode: isDemo ? 'in_memory_mock' : 'live_supabase',
+    },
+    runtime: {
+      active_sockets: io?.sockets?.sockets?.size ?? 0,
+      uptime_seconds: Math.round(process.uptime()),
+      memory_rss_mb: Math.round(mem.rss / (1024 * 1024)),
+      heap_used_mb: Math.round(mem.heapUsed / (1024 * 1024)),
     },
     demo_banner: isDemo ? 'Running on in-memory demo data. Connect Supabase to enable production persistence.' : null,
     timestamp: new Date().toISOString(),

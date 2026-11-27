@@ -1327,6 +1327,13 @@ interface LobbyDbCacheEntry {
   enrolledCount: number;
   durationSec: number;
   examRowData: any;
+  sectionBreakdown: Array<{
+    section: string;
+    questions: number;
+    marks: number;
+    mcqCount: number;
+    codeCount: number;
+  }>;
   dbWaitingList: Array<{
     hall_ticket_no: string;
     student_name: string;
@@ -1362,23 +1369,25 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
     let enrolledCount = stats.enrolled;
     let durationSec = 3600;
     let examRowData: any = null;
+    let sectionBreakdown: LobbyDbCacheEntry['sectionBreakdown'] = [];
     let dbWaitingList: LobbyDbCacheEntry['dbWaitingList'] = [];
 
     if (cached && now - cached.timestamp < LOBBY_CACHE_TTL_MS) {
       enrolledCount = cached.enrolledCount;
       durationSec = cached.durationSec;
       examRowData = cached.examRowData;
+      sectionBreakdown = cached.sectionBreakdown;
       dbWaitingList = cached.dbWaitingList;
     } else {
       try {
-        const [enrolled, examRow, waitingRows] = await Promise.all([
+        const [enrolled, examRow, waitingRows, questionMetaRows] = await Promise.all([
           supabase
             .from('exam_code_attempts')
             .select('id', { count: 'exact', head: true })
             .eq('exam_code', code),
           supabase
             .from('exam_codes')
-            .select('id, college_id, exam_code, exam_name, subject, total_questions, total_marks, duration_minutes, start_time, is_active, is_launched, started_at, branch, passout_year, section_id, section_ids')
+            .select('id, college_id, exam_code, exam_name, subject, total_questions, total_marks, duration_minutes, start_time, is_active, is_launched, started_at, branch, passout_year, section_id, section_ids, passing_percentage')
             .eq('exam_code', code)
             .maybeSingle(),
           supabase
@@ -1387,12 +1396,32 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
             .eq('exam_code', code)
             .in('status', ['waiting_verification', 'in_lobby', 'waiting', 'released'])
             .order('created_at', { ascending: false })
-            .limit(100),
+            .limit(500),
+          supabase
+            .from('questions_ec')
+            .select('id, section, topic, marks, question_type')
+            .eq('exam_code', code),
         ]);
 
         examRowData = examRow.data;
         enrolledCount = Math.max(enrolled.count ?? stats.enrolled, socketWaiting.length);
         durationSec = ((examRow.data as any)?.duration_minutes || 60) * 60;
+
+        // Build actual per-section exam format summary from exam questions
+        const secMap = new Map<string, { section: string; questions: number; marks: number; mcqCount: number; codeCount: number }>();
+        for (const q of questionMetaRows.data || []) {
+          const label = String((q as any).topic || (q as any).section || 'General Assessment').trim() || 'General Assessment';
+          if (!secMap.has(label)) {
+            secMap.set(label, { section: label, questions: 0, marks: 0, mcqCount: 0, codeCount: 0 });
+          }
+          const entry = secMap.get(label)!;
+          entry.questions += 1;
+          entry.marks += Number((q as any).marks || 1);
+          if ((q as any).question_type === 'code') entry.codeCount += 1;
+          else entry.mcqCount += 1;
+        }
+        sectionBreakdown = Array.from(secMap.values());
+
         dbWaitingList = (waitingRows.data || []).map((w: any) => ({
           hall_ticket_no: String(w.hall_ticket_no || '').toUpperCase(),
           student_name: w.student_name || w.hall_ticket_no || 'Candidate',
@@ -1421,6 +1450,7 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
           enrolledCount,
           durationSec,
           examRowData,
+          sectionBreakdown,
           dbWaitingList,
           timestamp: now,
         });
@@ -1428,6 +1458,7 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
         enrolledCount = cached ? cached.enrolledCount : stats.enrolled;
         durationSec = cached ? cached.durationSec : 3600;
         examRowData = cached ? cached.examRowData : null;
+        sectionBreakdown = cached ? cached.sectionBreakdown : [];
         dbWaitingList = cached ? cached.dbWaitingList : [];
       }
     }
@@ -1442,6 +1473,9 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
     }
     const waitingList = Array.from(mergedMap.values());
 
+    const totalActualQ = sectionBreakdown.reduce((acc, s) => acc + s.questions, 0);
+    const totalActualMarks = sectionBreakdown.reduce((acc, s) => acc + s.marks, 0);
+
     const finalStartedState = getExamStartedState(code) || startedState;
     const rawSections = (examRowData as any)?.section_ids || ((examRowData as any)?.section_id ? [(examRowData as any)?.section_id] : ['A']);
     const targetSections = Array.isArray(rawSections) && rawSections.length > 0 ? rawSections : ['A'];
@@ -1452,17 +1486,19 @@ router.get('/v1/exams/:examCode/lobby-stats', async (req: Request, res: Response
       college_id: (examRowData as any)?.college_id || null,
       exam_name: (examRowData as any)?.exam_name || code,
       subject: (examRowData as any)?.subject || 'Core Curriculum',
-      total_questions: (examRowData as any)?.total_questions || 36,
-      total_marks: (examRowData as any)?.total_marks || 100,
+      total_questions: totalActualQ || (examRowData as any)?.total_questions || 15,
+      total_marks: totalActualMarks || (examRowData as any)?.total_marks || 100,
+      passing_percentage: (examRowData as any)?.passing_percentage || 40,
       branch: (examRowData as any)?.branch || 'CSE',
       passout_year: (examRowData as any)?.passout_year || 2026,
       sections: targetSections,
+      exam_sections: sectionBreakdown,
       enrolled: Math.max(enrolledCount, waitingList.length),
       connected: Math.max(stats.connected, waitingList.length),
       queue_count: waitingList.length,
       pending: Math.max(0, Math.max(enrolledCount, waitingList.length) - Math.max(stats.connected, waitingList.length)),
       duration_seconds: durationSec,
-      waiting_students: waitingList,
+      waiting_students: waitingList.slice(0, 50),
       // Exam started state — null if not yet started
       exam_started: finalStartedState
         ? {

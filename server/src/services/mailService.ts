@@ -40,6 +40,8 @@ export const LOGIN_ID_MAIL_REPLY_TO = process.env.LOGIN_ID_REPLY_TO || 'inspecto
 // ============================================================================
 export interface SendMailOptions {
   to: string | string[];
+  cc?: string | string[];
+  bcc?: string | string[];
   subject: string;
   html: string;
   text?: string;
@@ -48,6 +50,19 @@ export interface SendMailOptions {
   sentBy?: string;
   from?: string;
   replyTo?: string;
+  skipForwarders?: boolean;
+}
+
+export interface MailForwarderRule {
+  id: string;
+  name: string;
+  template: string; // 'all' | 'password_reset' | 'user_id_recovery' | 'admin_alert' | 'exam_scheduled' | 'result_report' | 'custom_broadcast'
+  forwardTo: string;
+  mode: 'bcc' | 'forward_copy';
+  enabled: boolean;
+  forwardCount: number;
+  lastForwardedAt?: string | null;
+  createdAt: string;
 }
 
 export interface SendMailResult {
@@ -108,31 +123,161 @@ function sanitizeLogData(metadata?: Record<string, any>, html?: string): {
 }
 
 // ============================================================================
+// MAIL FORWARDER RULES ENGINE (Configurable Institutional Forwarding)
+// ============================================================================
+const DEFAULT_FORWARDERS: MailForwarderRule[] = [];
+let memoryForwarders: MailForwarderRule[] = [...DEFAULT_FORWARDERS];
+let forwardersLoadedFromDb = false;
+
+function filterRealEmails(list: string[]): string[] {
+  return list
+    .map((e) => String(e || '').trim())
+    .filter((email) => {
+      const lower = email.toLowerCase();
+      if (!lower || !lower.includes('@') || !lower.includes('.')) return false;
+      if (
+        lower.endsWith('@example.com') ||
+        lower.endsWith('@test.com') ||
+        lower.endsWith('@sample.com') ||
+        lower.endsWith('@mailinator.com')
+      ) {
+        return false;
+      }
+      if (lower.includes('placeholder') || lower.includes('fake_student') || lower.includes('demo_user')) {
+        return false;
+      }
+      return true;
+    });
+}
+
+async function ensureForwardersLoaded(): Promise<MailForwarderRule[]> {
+  if (forwardersLoadedFromDb) return memoryForwarders;
+  try {
+    const { data } = await supabase
+      .from('platform_settings')
+      .select('mail_forwarders')
+      .limit(1)
+      .maybeSingle();
+    if (data && Array.isArray((data as any).mail_forwarders)) {
+      memoryForwarders = (data as any).mail_forwarders;
+    }
+  } catch {
+    // Non-blocking fallback to in-memory rules
+  } finally {
+    forwardersLoadedFromDb = true;
+  }
+  return memoryForwarders;
+}
+
+async function persistForwardersToDb(rules: MailForwarderRule[]): Promise<void> {
+  memoryForwarders = rules;
+  forwardersLoadedFromDb = true;
+  try {
+    await supabase
+      .from('platform_settings')
+      .upsert({
+        id: '00000000-0000-0000-0000-000000000001',
+        mail_forwarders: rules,
+        updated_at: new Date().toISOString(),
+      });
+  } catch {
+    // Keep in-memory state if DB column not migrated yet
+  }
+}
+
+export async function listMailForwarders(): Promise<MailForwarderRule[]> {
+  return await ensureForwardersLoaded();
+}
+
+export async function upsertMailForwarder(input: {
+  id?: string;
+  name: string;
+  template: string;
+  forwardTo: string;
+  mode?: 'bcc' | 'forward_copy';
+  enabled?: boolean;
+}): Promise<MailForwarderRule> {
+  const existingList = await ensureForwardersLoaded();
+  const cleanRecipients = String(input.forwardTo || '')
+    .split(/[,;\n]+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join(', ');
+
+  if (!cleanRecipients) {
+    throw new Error('At least one valid forwarding email address is required.');
+  }
+
+  const now = new Date().toISOString();
+  const idx = input.id ? existingList.findIndex((r) => r.id === input.id) : -1;
+  let savedRule: MailForwarderRule;
+
+  if (idx >= 0) {
+    savedRule = {
+      ...existingList[idx],
+      name: input.name?.trim() || existingList[idx].name,
+      template: input.template || existingList[idx].template,
+      forwardTo: cleanRecipients,
+      mode: input.mode || existingList[idx].mode,
+      enabled: input.enabled !== undefined ? Boolean(input.enabled) : existingList[idx].enabled,
+    };
+    const updated = [...existingList];
+    updated[idx] = savedRule;
+    await persistForwardersToDb(updated);
+  } else {
+    savedRule = {
+      id: input.id || `fwd_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      name: input.name?.trim() || 'Institutional Forwarder',
+      template: input.template || 'all',
+      forwardTo: cleanRecipients,
+      mode: input.mode === 'bcc' ? 'bcc' : 'forward_copy',
+      enabled: input.enabled !== undefined ? Boolean(input.enabled) : true,
+      forwardCount: 0,
+      lastForwardedAt: null,
+      createdAt: now,
+    };
+    await persistForwardersToDb([savedRule, ...existingList]);
+  }
+
+  return savedRule;
+}
+
+export async function deleteMailForwarder(ruleId: string): Promise<boolean> {
+  const existingList = await ensureForwardersLoaded();
+  const next = existingList.filter((r) => r.id !== ruleId);
+  if (next.length === existingList.length) return false;
+  await persistForwardersToDb(next);
+  return true;
+}
+
+// ============================================================================
 // 1. CORE DISPATCH SERVICE: sendMail
 // ============================================================================
 export async function sendMail(options: SendMailOptions): Promise<SendMailResult> {
-  const toList = Array.isArray(options.to) ? options.to : [options.to];
+  const toList = Array.isArray(options.to) ? options.to : String(options.to || '').split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+  const ccListRaw = options.cc ? (Array.isArray(options.cc) ? options.cc : String(options.cc).split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean)) : [];
+  const bccListRaw = options.bcc ? (Array.isArray(options.bcc) ? options.bcc : String(options.bcc).split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean)) : [];
+
   const toStr = toList.join(', ');
   const templateName = options.template || 'custom';
   const sentBy = options.sentBy || 'system';
 
+  // Load matching active forwarder rules (never forward mail_forwarded to prevent loops)
+  const activeForwarders = (!options.skipForwarders && templateName !== 'mail_forwarded')
+    ? (await ensureForwardersLoaded()).filter((r) => r.enabled && (r.template === 'all' || r.template === templateName))
+    : [];
+
+  for (const rule of activeForwarders) {
+    if (rule.mode === 'bcc') {
+      const ruleAddrs = rule.forwardTo.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+      bccListRaw.push(...ruleAddrs);
+    }
+  }
+
   // 0. Anti-Spam & Placeholder Filter: Prevent fake / demo / loop emails from triggering real mail dispatch
-  const realRecipients = toList.filter((email) => {
-    const lower = String(email || '').toLowerCase().trim();
-    if (!lower || !lower.includes('@') || !lower.includes('.')) return false;
-    if (
-      lower.endsWith('@example.com') ||
-      lower.endsWith('@test.com') ||
-      lower.endsWith('@sample.com') ||
-      lower.endsWith('@mailinator.com')
-    ) {
-      return false;
-    }
-    if (lower.includes('placeholder') || lower.includes('fake_student') || lower.includes('demo_user')) {
-      return false;
-    }
-    return true;
-  });
+  const realRecipients = filterRealEmails(toList);
+  const realCc = filterRealEmails(Array.from(new Set(ccListRaw)));
+  const realBcc = filterRealEmails(Array.from(new Set(bccListRaw))).filter((b) => !realRecipients.includes(b));
 
   if (realRecipients.length === 0) {
     console.info(`[MailService] 🛡️ Shielded simulated/test recipient(s) (${toStr}) — suppressed outbound spam.`);
@@ -144,7 +289,9 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
     };
   }
 
-  const resendApiKey = process.env.RESEND_API_KEY || RESEND_API_KEY;
+  const resendApiKey = (process.env.NODE_ENV === 'test' || process.env.TEST_MOCK_ONLY === 'true')
+    ? ''
+    : (process.env.RESEND_API_KEY || RESEND_API_KEY);
   const senderAddress = options.from || process.env.MAIL_FROM_NOREPLY || MAIL_FROM_NOREPLY;
   const replyToAddress = options.replyTo || process.env.MAIL_REPLY_TO || MAIL_REPLY_TO;
 
@@ -161,20 +308,24 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
     // Attempt dispatch via Resend API
     try {
       if (resendApiKey) {
+        const buildResendBody = (fromVal: string) => ({
+          from: fromVal,
+          to: realRecipients,
+          ...(realCc.length > 0 ? { cc: realCc } : {}),
+          ...(realBcc.length > 0 ? { bcc: realBcc } : {}),
+          subject: options.subject,
+          html: options.html,
+          text: options.text || undefined,
+          reply_to: replyToAddress,
+        });
+
         let res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${resendApiKey}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            from: senderAddress,
-            to: realRecipients,
-            subject: options.subject,
-            html: options.html,
-            text: options.text || undefined,
-            reply_to: replyToAddress,
-          }),
+          body: JSON.stringify(buildResendBody(senderAddress)),
         });
 
         let resData = (await res.json().catch(() => ({}))) as any;
@@ -188,14 +339,7 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
               Authorization: `Bearer ${resendApiKey}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              from: 'LogicWhile LiRE <onboarding@resend.dev>',
-              to: realRecipients,
-              subject: options.subject,
-              html: options.html,
-              text: options.text || undefined,
-              reply_to: replyToAddress,
-            }),
+            body: JSON.stringify(buildResendBody('LogicWhile LiRE <onboarding@resend.dev>')),
           });
           resData = (await res.json().catch(() => ({}))) as any;
         }
@@ -213,6 +357,8 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
             const info = await smtp.sendMail({
               from: senderAddress,
               to: realRecipients.join(', '),
+              ...(realCc.length > 0 ? { cc: realCc.join(', ') } : {}),
+              ...(realBcc.length > 0 ? { bcc: realBcc.join(', ') } : {}),
               subject: options.subject,
               html: options.html,
               text: options.text,
@@ -228,11 +374,16 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
         }
       } else {
         // Fallback to SMTP transport (Resend SMTP or Brevo)
-        const smtp = getTransporter() || getBrevoTransporter();
+        const isTestOrMock = process.env.NODE_ENV === 'test' || process.env.TEST_MOCK_ONLY === 'true' || process.env.DEMO_MODE === 'true' || process.env.NODE_ENV !== 'production';
+        const smtp = (process.env.NODE_ENV === 'test' || process.env.TEST_MOCK_ONLY === 'true')
+          ? null
+          : (getTransporter() || getBrevoTransporter());
         if (smtp) {
           const info = await smtp.sendMail({
             from: senderAddress,
             to: realRecipients.join(', '),
+            ...(realCc.length > 0 ? { cc: realCc.join(', ') } : {}),
+            ...(realBcc.length > 0 ? { bcc: realBcc.join(', ') } : {}),
             subject: options.subject,
             html: options.html,
             text: options.text,
@@ -242,7 +393,7 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
           isSuccess = true;
           dailyEmailQuota.recordSent();
           console.log(`[MailService:SMTP] ✅ Sent [${templateName}] to ${toStr} (ID: ${resendId})`);
-        } else if (process.env.NODE_ENV !== 'production' || process.env.DEMO_MODE === 'true') {
+        } else if (isTestOrMock) {
           // Dev mock fallback
           resendId = `mock_${Date.now()}`;
           isSuccess = true;
@@ -316,6 +467,47 @@ export async function sendMail(options: SendMailOptions): Promise<SendMailResult
     }
   } catch (dbErr: any) {
     console.warn(`[MailService:Log] Database logging warning: ${dbErr?.message}`);
+  }
+
+  // 4. Execute non-blocking 'forward_copy' rules when send succeeded
+  if (isSuccess && activeForwarders.length > 0 && !options.skipForwarders && templateName !== 'mail_forwarded') {
+    const copyRules = activeForwarders.filter((r) => r.mode === 'forward_copy');
+    const bccRules = activeForwarders.filter((r) => r.mode === 'bcc');
+    const nowFwd = new Date().toISOString();
+
+    for (const r of [...copyRules, ...bccRules]) {
+      r.forwardCount = (r.forwardCount || 0) + 1;
+      r.lastForwardedAt = nowFwd;
+    }
+
+    for (const rule of copyRules) {
+      const fwdTarget = rule.forwardTo.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+      if (fwdTarget.length === 0) continue;
+      const fwdHtml = `
+        <div style="background:#0d1835;border:1px solid rgba(56,189,248,0.3);border-radius:12px;padding:16px 20px;margin-bottom:20px;color:#e2e8f0;font-family:Inter,Arial,sans-serif;">
+          <div style="font-size:11px;font-weight:800;color:#38bdf8;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">
+            AUTO-FORWARDED COPY (${rule.name})
+          </div>
+          <div style="font-size:13px;line-height:1.5;color:#cbd5e1;">
+            <strong>Original Recipient:</strong> ${toStr}<br/>
+            <strong>Template:</strong> ${templateName}<br/>
+            <strong>Original Subject:</strong> ${options.subject}<br/>
+            <strong>Timestamp:</strong> ${nowIso}
+          </div>
+        </div>
+        ${cleanHtml}
+      `;
+      sendMail({
+        to: fwdTarget,
+        subject: `[FWD: ${templateName}] ${options.subject}`,
+        html: fwdHtml,
+        text: `Auto-forwarded copy (${rule.name})\nOriginal To: ${toStr}\nTemplate: ${templateName}\nSubject: ${options.subject}\n\n${options.text || ''}`,
+        template: 'mail_forwarded',
+        metadata: { forwardedFromRule: rule.id, originalRecipient: toStr, originalTemplate: templateName },
+        sentBy: `forwarder:${rule.name}`,
+        skipForwarders: true,
+      }).catch(() => {});
+    }
   }
 
   return {
@@ -774,17 +966,29 @@ export function renderStudentRegisteredTemplate(data: {
 export function renderPasswordResetTemplate(data: {
   name: string;
   email: string;
+  userId?: string;
+  portalRole?: string;
+  loginUrl?: string;
   resetToken?: string;
   resetUrl: string;
   expiresMinutes?: number;
 }): { subject: string; html: string; text: string } {
-  const { name, email, resetUrl, expiresMinutes = 15 } = data;
-  const subject = `🔑 Password Reset Request — LogicWhile LiRE`;
+  const {
+    name,
+    email,
+    userId,
+    portalRole = 'Account',
+    loginUrl = `${FRONTEND_URL}/login`,
+    resetUrl,
+    expiresMinutes = 60,
+  } = data;
+  const subject = `🔑 Password Reset & Account Recovery — LogicWhile LiRE`;
+  const effectiveUserId = userId || email;
 
   const contentHtml = `
     <div style="background:rgba(245,158,11,0.12); border:1px solid #f59e0b; border-radius:8px; padding:12px 16px; margin-bottom:20px;">
       <span style="font-size:12px; font-weight:800; color:#fbbf24; text-transform:uppercase; letter-spacing:1px;">
-        🔐 ACCOUNT SECURITY & RECOVERY
+        🔐 ${portalRole.toUpperCase()} SECURITY & CREDENTIAL RECOVERY
       </span>
     </div>
     <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">
@@ -793,14 +997,42 @@ export function renderPasswordResetTemplate(data: {
     <p style="margin:0 0 16px; font-size:14px; line-height:1.6; color:#94a3b8;">
       Hello <strong style="color:#f8fafc;">${name}</strong>,
     </p>
-    <p style="margin:0 0 20px; font-size:14px; line-height:1.6; color:#cbd5e1;">
-      We received a request to reset the password associated with your account (<strong style="color:#f8fafc;">${email}</strong>). Click the button below to establish a new password:
+    <p style="margin:0 0 18px; font-size:14px; line-height:1.6; color:#cbd5e1;">
+      We received a request to reset the password associated with your LogicWhile LiRE ${portalRole} account. Your account summary is confirmed below:
     </p>
-    <div style="text-align:center; margin:30px 0;">
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#070d1e; border:1px solid rgba(56,189,248,0.22); border-radius:10px; margin-bottom:22px;">
+      <tr>
+        <td style="padding:14px 18px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="6" border="0" style="font-size:13px;">
+            <tr>
+              <td style="color:#94a3b8; width:145px;">User ID / Login ID:</td>
+              <td style="color:#fbbf24; font-family:monospace; font-weight:800;">${effectiveUserId}</td>
+            </tr>
+            <tr>
+              <td style="color:#94a3b8;">Registered Email:</td>
+              <td style="color:#38bdf8; font-family:monospace;">${email}</td>
+            </tr>
+            <tr>
+              <td style="color:#94a3b8;">Portal Access:</td>
+              <td style="color:#e2e8f0;">${portalRole} (<a href="${loginUrl}" style="color:#38bdf8;text-decoration:none;">${loginUrl}</a>)</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <div style="text-align:center; margin:26px 0;">
       <a href="${resetUrl}" style="display:inline-block; padding:14px 36px; background:linear-gradient(135deg, #1B5FB5 0%, #0A3F8F 100%); color:#ffffff; font-size:15px; font-weight:700; text-decoration:none; border-radius:8px; box-shadow:0 4px 16px rgba(27, 95, 181, 0.45);">
         Reset My Password →
       </a>
     </div>
+
+    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 14px; margin-bottom:18px; word-break:break-all;">
+      <div style="font-size:11px; color:#94a3b8; margin-bottom:4px; text-transform:uppercase; font-weight:700;">Fallback Verification URL</div>
+      <a href="${resetUrl}" style="font-size:12px; color:#38bdf8; text-decoration:none; font-family:monospace;">${resetUrl}</a>
+    </div>
+
     <div style="background:rgba(239,68,68,0.08); border-left:3px solid #ef4444; padding:12px 16px; border-radius:6px; margin-bottom:24px;">
       <p style="margin:0; font-size:12px; color:#fca5a5; line-height:1.5;">
         ⏱️ This secure link will expire in <strong>${expiresMinutes} minutes</strong>. If you did not request a password reset, you can safely ignore this message; your account credentials remain unchanged.
@@ -810,11 +1042,83 @@ export function renderPasswordResetTemplate(data: {
 
   const html = getSharedEmailLayout({
     title: subject,
-    preheader: `Password reset link for ${email}. Expires in 15 minutes.`,
+    preheader: `Password reset & User ID (${effectiveUserId}) details for ${email}. Expires in ${expiresMinutes} minutes.`,
     contentHtml,
   });
 
-  const text = `Hello ${name},\n\nWe received a password reset request for ${email}.\nReset your password here: ${resetUrl}\nLink expires in ${expiresMinutes} minutes.\n\nSupport: ${MAIL_REPLY_TO}`;
+  const text = `Hello ${name},\n\nPassword reset & account details for LogicWhile LiRE (${portalRole}):\nUser ID / Login ID: ${effectiveUserId}\nEmail: ${email}\nReset link: ${resetUrl}\nExpires in ${expiresMinutes} minutes.\n\nSupport: ${MAIL_REPLY_TO}`;
+  return { subject, html, text };
+}
+
+/**
+ * TEMPLATE 6B: user_id_recovery
+ * Sends recovered Hall Ticket / Staff Username + Portal login URL
+ */
+export function renderUserIdRecoveryTemplate(data: {
+  name: string;
+  email: string;
+  recoveredAccounts: Array<{
+    userId: string;
+    portalRole: string;
+    loginUrl: string;
+    extraInfo?: string;
+  }>;
+}): { subject: string; html: string; text: string } {
+  const { name, email, recoveredAccounts } = data;
+  const subject = `🪪 Your LogicWhile LiRE User ID & Portal Details`;
+
+  const rowsHtml = recoveredAccounts
+    .map(
+      (acc) => `
+      <tr>
+        <td style="padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:11px; color:#38bdf8; font-weight:800; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:4px;">${acc.portalRole}</div>
+          <div style="font-size:18px; color:#fbbf24; font-family:monospace; font-weight:900; margin-bottom:4px;">${acc.userId}</div>
+          ${acc.extraInfo ? `<div style="font-size:12px; color:#94a3b8; margin-bottom:6px;">${acc.extraInfo}</div>` : ''}
+          <a href="${acc.loginUrl}" style="font-size:12px; color:#34d399; font-weight:700; text-decoration:none;">Sign In at ${acc.loginUrl} →</a>
+        </td>
+      </tr>
+    `
+    )
+    .join('');
+
+  const contentHtml = `
+    <div style="background:rgba(56,189,248,0.12); border:1px solid #38bdf8; border-radius:8px; padding:12px 16px; margin-bottom:20px;">
+      <span style="font-size:12px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:1px;">
+        🪪 USER ID & HALL TICKET RECOVERY
+      </span>
+    </div>
+    <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">
+      Your Registered Login Identifiers
+    </h2>
+    <p style="margin:0 0 16px; font-size:14px; line-height:1.6; color:#94a3b8;">
+      Hello <strong style="color:#f8fafc;">${name}</strong>,
+    </p>
+    <p style="margin:0 0 18px; font-size:14px; line-height:1.6; color:#cbd5e1;">
+      Here are the LogicWhile LiRE User ID(s) / Hall Ticket number(s) registered with <strong style="color:#f8fafc;">${email}</strong>:
+    </p>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#070d1e; border:1px solid rgba(56,189,248,0.25); border-radius:10px; margin-bottom:24px;">
+      ${rowsHtml}
+    </table>
+
+    <div style="text-align:center; margin:24px 0;">
+      <a href="${FRONTEND_URL}/forgot-password" style="display:inline-block; padding:12px 28px; background:rgba(255,180,0,0.14); border:1px solid rgba(255,180,0,0.45); color:#fbbf24; font-size:13px; font-weight:700; text-decoration:none; border-radius:8px;">
+        Also Need to Reset Your Password? →
+      </a>
+    </div>
+  `;
+
+  const html = getSharedEmailLayout({
+    title: subject,
+    preheader: `Recovered User ID / Hall Ticket details for ${email}.`,
+    contentHtml,
+  });
+
+  const textLines = recoveredAccounts
+    .map((a) => `- ${a.portalRole}: User ID = ${a.userId} (Sign in: ${a.loginUrl})${a.extraInfo ? ` [${a.extraInfo}]` : ''}`)
+    .join('\n');
+  const text = `Hello ${name},\n\nHere are your LogicWhile LiRE login IDs registered with ${email}:\n${textLines}\n\nReset password: ${FRONTEND_URL}/forgot-password\nSupport: ${MAIL_REPLY_TO}`;
   return { subject, html, text };
 }
 
@@ -1267,6 +1571,9 @@ export async function sendStudentRegistered(data: {
 export async function sendPasswordReset(data: {
   name: string;
   email: string;
+  userId?: string;
+  portalRole?: string;
+  loginUrl?: string;
   resetUrl: string;
   expiresMinutes?: number;
 }): Promise<SendMailResult> {
@@ -1277,7 +1584,105 @@ export async function sendPasswordReset(data: {
     html: rendered.html,
     text: rendered.text,
     template: 'password_reset',
-    metadata: { name: data.name, expiresMinutes: data.expiresMinutes || 15 },
+    metadata: {
+      name: data.name,
+      userId: data.userId || data.email,
+      portalRole: data.portalRole || 'Account',
+      expiresMinutes: data.expiresMinutes || 60,
+    },
+  });
+}
+
+export async function sendUserIdRecovery(data: {
+  name: string;
+  email: string;
+  recoveredAccounts: Array<{
+    userId: string;
+    portalRole: string;
+    loginUrl: string;
+    extraInfo?: string;
+  }>;
+}): Promise<SendMailResult> {
+  const rendered = renderUserIdRecoveryTemplate(data);
+  return sendMail({
+    to: data.email,
+    from: process.env.LOGIN_ID_FROM_EMAIL || LOGIN_ID_MAIL_FROM,
+    replyTo: process.env.LOGIN_ID_REPLY_TO || LOGIN_ID_MAIL_REPLY_TO,
+    subject: rendered.subject,
+    html: rendered.html,
+    text: rendered.text,
+    template: 'user_id_recovery',
+    metadata: {
+      name: data.name,
+      accountsCount: data.recoveredAccounts.length,
+      portals: data.recoveredAccounts.map((a) => a.portalRole).join(', '),
+    },
+  });
+}
+
+export async function forwardMailLogById(
+  logId: string,
+  forwardTo: string,
+  note?: string,
+  forwardedBy: string = 'admin_forward'
+): Promise<SendMailResult> {
+  let record: MailLogRecord | null = null;
+  try {
+    const { data } = await supabase.from('mail_logs').select('*').eq('id', logId).maybeSingle();
+    if (data) record = data as MailLogRecord;
+  } catch {}
+
+  if (!record) {
+    record = memoryMailLogs.find((l) => l.id === logId) || null;
+  }
+  if (!record) {
+    throw new Error('Mail log record not found');
+  }
+
+  const targetRecipients = String(forwardTo || '')
+    .split(/[,;\n]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (targetRecipients.length === 0) {
+    throw new Error('At least one valid forwarding recipient is required');
+  }
+
+  const safeOriginalHtml = record.html_content || `<p>Original subject: ${record.subject}</p>`;
+  const noteBlock = note && note.trim()
+    ? `<div style="margin-top:8px;padding:10px 12px;border-radius:8px;background:rgba(255,180,0,0.1);border:1px solid rgba(255,180,0,0.3);color:#fde68a;"><strong>Forwarding Note:</strong> ${note.trim()}</div>`
+    : '';
+
+  const forwardedHtml = `
+    <div style="background:#0d1835;border:1px solid rgba(56,189,248,0.35);border-radius:12px;padding:16px 20px;margin-bottom:20px;color:#e2e8f0;font-family:Inter,Arial,sans-serif;">
+      <div style="font-size:11px;font-weight:800;color:#38bdf8;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">
+        FORWARDED INSTITUTIONAL TRANSMISSION
+      </div>
+      <div style="font-size:13px;line-height:1.55;color:#cbd5e1;">
+        <strong>Original Recipient:</strong> ${record.to_email}<br/>
+        <strong>Template:</strong> ${record.template}<br/>
+        <strong>Dispatched At:</strong> ${new Date(record.created_at).toLocaleString()}<br/>
+        <strong>Forwarded By:</strong> ${forwardedBy}
+      </div>
+      ${noteBlock}
+    </div>
+    ${safeOriginalHtml}
+  `;
+
+  return sendMail({
+    to: targetRecipients,
+    subject: `Fwd: ${record.subject}`,
+    html: forwardedHtml,
+    text: `Forwarded message (from log ${logId})\nOriginal To: ${record.to_email}\nSubject: ${record.subject}\n${note ? `Note: ${note}\n` : ''}`,
+    template: 'mail_forwarded',
+    metadata: {
+      forwarded_of: logId,
+      original_to: record.to_email,
+      original_template: record.template,
+      note: note || null,
+    },
+    sentBy: forwardedBy,
+    skipForwarders: true,
   });
 }
 
@@ -1543,20 +1948,22 @@ export async function getMailLogs(params?: {
     combined = filtered.slice(offset, offset + limit);
   }
 
-  // Calculate overall stats
+  // Calculate overall stats accurately across DB + memory buffer
   const totalCount = dbTotal || memoryMailLogs.length;
-  const sentCount = memoryMailLogs.filter((l) => l.status === 'sent' || l.status === 'delivered').length;
-  const failedCount = memoryMailLogs.filter((l) => l.status === 'failed').length;
+  const sentFromSlice = combined.filter((l) => l.status === 'sent' || l.status === 'delivered').length;
+  const failedFromSlice = combined.filter((l) => l.status === 'failed').length;
+  const memSent = memoryMailLogs.filter((l) => l.status === 'sent' || l.status === 'delivered').length;
+  const memFailed = memoryMailLogs.filter((l) => l.status === 'failed').length;
 
   return {
     logs: combined,
-    total: dbTotal,
+    total: dbTotal || memoryMailLogs.length,
     page,
     limit,
     stats: {
       total: totalCount,
-      sent: sentCount,
-      failed: failedCount,
+      sent: Math.max(memSent, sentFromSlice),
+      failed: Math.max(memFailed, failedFromSlice),
     },
   };
 }

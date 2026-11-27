@@ -50,6 +50,7 @@ interface ExamQuestion {
   time_limit?: number
   difficulty?: string
   topic?: string
+  section?: string
   starter_code?: string
   code?: string
   test_cases?: Array<{ id: string; input_text: string; expected_output?: string; is_hidden: boolean; marks?: number }>
@@ -86,7 +87,7 @@ function shuffleForStudent<T>(array: T[], seed: string): T[] {
   for (let i = result.length - 1; i > 0; i--) {
     s = (s * 1664525 + 1013904223) >>> 0
     const j = s % (i + 1)
-    ;[result[i], result[j]] = [result[j], result[i]]
+      ;[result[i], result[j]] = [result[j], result[i]]
   }
   return result
 }
@@ -183,7 +184,7 @@ export default function QuizPage() {
         b.addEventListener('levelchange', () => {
           if (mounted) setBatteryLevel(Math.round(b.level * 100))
         })
-      }).catch(() => {})
+      }).catch(() => { })
     }
     return () => { mounted = false }
   }, [])
@@ -232,330 +233,330 @@ export default function QuizPage() {
       navigate('/enter-exam')
       return
     }
-      try {
-        const { data } = await axios.get(`${BASE}/api/exam-code/${examCode}/start`, {
-          params: { hallTicket }
-        })
-        if (!data.success) throw new Error(data.message)
-        const exam = data.exam || data.data
-        const questions: ExamQuestion[] = (data.questions || []).map((q: Record<string, unknown>) => ({
-          id: String(q.id),
-          text: (q.question_text || q.text || q.question) as string,
-          options: (q.options as string[]) || [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean) as string[],
-          type: (q.question_type || q.type || 'mcq') as ExamQuestion['type'],
-          marks: (q.marks as number) || 1,
-          difficulty: (q.difficulty as string) || 'Medium',
-          topic: (q.topic as string) || 'General',
-          starter_code: (q.starter_code || q.code) as string | undefined,
-          code: (q.code || q.starter_code) as string | undefined,
-          test_cases: (q.test_cases as ExamQuestion['test_cases']) || [],
-        }))
+    try {
+      const { data } = await axios.get(`${BASE}/api/exam-code/${examCode}/start`, {
+        params: { hallTicket }
+      })
+      if (!data.success) throw new Error(data.message)
+      const exam = data.exam || data.data
+      const questions: ExamQuestion[] = (data.questions || []).map((q: Record<string, unknown>) => ({
+        id: String(q.id),
+        text: (q.question_text || q.text || q.question) as string,
+        options: (q.options as string[]) || [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean) as string[],
+        type: (q.question_type || q.type || 'mcq') as ExamQuestion['type'],
+        marks: (q.marks as number) || 1,
+        difficulty: (q.difficulty as string) || 'Medium',
+        topic: (q.topic as string) || 'General',
+        starter_code: (q.starter_code || q.code) as string | undefined,
+        code: (q.code || q.starter_code) as string | undefined,
+        test_cases: (q.test_cases as ExamQuestion['test_cases']) || [],
+      }))
 
-        // If the server has already deterministically shuffled questions and options for this candidate,
-        // use them directly to guarantee 100% accurate option key evaluation mapping!
-        const isServerShuffled = Boolean(data.server_shuffled || data.questions_shuffled)
-        const randomizedQuestions: ExamQuestion[] = isServerShuffled
-          ? questions
-          : questions.map(q => {
-              if (q.options && q.options.length > 1 && q.type !== 'code') {
-                return {
-                  ...q,
-                  options: shuffleForStudent(q.options, `${hallTicket}_${q.id}_opts`),
-                }
-              }
-              return q
-            })
-
-        if (data.server_time) {
-          serverClockOffsetRef.current = Number(data.server_time) - Date.now()
-        }
-
-        sessionIdRef.current = data.sessionId || data.session_id
-        const proctoringMode: 'webcam' | 'screen' | 'dual' = exam?.proctoring_mode || 'webcam'
-        const fullDuration = (exam?.duration_minutes || 60) * 60
-        const serverRemaining = Number(data.time_left_seconds ?? exam?.time_left_seconds)
-        let initialTimeLeft: number
-        const nowSynced = Date.now() + serverClockOffsetRef.current
-
-        if (!Number.isNaN(serverRemaining) && serverRemaining > 0) {
-          // Single source of truth from server /start response
-          initialTimeLeft = Math.min(fullDuration, Math.max(1, Math.floor(serverRemaining)))
-        } else if (routerServerStartTime && routerDurationSeconds) {
-          const elapsed = Math.floor((nowSynced - routerServerStartTime) / 1000)
-          initialTimeLeft = elapsed >= 0 && elapsed < routerDurationSeconds
-            ? Math.max(1, routerDurationSeconds - elapsed)
-            : fullDuration
-        } else if (exam?.started_at) {
-          const startedAtMs = new Date(exam.started_at).getTime()
-          const elapsed = Math.floor((nowSynced - startedAtMs) / 1000)
-          initialTimeLeft = !Number.isNaN(startedAtMs) && elapsed >= 0 && elapsed < fullDuration
-            ? Math.max(1, fullDuration - elapsed)
-            : fullDuration
-        } else {
-          // Standard full duration for this exam attempt (e.g. 30 or 60 min)
-          initialTimeLeft = fullDuration
-        }
-
-        // Clear any stale 'stopped' flag from an earlier test run before launching active quiz
-        try {
-          const stKeyUpper = `admin_exam_state_${examCode.toUpperCase()}`
-          const stKeyRaw = `admin_exam_state_${examCode}`
-          if (localStorage.getItem(stKeyUpper) === 'stopped') localStorage.removeItem(stKeyUpper)
-          if (localStorage.getItem(stKeyRaw) === 'stopped') localStorage.removeItem(stKeyRaw)
-        } catch {}
-
-        sessionStartedAtRef.current = Date.now()
-        const computedEndTimeMs = nowSynced + (initialTimeLeft * 1000)
-
-        const portalRules = (() => {
-          try {
-            const raw = localStorage.getItem('lw_portal_rules')
-            return raw ? JSON.parse(raw) : null
-          } catch { return null }
-        })()
-        const adminTabLimit = portalRules?.maxTabSwitchesAllowed ? Number(portalRules.maxTabSwitchesAllowed) : undefined
-
-        setSession({
-          candidateId: data.candidateId || hallTicket,
-          examName: exam?.exam_name || exam?.name || 'Exam',
-          totalMarks: exam?.total_marks || 100,
-          duration: fullDuration,
-          questions: randomizedQuestions,
-          proctoringMode,
-          endTimeMs: computedEndTimeMs,
-          violationThreshold: Number(exam?.max_violations) || Number(exam?.violation_threshold) || adminTabLimit || 3,
-        })
-
-        setTimeLeft(initialTimeLeft)
-
-        // ── 1.4 Offline answer restoration ──
-        try {
-          const cached = await getAllCachedAnswers(examCode, hallTicket)
-          const restoredAnswers: Record<string, number | string> = {}
-          const restoredCode: Record<string, string> = {}
-
-          try {
-            const { data: resumeData } = await axios.get(`${BASE}/api/exam-code/${examCode}/resume-state`, {
-              params: { candidateId: hallTicket }
-            })
-            if (resumeData?.partial_answers) {
-              for (const [qid, val] of Object.entries(resumeData.partial_answers)) {
-                restoredAnswers[qid] = val as string
-              }
-            }
-            if (typeof resumeData?.violation_count === 'number' && resumeData.violation_count > 0) {
-              violationRef.current = resumeData.violation_count
-              setViolationCount(resumeData.violation_count)
-            }
-            if (typeof resumeData?.fullscreen_exits === 'number' && resumeData.fullscreen_exits > 0) {
-              fullscreenExitCountRef.current = resumeData.fullscreen_exits
-              setFullscreenExitCount(resumeData.fullscreen_exits)
-            }
-          } catch {}
-
-          for (const [qid, entry] of Object.entries(cached)) {
-            if (entry.type === 'code') {
-              restoredCode[qid] = String(entry.answer)
-            } else {
-              restoredAnswers[qid] = entry.answer
+      // If the server has already deterministically shuffled questions and options for this candidate,
+      // use them directly to guarantee 100% accurate option key evaluation mapping!
+      const isServerShuffled = Boolean(data.server_shuffled || data.questions_shuffled)
+      const randomizedQuestions: ExamQuestion[] = isServerShuffled
+        ? questions
+        : questions.map(q => {
+          if (q.options && q.options.length > 1 && q.type !== 'code') {
+            return {
+              ...q,
+              options: shuffleForStudent(q.options, `${hallTicket}_${q.id}_opts`),
             }
           }
+          return q
+        })
 
-          if (Object.keys(restoredAnswers).length > 0) setAnswers(prev => ({ ...prev, ...restoredAnswers }))
-          if (Object.keys(restoredCode).length > 0) setCodeAnswers(prev => ({ ...prev, ...restoredCode }))
-        } catch (restoreErr) {
-          console.warn('[OfflineDB] Could not restore cached answers:', restoreErr)
-        }
-      } catch (e) {
-        if (examCode?.toUpperCase().includes('DEMO')) {
-          const demoQuestions: ExamQuestion[] = [
-            {
-              id: 'demo-q1',
-              text: 'In an autonomous flight calculation, a thruster consumes 1,200 kg of fuel at 40 kg/s. What is the total burn duration?',
-              options: ['20 seconds', '30 seconds', '40 seconds', '48 seconds'],
-              type: 'mcq',
-              marks: 5,
-              difficulty: 'Easy',
-              topic: 'Sector 1: Quantitative Velocity',
-            },
-            {
-              id: 'demo-q2',
-              text: 'A train 150m long passes a signal pole in 15 seconds. What is the speed of the train in km/h?',
-              options: ['36 km/h', '40 km/h', '45 km/h', '54 km/h'],
-              type: 'mcq',
-              marks: 5,
-              difficulty: 'Medium',
-              topic: 'Sector 1: Quantitative Velocity',
-            },
-            {
-              id: 'demo-q3',
-              text: 'In the LogicWhile cipher matrix, if "LOGIC" is encoded as "MQHKE", how is "WHILE" encoded under alternating +1 and +2 letter shifts?',
-              options: ['XIKMG', 'XJKMH', 'WJIMG', 'YKLOI'],
-              type: 'mcq',
-              marks: 5,
-              difficulty: 'Easy',
-              topic: 'Sector 2: Deductive Logic',
-            },
-            {
-              id: 'demo-q4',
-              text: 'Statements: (1) All compilers are parsers. (2) All parsers are state machines. Conclusion: Are all compilers state machines?',
-              options: ['Definitely True', 'Definitely False', 'Probably True', 'Cannot be determined'],
-              type: 'mcq',
-              marks: 5,
-              difficulty: 'Easy',
-              topic: 'Sector 2: Deductive Logic',
-            },
-            {
-              id: 'demo-q5',
-              text: 'Which memory management replacement policy suffers from Belady\'s Anomaly (increasing frame count can increase page faults)?',
-              options: ['Optimal (OPT)', 'Least Recently Used (LRU)', 'First In First Out (FIFO)', 'Least Frequently Used (LFU)'],
-              type: 'mcq',
-              marks: 5,
-              difficulty: 'Medium',
-              topic: 'Sector 3: Core Computer Science',
-            },
-            {
-              id: 'demo-q6',
-              text: 'Which of the following is NOT an essential condition for Deadlock to occur in an operating system?',
-              options: ['Mutual Exclusion', 'Hold and Wait', 'Preemption Allowed', 'Circular Wait'],
-              type: 'mcq',
-              marks: 5,
-              difficulty: 'Medium',
-              topic: 'Sector 3: Core Computer Science',
-            },
-            {
-              id: 'demo-q7',
-              text: 'In the TCP 3-way handshake, what is the exact sequence of flags transmitted between client and server?',
-              options: ['SYN -> ACK -> SYN-ACK', 'SYN -> SYN-ACK -> ACK', 'ACK -> SYN -> ACK', 'FIN -> ACK -> FIN-ACK'],
-              type: 'mcq',
-              marks: 5,
-              difficulty: 'Easy',
-              topic: 'Sector 3: Core Computer Science',
-            },
-            {
-              id: 'demo-q8',
-              text: 'What is the tightest worst-case asymptotic time complexity of searching in a Balanced Binary Search Tree (AVL / Red-Black) with N nodes?',
-              options: ['O(1)', 'O(log N)', 'O(N)', 'O(N log N)'],
-              type: 'mcq',
-              marks: 5,
-              difficulty: 'Easy',
-              topic: 'Sector 4: Data Structures & Algorithms',
-            },
-            {
-              id: 'demo-q9',
-              text: 'Which data structure is fundamentally utilized in Breadth-First Search (BFS) graph traversal?',
-              options: ['Stack', 'Queue', 'Priority Heap', 'Segment Tree'],
-              type: 'mcq',
-              marks: 5,
-              difficulty: 'Easy',
-              topic: 'Sector 4: Data Structures & Algorithms',
-            },
-            {
-              id: 'demo-q10',
-              text: 'In Node.js asynchronous architecture, which phase of the Libuv event loop executes callbacks scheduled by process.nextTick()?',
-              options: ['Timers phase', 'Poll phase', 'Immediately after current operation before event loop continues', 'Check phase'],
-              type: 'mcq',
-              marks: 5,
-              difficulty: 'Medium',
-              topic: 'Sector 5: Full-Stack Architecture',
-            },
-            {
-              id: 'demo-q11',
-              text: 'In distributed system architecture, what does the CAP Theorem state a system can guarantee simultaneously in the presence of network partitions?',
-              options: ['Both Consistency and Availability', 'Either Consistency or Availability, but not both', 'Latency and Partition Tolerance', 'All three: Consistency, Availability, Partition Tolerance'],
-              type: 'mcq',
-              marks: 5,
-              difficulty: 'Medium',
-              topic: 'Sector 5: Full-Stack Architecture',
-            },
-            {
-              id: 'demo-q12',
-              text: 'Which HTTP header is utilized by WebSocket protocol to upgrade an HTTP connection to a full-duplex TCP socket?',
-              options: ['Connection: Upgrade & Upgrade: websocket', 'Transfer-Encoding: chunked', 'Content-Type: application/websocket', 'X-Socket-Protocol: 1.0'],
-              type: 'mcq',
-              marks: 5,
-              difficulty: 'Easy',
-              topic: 'Sector 5: Full-Stack Architecture',
-            },
-            {
-              id: 'demo-q13',
-              text: 'In modern relational database indexing, why are B+ Trees favored over standard Binary Search Trees for disk storage?',
-              options: ['High fanout reduces disk I/O depth and leaf nodes form contiguous linked list for range scans', 'B+ Trees use less RAM', 'Binary trees cannot store strings', 'B+ Trees do not require locking'],
-              type: 'mcq',
-              marks: 5,
-              difficulty: 'Medium',
-              topic: 'Sector 3: Core Computer Science',
-            },
-            {
-              id: 'demo-code-01',
-              text: 'LIVE CODING SANDBOX 1: Two Sum Vector Verification\n\nGiven integer N, followed by N space-separated integers, and target integer T, write a program that prints "True" if any two distinct elements sum to T, otherwise "False".\n\nInput:\n5\n2 7 11 15 20\n9\n\nExpected Output:\nTrue',
-              type: 'code',
-              marks: 15,
-              difficulty: 'Medium',
-              topic: 'Sector 4: Data Structures & Algorithms',
-              test_cases: [
-                { id: 'tc-1', input_text: "5\n2 7 11 15 20\n9", expected_output: "True", is_hidden: false, marks: 5 },
-                { id: 'tc-2', input_text: "4\n1 2 3 9\n8", expected_output: "False", is_hidden: false, marks: 5 },
-                { id: 'tc-3', input_text: "6\n-3 4 3 90 2 1\n0", expected_output: "True", is_hidden: true, marks: 5 },
-              ],
-            },
-            {
-              id: 'demo-code-02',
-              text: 'LIVE CODING SANDBOX 2: Operating Systems FIFO Page Faults\n\nGiven capacity K on line 1 and page requests on line 2, compute and output total FIFO page faults.\n\nInput:\n3\n7 0 1 2 0 3 0 4 2 3 0 3 2\n\nExpected Output:\n12',
-              type: 'code',
-              marks: 20,
-              difficulty: 'Hard',
-              topic: 'Sector 3: Core Computer Science',
-              test_cases: [
-                { id: 'tc-1', input_text: "3\n7 0 1 2 0 3 0 4 2 3 0 3 2", expected_output: "12", is_hidden: false, marks: 10 },
-                { id: 'tc-2', input_text: "4\n1 2 3 4 1 2 5 1 2 3 4 5", expected_output: "10", is_hidden: false, marks: 10 },
-              ],
-            },
-          ]
-          const randomizedDemo = shuffleForStudent(demoQuestions, `${hallTicket}_q_demo`).map(q => {
-            if (q.options && q.options.length > 1 && q.type !== 'code') {
-              return {
-                ...q,
-                options: shuffleForStudent(q.options, `${hallTicket}_${q.id}_opts`),
-              }
-            }
-            return q
-          })
-          setSession({
-            candidateId: hallTicket || '2201A0501',
-            examName: 'LogicWhileLiRE 4.0 - National Engineering Qualifier (Demo)',
-            totalMarks: 100,
-            duration: 3600,
-            questions: randomizedDemo,
-            proctoringMode: 'webcam',
-          })
-          setTimeLeft(3600)
-          setIsInWaitingList(false)
-          setError('')
-          return
-        }
-
-        const isNotStarted =
-          (e as any)?.response?.data?.code === 'EXAM_NOT_STARTED_BY_INSPECTOR' ||
-          (e as any)?.response?.data?.waiting_list === true ||
-          (e as any)?.response?.data?.error?.toLowerCase().includes('not started') ||
-          (e as any)?.response?.data?.error?.toLowerCase().includes('waiting lobby')
-
-        if (isNotStarted) {
-          setIsInWaitingList(true)
-          setWaitingExamData({
-            exam_name: (e as any)?.response?.data?.exam_name || examCode,
-            duration_minutes: (e as any)?.response?.data?.duration_minutes || 60,
-            total_questions: (e as any)?.response?.data?.total_questions || 15,
-          })
-          setError('')
-          return
-        }
-
-        setError(e instanceof Error ? e.message : 'Failed to load exam')
-      } finally {
-        setLoading(false)
+      if (data.server_time) {
+        serverClockOffsetRef.current = Number(data.server_time) - Date.now()
       }
+
+      sessionIdRef.current = data.sessionId || data.session_id
+      const proctoringMode: 'webcam' | 'screen' | 'dual' = exam?.proctoring_mode || 'webcam'
+      const fullDuration = (exam?.duration_minutes || 60) * 60
+      const serverRemaining = Number(data.time_left_seconds ?? exam?.time_left_seconds)
+      let initialTimeLeft: number
+      const nowSynced = Date.now() + serverClockOffsetRef.current
+
+      if (!Number.isNaN(serverRemaining) && serverRemaining > 0) {
+        // Single source of truth from server /start response
+        initialTimeLeft = Math.min(fullDuration, Math.max(1, Math.floor(serverRemaining)))
+      } else if (routerServerStartTime && routerDurationSeconds) {
+        const elapsed = Math.floor((nowSynced - routerServerStartTime) / 1000)
+        initialTimeLeft = elapsed >= 0 && elapsed < routerDurationSeconds
+          ? Math.max(1, routerDurationSeconds - elapsed)
+          : fullDuration
+      } else if (exam?.started_at) {
+        const startedAtMs = new Date(exam.started_at).getTime()
+        const elapsed = Math.floor((nowSynced - startedAtMs) / 1000)
+        initialTimeLeft = !Number.isNaN(startedAtMs) && elapsed >= 0 && elapsed < fullDuration
+          ? Math.max(1, fullDuration - elapsed)
+          : fullDuration
+      } else {
+        // Standard full duration for this exam attempt (e.g. 30 or 60 min)
+        initialTimeLeft = fullDuration
+      }
+
+      // Clear any stale 'stopped' flag from an earlier test run before launching active quiz
+      try {
+        const stKeyUpper = `admin_exam_state_${examCode.toUpperCase()}`
+        const stKeyRaw = `admin_exam_state_${examCode}`
+        if (localStorage.getItem(stKeyUpper) === 'stopped') localStorage.removeItem(stKeyUpper)
+        if (localStorage.getItem(stKeyRaw) === 'stopped') localStorage.removeItem(stKeyRaw)
+      } catch { }
+
+      sessionStartedAtRef.current = Date.now()
+      const computedEndTimeMs = nowSynced + (initialTimeLeft * 1000)
+
+      const portalRules = (() => {
+        try {
+          const raw = localStorage.getItem('lw_portal_rules')
+          return raw ? JSON.parse(raw) : null
+        } catch { return null }
+      })()
+      const adminTabLimit = portalRules?.maxTabSwitchesAllowed ? Number(portalRules.maxTabSwitchesAllowed) : undefined
+
+      setSession({
+        candidateId: data.candidateId || hallTicket,
+        examName: exam?.exam_name || exam?.name || 'Exam',
+        totalMarks: exam?.total_marks || 100,
+        duration: fullDuration,
+        questions: randomizedQuestions,
+        proctoringMode,
+        endTimeMs: computedEndTimeMs,
+        violationThreshold: Number(exam?.max_violations) || Number(exam?.violation_threshold) || adminTabLimit || 3,
+      })
+
+      setTimeLeft(initialTimeLeft)
+
+      // ── 1.4 Offline answer restoration ──
+      try {
+        const cached = await getAllCachedAnswers(examCode, hallTicket)
+        const restoredAnswers: Record<string, number | string> = {}
+        const restoredCode: Record<string, string> = {}
+
+        try {
+          const { data: resumeData } = await axios.get(`${BASE}/api/exam-code/${examCode}/resume-state`, {
+            params: { candidateId: hallTicket }
+          })
+          if (resumeData?.partial_answers) {
+            for (const [qid, val] of Object.entries(resumeData.partial_answers)) {
+              restoredAnswers[qid] = val as string
+            }
+          }
+          if (typeof resumeData?.violation_count === 'number' && resumeData.violation_count > 0) {
+            violationRef.current = resumeData.violation_count
+            setViolationCount(resumeData.violation_count)
+          }
+          if (typeof resumeData?.fullscreen_exits === 'number' && resumeData.fullscreen_exits > 0) {
+            fullscreenExitCountRef.current = resumeData.fullscreen_exits
+            setFullscreenExitCount(resumeData.fullscreen_exits)
+          }
+        } catch { }
+
+        for (const [qid, entry] of Object.entries(cached)) {
+          if (entry.type === 'code') {
+            restoredCode[qid] = String(entry.answer)
+          } else {
+            restoredAnswers[qid] = entry.answer
+          }
+        }
+
+        if (Object.keys(restoredAnswers).length > 0) setAnswers(prev => ({ ...prev, ...restoredAnswers }))
+        if (Object.keys(restoredCode).length > 0) setCodeAnswers(prev => ({ ...prev, ...restoredCode }))
+      } catch (restoreErr) {
+        console.warn('[OfflineDB] Could not restore cached answers:', restoreErr)
+      }
+    } catch (e) {
+      if (examCode?.toUpperCase().includes('DEMO')) {
+        const demoQuestions: ExamQuestion[] = [
+          {
+            id: 'demo-q1',
+            text: 'In an autonomous flight calculation, a thruster consumes 1,200 kg of fuel at 40 kg/s. What is the total burn duration?',
+            options: ['20 seconds', '30 seconds', '40 seconds', '48 seconds'],
+            type: 'mcq',
+            marks: 5,
+            difficulty: 'Easy',
+            topic: 'Sector 1: Quantitative Velocity',
+          },
+          {
+            id: 'demo-q2',
+            text: 'A train 150m long passes a signal pole in 15 seconds. What is the speed of the train in km/h?',
+            options: ['36 km/h', '40 km/h', '45 km/h', '54 km/h'],
+            type: 'mcq',
+            marks: 5,
+            difficulty: 'Medium',
+            topic: 'Sector 1: Quantitative Velocity',
+          },
+          {
+            id: 'demo-q3',
+            text: 'In the LogicWhile cipher matrix, if "LOGIC" is encoded as "MQHKE", how is "WHILE" encoded under alternating +1 and +2 letter shifts?',
+            options: ['XIKMG', 'XJKMH', 'WJIMG', 'YKLOI'],
+            type: 'mcq',
+            marks: 5,
+            difficulty: 'Easy',
+            topic: 'Sector 2: Deductive Logic',
+          },
+          {
+            id: 'demo-q4',
+            text: 'Statements: (1) All compilers are parsers. (2) All parsers are state machines. Conclusion: Are all compilers state machines?',
+            options: ['Definitely True', 'Definitely False', 'Probably True', 'Cannot be determined'],
+            type: 'mcq',
+            marks: 5,
+            difficulty: 'Easy',
+            topic: 'Sector 2: Deductive Logic',
+          },
+          {
+            id: 'demo-q5',
+            text: 'Which memory management replacement policy suffers from Belady\'s Anomaly (increasing frame count can increase page faults)?',
+            options: ['Optimal (OPT)', 'Least Recently Used (LRU)', 'First In First Out (FIFO)', 'Least Frequently Used (LFU)'],
+            type: 'mcq',
+            marks: 5,
+            difficulty: 'Medium',
+            topic: 'Sector 3: Core Computer Science',
+          },
+          {
+            id: 'demo-q6',
+            text: 'Which of the following is NOT an essential condition for Deadlock to occur in an operating system?',
+            options: ['Mutual Exclusion', 'Hold and Wait', 'Preemption Allowed', 'Circular Wait'],
+            type: 'mcq',
+            marks: 5,
+            difficulty: 'Medium',
+            topic: 'Sector 3: Core Computer Science',
+          },
+          {
+            id: 'demo-q7',
+            text: 'In the TCP 3-way handshake, what is the exact sequence of flags transmitted between client and server?',
+            options: ['SYN -> ACK -> SYN-ACK', 'SYN -> SYN-ACK -> ACK', 'ACK -> SYN -> ACK', 'FIN -> ACK -> FIN-ACK'],
+            type: 'mcq',
+            marks: 5,
+            difficulty: 'Easy',
+            topic: 'Sector 3: Core Computer Science',
+          },
+          {
+            id: 'demo-q8',
+            text: 'What is the tightest worst-case asymptotic time complexity of searching in a Balanced Binary Search Tree (AVL / Red-Black) with N nodes?',
+            options: ['O(1)', 'O(log N)', 'O(N)', 'O(N log N)'],
+            type: 'mcq',
+            marks: 5,
+            difficulty: 'Easy',
+            topic: 'Sector 4: Data Structures & Algorithms',
+          },
+          {
+            id: 'demo-q9',
+            text: 'Which data structure is fundamentally utilized in Breadth-First Search (BFS) graph traversal?',
+            options: ['Stack', 'Queue', 'Priority Heap', 'Segment Tree'],
+            type: 'mcq',
+            marks: 5,
+            difficulty: 'Easy',
+            topic: 'Sector 4: Data Structures & Algorithms',
+          },
+          {
+            id: 'demo-q10',
+            text: 'In Node.js asynchronous architecture, which phase of the Libuv event loop executes callbacks scheduled by process.nextTick()?',
+            options: ['Timers phase', 'Poll phase', 'Immediately after current operation before event loop continues', 'Check phase'],
+            type: 'mcq',
+            marks: 5,
+            difficulty: 'Medium',
+            topic: 'Sector 5: Full-Stack Architecture',
+          },
+          {
+            id: 'demo-q11',
+            text: 'In distributed system architecture, what does the CAP Theorem state a system can guarantee simultaneously in the presence of network partitions?',
+            options: ['Both Consistency and Availability', 'Either Consistency or Availability, but not both', 'Latency and Partition Tolerance', 'All three: Consistency, Availability, Partition Tolerance'],
+            type: 'mcq',
+            marks: 5,
+            difficulty: 'Medium',
+            topic: 'Sector 5: Full-Stack Architecture',
+          },
+          {
+            id: 'demo-q12',
+            text: 'Which HTTP header is utilized by WebSocket protocol to upgrade an HTTP connection to a full-duplex TCP socket?',
+            options: ['Connection: Upgrade & Upgrade: websocket', 'Transfer-Encoding: chunked', 'Content-Type: application/websocket', 'X-Socket-Protocol: 1.0'],
+            type: 'mcq',
+            marks: 5,
+            difficulty: 'Easy',
+            topic: 'Sector 5: Full-Stack Architecture',
+          },
+          {
+            id: 'demo-q13',
+            text: 'In modern relational database indexing, why are B+ Trees favored over standard Binary Search Trees for disk storage?',
+            options: ['High fanout reduces disk I/O depth and leaf nodes form contiguous linked list for range scans', 'B+ Trees use less RAM', 'Binary trees cannot store strings', 'B+ Trees do not require locking'],
+            type: 'mcq',
+            marks: 5,
+            difficulty: 'Medium',
+            topic: 'Sector 3: Core Computer Science',
+          },
+          {
+            id: 'demo-code-01',
+            text: 'LIVE CODING SANDBOX 1: Two Sum Vector Verification\n\nGiven integer N, followed by N space-separated integers, and target integer T, write a program that prints "True" if any two distinct elements sum to T, otherwise "False".\n\nInput:\n5\n2 7 11 15 20\n9\n\nExpected Output:\nTrue',
+            type: 'code',
+            marks: 15,
+            difficulty: 'Medium',
+            topic: 'Sector 4: Data Structures & Algorithms',
+            test_cases: [
+              { id: 'tc-1', input_text: "5\n2 7 11 15 20\n9", expected_output: "True", is_hidden: false, marks: 5 },
+              { id: 'tc-2', input_text: "4\n1 2 3 9\n8", expected_output: "False", is_hidden: false, marks: 5 },
+              { id: 'tc-3', input_text: "6\n-3 4 3 90 2 1\n0", expected_output: "True", is_hidden: true, marks: 5 },
+            ],
+          },
+          {
+            id: 'demo-code-02',
+            text: 'LIVE CODING SANDBOX 2: Operating Systems FIFO Page Faults\n\nGiven capacity K on line 1 and page requests on line 2, compute and output total FIFO page faults.\n\nInput:\n3\n7 0 1 2 0 3 0 4 2 3 0 3 2\n\nExpected Output:\n12',
+            type: 'code',
+            marks: 20,
+            difficulty: 'Hard',
+            topic: 'Sector 3: Core Computer Science',
+            test_cases: [
+              { id: 'tc-1', input_text: "3\n7 0 1 2 0 3 0 4 2 3 0 3 2", expected_output: "12", is_hidden: false, marks: 10 },
+              { id: 'tc-2', input_text: "4\n1 2 3 4 1 2 5 1 2 3 4 5", expected_output: "10", is_hidden: false, marks: 10 },
+            ],
+          },
+        ]
+        const randomizedDemo = shuffleForStudent(demoQuestions, `${hallTicket}_q_demo`).map(q => {
+          if (q.options && q.options.length > 1 && q.type !== 'code') {
+            return {
+              ...q,
+              options: shuffleForStudent(q.options, `${hallTicket}_${q.id}_opts`),
+            }
+          }
+          return q
+        })
+        setSession({
+          candidateId: hallTicket || '2201A0501',
+          examName: 'LogicWhileLiRE 4.0 - National Engineering Qualifier (Demo)',
+          totalMarks: 100,
+          duration: 3600,
+          questions: randomizedDemo,
+          proctoringMode: 'webcam',
+        })
+        setTimeLeft(3600)
+        setIsInWaitingList(false)
+        setError('')
+        return
+      }
+
+      const isNotStarted =
+        (e as any)?.response?.data?.code === 'EXAM_NOT_STARTED_BY_INSPECTOR' ||
+        (e as any)?.response?.data?.waiting_list === true ||
+        (e as any)?.response?.data?.error?.toLowerCase().includes('not started') ||
+        (e as any)?.response?.data?.error?.toLowerCase().includes('waiting lobby')
+
+      if (isNotStarted) {
+        setIsInWaitingList(true)
+        setWaitingExamData({
+          exam_name: (e as any)?.response?.data?.exam_name || examCode,
+          duration_minutes: (e as any)?.response?.data?.duration_minutes || 60,
+          total_questions: (e as any)?.response?.data?.total_questions || 15,
+        })
+        setError('')
+        return
+      }
+
+      setError(e instanceof Error ? e.message : 'Failed to load exam')
+    } finally {
+      setLoading(false)
+    }
   }, [examCode, hallTicket, navigate, routerServerStartTime, routerDurationSeconds])
 
   useEffect(() => {
@@ -575,7 +576,7 @@ export default function QuizPage() {
       if (hasLaunched) return
       hasLaunched = true
       setWaitingLaunchStarting(true)
-      try { soundFx.playProctorBroadcastChime() } catch {}
+      try { soundFx.playProctorBroadcastChime() } catch { }
       setTimeout(() => {
         setIsInWaitingList(false)
         setWaitingLaunchStarting(false)
@@ -599,7 +600,7 @@ export default function QuizPage() {
             if (parsed.name) stuName = parsed.name
             if (parsed.section) stuSec = parsed.section
           }
-        } catch {}
+        } catch { }
         socket?.emit('lobby:join', { examCode: examCode.toUpperCase(), hallTicket, studentName: stuName, section: stuSec })
         socket?.emit('join_lobby', { examCode: examCode.toUpperCase(), hallTicket })
         socket?.emit('join_room', `lobby:${examCode.toUpperCase()}`)
@@ -618,7 +619,7 @@ export default function QuizPage() {
       socket.on('lobby:stats', (data: any) => {
         if (data?.exam_started) triggerLaunch()
       })
-    } catch {}
+    } catch { }
 
     if (typeof BroadcastChannel !== 'undefined') {
       try {
@@ -631,7 +632,7 @@ export default function QuizPage() {
             triggerLaunch()
           }
         }
-      } catch {}
+      } catch { }
     }
 
     const checkStorage = () => {
@@ -651,7 +652,7 @@ export default function QuizPage() {
         if (data && data.success) {
           triggerLaunch()
         }
-      } catch {}
+      } catch { }
     }, 2500)
 
     return () => {
@@ -671,7 +672,7 @@ export default function QuizPage() {
     try {
       try {
         await syncPendingAnswers()
-      } catch {}
+      } catch { }
 
       const payload = {
         sessionId: sessionIdRef.current,
@@ -745,7 +746,7 @@ export default function QuizPage() {
       }
 
       if (examCode && hallTicket) {
-        await clearAnswerBuffer(examCode, hallTicket).catch(() => {})
+        await clearAnswerBuffer(examCode, hallTicket).catch(() => { })
       }
 
       // Dispatch official confirmation receipt email to candidate
@@ -764,7 +765,7 @@ export default function QuizPage() {
         score: responseData?.score || 0,
         totalMarks: responseData?.totalMarks || 100,
         questionsAttempted: Object.keys(answers).length + Object.keys(codeAnswers).length,
-      }).catch(() => {})
+      }).catch(() => { })
 
       soundFx.playExamSubmittedFanfare()
       const codingQState = (session?.questions || [])
@@ -826,7 +827,7 @@ export default function QuizPage() {
     if (navigator.sendBeacon) {
       navigator.sendBeacon(`${BASE}/api/exam-code/${examCode}/violation`, new Blob([violationPayload], { type: 'application/json' }))
     } else {
-      axios.post(`${BASE}/api/exam-code/${examCode}/violation`, JSON.parse(violationPayload)).catch(() => {})
+      axios.post(`${BASE}/api/exam-code/${examCode}/violation`, JSON.parse(violationPayload)).catch(() => { })
     }
 
     // 3. Log critical security incident to inspector console
@@ -839,7 +840,7 @@ export default function QuizPage() {
         severity: 'critical',
         description: `EXAM AUTO-TERMINATED: ${reason} at ${new Date().toLocaleTimeString()}`,
       })
-    } catch {}
+    } catch { }
 
     // 4. Submit attempt with Terminated - violation status
     try {
@@ -853,9 +854,9 @@ export default function QuizPage() {
         termination_reason: reason,
       })
       if (examCode && hallTicket) {
-        await clearAnswerBuffer(examCode, hallTicket).catch(() => {})
+        await clearAnswerBuffer(examCode, hallTicket).catch(() => { })
       }
-    } catch {}
+    } catch { }
 
     // 5. Purge storage (Auto Logout)
     try {
@@ -865,7 +866,7 @@ export default function QuizPage() {
       localStorage.removeItem('student_token')
       localStorage.removeItem('student_user')
       sessionStorage.clear()
-    } catch {}
+    } catch { }
   }, [examCode, hallTicket, session, answers, codeAnswers, submitting])
 
   /* ── Forensic Violation Logger & Anomaly Telemetry (Two-Strike Strict Lockdown) ── */
@@ -1055,7 +1056,7 @@ export default function QuizPage() {
       if (isPrintScreen || isScreenShotCombo) {
         e.preventDefault()
         e.stopPropagation()
-        try { navigator.clipboard?.writeText('') } catch {}
+        try { navigator.clipboard?.writeText('') } catch { }
         logViolation('screenshot_shortcut', 'Screenshot capture shortcut was pressed')
         return
       }
@@ -1262,22 +1263,26 @@ export default function QuizPage() {
 
     realtimeChannelRef.current = channel
 
-    // Periodic Heartbeat every 10 seconds
-    const heartbeatInterval = setInterval(() => {
-      channel.send({
-        type: 'broadcast',
-        event: 'student_heartbeat',
-        payload: {
-          hallTicket,
-          currentQuestion: currentQ + 1,
-          answeredCount: Object.keys(answers).length + Object.keys(codeAnswers).length,
-          timestamp: Date.now(),
-        },
-      })
-    }, 10000)
+    // Periodic Heartbeat every 15s + random jitter so 300 clients spread evenly
+    let heartbeatInterval: ReturnType<typeof setInterval> | null = null
+    const startDelay = setTimeout(() => {
+      heartbeatInterval = setInterval(() => {
+        channel.send({
+          type: 'broadcast',
+          event: 'student_heartbeat',
+          payload: {
+            hallTicket,
+            currentQuestion: currentQ + 1,
+            answeredCount: Object.keys(answers).length + Object.keys(codeAnswers).length,
+            timestamp: Date.now(),
+          },
+        })
+      }, 15000)
+    }, Math.floor(Math.random() * 4000))
 
     return () => {
-      clearInterval(heartbeatInterval)
+      clearTimeout(startDelay)
+      if (heartbeatInterval) clearInterval(heartbeatInterval)
       supabase.removeChannel(channel)
     }
   }, [examCode, hallTicket, currentQ, answers, codeAnswers, handleSubmit])
@@ -1310,7 +1315,7 @@ export default function QuizPage() {
             handleSubmit()
           }
         }
-      } catch {}
+      } catch { }
     }
 
     checkAdminState()
@@ -1325,7 +1330,7 @@ export default function QuizPage() {
             checkAdminState()
           }
         }
-      } catch {}
+      } catch { }
     }
 
     window.addEventListener('storage', checkAdminState)
@@ -1349,7 +1354,7 @@ export default function QuizPage() {
         timestamp: Date.now(),
       }
       localStorage.setItem(`logicwhilelire_exam_backup_${examCode}_${hallTicket}`, JSON.stringify(backupData))
-    } catch {}
+    } catch { }
   }, [examCode, hallTicket, answers, codeAnswers])
 
   /* ── Timer (Sprint 2, Item 2 & 3: Server-authoritative countdown) ── */
@@ -1406,7 +1411,7 @@ export default function QuizPage() {
         await document.documentElement.requestFullscreen()
       }
       setShowFullscreenOverlay(false)
-    } catch {}
+    } catch { }
   }, [])
 
   /* ── 1.2 Screen Share Proctoring ── */
@@ -1467,7 +1472,7 @@ export default function QuizPage() {
               candidateId: hallTicket,
               thumbnail: thumb,
               timestamp: new Date().toISOString(),
-            }).catch(() => {})
+            }).catch(() => { })
 
             if (realtimeChannelRef.current) {
               realtimeChannelRef.current.send({
@@ -1479,7 +1484,7 @@ export default function QuizPage() {
           }
           offscreenVideo.pause()
           offscreenVideo.srcObject = null
-        }).catch(() => {})
+        }).catch(() => { })
       } catch {
         /* Non-blocking capture */
       }
@@ -1499,8 +1504,8 @@ export default function QuizPage() {
     const m = Math.floor((secs % 3600) / 60)
     const s = secs % 60
     return h > 0
-      ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
-      : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+      ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+      : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
   }
 
   const timerPct = session ? timeLeft / session.duration : 1
@@ -1515,7 +1520,7 @@ export default function QuizPage() {
       // High-velocity debounced sync: dispatch within 800ms to preserve instantaneous responsiveness
       if (debounceSyncTimeoutRef.current) clearTimeout(debounceSyncTimeoutRef.current)
       debounceSyncTimeoutRef.current = setTimeout(() => {
-        syncPendingAnswers().catch(() => {})
+        syncPendingAnswers().catch(() => { })
       }, 800)
     }
   }
@@ -1527,7 +1532,7 @@ export default function QuizPage() {
       bufferAnswer(examCode, hallTicket, currentQuestion.id, code, 'code')
       if (debounceSyncTimeoutRef.current) clearTimeout(debounceSyncTimeoutRef.current)
       debounceSyncTimeoutRef.current = setTimeout(() => {
-        syncPendingAnswers().catch(() => {})
+        syncPendingAnswers().catch(() => { })
       }, 1200)
     }
   }
@@ -2092,27 +2097,26 @@ export default function QuizPage() {
           </div>
         </div>
 
-        {/* Right: Proctor Monitor + Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Dual-Layer Real-Time Auto-Save Vault Status */}
+        {/* Right: Sync Status + Font Scale + Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/* Compact Auto-Save Vault Dot */}
           <div
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
-              padding: '5px 12px',
+              padding: '5px 10px',
               borderRadius: 8,
-              background: 'rgba(16, 185, 129, 0.14)',
-              border: '1px solid rgba(16, 185, 129, 0.4)',
+              background: 'rgba(16, 185, 129, 0.12)',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
               color: '#34D399',
               fontSize: '0.72rem',
-              fontWeight: 800,
-              letterSpacing: '0.04em',
+              fontWeight: 700,
             }}
-            title="Real-time continuous dual-layer data backup active. Every response is cached locally and synced to cloud vault."
+            title="Real-time dual-layer answer auto-save vault active."
           >
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }} />
-            <span>VAULT BACKED UP (100% REALTIME)</span>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981' }} />
+            <span>Auto-Saved</span>
           </div>
 
           {/* Readability Font Scaler Controls */}
@@ -2153,30 +2157,29 @@ export default function QuizPage() {
 
           <ThemeToggle />
 
-          {/* Battery Status */}
-          {batteryLevel !== null && (
+          {/* Battery Warning Only When Low */}
+          {batteryLevel !== null && batteryLevel <= 25 && (
             <div
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 5,
-                padding: '5px 10px',
+                gap: 4,
+                padding: '4px 8px',
                 borderRadius: 8,
-                background: batteryLevel <= 20 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                border: `1px solid ${batteryLevel <= 20 ? 'rgba(239, 68, 68, 0.4)' : 'rgba(255, 255, 255, 0.12)'}`,
-                color: batteryLevel <= 20 ? '#F87171' : '#94A3B8',
-                fontSize: '0.74rem',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                color: '#F87171',
+                fontSize: '0.72rem',
                 fontWeight: 700,
               }}
-              title={`Device Battery Level: ${batteryLevel}%`}
+              title={`Low Battery Warning: ${batteryLevel}%`}
             >
-              <span style={{ fontSize: '0.68rem', fontWeight: 800 }}>BAT</span>
-              <span>{batteryLevel}%</span>
+              <span>LOW BAT {batteryLevel}%</span>
             </div>
           )}
 
-          {/* Invigilator Desk & Sound Controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Invigilator & Audio Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button
               type="button"
               onClick={() => {
@@ -2188,19 +2191,19 @@ export default function QuizPage() {
                 border: unreadCommsCount > 0 ? '1px solid #38BDF8' : '1px solid rgba(255, 255, 255, 0.15)',
                 color: unreadCommsCount > 0 ? '#38BDF8' : 'var(--color-text-muted)',
                 borderRadius: 8,
-                padding: '6px 12px',
-                fontSize: '0.78rem',
+                padding: '6px 10px',
+                fontSize: '0.76rem',
                 fontWeight: 700,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 5,
                 position: 'relative',
               }}
-              title="Open Proctor Communication Desk & AI Sentinel Enclave"
+              title="Open Proctor Communication Desk"
             >
               <IconChat size={14} color={unreadCommsCount > 0 ? '#38BDF8' : 'var(--color-text-muted)'} />
-              <span>Invigilator Desk</span>
+              <span>Proctor Desk</span>
               {unreadCommsCount > 0 && (
                 <span
                   style={{
@@ -2217,31 +2220,6 @@ export default function QuizPage() {
               )}
             </button>
             <button
-              id="report-issue-dropbox-btn"
-              type="button"
-              onClick={() => {
-                setProctorDeskDefaultTab('raise_hand')
-                setShowProctorDesk(true)
-              }}
-              style={{
-                background: 'rgba(245, 158, 11, 0.15)',
-                border: '1px solid rgba(245, 158, 11, 0.45)',
-                color: '#FBBF24',
-                borderRadius: 8,
-                padding: '6px 12px',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-              title="Report Issue / Drop Box — Message the proctor without breaking proctoring"
-            >
-              <IconAlert size={14} color="#FBBF24" />
-              <span>Report Issue</span>
-            </button>
-            <button
               type="button"
               onClick={() => {
                 const next = !soundEnabled
@@ -2253,14 +2231,14 @@ export default function QuizPage() {
                 border: '1px solid rgba(255, 255, 255, 0.15)',
                 color: soundEnabled ? '#34D399' : 'var(--color-text-faint)',
                 borderRadius: 8,
-                padding: '6px 10px',
-                fontSize: '0.74rem',
+                padding: '6px 9px',
+                fontSize: '0.72rem',
                 fontWeight: 700,
                 cursor: 'pointer',
               }}
               title={soundEnabled ? 'Mute Proctor Chimes' : 'Unmute Proctor Chimes'}
             >
-              {soundEnabled ? 'AUDIO ON' : 'MUTED'}
+              {soundEnabled ? 'Sound On' : 'Muted'}
             </button>
           </div>
 
@@ -2268,6 +2246,7 @@ export default function QuizPage() {
             id="open-submit-modal-btn"
             className="btn btn-secondary btn-sm"
             onClick={() => setShowSubmitModal(true)}
+            style={{ fontWeight: 800 }}
           >
             Submit Exam
           </button>
@@ -2609,7 +2588,7 @@ export default function QuizPage() {
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                 {session.questions.map((q, i) => {
-                  const isAns  = q.type === 'code' ? !!codeAnswers[q.id] : answers[q.id] !== undefined
+                  const isAns = q.type === 'code' ? !!codeAnswers[q.id] : answers[q.id] !== undefined
                   const isFlag = flagged.has(q.id)
                   const isCurr = i === currentQ
                   return (
@@ -2696,148 +2675,166 @@ export default function QuizPage() {
             </div>
           </div>
         ) : (
-          /* Right Column in MCQ Mode: Palette & Stats */
+          /* Right Column in MCQ Mode: Section Switcher, Palette & Stats */
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, height: '100%', overflowY: 'auto' }}>
+            {/* Dynamic Exam Section Switcher */}
+            {(() => {
+              const secMap = new Map<string, number[]>()
+              session.questions.forEach((q, idx) => {
+                const secLabel = q.topic || q.section || 'General'
+                if (!secMap.has(secLabel)) secMap.set(secLabel, [])
+                secMap.get(secLabel)!.push(idx)
+              })
+              const entries = Array.from(secMap.entries())
+              if (entries.length <= 1) return null
+              const activeSec = session.questions[currentQ]?.topic || session.questions[currentQ]?.section || 'General'
+              return (
+                <div className="glow-card" style={{ padding: 12 }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+                    Exam Sections ({entries.length})
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    {entries.map(([label, indices]) => {
+                      const doneInSec = indices.filter((i) => {
+                        const q = session.questions[i]
+                        return q.type === 'code' ? !!codeAnswers[q.id] : answers[q.id] !== undefined
+                      }).length
+                      const isCurrSec = activeSec === label
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => setCurrentQ(indices[0])}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '6px 10px',
+                            borderRadius: 7,
+                            background: isCurrSec ? 'rgba(234, 168, 18, 0.16)' : 'rgba(255, 255, 255, 0.03)',
+                            border: isCurrSec ? '1px solid rgba(234, 168, 18, 0.5)' : '1px solid rgba(255, 255, 255, 0.08)',
+                            color: isCurrSec ? '#EAA812' : '#CBD5E1',
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                          }}
+                        >
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 195 }}>{label}</span>
+                          <span style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: doneInSec === indices.length ? '#34D399' : '#94A3B8' }}>
+                            {doneInSec}/{indices.length}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+
             <div className="glow-card" style={{ padding: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <h4 style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '0.82rem', fontWeight: 700,
-                letterSpacing: '0.08em', textTransform: 'uppercase',
-                color: 'var(--color-text-muted)', margin: 0,
-              }}>
-                Question Palette
-              </h4>
-              <span style={{ fontSize: '0.72rem', color: '#EAA812', fontWeight: 700 }}>
-                {Math.round((answeredCount / (session.questions.length || 1)) * 100)}% Done
-              </span>
-            </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <h4 style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '0.82rem', fontWeight: 700,
+                  letterSpacing: '0.08em', textTransform: 'uppercase',
+                  color: 'var(--color-text-muted)', margin: 0,
+                }}>
+                  Question Palette
+                </h4>
+                <span style={{ fontSize: '0.72rem', color: '#EAA812', fontWeight: 700 }}>
+                  {Math.round((answeredCount / (session.questions.length || 1)) * 100)}% Done
+                </span>
+              </div>
 
-            {/* Interactive Palette Filter Tabs */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4, marginBottom: 12 }}>
-              {[
-                { id: 'all', label: 'All', count: session.questions.length },
-                { id: 'answered', label: 'Ans', count: answeredCount, color: '#10B981' },
-                { id: 'unanswered', label: 'Left', count: session.questions.length - answeredCount, color: '#94A3B8' },
-                { id: 'flagged', label: 'Flag', count: flagged.size, color: '#F59E0B' },
-              ].map(f => {
-                const isActive = paletteFilter === f.id
-                return (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => setPaletteFilter(f.id as any)}
-                    style={{
-                      background: isActive ? 'rgba(234, 168, 18, 0.22)' : 'rgba(255, 255, 255, 0.04)',
-                      border: isActive ? '1px solid #EAA812' : '1px solid rgba(255, 255, 255, 0.08)',
-                      borderRadius: 6,
-                      padding: '5px 2px',
-                      color: isActive ? '#EAA812' : '#94A3B8',
-                      fontSize: '0.68rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 2,
-                      transition: 'all 0.15s ease',
-                    }}
-                    title={`Filter by ${f.label}`}
-                  >
-                    <span>{f.label}</span>
-                    <span style={{ color: f.color || (isActive ? '#EAA812' : '#CBD5E1'), fontWeight: 800 }}>
-                      {f.count}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
+              {/* Interactive Palette Filter Tabs */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4, marginBottom: 12 }}>
+                {[
+                  { id: 'all', label: 'All', count: session.questions.length },
+                  { id: 'answered', label: 'Ans', count: answeredCount, color: '#10B981' },
+                  { id: 'unanswered', label: 'Left', count: session.questions.length - answeredCount, color: '#94A3B8' },
+                  { id: 'flagged', label: 'Flag', count: flagged.size, color: '#F59E0B' },
+                ].map(f => {
+                  const isActive = paletteFilter === f.id
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setPaletteFilter(f.id as any)}
+                      style={{
+                        background: isActive ? 'rgba(234, 168, 18, 0.22)' : 'rgba(255, 255, 255, 0.04)',
+                        border: isActive ? '1px solid #EAA812' : '1px solid rgba(255, 255, 255, 0.08)',
+                        borderRadius: 6,
+                        padding: '5px 2px',
+                        color: isActive ? '#EAA812' : '#94A3B8',
+                        fontSize: '0.68rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 2,
+                        transition: 'all 0.15s ease',
+                      }}
+                      title={`Filter by ${f.label}`}
+                    >
+                      <span>{f.label}</span>
+                      <span style={{ color: f.color || (isActive ? '#EAA812' : '#CBD5E1'), fontWeight: 800 }}>
+                        {f.count}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 240, overflowY: 'auto', paddingRight: 4 }}>
               {session.questions.map((q, i) => {
                 const isAns  = q.type === 'code' ? !!codeAnswers[q.id] : answers[q.id] !== undefined
                 const isFlag = flagged.has(q.id)
                 const isCurr = i === currentQ
 
-                // Filter logic
-                if (paletteFilter === 'answered' && !isAns) return null
-                if (paletteFilter === 'unanswered' && isAns) return null
-                if (paletteFilter === 'flagged' && !isFlag) return null
+                  // Filter logic
+                  if (paletteFilter === 'answered' && !isAns) return null
+                  if (paletteFilter === 'unanswered' && isAns) return null
+                  if (paletteFilter === 'flagged' && !isFlag) return null
 
-                return (
-                  <motion.button
-                    key={q.id}
-                    className={`q-nav-btn ${isCurr ? 'current' : isAns ? 'answered' : isFlag ? 'flagged' : ''}`}
-                    onClick={() => setCurrentQ(i)}
-                    whileHover={{ scale: 1.12 }}
-                    whileTap={{ scale: 0.95 }}
-                    title={`Q${i+1}${isAns ? ' (Answered)' : ' (Not Answered)'}${isFlag ? ' (Flagged)' : ''}`}
-                  >
-                    {isFlag ? '•' : i + 1}
-                  </motion.button>
-                )
-              })}
-            </div>
+                  return (
+                    <motion.button
+                      key={q.id}
+                      className={`q-nav-btn ${isCurr ? 'current' : isAns ? 'answered' : isFlag ? 'flagged' : ''}`}
+                      onClick={() => setCurrentQ(i)}
+                      whileHover={{ scale: 1.12 }}
+                      whileTap={{ scale: 0.95 }}
+                      title={`Q${i + 1}${isAns ? ' (Answered)' : ' (Not Answered)'}${isFlag ? ' (Flagged)' : ''}`}
+                    >
+                      {isFlag ? '•' : i + 1}
+                    </motion.button>
+                  )
+                })}
+              </div>
 
-            {/* Legend */}
-            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {/* Compact Single-Row Legend + Progress */}
+            <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               {[
                 { color: 'var(--color-primary)', label: 'Current' },
-                { color: 'var(--color-success)', label: 'Answered' },
-                { color: 'var(--color-warning)', label: 'Flagged' },
-                { color: 'var(--color-border)', label: 'Not visited' },
+                { color: 'var(--color-success)', label: 'Done' },
+                { color: 'var(--color-warning)', label: 'Flag' },
+                { color: 'var(--color-border)', label: 'Left' },
               ].map(({ color, label }) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.75rem', color: 'var(--color-text-faint)' }}>
-                  <div style={{ width: 12, height: 12, borderRadius: 3, background: color, flexShrink: 0 }} />
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.7rem', color: 'var(--color-text-faint)' }}>
+                  <div style={{ width: 9, height: 9, borderRadius: 2, background: color, flexShrink: 0 }} />
                   {label}
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Exam stats */}
-          <div className="glow-card" style={{ padding: 16 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {[
-                { label: 'Total Qs', value: session.questions.length },
-                { label: 'Answered',  value: answeredCount, color: 'var(--color-success)' },
-                { label: 'Flagged',   value: flagged.size,  color: 'var(--color-warning)' },
-                { label: 'Remaining', value: session.questions.length - answeredCount, color: 'var(--color-text-muted)' },
-              ].map(({ label, value, color }) => (
-                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.82rem', color: 'var(--color-text-faint)' }}>{label}</span>
-                  <span style={{ fontSize: '1rem', fontWeight: 700, fontFamily: 'var(--font-display)', color: color || 'var(--color-text)' }}>
-                    {value}
-                  </span>
-                </div>
-              ))}
-              <div className="progress-bar-wrap" style={{ marginTop: 4 }}>
-                <div
-                  className="progress-bar-fill"
-                  style={{ width: `${(answeredCount / session.questions.length) * 100}%` }}
-                />
-              </div>
+            <div className="progress-bar-wrap" style={{ marginTop: 10 }}>
+              <div
+                className="progress-bar-fill"
+                style={{ width: `${(answeredCount / (session.questions.length || 1)) * 100}%` }}
+              />
+            </div>
             </div>
           </div>
-
-          {/* Violation counter */}
-          {violationCount > 0 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="glow-card"
-              style={{ padding: 16, borderColor: 'rgba(239,68,68,0.3)' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-danger)' }}>
-                <IconAlert size={16} color="#EF4444" />
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{violationCount} Violation{violationCount > 1 ? 's' : ''}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)'}}>{session?.violationThreshold || 3} max strikes — exam terminates on breach</div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </div>
       )}
       </div>
 
@@ -2848,8 +2845,8 @@ export default function QuizPage() {
             <motion.div
               className="modal modal-warning"
               initial={{ opacity: 0, scale: 0.92, y: 24 }}
-              animate={{ opacity: 1, scale: 1,    y: 0 }}
-              exit={{ opacity: 0,  scale: 0.92, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 24 }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               onClick={e => e.stopPropagation()}
               style={{

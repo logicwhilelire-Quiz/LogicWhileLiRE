@@ -7,6 +7,7 @@ import {
   getStudentMe,
   getStudentDashboard,
   forgotPassword,
+  forgotUserId,
   resetPassword,
   logout,
   changeStudentPassword,
@@ -20,6 +21,7 @@ import {
   resendStudentOtpSchema,
   studentLoginSchema,
   forgotPasswordSchema,
+  forgotUserIdSchema,
   resetPasswordSchema,
 } from '../middleware/validate';
 
@@ -102,6 +104,17 @@ router.post(
   passwordResetRateLimit,
   validateBody(forgotPasswordSchema),
   forgotPassword
+);
+
+/**
+ * POST /api/auth/forgot-user-id
+ * Email recovered User ID / Hall Ticket / Username for any portal
+ */
+router.post(
+  '/forgot-user-id',
+  passwordResetRateLimit,
+  validateBody(forgotUserIdSchema),
+  forgotUserId
 );
 
 /**

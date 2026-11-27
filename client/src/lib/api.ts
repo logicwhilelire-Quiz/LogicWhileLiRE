@@ -85,21 +85,25 @@ const attachResilientRetry = (instance: any) => {
         return Promise.reject(error);
       }
 
-      // Check if candidate for silent auto-retry (cold start / transient gateway / network hiccup)
+      // Check if candidate for silent auto-retry (cold start / transient gateway / rate burst)
       config.__retryCount = config.__retryCount || 0;
       const isNetworkOrTimeout =
         error.code === 'ECONNABORTED' ||
         error.message?.includes('timeout') ||
         error.message?.includes('Network Error') ||
         !error.response;
-      const isTransientGateway =
-        error.response && [502, 503, 504].includes(error.response.status);
+      const status = error.response?.status;
+      const isTransientGateway = Boolean(status && [429, 502, 503, 504].includes(status));
 
       const maxRetries = config.method?.toLowerCase() === 'get' ? 3 : 2;
 
       if ((isNetworkOrTimeout || isTransientGateway) && config.__retryCount < maxRetries) {
         config.__retryCount += 1;
-        const delayMs = config.__retryCount * 1200;
+        const jitter = Math.floor(Math.random() * 600);
+        const retryAfterHdr = Number(error.response?.headers?.['retry-after'] || 0);
+        const delayMs = retryAfterHdr > 0
+          ? Math.min(8000, retryAfterHdr * 1000 + jitter)
+          : config.__retryCount * 1200 + jitter;
         await new Promise((resolve) => setTimeout(resolve, delayMs));
         return instance(config);
       }
@@ -178,8 +182,11 @@ export const getAssessmentLobbyStatus = (contestId?: string) =>
 
 export const getStudentMe = () => api.get('/api/auth/me');
 
-export const forgotPassword = (data: { email: string }) =>
+export const forgotPassword = (data: { email?: string; identifier?: string; username?: string; portal?: string }) =>
   api.post('/api/auth/forgot-password', data);
+
+export const forgotUserId = (data: { email: string; portal?: string }) =>
+  api.post('/api/auth/forgot-user-id', data);
 
 export const resetPassword = (data: { token: string; email: string; new_password: string }) =>
   api.post('/api/auth/reset-password', data);
@@ -641,6 +648,57 @@ export const listMailLogs = (params?: {
 
 export const resendMailLog = (id: string) =>
   api.post<{ success: boolean; message: string; result: any }>(`/api/admin/mail-logs/${id}/resend`);
+
+export const forwardMailLog = (id: string, data: { forwardTo: string; note?: string }) =>
+  api.post<{ success: boolean; message: string; result: any }>(`/api/admin/mail-logs/${id}/forward`, data);
+
+export interface MailForwarderRule {
+  id: string;
+  name: string;
+  template: string;
+  forwardTo: string;
+  mode: 'bcc' | 'forward_copy';
+  enabled: boolean;
+  forwardCount: number;
+  lastForwardedAt?: string | null;
+  createdAt: string;
+}
+
+export const listMailForwarders = () =>
+  api.get<{ success: boolean; forwarders: MailForwarderRule[] }>('/api/admin/mail-forwarders');
+
+export const saveMailForwarder = (data: {
+  id?: string;
+  name: string;
+  template: string;
+  forwardTo: string;
+  mode?: 'bcc' | 'forward_copy';
+  enabled?: boolean;
+}) => api.post<{ success: boolean; forwarder: MailForwarderRule }>('/api/admin/mail-forwarders', data);
+
+export const deleteMailForwarder = (id: string) =>
+  api.delete<{ success: boolean; message: string }>(`/api/admin/mail-forwarders/${id}`);
+
+export const getMailStats = () =>
+  api.get<{
+    success: boolean;
+    quota: {
+      dateKey: string;
+      sentCount: number;
+      dailyCap: number;
+      remaining: number;
+      warningThreshold: number;
+      isWarning: boolean;
+      isExceeded: boolean;
+    };
+    queue: {
+      pending: number;
+      processing: number;
+      completed: number;
+      failed: number;
+      totalActiveQueue: number;
+    };
+  }>('/api/contact/mail-stats');
 
 // ─── WAITING HALL & STUDENT EXAM LIFECYCLE (Priority 2) ────────
 export const getAttemptStatus = (code: string, params: { attemptId?: string; hallTicket?: string }) =>

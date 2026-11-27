@@ -19,13 +19,41 @@ export const isLoadTestBypass = (req: any): boolean => {
 };
 
 /**
- * Rate limiter for enrollment endpoint — 5 requests per minute per IP
+ * Composite key helper so 200-300 students sharing a single college NAT Wi-Fi IP
+ * never block each other on login/exam-entry endpoints, while still rate-limiting
+ * individual accounts/tickets.
+ */
+function buildAccountCompositeKey(req: any, prefix: string): string {
+  const ip = (req.ip as string) || 'unknown';
+  const rawAccount =
+    req.body?.hallTicket ||
+    req.body?.hall_ticket ||
+    req.query?.hallTicket ||
+    req.query?.hall_ticket ||
+    req.body?.login ||
+    req.body?.roll_number ||
+    req.body?.username ||
+    req.body?.email ||
+    req.body?.identifier ||
+    '';
+  const normAccount = String(rawAccount).trim().toUpperCase().slice(0, 80);
+  const examCode = String(req.params?.code || req.body?.examCode || req.body?.exam_code || '').trim().toUpperCase().slice(0, 40);
+  if (normAccount) {
+    return `${prefix}:${ip}:${examCode}:${normAccount}`;
+  }
+  return `${prefix}:ip:${ip}`;
+}
+
+/**
+ * Rate limiter for enrollment endpoint — 30 requests per minute per IP/candidate
  */
 export const enrollRateLimit = rateLimit({
   windowMs: 60 * 1000,
-  max: 5,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
+  keyGenerator: (req: any) => buildAccountCompositeKey(req, 'enroll'),
   skip: isLoadTestBypass,
   message: {
     success: false,
@@ -34,17 +62,19 @@ export const enrollRateLimit = rateLimit({
 });
 
 /**
- * Rate limiter for OTP verification — 5 requests per minute per IP
+ * Rate limiter for OTP verification — 20 requests per minute per IP/account
  */
 export const otpRateLimit = rateLimit({
   windowMs: 60 * 1000,
-  max: 5,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
+  keyGenerator: (req: any) => buildAccountCompositeKey(req, 'otp'),
   skip: isLoadTestBypass,
   message: {
     success: false,
-    error: 'Too many OTP attempts from this IP address. Please try again in a minute.',
+    error: 'Too many OTP attempts. Please try again in a minute.',
   },
 });
 
@@ -126,13 +156,15 @@ export const answerRateLimit = rateLimit({
 });
 
 /**
- * Rate limiter for admin login — 10 per 15 minutes per IP
+ * Rate limiter for admin/staff login — 20 per 15 minutes per IP+username
  */
 export const adminLoginRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
+  keyGenerator: (req: any) => buildAccountCompositeKey(req, 'admin_login'),
   skip: isLoadTestBypass,
   message: {
     success: false,
@@ -141,13 +173,16 @@ export const adminLoginRateLimit = rateLimit({
 });
 
 /**
- * Rate limiter for student auth (login, register) — 15 per 15 minutes per IP
+ * Rate limiter for student auth (login, register) — 25 per 15 minutes per IP+account
+ * (Safe for 300+ students sharing one campus NAT Wi-Fi gateway)
  */
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 15,
+  max: 25,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
+  keyGenerator: (req: any) => buildAccountCompositeKey(req, 'student_auth'),
   skip: isLoadTestBypass,
   message: {
     success: false,
@@ -156,41 +191,46 @@ export const authRateLimit = rateLimit({
 });
 
 /**
- * Rate limiter for password reset requests — 5 per 15 minutes per IP
+ * Rate limiter for password reset / ID recovery requests — 10 per 15 minutes per IP+account
  */
 export const passwordResetRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
+  keyGenerator: (req: any) => buildAccountCompositeKey(req, 'pw_reset'),
   skip: isLoadTestBypass,
   message: {
     success: false,
-    error: 'Too many password reset requests. Please check your inbox or try again in 15 minutes.',
+    error: 'Too many recovery requests. Please check your inbox or try again in 15 minutes.',
   },
 });
 
 /**
- * Rate limiter for enter-exam & exam code verification — 20 per 10 minutes per IP
+ * Rate limiter for enter-exam & exam code verification — 30 per 10 minutes per IP+hallTicket+examCode
+ * Supports 300+ students entering from a single institutional NAT IP simultaneously.
  */
 export const enterExamRateLimit = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 20,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
+  keyGenerator: (req: any) => buildAccountCompositeKey(req, 'enter_exam'),
   skip: isLoadTestBypass,
   message: {
     success: false,
-    error: 'Too many exam entry attempts. Please check your credentials and try again in 10 minutes.',
+    error: 'Too many exam entry attempts for this hall ticket. Please wait a few minutes or contact your invigilator.',
   },
 });
 
 /**
- * Rate limiter for contact inquiry form submissions — 5 per 15 minutes per IP
+ * Rate limiter for contact inquiry form submissions — 10 per 15 minutes per IP
  */
 export const contactRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   skip: isLoadTestBypass,
@@ -201,21 +241,30 @@ export const contactRateLimit = rateLimit({
 });
 
 /**
- * General API rate limiter
+ * General API rate limiter — 1500 req/min keyed by candidate token/hallTicket or IP,
+ * excluding health/readiness probes so campus load bursts of 300+ users never trip a global 429.
  */
 export const generalRateLimit = rateLimit({
   windowMs: 60 * 1000,
-  max: 600,
+  max: 1500,
   standardHeaders: true,
   legacyHeaders: false,
   validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req: any) => {
-    return (req.headers.authorization as string) || (req.ip as string) || 'unknown';
+    const authHeader = req.headers?.authorization as string | undefined;
+    if (authHeader) return `auth:${authHeader.slice(-32)}`;
+    const ht = req.query?.hallTicket || req.body?.hallTicket || req.body?.candidateId;
+    if (ht) return `ht:${req.ip}:${String(ht).toUpperCase()}`;
+    return `ip:${(req.ip as string) || 'unknown'}`;
   },
-  skip: isLoadTestBypass,
+  skip: (req: any) => {
+    if (isLoadTestBypass(req)) return true;
+    const p = String(req?.path || '');
+    return p === '/api/health' || p === '/health' || p === '/api/ready' || p === '/api/version';
+  },
   message: {
     success: false,
-    error: 'Too many requests. Please slow down.',
+    error: 'Server is experiencing heavy traffic. Retrying automatically.',
   },
 });
 

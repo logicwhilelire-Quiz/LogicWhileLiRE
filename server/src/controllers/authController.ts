@@ -8,6 +8,7 @@ import {
   sendStudentOtp,
   sendStudentRegistered,
   sendPasswordReset,
+  sendUserIdRecovery,
   sendAdminAlert,
 } from '../services/mailService';
 import { StudentJWTPayload } from '../middleware/auth';
@@ -1311,30 +1312,57 @@ export async function getStudentInstitutionalReport(req: Request, res: Response)
   }
 }
 
+function resolvePortalMeta(userType: 'student' | 'staff', role?: string, clientOrigin?: string) {
+  const origin = clientOrigin || getPrimaryClientOrigin();
+  if (userType === 'student') {
+    return { portalRole: 'Student', loginUrl: `${origin}/login` };
+  }
+  const r = String(role || '').toLowerCase();
+  if (r === 'faculty') return { portalRole: 'Faculty', loginUrl: `${origin}/faculty` };
+  if (r === 'inspector' || r === 'college_admin') return { portalRole: 'Inspector', loginUrl: `${origin}/inspector` };
+  return { portalRole: 'Super Admin', loginUrl: `${origin}/admin` };
+}
+
 /**
  * POST /api/auth/forgot-password
- * Request a password reset email link (Students & Staff)
+ * Request a password reset email link (Students & Staff across all portals)
  */
 export async function forgotPassword(req: Request, res: Response): Promise<void> {
-  const { email, identifier, username } = req.body;
+  const { email, identifier, username, portal } = req.body;
   const lookup = String(identifier || username || email || '').trim();
   const normalizedEmail = lookup.toLowerCase();
+  const upperLookup = lookup.toUpperCase();
+  const preferStaff = portal && ['admin', 'faculty', 'inspector'].includes(String(portal).toLowerCase());
 
-  // 1. Look up student or staff
+  // 1. Look up student (by email, roll_number, or hall_ticket) or staff (by username, email, phone, permissions)
   let user: any = null;
   let userType: 'student' | 'staff' = 'student';
 
-  // Check students by email
-  const { data: student } = await supabase
-    .from('students')
-    .select('id, name, email')
-    .eq('email', normalizedEmail)
-    .maybeSingle();
+  if (!preferStaff) {
+    const { data: studentByEmail } = await supabase
+      .from('students')
+      .select('id, name, email, roll_number, hall_ticket')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
 
-  if (student) {
-    user = student;
-    userType = 'student';
-  } else {
+    if (studentByEmail) {
+      user = studentByEmail;
+      userType = 'student';
+    } else if (upperLookup && !upperLookup.includes('@')) {
+      const { data: studentByRoll } = await supabase
+        .from('students')
+        .select('id, name, email, roll_number, hall_ticket')
+        .or(`roll_number.ilike.${upperLookup},hall_ticket.ilike.${upperLookup}`)
+        .limit(1)
+        .maybeSingle();
+      if (studentByRoll) {
+        user = studentByRoll;
+        userType = 'student';
+      }
+    }
+  }
+
+  if (!user) {
     // 0. Check staff account cache
     try {
       const { staffAccountCache } = require('./adminController');
@@ -1342,7 +1370,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
       if (cached) {
         const { data: cachedStaff } = await supabase
           .from('staff')
-          .select('id, name, email, role')
+          .select('id, name, email, username, role')
           .eq('id', cached.id)
           .maybeSingle();
         if (cachedStaff) {
@@ -1357,7 +1385,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
       try {
         const { data: staffByUsername } = await supabase
           .from('staff')
-          .select('id, name, email, role')
+          .select('id, name, email, username, role')
           .ilike('username', lookup)
           .maybeSingle();
         if (staffByUsername) {
@@ -1370,7 +1398,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
     // Check staff permissions for encoded username
     if (!user) {
       try {
-        const { data: allStaff } = await supabase.from('staff').select('id, name, email, role, permissions');
+        const { data: allStaff } = await supabase.from('staff').select('id, name, email, username, role, permissions');
         if (allStaff) {
           const match = allStaff.find((s: any) =>
             Array.isArray(s.permissions) && (
@@ -1391,7 +1419,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
       const emailTarget = (email || '').trim().toLowerCase() || normalizedEmail;
       const { data: staff } = await supabase
         .from('staff')
-        .select('id, name, email, role')
+        .select('id, name, email, username, role')
         .eq('email', emailTarget)
         .maybeSingle();
 
@@ -1406,7 +1434,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
       try {
         const { data: staffByPhone } = await supabase
           .from('staff')
-          .select('id, name, email, role')
+          .select('id, name, email, username, role')
           .eq('phone', lookup)
           .maybeSingle();
         if (staffByPhone) {
@@ -1414,6 +1442,20 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
           userType = 'staff';
         }
       } catch {}
+    }
+
+    // Fallback to student if preferStaff found no matching staff record
+    if (!user && preferStaff) {
+      const { data: studentFallback } = await supabase
+        .from('students')
+        .select('id, name, email, roll_number, hall_ticket')
+        .or(`email.eq.${normalizedEmail},roll_number.ilike.${upperLookup}`)
+        .limit(1)
+        .maybeSingle();
+      if (studentFallback) {
+        user = studentFallback;
+        userType = 'student';
+      }
     }
 
     // Check bootstrap super admin account
@@ -1425,6 +1467,8 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
       user = {
         id: 'st000000-0000-0000-0000-000000000001',
         name: 'System Super Admin',
+        username: process.env.ADMIN_USERNAME || 'admin',
+        role: 'super_admin',
         email: process.env.INITIAL_ADMIN_EMAIL || 'admin@logicwhilelire.com',
       };
       userType = 'staff';
@@ -1432,10 +1476,10 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
   }
 
   // Security best practice: don't reveal if account exists
-  if (!user) {
+  if (!user || !user.email) {
     res.status(200).json({
       success: true,
-      message: 'If an account exists with that email, a password reset link has been dispatched.',
+      message: 'If an account exists with that identifier, a password reset link has been dispatched.',
     });
     return;
   }
@@ -1459,17 +1503,24 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
     console.error('[Forgot Password] DB update error:', updateError);
   }
 
-  // 4. Construct reset link
+  // 4. Construct reset link & portal metadata
   const clientOrigin = getPrimaryClientOrigin();
   const resetLink = `${clientOrigin}/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
+  const { portalRole, loginUrl } = resolvePortalMeta(userType, user.role, clientOrigin);
+  const recoveredUserId = userType === 'student'
+    ? (user.roll_number || user.hall_ticket || user.email)
+    : (user.username || user.email);
 
   // 5. Send branded email via mailService
   try {
     await sendPasswordReset({
-      name: user.name,
+      name: user.name || 'LogicWhile User',
       email: user.email,
+      userId: recoveredUserId,
+      portalRole,
+      loginUrl,
       resetUrl: resetLink,
-      expiresMinutes: 15,
+      expiresMinutes: 60,
     });
   } catch (emailErr) {
     console.error('[Forgot Password] Email send failure:', emailErr);
@@ -1483,9 +1534,107 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
 
   res.status(200).json({
     success: true,
-    message: 'If an account exists with that email, a password reset link has been dispatched.',
+    message: 'If an account exists with that identifier, a password reset link and User ID details have been dispatched.',
     ...(process.env.NODE_ENV !== 'production' || process.env.DEMO_MODE === 'true'
-      ? { demo_reset_link: resetLink, demo_token: rawToken }
+      ? { demo_reset_link: resetLink, demo_token: rawToken, demo_user_id: recoveredUserId }
+      : {}),
+  });
+}
+
+/**
+ * POST /api/auth/forgot-user-id
+ * Recover registered Hall Ticket (Student) or Login Username (Staff/Faculty/Inspector/Admin) via email
+ */
+export async function forgotUserId(req: Request, res: Response): Promise<void> {
+  const rawEmail = String(req.body?.email || '').trim().toLowerCase();
+  const portalHint = String(req.body?.portal || 'auto').toLowerCase();
+  const clientOrigin = getPrimaryClientOrigin();
+
+  const recoveredAccounts: Array<{
+    userId: string;
+    portalRole: string;
+    loginUrl: string;
+    extraInfo?: string;
+  }> = [];
+  let recipientName = 'LogicWhile User';
+
+  // 1. Check Student records
+  if (portalHint === 'auto' || portalHint === 'student') {
+    const [{ data: stuRows }, { data: rosterRows }] = await Promise.all([
+      supabase.from('students').select('id, name, email, roll_number, hall_ticket, section, branch_code').ilike('email', rawEmail),
+      supabase.from('student_roster').select('id, name, email, roll_number, section, branch').ilike('email', rawEmail),
+    ]);
+
+    const seenStudentIds = new Set<string>();
+    for (const s of [...(stuRows || []), ...(rosterRows || [])]) {
+      const uid = String((s as any).roll_number || (s as any).hall_ticket || '').toUpperCase().trim();
+      if (!uid || seenStudentIds.has(uid)) continue;
+      seenStudentIds.add(uid);
+      if ((s as any).name) recipientName = (s as any).name;
+      const branch = (s as any).branch_code || (s as any).branch || '';
+      const sec = (s as any).section || '';
+      recoveredAccounts.push({
+        userId: uid,
+        portalRole: 'Student Candidate',
+        loginUrl: `${clientOrigin}/login`,
+        extraInfo: [branch, sec ? `Section ${sec}` : ''].filter(Boolean).join(' • ') || undefined,
+      });
+    }
+  }
+
+  // 2. Check Staff / Faculty / Inspector / Admin records
+  if (portalHint === 'auto' || ['faculty', 'inspector', 'admin'].includes(portalHint)) {
+    const { data: staffRows } = await supabase
+      .from('staff')
+      .select('id, name, email, username, role, permissions')
+      .ilike('email', rawEmail);
+
+    for (const st of staffRows || []) {
+      const { portalRole, loginUrl } = resolvePortalMeta('staff', (st as any).role, clientOrigin);
+      let uname = (st as any).username;
+      if (!uname && Array.isArray((st as any).permissions)) {
+        const permTag = (st as any).permissions.find((p: string) => String(p).startsWith('user:'));
+        if (permTag) uname = String(permTag).replace(/^user:/, '');
+      }
+      if ((st as any).name) recipientName = (st as any).name;
+      recoveredAccounts.push({
+        userId: uname || (st as any).email,
+        portalRole,
+        loginUrl,
+        extraInfo: `Email login also supported: ${(st as any).email}`,
+      });
+    }
+
+    if (
+      recoveredAccounts.length === 0 &&
+      process.env.INITIAL_ADMIN_EMAIL &&
+      rawEmail === process.env.INITIAL_ADMIN_EMAIL.toLowerCase()
+    ) {
+      recoveredAccounts.push({
+        userId: process.env.ADMIN_USERNAME || 'admin',
+        portalRole: 'Super Admin',
+        loginUrl: `${clientOrigin}/admin`,
+      });
+    }
+  }
+
+  if (recoveredAccounts.length > 0) {
+    try {
+      await sendUserIdRecovery({
+        name: recipientName,
+        email: rawEmail,
+        recoveredAccounts,
+      });
+    } catch (mailErr) {
+      console.error('[Forgot User ID] Email send failure:', mailErr);
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'If an account is registered with that email address, your User ID / Hall Ticket details have been dispatched.',
+    ...(process.env.NODE_ENV !== 'production' || process.env.DEMO_MODE === 'true'
+      ? { demo_recovered_accounts: recoveredAccounts }
       : {}),
   });
 }

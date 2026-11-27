@@ -29,6 +29,10 @@ import {
   sendAdminAlert,
   getMailLogs as getMailLogsService,
   resendMailLogById,
+  forwardMailLogById,
+  listMailForwarders,
+  upsertMailForwarder,
+  deleteMailForwarder,
 } from '../services/mailService';
 import { verifyTotpCode } from '../utils/totp';
 import { getAdminJwtSecret } from '../middleware/adminAuth';
@@ -3064,10 +3068,10 @@ export async function resendMailLogController(req: Request, res: Response): Prom
 
 /**
  * POST /api/admin/mail-logs/dispatch
- * Executive Admin Direct Email Dispatch with live preview and anti-spam verification
+ * Executive Admin Direct Email Dispatch with live preview, optional CC/BCC/Forwarder & anti-spam verification
  */
 export async function dispatchAdminEmailController(req: Request, res: Response): Promise<void> {
-  const { to, subject, html, template, metadata } = req.body || {};
+  const { to, cc, bcc, subject, html, template, metadata } = req.body || {};
   if (!to || !subject || !html) {
     res.status(400).json({ success: false, error: 'Recipient (to), subject, and HTML content are required' });
     return;
@@ -3076,6 +3080,8 @@ export async function dispatchAdminEmailController(req: Request, res: Response):
     const { sendMail } = await import('../services/mailService');
     const result = await sendMail({
       to,
+      cc,
+      bcc,
       subject,
       html,
       template: template || 'admin_direct_dispatch',
@@ -3085,6 +3091,75 @@ export async function dispatchAdminEmailController(req: Request, res: Response):
     res.json({ success: result.success, message: 'Email dispatched successfully', result });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message || 'Failed to dispatch email' });
+  }
+}
+
+/**
+ * POST /api/admin/mail-logs/:id/forward
+ * Forward any previously dispatched email log to one or more target addresses
+ */
+export async function forwardMailLogController(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { forwardTo, to, note } = req.body || {};
+  const target = String(forwardTo || to || '').trim();
+  if (!id || !target) {
+    res.status(400).json({ success: false, error: 'Mail log ID and forwarding email address are required' });
+    return;
+  }
+  try {
+    const actor = (req as any).admin?.username || 'admin';
+    const result = await forwardMailLogById(String(id), target, note ? String(note) : undefined, actor);
+    if (!result.success) {
+      res.status(500).json({ success: false, error: result.error || 'Failed to forward email' });
+      return;
+    }
+    res.json({ success: true, message: `Email successfully forwarded to ${target}`, result });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to forward email' });
+  }
+}
+
+export async function listMailForwardersController(_req: Request, res: Response): Promise<void> {
+  try {
+    const forwarders = await listMailForwarders();
+    res.json({ success: true, forwarders });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to list mail forwarders' });
+  }
+}
+
+export async function saveMailForwarderController(req: Request, res: Response): Promise<void> {
+  const { id, name, template, forwardTo, mode, enabled } = req.body || {};
+  try {
+    const rule = await upsertMailForwarder({
+      id: id || (req.params?.id ? String(req.params.id) : undefined),
+      name: String(name || 'Institutional Forwarder'),
+      template: String(template || 'all'),
+      forwardTo: String(forwardTo || ''),
+      mode: mode === 'bcc' ? 'bcc' : 'forward_copy',
+      enabled: enabled !== undefined ? Boolean(enabled) : true,
+    });
+    res.json({ success: true, forwarder: rule });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err?.message || 'Failed to save mail forwarder rule' });
+  }
+}
+
+export async function deleteMailForwarderController(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  if (!id) {
+    res.status(400).json({ success: false, error: 'Forwarder ID is required' });
+    return;
+  }
+  try {
+    const removed = await deleteMailForwarder(String(id));
+    if (!removed) {
+      res.status(404).json({ success: false, error: 'Mail forwarder rule not found' });
+      return;
+    }
+    res.json({ success: true, message: 'Mail forwarder rule removed' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to delete mail forwarder rule' });
   }
 }
 

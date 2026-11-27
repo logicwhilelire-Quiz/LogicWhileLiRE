@@ -92,13 +92,118 @@ export async function verifyAttemptToken(
 }
 
 // ─────────────────────────────────────────────
-// HIGH-VELOCITY IN-MEMORY CACHES (Sub-millisecond Student Scaling)
+// HIGH-VELOCITY IN-MEMORY CACHES (Sub-millisecond 300+ Student Scaling)
 // ─────────────────────────────────────────────
 const examMetadataCache = new Map<string, { timestamp: number; exam: any }>();
 const EXAM_METADATA_CACHE_TTL_MS = 20000; // 20s TTL
+const examMetadataInFlight = new Map<string, Promise<any>>();
 
 const rawQuestionsCache = new Map<string, { timestamp: number; questions: any[] }>();
 const RAW_QUESTIONS_CACHE_TTL_MS = 30000; // 30s TTL
+const rawQuestionsInFlight = new Map<string, Promise<any[]>>();
+
+const inFlightSubmissions = new Map<string, Promise<any>>();
+
+/**
+ * Single-flight cached lookup for exam_codes by code (supports 5/S & 0/O tolerance).
+ * Prevents 300 simultaneous exam launches from firing 300 duplicate DB reads.
+ */
+export async function getExamByCodeCached(rawCode: string): Promise<any | null> {
+  const ec = String(rawCode || '').toUpperCase().trim();
+  if (!ec) return null;
+
+  const cached = examMetadataCache.get(ec);
+  if (cached && Date.now() - cached.timestamp < EXAM_METADATA_CACHE_TTL_MS) {
+    return cached.exam;
+  }
+
+  const existingPromise = examMetadataInFlight.get(ec);
+  if (existingPromise) return existingPromise;
+
+  const loader = (async () => {
+    try {
+      let { data: exam } = await supabase
+        .from('exam_codes')
+        .select('*')
+        .eq('exam_code', ec)
+        .maybeSingle();
+
+      if (!exam) {
+        const altCodes = [
+          ec.replace(/5/g, 'S'),
+          ec.replace(/S/g, '5'),
+          ec.replace(/0/g, 'O'),
+          ec.replace(/O/g, '0'),
+        ].filter((c) => c !== ec);
+
+        for (const alt of altCodes) {
+          const { data: altExam } = await supabase
+            .from('exam_codes')
+            .select('*')
+            .eq('exam_code', alt)
+            .maybeSingle();
+          if (altExam) {
+            exam = altExam;
+            break;
+          }
+        }
+      }
+
+      if (exam) {
+        examMetadataCache.set(ec, { timestamp: Date.now(), exam });
+        if (exam.exam_code && String(exam.exam_code).toUpperCase() !== ec) {
+          examMetadataCache.set(String(exam.exam_code).toUpperCase(), { timestamp: Date.now(), exam });
+        }
+      }
+      return exam || null;
+    } finally {
+      examMetadataInFlight.delete(ec);
+    }
+  })();
+
+  examMetadataInFlight.set(ec, loader);
+  return loader;
+}
+
+/**
+ * Single-flight cached lookup for full questions_ec manifest of an exam_code.
+ * Callers strip sensitive fields (correct_answer, hidden test_cases) before sending to candidates.
+ */
+export async function getQuestionsForExamCached(examCode: string): Promise<any[]> {
+  const effectiveCode = String(examCode || '').toUpperCase().trim();
+  if (!effectiveCode) return [];
+
+  const cached = rawQuestionsCache.get(effectiveCode);
+  if (cached && Date.now() - cached.timestamp < RAW_QUESTIONS_CACHE_TTL_MS) {
+    return cached.questions;
+  }
+
+  const existingPromise = rawQuestionsInFlight.get(effectiveCode);
+  if (existingPromise) return existingPromise;
+
+  const loader = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from('questions_ec')
+        .select('*')
+        .eq('exam_code', effectiveCode)
+        .order('display_order', { ascending: true, nullsFirst: false })
+        .order('created_at');
+
+      if (error) {
+        throw new Error(error.message);
+      }
+      const list = data || [];
+      rawQuestionsCache.set(effectiveCode, { timestamp: Date.now(), questions: list });
+      return list;
+    } finally {
+      rawQuestionsInFlight.delete(effectiveCode);
+    }
+  })();
+
+  rawQuestionsInFlight.set(effectiveCode, loader);
+  return loader;
+}
 
 export function invalidateExamCaches(examCode: string) {
   const ec = String(examCode).trim().toUpperCase();
@@ -1754,22 +1859,12 @@ export async function getExamCodeQuestions(req: Request, res: Response): Promise
   }
 
   const effectiveCode = exam.exam_code || ec;
-  const cachedQ = rawQuestionsCache.get(effectiveCode);
   let questions: any[];
-
-  if (cachedQ && Date.now() - cachedQ.timestamp < RAW_QUESTIONS_CACHE_TTL_MS) {
-    questions = cachedQ.questions;
-  } else {
-    const { data, error } = await supabase
-      .from('questions_ec')
-      .select('id, question, option_a, option_b, option_c, option_d, marks, penalty, negative_marks, difficulty, topic, section, tags, display_order, starter_code, question_type, test_cases')
-      .eq('exam_code', effectiveCode)
-      .order('display_order', { ascending: true, nullsFirst: false })
-      .order('created_at');
-
-    if (error) { res.status(500).json({ success: false, error: error.message }); return; }
-    questions = data || [];
-    rawQuestionsCache.set(effectiveCode, { timestamp: Date.now(), questions });
+  try {
+    questions = await getQuestionsForExamCached(effectiveCode);
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to fetch questions' });
+    return;
   }
 
   // Questions & options are shuffled deterministically per student
@@ -1924,35 +2019,39 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
   }
 
   // ── 1.5 Server-Authoritative Timer & Grace Period (30s) Enforcement ──
-  const { data: examData } = await supabase
-    .from('exam_codes')
-    .select('duration_minutes, total_marks')
-    .eq('exam_code', code)
-    .maybeSingle();
-
-  const durationMinutes = examData?.duration_minutes || 60;
-  const extraTime = attempt.extra_time_seconds || 0;
-  const totalAllowedSec = durationMinutes * 60 + extraTime;
-  const startTime = attempt.start_time ? new Date(attempt.start_time).getTime() : (attempt.created_at ? new Date(attempt.created_at).getTime() : Date.now());
-  const allowedEndTime = startTime + (totalAllowedSec * 1000) + (30 * 1000); // 30s grace window
-  const isGraceExpired = Date.now() > allowedEndTime;
-
-  // Merge buffered partial answers from server with final submitted answers
-  const finalAnswers: Record<string, any> = {
-    ...((attempt.partial_answers as Record<string, any>) || {}),
-    ...(answers || {}),
-  };
-
-  // Fetch questions with correct answers for server-authoritative grading
-  const { data: questions } = await supabase
-    .from('questions_ec')
-    .select('id, question, correct_answer, marks, penalty, negative_marks, topic, option_a, option_b, option_c, option_d, question_type')
-    .eq('exam_code', String(code).toUpperCase());
-
-  if (!questions) {
-    res.status(500).json({ success: false, error: 'Could not fetch questions for grading' });
+  const submissionLockKey = `${effectiveCode}:${attempt.id}`;
+  const inFlightSubmit = inFlightSubmissions.get(submissionLockKey);
+  if (inFlightSubmit) {
+    const resultPayload = await inFlightSubmit;
+    res.json(resultPayload);
     return;
   }
+
+  const processSubmission = async (): Promise<{ statusCode: number; body: any }> => {
+    const durationMinutes = exam?.duration_minutes || 60;
+    const extraTime = attempt.extra_time_seconds || 0;
+    const totalAllowedSec = durationMinutes * 60 + extraTime;
+    const startTime = attempt.start_time ? new Date(attempt.start_time).getTime() : (attempt.created_at ? new Date(attempt.created_at).getTime() : Date.now());
+    const allowedEndTime = startTime + (totalAllowedSec * 1000) + (30 * 1000); // 30s grace window
+    const isGraceExpired = Date.now() > allowedEndTime;
+
+    // Merge buffered partial answers from server with final submitted answers
+    const finalAnswers: Record<string, any> = {
+      ...((attempt.partial_answers as Record<string, any>) || {}),
+      ...(answers || {}),
+    };
+
+    // Fetch questions with correct answers for server-authoritative grading (cached single-flight)
+    let questions: any[] | null = null;
+    try {
+      questions = await getQuestionsForExamCached(effectiveCode);
+    } catch {
+      questions = null;
+    }
+
+    if (!questions) {
+      return { statusCode: 500, body: { success: false, error: 'Could not fetch questions for grading' } };
+    }
 
   // ── 1.5 Pure Server-Authoritative Scoring & Negative Marking ──
   let totalScore = 0;
@@ -2095,7 +2194,7 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
     })
     .eq('id', attempt.id);
 
-  if (updateError) { res.status(500).json({ success: false, error: updateError.message }); return; }
+  if (updateError) { return { statusCode: 500, body: { success: false, error: updateError.message } }; }
 
   // Record audit log entry and invalidate session for termination violations (Item 8)
   if (isTerminatedViolation) {
@@ -2191,37 +2290,49 @@ export async function submitExamCodeAttempt(req: Request, res: Response): Promis
 
   const pctValue = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
 
-  res.json({
-    success: true,
-    result: {
-      score: totalScore,
-      totalMarks: maxScore,
-      max_score: maxScore,
-      correctAnswers: correctCount,
-      correct_count: correctCount,
-      wrongAnswers: wrongCount,
-      wrong_count: wrongCount,
-      unanswered: unansweredCount,
-      timeTaken: computedTimeTaken,
-      time_taken_seconds: computedTimeTaken,
-      percentage: pctValue,
-      rank: computedRank,
-      totalCandidates: totalRankedCandidates,
-      passing_percentage: Number((exam as any).passing_percentage) || 40,
-      topicBreakdown,
-      topic_breakdown: topicBreakdown,
-      status: finalStatus,
-      is_terminated: isTerminatedViolation,
-      termination_reason: terminationReason,
-      expired_grace: isGraceExpired,
-      code_answers: codeAnswers || {},
-      mcq_score: mcqScore,
-      mcq_max_score: mcqMaxScore > 0 ? mcqMaxScore : maxScore,
-      mcq_percentage: mcqMaxScore > 0 ? Math.round((mcqScore / mcqMaxScore) * 100) : pctValue,
-      coding_questions: codingQuestionsList,
-      has_coding_questions: codingQuestionsList.length > 0,
+  return {
+    statusCode: 200,
+    body: {
+      success: true,
+      result: {
+        score: totalScore,
+        totalMarks: maxScore,
+        max_score: maxScore,
+        correctAnswers: correctCount,
+        correct_count: correctCount,
+        wrongAnswers: wrongCount,
+        wrong_count: wrongCount,
+        unanswered: unansweredCount,
+        timeTaken: computedTimeTaken,
+        time_taken_seconds: computedTimeTaken,
+        percentage: pctValue,
+        rank: computedRank,
+        totalCandidates: totalRankedCandidates,
+        passing_percentage: Number((exam as any).passing_percentage) || 40,
+        topicBreakdown,
+        topic_breakdown: topicBreakdown,
+        status: finalStatus,
+        is_terminated: isTerminatedViolation,
+        termination_reason: terminationReason,
+        expired_grace: isGraceExpired,
+        code_answers: codeAnswers || {},
+        mcq_score: mcqScore,
+        mcq_max_score: mcqMaxScore > 0 ? mcqMaxScore : maxScore,
+        mcq_percentage: mcqMaxScore > 0 ? Math.round((mcqScore / mcqMaxScore) * 100) : pctValue,
+        coding_questions: codingQuestionsList,
+        has_coding_questions: codingQuestionsList.length > 0,
+      },
     },
+  };
+  };
+
+  const submissionPromise = processSubmission().finally(() => {
+    inFlightSubmissions.delete(submissionLockKey);
   });
+  inFlightSubmissions.set(submissionLockKey, submissionPromise.then((r) => r.body));
+
+  const outcome = await submissionPromise;
+  res.status(outcome.statusCode).json(outcome.body);
 }
 
 /**
@@ -4473,13 +4584,16 @@ export async function getAdminMonitorSnapshot(req: Request, res: Response): Prom
       )
     );
     if (missingRolls.length > 0) {
-      const { data: extraStudents } = await supabase
-        .from('students')
-        .select('id, name, first_name, last_name, roll_number, hall_ticket, email, college_id, college_name, branch_code, section, batch, year_of_passing, is_verified, is_blocked')
-        .in('roll_number', missingRolls.slice(0, 150));
-      for (const s of extraStudents || []) {
-        const r = String(s.roll_number || s.hall_ticket || '').toUpperCase().trim();
-        if (r) studentByRoll.set(r, s);
+      for (let i = 0; i < missingRolls.length; i += 100) {
+        const chunk = missingRolls.slice(i, i + 100);
+        const { data: extraStudents } = await supabase
+          .from('students')
+          .select('id, name, first_name, last_name, roll_number, hall_ticket, email, college_id, college_name, branch_code, section, batch, year_of_passing, is_verified, is_blocked')
+          .in('roll_number', chunk);
+        for (const s of extraStudents || []) {
+          const r = String(s.roll_number || s.hall_ticket || '').toUpperCase().trim();
+          if (r) studentByRoll.set(r, s);
+        }
       }
     }
 

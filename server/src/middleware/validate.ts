@@ -232,10 +232,16 @@ export const forgotPasswordSchema = z
     email: z.string().trim().optional(),
     identifier: z.string().trim().optional(),
     username: z.string().trim().optional(),
+    portal: z.enum(['student', 'faculty', 'inspector', 'admin', 'auto']).optional(),
   })
   .refine((data) => Boolean(data.email || data.identifier || data.username), {
-    message: 'Valid identifier (email, username, or phone) is required',
+    message: 'Valid identifier (email, hall ticket, username, or phone) is required',
   });
+
+export const forgotUserIdSchema = z.object({
+  email: z.string().trim().email('Please enter a valid registered email address').toLowerCase(),
+  portal: z.enum(['student', 'faculty', 'inspector', 'admin', 'auto']).optional(),
+});
 
 export const resetPasswordSchema = z
   .object({

@@ -72,6 +72,10 @@ import {
   listMailLogsController,
   resendMailLogController,
   dispatchAdminEmailController,
+  forwardMailLogController,
+  listMailForwardersController,
+  saveMailForwarderController,
+  deleteMailForwarderController,
 } from '../controllers/adminController';
 import { getLeaderboard } from '../controllers/adminController';
 import {
@@ -446,10 +450,15 @@ router.get('/system-alerts', requireRole('super_admin'), (req, res) => {
   });
 });
 
-// ——— Outbound Email Logs & Resend (super_admin, admin) ———
+// ——— Outbound Email Logs, Forwarding & Automated Forwarder Rules (super_admin, admin) ———
 router.get('/mail-logs', requireRole('super_admin', 'admin'), listMailLogsController);
 router.post('/mail-logs/:id/resend', requireRole('super_admin', 'admin'), auditLog('RESEND_EMAIL', 'mail_logs'), resendMailLogController);
+router.post('/mail-logs/:id/forward', requireRole('super_admin', 'admin'), auditLog('FORWARD_EMAIL', 'mail_logs'), forwardMailLogController);
 router.post('/mail-logs/dispatch', requireRole('super_admin', 'admin'), auditLog('ADMIN_DIRECT_DISPATCH_EMAIL', 'mail_logs'), dispatchAdminEmailController);
+router.get('/mail-forwarders', requireRole('super_admin', 'admin'), listMailForwardersController);
+router.post('/mail-forwarders', requireRole('super_admin', 'admin'), auditLog('SAVE_MAIL_FORWARDER', 'platform_settings'), saveMailForwarderController);
+router.patch('/mail-forwarders/:id', requireRole('super_admin', 'admin'), auditLog('UPDATE_MAIL_FORWARDER', 'platform_settings'), saveMailForwarderController);
+router.delete('/mail-forwarders/:id', requireRole('super_admin', 'admin'), auditLog('DELETE_MAIL_FORWARDER', 'platform_settings'), deleteMailForwarderController);
 
 router.get('/results', requireRole('super_admin', 'admin', 'inspector', 'faculty'), async (req, res) => {
   try {
@@ -508,24 +517,27 @@ router.get('/results', requireRole('super_admin', 'admin', 'inspector', 'faculty
       query = query.in('exam_code', searchCodes);
     }
 
-    const { data: attempts } = await query.limit(200);
+    const { data: attempts } = await query.limit(1000);
     const rows = attempts || [];
 
-    // 3. Enrich student names & academic metadata from students table
+    // 3. Enrich student names & academic metadata from students table (chunked for 300+ candidates)
     const hallTickets = Array.from(new Set(rows.map((r) => r.hall_ticket_no || r.hall_ticket).filter(Boolean)));
     const studentMap: Record<string, any> = {};
 
     if (hallTickets.length > 0) {
       try {
-        const { data: students } = await supabase
-          .from('students')
-          .select('name, roll_number, hall_ticket, college_id, college_name, branch_code, section, batch, year_of_passing')
-          .or(hallTickets.map((ht) => `hall_ticket.eq.${ht},roll_number.eq.${ht}`).join(','));
+        for (let i = 0; i < hallTickets.length; i += 100) {
+          const batch = hallTickets.slice(i, i + 100);
+          const { data: students } = await supabase
+            .from('students')
+            .select('name, roll_number, hall_ticket, college_id, college_name, branch_code, section, batch, year_of_passing')
+            .or(batch.map((ht) => `hall_ticket.eq.${ht},roll_number.eq.${ht}`).join(','));
 
-        if (students) {
-          for (const st of students) {
-            if (st.hall_ticket) studentMap[String(st.hall_ticket).toUpperCase()] = st;
-            if (st.roll_number) studentMap[String(st.roll_number).toUpperCase()] = st;
+          if (students) {
+            for (const st of students) {
+              if (st.hall_ticket) studentMap[String(st.hall_ticket).toUpperCase()] = st;
+              if (st.roll_number) studentMap[String(st.roll_number).toUpperCase()] = st;
+            }
           }
         }
       } catch (stuErr) {
