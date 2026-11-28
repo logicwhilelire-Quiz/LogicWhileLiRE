@@ -52,62 +52,53 @@ export default class ErrorBoundary extends Component<Props, State> {
   };
 
   public handleGoHome = () => {
-    window.location.href = '/admin';
+    try {
+      const path = window.location.pathname || '';
+      if (path.startsWith('/admin') && localStorage.getItem('admin_token')) {
+        window.location.href = '/admin/dashboard';
+        return;
+      }
+      if (path.startsWith('/inspector') && localStorage.getItem('inspector_token')) {
+        window.location.href = '/inspector/console';
+        return;
+      }
+      if (localStorage.getItem('student_token')) {
+        window.location.href = '/student/dashboard';
+        return;
+      }
+    } catch {}
+    window.location.href = '/';
   };
 
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="page-center">
-          <div className="hero-bg">
-            <div className="hero-orb hero-orb-1" />
-            <div className="hero-orb hero-orb-2" />
-          </div>
-          <div className="card text-center animate-slide-up" style={{ maxWidth: 460 }}>
+        <div className="page-center" style={{ background: 'radial-gradient(ellipse at 50% 0%, #0A1C68 0%, #050B22 65%)' }}>
+          <div className="card text-center animate-slide-up" style={{ maxWidth: 460, background: 'rgba(8, 18, 50, 0.94)', border: '1px solid rgba(255, 180, 0, 0.28)', borderRadius: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-              <BrandLogo size="md" />
+              <BrandLogo size="md" themeOverride="dark" />
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
-              <IconAlert size={44} color="#EF4444" />
+              <IconAlert size={40} color="#FFB400" />
             </div>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 8, color: 'var(--color-text)' }}>
-              An Unexpected Error Occurred
+            <h2 style={{ fontSize: '1.35rem', fontWeight: 800, marginBottom: 8, color: '#FFFFFF' }}>
+              Refreshing View Safely
             </h2>
-            <p className="text-muted text-sm mb-3">
-              We encountered a glitch while rendering this screen. Your exam progress and answers remain safely recorded on the server.
+            <p className="text-muted text-sm mb-6" style={{ color: '#94A3B8', lineHeight: 1.6 }}>
+              Your active session and any saved responses remain secure on the server. Click below to reload cleanly or return to your portal.
             </p>
 
-            {this.state.error?.message && (
-              <div
-                style={{
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.25)',
-                  padding: 12,
-                  borderRadius: 8,
-                  fontSize: '0.8rem',
-                  fontFamily: 'monospace',
-                  color: '#f87171',
-                  marginBottom: 20,
-                  textAlign: 'left',
-                  maxHeight: 100,
-                  overflowY: 'auto',
-                }}
-              >
-                {this.state.error.message}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               <button className="btn btn-secondary" onClick={this.handleGoHome}>
                 Return to Portal
               </button>
-              <button className="btn btn-primary" onClick={this.handleReload}>
-                Reload Interface
+              <button className="btn btn-primary" onClick={this.handleReload} style={{ background: '#FFB400', color: '#050B22', fontWeight: 700 }}>
+                Reload View
               </button>
             </div>
 
-            <div style={{ marginTop: 24, fontSize: '0.78rem', color: 'var(--color-text-faint)' }}>
-              LogicWhile LiRE • Elevating Coding Knowledge • © 2026 LogicWhile LiRE. All rights reserved.
+            <div style={{ marginTop: 24, fontSize: '0.78rem', color: '#64748B' }}>
+              LogicWhile LiRE • Elevating Coding Knowledge • © 2026 LogicWhile. All rights reserved.
             </div>
           </div>
         </div>

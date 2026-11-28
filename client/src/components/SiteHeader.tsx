@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import BrandLogo from './BrandLogo';
 import ThemeToggle from './ui/ThemeToggle';
-import { IconHierarchy, IconGraduation, IconCross, IconMenu, IconFlash } from './icons/HumanIcons';
+import { IconGraduation, IconCross, IconMenu, IconFlash } from './icons/HumanIcons';
 
 export default function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
@@ -132,38 +132,17 @@ export default function SiteHeader() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '11.5px', fontVariantNumeric: 'tabular-nums' }}>
-            <span style={{ color: '#94A3B8' }}>
-              Status: <strong style={{ color: '#34D399', fontWeight: 600 }}>Operational</strong>
+            <span style={{ color: '#94A3B8', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34D399', display: 'inline-block' }} />
+              <strong style={{ color: '#34D399', fontWeight: 600 }}>All Portals Ready</strong>
             </span>
             <span style={{ color: 'rgba(255,255,255,0.16)' }}>|</span>
-            <span style={{ color: '#94A3B8' }}>
-              Clock: <strong style={{ color: '#FFB400', fontWeight: 600 }}>Server-Authoritative</strong>
-            </span>
-            <span style={{ color: 'rgba(255,255,255,0.16)' }}>|</span>
-            <button
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('toggle-horizonx'));
-              }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                background: 'rgba(255, 180, 0, 0.1)',
-                border: '1px solid rgba(255, 180, 0, 0.28)',
-                borderRadius: 6,
-                padding: '2px 8px',
-                color: '#FFD000',
-                fontSize: '11px',
-                fontWeight: 600,
-                fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
-                cursor: 'pointer',
-                transition: 'background-color 150ms cubic-bezier(0.22, 1, 0.36, 1), border-color 150ms cubic-bezier(0.22, 1, 0.36, 1)',
-              }}
-              title="Toggle HorizonX Architectural Blueprint Inspect Mode (Key: H)"
+            <Link
+              to="/forgot-password"
+              style={{ color: '#CBD5E1', textDecoration: 'none', fontWeight: 600 }}
             >
-              <IconHierarchy size={12} color="#FFD000" />
-              <span>HorizonX [H]</span>
-            </button>
+              Recover ID / Password
+            </Link>
           </div>
         </div>
       </div>

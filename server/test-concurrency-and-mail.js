@@ -284,6 +284,47 @@ async function run() {
   );
   console.log(`  ✅ [7] Unified ${catalogRes.data.templates.length}-Template Catalog, Preview & Dispatch verified`);
 
+  // 8. Recent Mail IDs + Saved Draft Mails (Forgot Password, Platform Updates & Completed Tests Summary)
+  const recentRes = await req('GET', '/api/admin/mail-recipients/recent', null, authHdr);
+  assert.strictEqual(recentRes.status, 200);
+  assert(Array.isArray(recentRes.data.recipients), 'Recent mail recipients list returned');
+  assert(
+    recentRes.data.recipients.some((r) => r.email === recoveryEmail),
+    'Recent mail recipients includes recent student recovery email'
+  );
+
+  const saveDraftRes = await req(
+    'POST',
+    '/api/admin/mail-drafts',
+    {
+      title: 'Tests Completed & Recovery Draft',
+      templateKey: 'test_completion_draft',
+      to: recoveryEmail,
+      variables: {
+        name: 'Recovery Tester',
+        hallTicket: '24HU1A05F9',
+        testsSummary: '300-Student Concurrency Benchmark: 3/3 (100% • PASSED)',
+      },
+    },
+    authHdr
+  );
+  assert.strictEqual(saveDraftRes.status, 200);
+  assert(saveDraftRes.data.draft && saveDraftRes.data.draft.id, 'Saved mail draft ID returned');
+  const draftId = saveDraftRes.data.draft.id;
+
+  const listDraftsRes = await req('GET', '/api/admin/mail-drafts', null, authHdr);
+  assert.strictEqual(listDraftsRes.status, 200);
+  assert(listDraftsRes.data.drafts.some((d) => d.id === draftId), 'Saved draft listed');
+
+  const sendDraftRes = await req('POST', `/api/admin/mail-drafts/${draftId}/send`, {}, authHdr);
+  assert.strictEqual(sendDraftRes.status, 200);
+  assert.strictEqual(sendDraftRes.data.success, true);
+  assert.strictEqual(sendDraftRes.data.draft.status, 'dispatched');
+
+  const delDraftRes = await req('DELETE', `/api/admin/mail-drafts/${draftId}`, null, authHdr);
+  assert.strictEqual(delDraftRes.status, 200);
+  console.log(`  ✅ [8] Recent Mail IDs Directory + Save/Dispatch/Delete Mail Drafts verified`);
+
   console.log('================================================================\n');
   server.close();
   process.exit(0);

@@ -35,6 +35,11 @@ import {
   deleteMailForwarder,
   getMailTemplateCatalog,
   renderMailTemplateByKey,
+  listMailDrafts,
+  upsertMailDraft,
+  deleteMailDraft,
+  sendMailDraftById,
+  listRecentMailRecipients,
 } from '../services/mailService';
 import { verifyTotpCode } from '../utils/totp';
 import { getAdminJwtSecret } from '../middleware/adminAuth';
@@ -3203,6 +3208,78 @@ export async function deleteMailForwarderController(req: Request, res: Response)
     res.json({ success: true, message: 'Mail forwarder rule removed' });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message || 'Failed to delete mail forwarder rule' });
+  }
+}
+
+export async function listRecentMailRecipientsController(req: Request, res: Response): Promise<void> {
+  const limit = Math.min(100, Math.max(5, Number(req.query.limit || 40)));
+  try {
+    const recipients = await listRecentMailRecipients(limit);
+    res.json({ success: true, recipients });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to load recent mail recipients' });
+  }
+}
+
+export async function listMailDraftsController(_req: Request, res: Response): Promise<void> {
+  try {
+    const drafts = await listMailDrafts();
+    res.json({ success: true, drafts });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to list mail drafts' });
+  }
+}
+
+export async function saveMailDraftController(req: Request, res: Response): Promise<void> {
+  const { id, title, templateKey, to, cc, subject, html, variables } = req.body || {};
+  try {
+    const draft = await upsertMailDraft({
+      id: id ? String(id) : undefined,
+      title: String(title || ''),
+      templateKey: String(templateKey || 'custom_broadcast'),
+      to: String(to || ''),
+      cc: cc ? String(cc) : undefined,
+      subject: subject ? String(subject) : undefined,
+      html: html ? String(html) : undefined,
+      variables: variables || {},
+      createdBy: (req as any).admin?.username || 'admin',
+    });
+    res.json({ success: true, draft });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err?.message || 'Failed to save mail draft' });
+  }
+}
+
+export async function sendMailDraftController(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  if (!id) {
+    res.status(400).json({ success: false, error: 'Draft ID is required' });
+    return;
+  }
+  try {
+    const actor = (req as any).admin?.username || 'admin_draft';
+    const { draft, result } = await sendMailDraftById(String(id), actor);
+    res.json({ success: result.success, message: result.success ? 'Draft dispatched successfully' : (result.error || 'Dispatch failed'), draft, result });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err?.message || 'Failed to dispatch mail draft' });
+  }
+}
+
+export async function deleteMailDraftController(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  if (!id) {
+    res.status(400).json({ success: false, error: 'Draft ID is required' });
+    return;
+  }
+  try {
+    const removed = await deleteMailDraft(String(id));
+    if (!removed) {
+      res.status(404).json({ success: false, error: 'Mail draft not found' });
+      return;
+    }
+    res.json({ success: true, message: 'Mail draft deleted' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to delete mail draft' });
   }
 }
 

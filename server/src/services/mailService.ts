@@ -2284,10 +2284,10 @@ export function renderWelcomeCredentialsTemplate(data: {
     <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">Welcome to LogicWhile LiRE, ${data.recipientName}!</h2>
     <p style="margin:0 0 18px; font-size:14px; line-height:1.6; color:#cbd5e1;">Your <strong style="color:#38bdf8;">${roleUpper}</strong> account has been provisioned. Keep these credentials confidential.</p>
     ${renderKeyValueCard([
-      { label: data.role === 'student' ? 'Hall Ticket / Roll No' : 'Login Identifier', value: data.identifier, valueColor: '#38bdf8', mono: true },
-      ...(data.tempPassword ? [{ label: 'Temporary Password', value: data.tempPassword, valueColor: '#fbbf24', mono: true }] : []),
-      ...(data.collegeName ? [{ label: 'Institution', value: data.collegeName }] : []),
-    ])}
+    { label: data.role === 'student' ? 'Hall Ticket / Roll No' : 'Login Identifier', value: data.identifier, valueColor: '#38bdf8', mono: true },
+    ...(data.tempPassword ? [{ label: 'Temporary Password', value: data.tempPassword, valueColor: '#fbbf24', mono: true }] : []),
+    ...(data.collegeName ? [{ label: 'Institution', value: data.collegeName }] : []),
+  ])}
     ${renderCtaButton('🚀 Access Portal Dashboard', loginUrl)}
   `;
   return {
@@ -2339,9 +2339,9 @@ export function renderExamStartedReminderTemplate(data: {
     <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">Your Exam Has Officially Started!</h2>
     <p style="margin:0 0 18px; font-size:14px; line-height:1.6; color:#cbd5e1;">Dear <strong style="color:#f8fafc;">${data.recipientName}</strong> (Hall Ticket: <span style="font-family:monospace; color:#38bdf8;">${data.hallTicket}</span>), your invigilator has launched <strong>${data.examTitle}</strong>.</p>
     ${renderKeyValueCard([
-      { label: 'Active Exam Code', value: data.examCode, valueColor: '#10b981', mono: true },
-      { label: 'Candidate Hall Ticket', value: data.hallTicket, valueColor: '#38bdf8', mono: true },
-    ], 'rgba(16,185,129,0.3)')}
+    { label: 'Active Exam Code', value: data.examCode, valueColor: '#10b981', mono: true },
+    { label: 'Candidate Hall Ticket', value: data.hallTicket, valueColor: '#38bdf8', mono: true },
+  ], 'rgba(16,185,129,0.3)')}
     ${renderCtaButton('⚡ Enter Exam Room Now →', joinUrl, 'linear-gradient(135deg, #10b981 0%, #059669 100%)')}
   `;
   return {
@@ -2365,10 +2365,10 @@ export function renderSubmissionReceiptTemplate(data: {
     <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#10b981;">Exam Submission Recorded Successfully</h2>
     <p style="margin:0 0 18px; font-size:14px; line-height:1.6; color:#cbd5e1;">Dear <strong style="color:#f8fafc;">${data.recipientName}</strong>, your responses for <strong>${data.examTitle}</strong> are sealed in the server audit ledger.</p>
     ${renderKeyValueCard([
-      { label: 'Hall Ticket', value: data.hallTicket, valueColor: '#38bdf8', mono: true },
-      { label: 'Questions Answered', value: `${data.answeredCount} / ${data.totalQuestions}`, valueColor: '#10b981' },
-      { label: 'Audit Hash', value: data.submissionHash, valueColor: '#a78bfa', mono: true },
-    ], 'rgba(16,185,129,0.3)')}
+    { label: 'Hall Ticket', value: data.hallTicket, valueColor: '#38bdf8', mono: true },
+    { label: 'Questions Answered', value: `${data.answeredCount} / ${data.totalQuestions}`, valueColor: '#10b981' },
+    { label: 'Audit Hash', value: data.submissionHash, valueColor: '#a78bfa', mono: true },
+  ], 'rgba(16,185,129,0.3)')}
   `;
   return {
     subject,
@@ -2416,11 +2416,11 @@ export function renderInspectorIssueAlertTemplate(data: {
     ${renderBadgeHeader(`⚠️ LIVE PROCTOR INSPECTION ALERT [${sev}]`, color, 'rgba(239,68,68,0.12)')}
     <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">Candidate Flagged by Telemetry</h2>
     ${renderKeyValueCard([
-      { label: 'Candidate', value: `${data.participantName} (${data.hallTicket})`, mono: true },
-      { label: 'Examination', value: data.examTitle },
-      { label: 'Flag Type', value: data.issueType.replace(/_/g, ' ').toUpperCase(), valueColor: color },
-      { label: 'Telemetry Details', value: data.details },
-    ])}
+    { label: 'Candidate', value: `${data.participantName} (${data.hallTicket})`, mono: true },
+    { label: 'Examination', value: data.examTitle },
+    { label: 'Flag Type', value: data.issueType.replace(/_/g, ' ').toUpperCase(), valueColor: color },
+    { label: 'Telemetry Details', value: data.details },
+  ])}
   `;
   return {
     subject,
@@ -2443,12 +2443,12 @@ export function renderTerminationAlertTemplate(data: {
     <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">Participant Session Terminated</h2>
     <p style="margin:0 0 18px; font-size:14px; color:#cbd5e1;">An active candidate session was locked and terminated after exceeding proctoring thresholds.</p>
     ${renderKeyValueCard([
-      { label: 'Candidate', value: data.participantName },
-      { label: 'Hall Ticket', value: data.hallTicket, valueColor: '#a78bfa', mono: true },
-      { label: 'Exam', value: data.examTitle },
-      { label: 'Reason', value: data.reason, valueColor: '#ef4444' },
-      { label: 'Total Violations', value: String(data.violationCount), valueColor: '#f59e0b' },
-    ])}
+    { label: 'Candidate', value: data.participantName },
+    { label: 'Hall Ticket', value: data.hallTicket, valueColor: '#a78bfa', mono: true },
+    { label: 'Exam', value: data.examTitle },
+    { label: 'Reason', value: data.reason, valueColor: '#ef4444' },
+    { label: 'Total Violations', value: String(data.violationCount), valueColor: '#f59e0b' },
+  ])}
     ${renderCtaButton('🛡️ Review Violation Audit', data.reviewUrl || `${FRONTEND_URL}/admin/monitor`)}
   `;
   return {
@@ -2471,10 +2471,10 @@ export function renderBatchTerminationSummaryTemplate(data: {
     <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">High-Frequency Proctoring Incidents</h2>
     <p style="margin:0 0 18px; font-size:14px; color:#cbd5e1;"><strong>${data.terminationCount}</strong> candidate sessions were automatically terminated in <strong>${data.examTitle}</strong> during the last ${windowMinutes} minutes.</p>
     ${renderKeyValueCard([
-      { label: 'Examination', value: data.examTitle },
-      { label: 'Sessions Terminated', value: String(data.terminationCount), valueColor: '#ef4444' },
-      ...(data.summaryNote ? [{ label: 'Notes', value: data.summaryNote }] : []),
-    ])}
+    { label: 'Examination', value: data.examTitle },
+    { label: 'Sessions Terminated', value: String(data.terminationCount), valueColor: '#ef4444' },
+    ...(data.summaryNote ? [{ label: 'Notes', value: data.summaryNote }] : []),
+  ])}
     ${renderCtaButton('📊 Inspect Live Proctor Console', `${FRONTEND_URL}/admin`)}
   `;
   return {
@@ -2498,10 +2498,10 @@ export function renderAdminSystemAlertTemplate(data: {
     <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">${data.alertType}</h2>
     <p style="margin:0 0 18px; font-size:14px; color:#cbd5e1;">${data.message}</p>
     ${renderKeyValueCard([
-      { label: 'Severity', value: sev, valueColor: color },
-      { label: 'Source IP', value: data.ip || 'System Internal', mono: true },
-      { label: 'Recorded At', value: new Date().toISOString(), mono: true },
-    ])}
+    { label: 'Severity', value: sev, valueColor: color },
+    { label: 'Source IP', value: data.ip || 'System Internal', mono: true },
+    { label: 'Recorded At', value: new Date().toISOString(), mono: true },
+  ])}
     ${renderCtaButton('🛡️ Open Security Dashboard', `${FRONTEND_URL}/admin`)}
   `;
   return {
@@ -2542,10 +2542,10 @@ export function renderContactAutoReplyTemplate(data: {
     <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">We Received Your Message</h2>
     <p style="margin:0 0 18px; font-size:14px; color:#cbd5e1;">Dear <strong style="color:#f8fafc;">${data.senderName}</strong>, thank you for contacting <strong>LogicWhileLiRE</strong>. Our engineering team will reply within 24 business hours.</p>
     ${renderKeyValueCard([
-      { label: 'Inquiry Reference ID', value: data.referenceId, valueColor: '#38bdf8', mono: true },
-      { label: 'Subject', value: data.subject },
-      { label: 'Excerpt', value: data.message.slice(0, 260) },
-    ])}
+    { label: 'Inquiry Reference ID', value: data.referenceId, valueColor: '#38bdf8', mono: true },
+    { label: 'Subject', value: data.subject },
+    { label: 'Excerpt', value: data.message.slice(0, 260) },
+  ])}
   `;
   return {
     subject: emailSubject,
@@ -2568,11 +2568,11 @@ export function renderContactAdminNotificationTemplate(data: {
     ${renderBadgeHeader('📢 NEW CONTACT FORM SUBMISSION', '#f59e0b', 'rgba(245,158,11,0.14)')}
     <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">Inquiry: ${data.subject}</h2>
     ${renderKeyValueCard([
-      { label: 'Reference ID', value: data.referenceId, valueColor: '#f59e0b', mono: true },
-      { label: 'From', value: `${data.senderName} <${data.senderEmail}>` },
-      ...(data.institution ? [{ label: 'Institution', value: data.institution }] : []),
-      ...(data.candidateCount ? [{ label: 'Batch Scale', value: data.candidateCount }] : []),
-    ])}
+    { label: 'Reference ID', value: data.referenceId, valueColor: '#f59e0b', mono: true },
+    { label: 'From', value: `${data.senderName} <${data.senderEmail}>` },
+    ...(data.institution ? [{ label: 'Institution', value: data.institution }] : []),
+    ...(data.candidateCount ? [{ label: 'Batch Scale', value: data.candidateCount }] : []),
+  ])}
     <div style="background:rgba(255,255,255,0.04); border-left:4px solid #38bdf8; padding:14px 18px; border-radius:6px; margin-bottom:20px;">
       <p style="margin:0; font-size:14px; color:#f0f4f8; line-height:1.6;">${data.message}</p>
     </div>
@@ -2597,11 +2597,11 @@ export function renderMailForwardedTemplate(data: {
   const contentHtml = `
     ${renderBadgeHeader('🔁 FORWARDED INSTITUTIONAL TRANSMISSION', '#a78bfa', 'rgba(167,139,250,0.14)')}
     ${renderKeyValueCard([
-      { label: 'Original Recipient', value: data.originalTo, valueColor: '#38bdf8', mono: true },
-      { label: 'Source Template', value: data.originalTemplate, mono: true },
-      { label: 'Forwarded By', value: data.forwardedBy || 'System Relay' },
-      ...(data.note ? [{ label: 'Note', value: data.note, valueColor: '#fde68a' }] : []),
-    ], 'rgba(167,139,250,0.3)')}
+    { label: 'Original Recipient', value: data.originalTo, valueColor: '#38bdf8', mono: true },
+    { label: 'Source Template', value: data.originalTemplate, mono: true },
+    { label: 'Forwarded By', value: data.forwardedBy || 'System Relay' },
+    ...(data.note ? [{ label: 'Note', value: data.note, valueColor: '#fde68a' }] : []),
+  ], 'rgba(167,139,250,0.3)')}
     <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:16px 20px; color:#cbd5e1; font-size:14px; line-height:1.6;">
       ${data.bodyHtml || '<p>Original institutional transmission payload attached inline.</p>'}
     </div>
@@ -3047,7 +3047,149 @@ export const MAIL_TEMPLATE_CATALOG: MailTemplateCatalogEntry[] = [
       { key: 'ctaUrl', label: 'Button URL', defaultValue: `${FRONTEND_URL}/login` },
     ],
   },
+  {
+    key: 'forgot_password_draft',
+    name: 'Forgot Password & Account Recovery Draft',
+    category: 'auth_recovery',
+    categoryLabel: 'Auth & Recovery',
+    audience: 'Recent Candidates & Staff',
+    triggerEvent: 'Draft / Admin Recovery Assist -> forgot_password_draft',
+    description: 'Ready-to-dispatch draft providing registered email/ID confirmation and direct password/User ID recovery links.',
+    variables: [
+      { key: 'name', label: 'Recipient Name', defaultValue: 'Candidate' },
+      { key: 'email', label: 'Registered Email', defaultValue: 'student@college.edu' },
+      { key: 'hallTicket', label: 'Hall Ticket / User ID', defaultValue: '24HU1A05F9' },
+      { key: 'portalName', label: 'Portal Name', defaultValue: 'Student Portal' },
+      { key: 'note', label: 'Admin Note', defaultValue: 'Use the secure links below to recover your User ID or reset your password within 1 hour.' },
+    ],
+  },
+  {
+    key: 'platform_update_draft',
+    name: 'Portal Updates & Exam Schedule Draft',
+    category: 'support_ops',
+    categoryLabel: 'Support & Operations',
+    audience: 'All Recent / Active Candidates',
+    triggerEvent: 'Draft / Admin Release Bulletin -> platform_update_draft',
+    description: 'Summarizes recent portal upgrades, exam schedule revisions, or waiting hall procedure updates.',
+    variables: [
+      { key: 'name', label: 'Recipient Name / Cohort', defaultValue: 'Candidate' },
+      { key: 'updateTitle', label: 'Update Headline', defaultValue: 'Latest Portal & Examination Schedule Updates' },
+      { key: 'updateHighlights', label: 'Update Details', defaultValue: 'Waiting Lobby check-in streamlined • Synchronized start timer active • Forgot User ID & Password recovery enabled across all portals.' },
+      { key: 'effectiveDate', label: 'Effective Date', defaultValue: new Date().toLocaleDateString('en-IN') },
+      { key: 'actionUrl', label: 'Portal Link', defaultValue: `${FRONTEND_URL}/enter-exam` },
+    ],
+  },
+  {
+    key: 'test_completion_draft',
+    name: 'Completed Tests Summary & Scorecard Draft',
+    category: 'exam_lifecycle',
+    categoryLabel: 'Exam Lifecycle',
+    audience: 'Tested Students & Coordinators',
+    triggerEvent: 'Draft / Admin Assessment Digest -> test_completion_draft',
+    description: 'Clean digest listing recent tests completed by the student, scores/accuracy, and report portal link.',
+    variables: [
+      { key: 'name', label: 'Student Name', defaultValue: 'Candidate' },
+      { key: 'hallTicket', label: 'Hall Ticket', defaultValue: '24HU1A05F9' },
+      { key: 'testsSummary', label: 'Completed Tests Summary', defaultValue: 'Systems & DSA Benchmark: 88/100 (88% • PASSED)' },
+      { key: 'remarks', label: 'Faculty / Admin Remarks', defaultValue: 'Your completed test attempts and verified standings have been recorded cleanly.' },
+      { key: 'reportUrl', label: 'Student Report Link', defaultValue: `${FRONTEND_URL}/reports/student` },
+    ],
+  },
 ];
+
+function renderForgotPasswordDraftTemplate(data: {
+  name: string;
+  email: string;
+  hallTicket: string;
+  portalName: string;
+  note: string;
+}): { subject: string; html: string; text: string } {
+  const subject = `🔑 Account Recovery & Password Reset Assistance — LogicWhile LiRE`;
+  const resetLink = `${FRONTEND_URL}/forgot-password`;
+  const loginLink = `${FRONTEND_URL}/login`;
+  const contentHtml = `
+    ${renderBadgeHeader('🔑 ACCOUNT RECOVERY ASSISTANCE', '#fbbf24', 'rgba(255,180,0,0.12)')}
+    <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">Password &amp; User ID Recovery Support</h2>
+    <p style="margin:0 0 16px; font-size:14px; line-height:1.6; color:#cbd5e1;">Dear <strong style="color:#f8fafc;">${data.name}</strong>, ${data.note}</p>
+    ${renderKeyValueCard([
+      { label: 'Registered Email', value: data.email, valueColor: '#38bdf8', mono: true },
+      { label: 'Hall Ticket / User ID', value: data.hallTicket, valueColor: '#fbbf24', mono: true },
+      { label: 'Assigned Portal', value: data.portalName },
+    ])}
+    ${renderCtaButton('🔑 Open Forgot Password & User ID Recovery →', resetLink)}
+    <p style="margin:12px 0 0; font-size:12px; color:#94a3b8; text-align:center;">Already have your credentials? <a href="${loginLink}" style="color:#38bdf8; text-decoration:none; font-weight:600;">Sign in to Portal →</a></p>
+  `;
+  return {
+    subject,
+    html: getSharedEmailLayout({ title: subject, preheader: `Recovery assistance for ${data.hallTicket}`, contentHtml }),
+    text: `Dear ${data.name},\n\n${data.note}\nRegistered Email: ${data.email}\nHall Ticket / User ID: ${data.hallTicket}\nRecover here: ${resetLink}`,
+  };
+}
+
+function renderPlatformUpdateDraftTemplate(data: {
+  name: string;
+  updateTitle: string;
+  updateHighlights: string;
+  effectiveDate: string;
+  actionUrl: string;
+}): { subject: string; html: string; text: string } {
+  const subject = `📢 ${data.updateTitle} — LogicWhile LiRE`;
+  const items = String(data.updateHighlights || '')
+    .split(/[•\n;]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const bulletsHtml = items.length > 0
+    ? `<ul style="margin:0; padding-left:18px; color:#e2e8f0; font-size:14px; line-height:1.7;">${items.map((item) => `<li>${item}</li>`).join('')}</ul>`
+    : `<p style="margin:0; font-size:14px; color:#e2e8f0;">${data.updateHighlights}</p>`;
+  const contentHtml = `
+    ${renderBadgeHeader(`📣 INSTITUTIONAL UPDATE • ${data.effectiveDate}`, '#38bdf8', 'rgba(56,189,248,0.12)')}
+    <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">${data.updateTitle}</h2>
+    <p style="margin:0 0 16px; font-size:14px; color:#cbd5e1;">Dear <strong style="color:#f8fafc;">${data.name}</strong>, please note the latest updates across the LogicWhile LiRE assessment portals:</p>
+    <div style="background:rgba(255,255,255,0.03); border-left:4px solid #38bdf8; border-radius:8px; padding:16px 20px; margin-bottom:22px;">
+      ${bulletsHtml}
+    </div>
+    ${renderCtaButton('🚀 Open Examination Portal →', data.actionUrl)}
+  `;
+  return {
+    subject,
+    html: getSharedEmailLayout({ title: subject, preheader: data.updateTitle, contentHtml }),
+    text: `Dear ${data.name},\n\n${data.updateTitle} (${data.effectiveDate})\n${items.map((i) => `- ${i}`).join('\n')}\nPortal: ${data.actionUrl}`,
+  };
+}
+
+function renderTestCompletionDraftTemplate(data: {
+  name: string;
+  hallTicket: string;
+  testsSummary: string;
+  remarks: string;
+  reportUrl: string;
+}): { subject: string; html: string; text: string } {
+  const subject = `📊 Completed Assessments Summary (${data.hallTicket}) — LogicWhile LiRE`;
+  const lines = String(data.testsSummary || '')
+    .split(/[\n;|]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const listHtml = lines
+    .map(
+      (line) => `<div style="padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13px; color:#e2e8f0; font-family:monospace;">${line}</div>`
+    )
+    .join('');
+  const contentHtml = `
+    ${renderBadgeHeader('📊 COMPLETED TESTS & PERFORMANCE DIGEST', '#10b981', 'rgba(16,185,129,0.12)')}
+    <h2 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#f8fafc;">Your Assessment Activity Summary</h2>
+    <p style="margin:0 0 16px; font-size:14px; color:#cbd5e1;">Dear <strong style="color:#f8fafc;">${data.name}</strong> (Hall Ticket: <span style="font-family:monospace; color:#38bdf8;">${data.hallTicket}</span>), here is the record of tests you have completed:</p>
+    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(16,185,129,0.28); border-radius:10px; margin-bottom:20px;">
+      ${listHtml || '<div style="padding:14px; color:#94a3b8;">No completed test entries recorded yet.</div>'}
+    </div>
+    <p style="margin:0 0 20px; font-size:13px; color:#94a3b8; line-height:1.6;">${data.remarks}</p>
+    ${renderCtaButton('📈 View Full Performance Report →', data.reportUrl, 'linear-gradient(135deg, #10b981 0%, #059669 100%)')}
+  `;
+  return {
+    subject,
+    html: getSharedEmailLayout({ title: subject, preheader: `Completed test record for ${data.hallTicket}`, contentHtml }),
+    text: `Dear ${data.name} (${data.hallTicket}),\n\nCompleted Assessments:\n${lines.join('\n')}\n\n${data.remarks}\nReport: ${data.reportUrl}`,
+  };
+}
 
 export function getMailTemplateCatalog(): MailTemplateCatalogEntry[] {
   return MAIL_TEMPLATE_CATALOG;
@@ -3294,6 +3436,33 @@ export function renderMailTemplateByKey(
         note: v.note,
       });
       break;
+    case 'forgot_password_draft':
+      rendered = renderForgotPasswordDraftTemplate({
+        name: v.name,
+        email: v.email,
+        hallTicket: v.hallTicket,
+        portalName: v.portalName,
+        note: v.note,
+      });
+      break;
+    case 'platform_update_draft':
+      rendered = renderPlatformUpdateDraftTemplate({
+        name: v.name,
+        updateTitle: v.updateTitle,
+        updateHighlights: v.updateHighlights,
+        effectiveDate: v.effectiveDate,
+        actionUrl: v.actionUrl,
+      });
+      break;
+    case 'test_completion_draft':
+      rendered = renderTestCompletionDraftTemplate({
+        name: v.name,
+        hallTicket: v.hallTicket,
+        testsSummary: v.testsSummary,
+        remarks: v.remarks,
+        reportUrl: v.reportUrl,
+      });
+      break;
     case 'custom_broadcast':
     default:
       rendered = renderCustomBroadcastTemplate({
@@ -3311,4 +3480,285 @@ export function renderMailTemplateByKey(
     templateKey: entry?.key || templateKey || 'custom_broadcast',
     metadata: { ...v, renderedFromCatalog: true },
   };
+}
+
+// ============================================================================
+// 8. MAIL DRAFTS ENGINE & RECENT MAIL IDS DIRECTORY
+// ============================================================================
+export interface MailDraftRecord {
+  id: string;
+  title: string;
+  templateKey: string;
+  to: string;
+  cc?: string;
+  subject: string;
+  html?: string;
+  variables: Record<string, any>;
+  status: 'draft' | 'dispatched';
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  lastSentAt?: string | null;
+}
+
+export interface RecentMailRecipient {
+  email: string;
+  name: string;
+  role: 'student' | 'faculty' | 'inspector' | 'admin' | 'contact';
+  hallTicket?: string;
+  section?: string;
+  recentTestsSummary: string;
+  completedTestsCount: number;
+  lastTemplate?: string;
+  lastActivityAt?: string;
+}
+
+let memoryDrafts: MailDraftRecord[] = [];
+let draftsLoadedFromDb = false;
+
+async function ensureDraftsLoaded(): Promise<MailDraftRecord[]> {
+  if (draftsLoadedFromDb) return memoryDrafts;
+  try {
+    const { data } = await supabase
+      .from('platform_settings')
+      .select('mail_drafts')
+      .limit(1)
+      .maybeSingle();
+    if (data && Array.isArray((data as any).mail_drafts)) {
+      memoryDrafts = (data as any).mail_drafts;
+    }
+  } catch {
+    // Non-blocking memory fallback
+  } finally {
+    draftsLoadedFromDb = true;
+  }
+  return memoryDrafts;
+}
+
+async function persistDraftsToDb(drafts: MailDraftRecord[]): Promise<void> {
+  memoryDrafts = drafts;
+  draftsLoadedFromDb = true;
+  try {
+    await supabase
+      .from('platform_settings')
+      .upsert({
+        id: '00000000-0000-0000-0000-000000000001',
+        mail_drafts: drafts,
+        updated_at: new Date().toISOString(),
+      });
+  } catch {
+    // Keep memory buffer if column is absent on remote replica
+  }
+}
+
+export async function listMailDrafts(): Promise<MailDraftRecord[]> {
+  return await ensureDraftsLoaded();
+}
+
+export async function upsertMailDraft(input: {
+  id?: string;
+  title: string;
+  templateKey: string;
+  to: string;
+  cc?: string;
+  subject?: string;
+  html?: string;
+  variables?: Record<string, any>;
+  createdBy?: string;
+}): Promise<MailDraftRecord> {
+  const existing = await ensureDraftsLoaded();
+  const templateKey = input.templateKey || 'custom_broadcast';
+  const rendered = renderMailTemplateByKey(templateKey, input.variables || {});
+  const now = new Date().toISOString();
+  const idx = input.id ? existing.findIndex((d) => d.id === input.id) : -1;
+
+  const draft: MailDraftRecord = {
+    id: idx >= 0 ? existing[idx].id : input.id || `draft_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    title: String(input.title || '').trim() || rendered.subject.slice(0, 64),
+    templateKey,
+    to: String(input.to || '').trim(),
+    cc: input.cc ? String(input.cc).trim() : '',
+    subject: String(input.subject || '').trim() || rendered.subject,
+    html: input.html && String(input.html).trim() ? input.html : rendered.html,
+    variables: input.variables || {},
+    status: idx >= 0 ? existing[idx].status : 'draft',
+    createdBy: idx >= 0 ? existing[idx].createdBy : input.createdBy || 'admin',
+    createdAt: idx >= 0 ? existing[idx].createdAt : now,
+    updatedAt: now,
+    lastSentAt: idx >= 0 ? existing[idx].lastSentAt : null,
+  };
+
+  const next = idx >= 0
+    ? existing.map((d, i) => (i === idx ? draft : d))
+    : [draft, ...existing];
+  await persistDraftsToDb(next);
+  return draft;
+}
+
+export async function deleteMailDraft(draftId: string): Promise<boolean> {
+  const existing = await ensureDraftsLoaded();
+  const next = existing.filter((d) => d.id !== draftId);
+  if (next.length === existing.length) return false;
+  await persistDraftsToDb(next);
+  return true;
+}
+
+export async function sendMailDraftById(draftId: string, sentBy = 'admin_draft'): Promise<{ draft: MailDraftRecord; result: SendMailResult }> {
+  const existing = await ensureDraftsLoaded();
+  const draft = existing.find((d) => d.id === draftId);
+  if (!draft) {
+    throw new Error('Mail draft not found');
+  }
+  if (!draft.to || !draft.to.trim()) {
+    throw new Error('Draft recipient email address is required before sending.');
+  }
+
+  const rendered = renderMailTemplateByKey(draft.templateKey, draft.variables || {});
+  const result = await sendMail({
+    to: draft.to,
+    ...(draft.cc ? { cc: draft.cc } : {}),
+    subject: draft.subject || rendered.subject,
+    html: draft.html || rendered.html,
+    text: rendered.text,
+    template: draft.templateKey,
+    metadata: { ...draft.variables, draftId: draft.id, draftTitle: draft.title },
+    sentBy,
+  });
+
+  if (result.success) {
+    const now = new Date().toISOString();
+    const updatedDraft: MailDraftRecord = {
+      ...draft,
+      status: 'dispatched',
+      lastSentAt: now,
+      updatedAt: now,
+    };
+    const next = existing.map((d) => (d.id === draft.id ? updatedDraft : d));
+    await persistDraftsToDb(next);
+    return { draft: updatedDraft, result };
+  }
+
+  return { draft, result };
+}
+
+export async function listRecentMailRecipients(limit = 40): Promise<RecentMailRecipient[]> {
+  const recipientMap = new Map<string, RecentMailRecipient>();
+
+  try {
+    const [{ data: students }, { data: staffRows }, { data: ecAttempts }, { data: mailLogRows }] = await Promise.all([
+      supabase
+        .from('students')
+        .select('id, name, email, roll_number, hall_ticket, section, created_at')
+        .order('created_at', { ascending: false })
+        .limit(80),
+      supabase
+        .from('staff')
+        .select('id, name, email, role, created_at')
+        .limit(40),
+      supabase
+        .from('exam_attempts_ec')
+        .select('hall_ticket, exam_code, score, max_score, status, submitted_at')
+        .order('submitted_at', { ascending: false })
+        .limit(120),
+      supabase
+        .from('mail_logs')
+        .select('to_email, template, created_at')
+        .order('created_at', { ascending: false })
+        .limit(80),
+    ]);
+
+    const attemptsByHt = new Map<string, Array<any>>();
+    for (const a of ecAttempts || []) {
+      const ht = String(a.hall_ticket || '').toUpperCase().trim();
+      if (!ht) continue;
+      if (!attemptsByHt.has(ht)) attemptsByHt.set(ht, []);
+      attemptsByHt.get(ht)!.push(a);
+    }
+
+    for (const st of students || []) {
+      const email = String(st.email || '').trim().toLowerCase();
+      if (!email || !email.includes('@')) continue;
+      const ht = String(st.hall_ticket || st.roll_number || '').toUpperCase().trim();
+      const htAttempts = ht ? (attemptsByHt.get(ht) || []) : [];
+      const summaryLines = htAttempts.slice(0, 4).map((att) => {
+        const sc = Number(att.score ?? 0);
+        const mx = Number(att.max_score ?? 100);
+        const pct = mx > 0 ? Math.round((sc / mx) * 100) : 0;
+        return `${att.exam_code || 'EXAM'}: ${sc}/${mx} (${pct}% · ${String(att.status || 'completed').toUpperCase()})`;
+      });
+
+      recipientMap.set(email, {
+        email,
+        name: st.name || ht || 'Candidate',
+        role: 'student',
+        hallTicket: ht || undefined,
+        section: st.section || undefined,
+        recentTestsSummary: summaryLines.length > 0
+          ? summaryLines.join('\n')
+          : 'No completed assessments recorded yet.',
+        completedTestsCount: htAttempts.length,
+        lastActivityAt: htAttempts[0]?.submitted_at || st.created_at,
+      });
+    }
+
+    for (const sf of staffRows || []) {
+      const email = String(sf.email || '').trim().toLowerCase();
+      if (!email || !email.includes('@')) continue;
+      if (!recipientMap.has(email)) {
+        const role = sf.role === 'inspector' ? 'inspector' : sf.role === 'faculty' ? 'faculty' : 'admin';
+        recipientMap.set(email, {
+          email,
+          name: sf.name || 'Staff Member',
+          role,
+          recentTestsSummary: `${role.toUpperCase()} Portal Account`,
+          completedTestsCount: 0,
+          lastActivityAt: sf.created_at,
+        });
+      }
+    }
+
+    for (const log of [...memoryMailLogs, ...(mailLogRows || [])]) {
+      const raw = String(log.to_email || '').trim().toLowerCase();
+      for (const addr of raw.split(/[,;\s]+/).filter(Boolean)) {
+        if (!addr.includes('@')) continue;
+        const existing = recipientMap.get(addr);
+        if (existing) {
+          if (!existing.lastTemplate) existing.lastTemplate = log.template;
+          if (!existing.lastActivityAt || (log.created_at && log.created_at > existing.lastActivityAt)) {
+            existing.lastActivityAt = log.created_at;
+          }
+        } else {
+          recipientMap.set(addr, {
+            email: addr,
+            name: addr.split('@')[0],
+            role: 'contact',
+            recentTestsSummary: 'Recent mail recipient',
+            completedTestsCount: 0,
+            lastTemplate: log.template,
+            lastActivityAt: log.created_at,
+          });
+        }
+      }
+    }
+  } catch {
+    for (const log of memoryMailLogs) {
+      const addr = String(log.to_email || '').split(',')[0].trim().toLowerCase();
+      if (!addr || !addr.includes('@')) continue;
+      if (!recipientMap.has(addr)) {
+        recipientMap.set(addr, {
+          email: addr,
+          name: addr.split('@')[0],
+          role: 'contact',
+          recentTestsSummary: 'Recent mail recipient',
+          completedTestsCount: 0,
+          lastTemplate: log.template,
+          lastActivityAt: log.created_at,
+        });
+      }
+    }
+  }
+
+  return Array.from(recipientMap.values())
+    .sort((a, b) => String(b.lastActivityAt || '').localeCompare(String(a.lastActivityAt || '')))
+    .slice(0, limit);
 }

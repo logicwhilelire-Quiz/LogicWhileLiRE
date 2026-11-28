@@ -78,6 +78,11 @@ import {
   deleteMailForwarderController,
   listMailTemplatesController,
   previewMailTemplateController,
+  listMailDraftsController,
+  saveMailDraftController,
+  sendMailDraftController,
+  deleteMailDraftController,
+  listRecentMailRecipientsController,
 } from '../controllers/adminController';
 import { getLeaderboard } from '../controllers/adminController';
 import {
@@ -463,6 +468,11 @@ router.get('/mail-forwarders', requireRole('super_admin', 'admin'), listMailForw
 router.post('/mail-forwarders', requireRole('super_admin', 'admin'), auditLog('SAVE_MAIL_FORWARDER', 'platform_settings'), saveMailForwarderController);
 router.patch('/mail-forwarders/:id', requireRole('super_admin', 'admin'), auditLog('UPDATE_MAIL_FORWARDER', 'platform_settings'), saveMailForwarderController);
 router.delete('/mail-forwarders/:id', requireRole('super_admin', 'admin'), auditLog('DELETE_MAIL_FORWARDER', 'platform_settings'), deleteMailForwarderController);
+router.get('/mail-recipients/recent', requireRole('super_admin', 'admin'), listRecentMailRecipientsController);
+router.get('/mail-drafts', requireRole('super_admin', 'admin'), listMailDraftsController);
+router.post('/mail-drafts', requireRole('super_admin', 'admin'), auditLog('SAVE_MAIL_DRAFT', 'platform_settings'), saveMailDraftController);
+router.post('/mail-drafts/:id/send', requireRole('super_admin', 'admin'), auditLog('SEND_MAIL_DRAFT', 'mail_logs'), sendMailDraftController);
+router.delete('/mail-drafts/:id', requireRole('super_admin', 'admin'), auditLog('DELETE_MAIL_DRAFT', 'platform_settings'), deleteMailDraftController);
 
 router.get('/results', requireRole('super_admin', 'admin', 'inspector', 'faculty'), async (req, res) => {
   try {

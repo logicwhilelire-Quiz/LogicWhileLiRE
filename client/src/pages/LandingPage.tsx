@@ -22,13 +22,9 @@ import {
   IconCode,
   IconTarget,
   IconFileText,
-  IconDownload,
-  IconSpeedometer,
-  IconGlobe,
   IconMail,
   IconPulse,
   IconFlash,
-  IconCpu,
 } from '../components/icons/HumanIcons';
 
 /* ── Institutional Architectural Backdrop (LogicWhile Logo Color System) ── */
@@ -39,6 +35,12 @@ function InstitutionalGridBackdrop() {
         position: 'absolute', inset: 0,
         backgroundImage: 'linear-gradient(rgba(255,180,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,180,0,0.03) 1px, transparent 1px)',
         backgroundSize: '48px 48px',
+      }} />
+      <div style={{
+        position: 'absolute', top: '-12%', left: '50%', transform: 'translateX(-50%)',
+        width: 'min(920px, 95vw)', height: 340,
+        background: 'radial-gradient(ellipse, rgba(255,180,0,0.12) 0%, rgba(43,127,255,0.08) 45%, transparent 72%)',
+        filter: 'blur(42px)',
       }} />
     </div>
   );
@@ -116,58 +118,6 @@ function PortalCard({ icon, badge, badgeColor, badgeBg, title, desc, specs, href
         transition: 'background-color 150ms cubic-bezier(0.22,1,0.36,1), color 150ms cubic-bezier(0.22,1,0.36,1), border-color 150ms cubic-bezier(0.22,1,0.36,1)',
         display: 'block',
       }}>{btnLabel} →</Link>
-    </motion.div>
-  );
-}
-
-interface SecurityCardProps {
-  icon: React.ReactNode;
-  badge: string;
-  title: string;
-  desc: string;
-  glow: string;
-  delay?: number;
-}
-function SecurityCard({ icon, badge, title, desc, glow, delay = 0 }: SecurityCardProps) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: hovered ? '#0D1942' : '#081232',
-        border: `1px solid ${hovered ? `${glow}55` : 'rgba(255,255,255,0.08)'}`,
-        borderRadius: 14,
-        padding: '22px 20px',
-        transition: 'background-color 160ms cubic-bezier(0.22,1,0.36,1), border-color 160ms cubic-bezier(0.22,1,0.36,1)',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
-        <span
-          style={{
-            fontSize: '0.72rem',
-            fontWeight: 500,
-            color: glow,
-            background: `${glow}14`,
-            border: `1px solid ${glow}30`,
-            padding: '3px 8px',
-            borderRadius: 6,
-          }}
-        >
-          {badge}
-        </span>
-      </div>
-      <h4 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#FFFFFF', margin: '0 0 8px', fontFamily: "'Rajdhani',sans-serif" }}>
-        {title}
-      </h4>
-      <p style={{ fontSize: '0.84rem', color: '#94A3B8', lineHeight: 1.6, margin: 0 }}>
-        {desc}
-      </p>
     </motion.div>
   );
 }
@@ -317,12 +267,11 @@ export default function LandingPage() {
                 background: engineHealth.state === 'standby' ? '#F59E0B' : '#10B981',
               }} />
               <span>
-                v{engineHealth.version} ·{' '}
-                {engineHealth.state === 'online' && engineHealth.latencyMs !== null
-                  ? `Engine online (${engineHealth.latencyMs}ms)`
+                {engineHealth.state === 'online'
+                  ? 'Examination Portal Online'
                   : engineHealth.state === 'standby'
-                  ? 'Engine standby (cold-wake ready)'
-                  : 'Checking engine status'}
+                  ? 'Exam Gateway Ready'
+                  : 'Connecting to Portal...'}
               </span>
             </div>
           </motion.div>
@@ -495,10 +444,10 @@ export default function LandingPage() {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.28 }}
             style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}
           >
-            <StatPill icon={<IconClock size={18} color="#FFB400" />} value="< 50ms" label="Timer sync" />
-            <StatPill icon={<IconShield size={18} color="#FF7A00" />} value="5-Layer" label="Anti-cheat" />
-            <StatPill icon={<IconTrophy size={18} color="#60A5FA" />} value="Real-time" label="Leaderboard" />
-            <StatPill icon={<IconRadio size={18} color="#10B981" />} value="IndexedDB" label="Offline buffer" />
+            <StatPill icon={<IconClock size={18} color="#FFB400" />} value="Live Sync" label="Unified exam clock" />
+            <StatPill icon={<IconShield size={18} color="#FF7A00" />} value="5-Layer" label="Exam integrity" />
+            <StatPill icon={<IconTrophy size={18} color="#60A5FA" />} value="Instant" label="Cohort standings" />
+            <StatPill icon={<IconRadio size={18} color="#10B981" />} value="Auto-Save" label="Resilient answers" />
           </motion.div>
         </div>
       </section>
@@ -631,7 +580,7 @@ export default function LandingPage() {
       <section style={{ position: 'relative', zIndex: 1, padding: '24px 24px 64px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div style={{
-            background: '#081232',
+            background: 'linear-gradient(135deg, #081232 0%, #0D1942 100%)',
             border: '1px solid rgba(255,180,0,0.28)',
             borderRadius: 16, padding: '32px 28px',
             display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 28, alignItems: 'center',
@@ -652,16 +601,16 @@ export default function LandingPage() {
                 <span style={{ color: '#FF7A00' }}>Logic</span>While <span style={{ color: '#FFB400' }}>· LiRE Engine</span>
               </h2>
               <p style={{ color: '#94A3B8', fontSize: '0.94rem', lineHeight: 1.65, margin: '0 0 24px' }}>
-                The Live Rank Engine (LiRE) benchmarks thousands of simultaneous participants with sub-50ms velocity. Standardized tie-breaking incorporates accuracy percentages, negative marking deductibles, and submission time.
+                The Live Rank Engine (LiRE) evaluates cohort examinations fairly with synchronized exam timers, clear accuracy metrics, and instant verified student scorecards.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <div style={{ background: '#0A1332', padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#FFB400', fontFamily: "'Rajdhani',sans-serif", fontVariantNumeric: 'tabular-nums' }}>100% Deterministic</div>
-                  <div style={{ fontSize: '0.74rem', color: '#94A3B8' }}>Tie-breaking rules</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#FFB400', fontFamily: "'Rajdhani',sans-serif" }}>Fair Ranking</div>
+                  <div style={{ fontSize: '0.74rem', color: '#94A3B8' }}>Transparent tie-breaking</div>
                 </div>
                 <div style={{ background: '#0A1332', padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#38BDF8', fontFamily: "'Rajdhani',sans-serif", fontVariantNumeric: 'tabular-nums' }}>Sub-50ms</div>
-                  <div style={{ fontSize: '0.74rem', color: '#94A3B8' }}>Leaderboard sync</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#38BDF8', fontFamily: "'Rajdhani',sans-serif" }}>Instant Results</div>
+                  <div style={{ fontSize: '0.74rem', color: '#94A3B8' }}>Live cohort standbys</div>
                 </div>
               </div>
             </div>
@@ -671,19 +620,19 @@ export default function LandingPage() {
               borderRadius: 12, padding: '20px',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 10 }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#FFB400' }}>Deterministic Tie-Break Pipeline</span>
-                <span style={{ fontSize: '0.74rem', color: engineHealth.state === 'standby' ? '#FBBF24' : '#34D399', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6, fontVariantNumeric: 'tabular-nums' }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: engineHealth.state === 'standby' ? '#F59E0B' : '#10B981' }} />
-                  {engineHealth.state === 'online' && engineHealth.latencyMs !== null ? `Live · ${engineHealth.latencyMs}ms` : 'Verified Engine'}
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#FFB400' }}>Fair Evaluation Criteria</span>
+                <span style={{ fontSize: '0.74rem', color: '#34D399', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981' }} />
+                  Verified Grading
                 </span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'rgba(255,180,0,0.08)', borderRadius: 8, border: '1px solid rgba(255,180,0,0.28)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontWeight: 600, color: '#FFB400', fontSize: '0.84rem', fontFamily: 'monospace' }}>01</span>
-                    <span style={{ fontWeight: 600, color: '#FFFFFF', fontSize: '0.84rem' }}>Net Score &amp; Negative Marking</span>
+                    <span style={{ fontWeight: 600, color: '#FFFFFF', fontSize: '0.84rem' }}>Total Assessment Score</span>
                   </div>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 500, color: '#FFB400', fontSize: '0.76rem' }}>Primary key</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 500, color: '#FFB400', fontSize: '0.76rem' }}>Primary</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#0A1332', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -695,90 +644,19 @@ export default function LandingPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#0A1332', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontWeight: 600, color: '#10B981', fontSize: '0.84rem', fontFamily: 'monospace' }}>03</span>
-                    <span style={{ fontWeight: 500, color: '#E2E8F0', fontSize: '0.84rem' }}>Elapsed Submission Velocity</span>
+                    <span style={{ fontWeight: 500, color: '#E2E8F0', fontSize: '0.84rem' }}>Completion Time</span>
                   </div>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 500, color: '#94A3B8', fontSize: '0.76rem' }}>Lowest time</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 500, color: '#94A3B8', fontSize: '0.76rem' }}>Fastest</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#0A1332', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontWeight: 600, color: '#A78BFA', fontSize: '0.84rem', fontFamily: 'monospace' }}>04</span>
-                    <span style={{ fontWeight: 500, color: '#E2E8F0', fontSize: '0.84rem' }}>Set A / B / C / D Seed Integrity</span>
+                    <span style={{ fontWeight: 500, color: '#E2E8F0', fontSize: '0.84rem' }}>Randomized Question Sets</span>
                   </div>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 500, color: '#94A3B8', fontSize: '0.76rem' }}>SHA-256 seed</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 500, color: '#94A3B8', fontSize: '0.76rem' }}>Sets A–D</span>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── SECURITY & INTEGRITY ARCHITECTURE ── */}
-      <section style={{ position: 'relative', zIndex: 1, padding: '24px 24px 64px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: 40 }}>
-            <span style={{
-              display: 'inline-block', background: 'rgba(56,189,248,0.1)', color: '#38BDF8',
-              border: '1px solid rgba(56,189,248,0.25)', padding: '4px 12px', borderRadius: 6,
-              fontSize: '0.76rem', fontWeight: 600, marginBottom: 12,
-            }}>Enterprise integrity engine</span>
-            <h2 style={{
-              fontSize: 'clamp(1.8rem,3.5vw,2.45rem)', fontWeight: 600, margin: '0 0 8px',
-              color: '#FFFFFF', fontFamily: "'Rajdhani',sans-serif",
-            }}>Institutional Security &amp; Anti-Cheat Architecture</h2>
-            <p style={{ color: '#94A3B8', fontSize: '0.94rem', margin: '0 auto', maxWidth: 640 }}>
-              End-to-end cryptographic integrity guaranteeing fair exam administration and verifiable student evaluation.
-            </p>
-          </motion.div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 16 }}>
-            <SecurityCard
-              icon={<IconClock size={24} color="#38BDF8" />}
-              badge="Timing protocol"
-              title="Server-Authoritative Clock"
-              desc="Centralized cluster timers dictate exam windows. Local workstation clock manipulation cannot bypass countdowns, start times, or automated submission locks."
-              glow="#38BDF8"
-              delay={0.04}
-            />
-            <SecurityCard
-              icon={<IconKey size={24} color="#FFB400" />}
-              badge="Session concurrency"
-              title="Cryptographic Single-Session Lock"
-              desc="Every candidate attempt receives a high-entropy 32-hex session token. Simultaneous browser tabs or secondary device logins instantly evict prior sessions."
-              glow="#FFB400"
-              delay={0.08}
-            />
-            <SecurityCard
-              icon={<IconEye size={24} color="#F43F5E" />}
-              badge="Proctoring"
-              title="Multi-Vector Anti-Cheat Monitor"
-              desc="Integrated tab-switch detection, fullscreen loss interception, copy-paste blocking, and automated strike counters trigger immediate proctor escalation."
-              glow="#F43F5E"
-              delay={0.12}
-            />
-            <SecurityCard
-              icon={<IconShield size={24} color="#10B981" />}
-              badge="Access control"
-              title="Strict Multi-Role Isolation (RBAC)"
-              desc="Cryptographic JWT tokens securely isolate Student, Faculty, College Inspector, and Admin scopes. Database queries strictly enforce college tenant boundaries."
-              glow="#10B981"
-              delay={0.16}
-            />
-            <SecurityCard
-              icon={<IconDownload size={24} color="#8B5CF6" />}
-              badge="Network resilience"
-              title="Zero-Loss Offline Data Buffering"
-              desc="Answers are buffered immediately in client IndexedDB storage with microsecond timestamps, synchronizing seamlessly during transient campus Wi-Fi drops."
-              glow="#8B5CF6"
-              delay={0.2}
-            />
-            <SecurityCard
-              icon={<IconFileText size={24} color="#F59E0B" />}
-              badge="Audit & compliance"
-              title="Immutable Audit Trails & Alerts"
-              desc="Administrative modifications, test cancellations, score adjustments, and gate pass verifications are immutably logged with IP and role fingerprints."
-              glow="#F59E0B"
-              delay={0.24}
-            />
           </div>
         </div>
       </section>
@@ -797,35 +675,16 @@ export default function LandingPage() {
               color: '#FFFFFF', fontFamily: "'Rajdhani',sans-serif",
             }}>Standardized Assessment Sectors</h2>
             <p style={{ color: '#94A3B8', fontSize: '0.92rem', margin: '0 auto', maxWidth: 620 }}>
-              Every evaluation benchmarks candidates across 5 core engineering domains with synchronized radar telemetry.
+              Practice and prepare across 5 core engineering and aptitude domains before your scheduled exam.
             </p>
           </motion.div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 16 }}>
-            <SectorCard sectorId="sector-quant" color="#F59E0B" badge="10 Qs · 10 Marks · 80%" name="Sector 1: Quantitative Velocity" desc="Relative speed, angular geometry, probability, combinatorics, and ratio velocity." delay={0} />
-            <SectorCard sectorId="sector-logic" color="#8B5CF6" badge="10 Qs · 10 Marks · 85%" name="Sector 2: Deductive Logic" desc="Pattern decryption, constraint networks, syllogistic deduction, and truth tables." delay={0.05} />
-            <SectorCard sectorId="sector-core-cs" color="#10B981" badge="10 Qs · 15 Marks · 75%" name="Sector 3: Core CS & OS" desc="Page fault replacement (FIFO/LRU), Banker's deadlock safety, TCP/IP, and memory paging." delay={0.1} />
-            <SectorCard sectorId="sector-dsa" color="#38BDF8" badge="10 Qs · 20 Marks · 80%" name="Sector 4: Algorithms & DSA" desc="Longest increasing subsequence, monotonic stacks, dynamic programming, and MSTs." delay={0.15} />
-            <SectorCard sectorId="sector-fullstack" color="#F43F5E" badge="5 Qs · 15 Marks · 80%" name="Sector 5: Cloud & Full-Stack" desc="Token bucket rate limiters, Node event loop microtasks, REST/GraphQL caching, and locks." delay={0.2} />
-          </div>
-
-          <div style={{
-            marginTop: 20,
-            background: '#081232',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 12,
-            padding: '12px 16px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 12,
-            fontSize: '0.82rem',
-            color: '#94A3B8',
-            fontVariantNumeric: 'tabular-nums',
-          }}>
-            <span><strong style={{ color: '#F8FAFC', fontWeight: 600 }}>Standard blueprint:</strong> 45 Total Questions · 70 Max Marks · 80% Competency Target</span>
-            <span style={{ color: '#34D399', fontWeight: 600 }}>Sets A / B / C / D Deterministic Permutation</span>
+            <SectorCard sectorId="sector-quant" color="#F59E0B" badge="10 Qs · Quantitative" name="Sector 1: Quantitative Velocity" desc="Relative speed, angular geometry, probability, combinatorics, and ratio velocity." delay={0} />
+            <SectorCard sectorId="sector-logic" color="#8B5CF6" badge="10 Qs · Reasoning" name="Sector 2: Deductive Logic" desc="Pattern decryption, constraint networks, syllogistic deduction, and truth tables." delay={0.05} />
+            <SectorCard sectorId="sector-core-cs" color="#10B981" badge="10 Qs · Core CS" name="Sector 3: Core CS & OS" desc="Scheduling, paging, deadlock safety, networking fundamentals, and database design." delay={0.1} />
+            <SectorCard sectorId="sector-dsa" color="#38BDF8" badge="10 Qs · Algorithms" name="Sector 4: Algorithms & DSA" desc="Sequence optimization, stacks, dynamic programming, graphs, and tree traversal." delay={0.15} />
+            <SectorCard sectorId="sector-fullstack" color="#F43F5E" badge="5 Qs · Architecture" name="Sector 5: Cloud & Full-Stack" desc="Web concurrency, caching patterns, API scalability, and system reliability." delay={0.2} />
           </div>
 
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} style={{ textAlign: 'center', marginTop: 32 }}>
@@ -847,7 +706,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── CONTACT & HYDERABAD CAMPUS ── */}
-      <section style={{ position: 'relative', zIndex: 1, padding: '24px 24px 72px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <section id="contact-support" style={{ position: 'relative', zIndex: 1, padding: '24px 24px 72px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: 32 }}>
             <span style={{

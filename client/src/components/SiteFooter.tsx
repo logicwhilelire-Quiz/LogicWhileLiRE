@@ -3,51 +3,26 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import BrandLogo from './BrandLogo';
 import {
-  IconBook,
-  IconFlash,
-  IconClock,
-  IconEye,
   IconShield,
   IconLock,
   IconFileText,
-  IconLaunch,
-  IconGraduation,
-  IconBuilding,
-  IconRadio,
-  IconDownload,
-  IconRefresh,
-  IconUsers,
-  IconStop,
-  IconProhibit,
-  IconCpu,
   IconCross,
 } from './icons/HumanIcons';
 
 type ModalType =
-  | 'docs'
-  | 'status'
-  | 'timing'
-  | 'proctoring'
-  | 'audit'
+  | 'guidelines'
   | 'privacy'
   | 'security'
   | null;
 
 export default function SiteFooter() {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [activeDocTab, setActiveDocTab] = useState<'overview' | 'student' | 'faculty' | 'api'>('overview');
-  
-  // Real-time status state
-  const [statusLoading, setStatusLoading] = useState(false);
-  const [healthData, setHealthData] = useState<any>(null);
-  const [readyData, setReadyData] = useState<any>(null);
-  const [latencyMs, setLatencyMs] = useState<number | null>(null);
 
-  // Sync with URL hash if opened directly (e.g. #docs or #status)
+  // Sync with clean policy/guideline URL hash
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '').toLowerCase();
-      if (['docs', 'status', 'timing', 'proctoring', 'audit', 'privacy', 'security'].includes(hash)) {
+      if (['guidelines', 'privacy', 'security'].includes(hash)) {
         setActiveModal(hash as ModalType);
       }
     };
@@ -72,44 +47,6 @@ export default function SiteFooter() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [activeModal]);
-
-  // Fetch real-time health and readiness probe when status modal opens
-  useEffect(() => {
-    if (activeModal === 'status') {
-      fetchLiveStatus();
-    }
-  }, [activeModal]);
-
-  async function fetchLiveStatus() {
-    setStatusLoading(true);
-    const start = performance.now();
-    try {
-      const [hRes, rRes] = await Promise.all([
-        fetch('/api/health').catch(() => null),
-        fetch('/api/ready').catch(() => null),
-      ]);
-      const elapsed = Math.round(performance.now() - start);
-      setLatencyMs(elapsed);
-
-      if (hRes && hRes.ok) {
-        setHealthData(await hRes.json());
-      } else {
-        setHealthData({ status: 'ok', service: 'LogicWhileLiRE Assessment Engine', version: '4.0.0', demo_mode: false });
-      }
-
-      if (rRes && rRes.ok) {
-        setReadyData(await rRes.json());
-      } else {
-        setReadyData({ ready: true, database: { connected: true, latency_ms: 2, mode: 'live_supabase' } });
-      }
-    } catch {
-      setLatencyMs(12);
-      setHealthData({ status: 'ok', service: 'LogicWhileLiRE Assessment Engine', version: '4.0.0' });
-      setReadyData({ ready: true, database: { connected: true, latency_ms: 2 } });
-    } finally {
-      setStatusLoading(false);
-    }
-  }
 
   function openModal(type: ModalType) {
     setActiveModal(type);
@@ -139,7 +76,7 @@ export default function SiteFooter() {
             </Link>
 
             <p className="footer-tagline" style={{ maxWidth: 360, color: 'var(--color-text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-              <strong style={{ color: '#FF7A00' }}>LogicWhile</strong> <span style={{ color: '#FFB400', fontWeight: 700 }}>› LiRE Assessment Sub-Branch</span>. Standardized Institutional Examination Engine featuring server-authoritative timing, AI proctoring, and live assessment synchronization.
+              <strong style={{ color: '#FF7A00' }}>LogicWhile</strong> <span style={{ color: '#FFB400', fontWeight: 700 }}>› Assessment Portal</span>. Synchronized institutional examinations, proctored assessments, and verified performance scorecards.
             </p>
 
             <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#FFB400' }}>
@@ -161,11 +98,11 @@ export default function SiteFooter() {
                 letterSpacing: '0.05em',
               }}
             >
-              Platform
+              Portals
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <Link to="/enter-exam" className="footer-link">
-                Candidate Gate Pass
+                Enter Exam Code
               </Link>
               <Link to="/login" className="footer-link">
                 Student Portal
@@ -182,7 +119,7 @@ export default function SiteFooter() {
             </div>
           </div>
 
-          {/* Resources Column */}
+          {/* Candidate Resources Column (Clean, zero internal docs or server spoilers) */}
           <div>
             <div
               className="footer-col-title"
@@ -196,33 +133,30 @@ export default function SiteFooter() {
                 letterSpacing: '0.05em',
               }}
             >
-              Resources
+              Student Help
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <Link to="/practice" className="footer-link">
+                5-Sector Practice Arena
+              </Link>
+              <Link to="/forgot-password" className="footer-link">
+                Forgot User ID / Password
+              </Link>
               <Link to="/about" className="footer-link">
-                About Platform
+                About LogicWhile
               </Link>
               <button
                 type="button"
-                onClick={() => openModal('docs')}
+                onClick={() => openModal('guidelines')}
                 className="footer-link text-left"
                 style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer', textAlign: 'left' }}
               >
-                Documentation
-              </button>
-              <button
-                type="button"
-                onClick={() => openModal('status')}
-                className="footer-link text-left"
-                style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                System Status
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', display: 'inline-block', boxShadow: '0 0 6px #22c55e' }} />
+                Candidate Exam Guidelines
               </button>
             </div>
           </div>
 
-          {/* Institutional Column */}
+          {/* Governance & Support Column */}
           <div>
             <div
               className="footer-col-title"
@@ -236,32 +170,27 @@ export default function SiteFooter() {
                 letterSpacing: '0.05em',
               }}
             >
-              Institutional
+              Support &amp; Trust
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <a href="/#contact-support" className="footer-link">
+                Helpdesk Contact
+              </a>
               <button
                 type="button"
-                onClick={() => openModal('timing')}
+                onClick={() => openModal('privacy')}
                 className="footer-link text-left"
                 style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer', textAlign: 'left' }}
               >
-                Server-Authoritative Timing
+                Privacy Policy
               </button>
               <button
                 type="button"
-                onClick={() => openModal('proctoring')}
+                onClick={() => openModal('security')}
                 className="footer-link text-left"
                 style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer', textAlign: 'left' }}
               >
-                AI Proctoring Architecture
-              </button>
-              <button
-                type="button"
-                onClick={() => openModal('audit')}
-                className="footer-link text-left"
-                style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer', textAlign: 'left' }}
-              >
-                Forensic Audit Ledger
+                Examination Conduct Rules
               </button>
             </div>
           </div>
@@ -270,7 +199,7 @@ export default function SiteFooter() {
         {/* Bottom Bar */}
         <div className="footer-bottom" style={{ borderColor: 'var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: '20px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: '0.86rem' }}>
-            <span>© 2026 <strong>LogicWhile</strong> · LiRE Institutional Assessment Sub-Branch. All rights reserved.</span>
+            <span>© 2026 <strong>LogicWhile</strong> · LiRE Assessment Platform. All rights reserved.</span>
           </div>
           <span style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
             <button
@@ -287,13 +216,13 @@ export default function SiteFooter() {
               className="footer-link"
               style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
             >
-              Security Terms
+              Conduct Rules
             </button>
           </span>
         </div>
       </footer>
 
-      {/* ─── INTERACTIVE MODAL OVERLAY ─── */}
+      {/* ─── CLEAN STUDENT POLICY MODAL ─── */}
       <AnimatePresence>
         {activeModal && (
           <div
@@ -307,7 +236,6 @@ export default function SiteFooter() {
               padding: '16px',
             }}
           >
-            {/* Backdrop Blur */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -321,7 +249,6 @@ export default function SiteFooter() {
               }}
             />
 
-            {/* Modal Dialog Box */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -330,11 +257,11 @@ export default function SiteFooter() {
               style={{
                 position: 'relative',
                 width: '100%',
-                maxWidth: 820,
-                maxHeight: '90vh',
+                maxWidth: 640,
+                maxHeight: '85vh',
                 background: '#0B132B',
                 border: '1px solid rgba(56, 189, 248, 0.25)',
-                boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 40px rgba(56, 189, 248, 0.15)',
+                boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.8)',
                 borderRadius: 18,
                 display: 'flex',
                 flexDirection: 'column',
@@ -343,7 +270,6 @@ export default function SiteFooter() {
                 zIndex: 1,
               }}
             >
-              {/* Modal Header */}
               <div
                 style={{
                   display: 'flex',
@@ -360,34 +286,24 @@ export default function SiteFooter() {
                       width: 36,
                       height: 36,
                       borderRadius: 10,
-                      background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(37, 99, 235, 0.2) 100%)',
-                      border: '1px solid rgba(56, 189, 248, 0.4)',
+                      background: 'rgba(56, 189, 248, 0.14)',
+                      border: '1px solid rgba(56, 189, 248, 0.35)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    {activeModal === 'docs' && <IconBook size={20} color="#38bdf8" />}
-                    {activeModal === 'status' && <IconFlash size={20} color="#eab308" />}
-                    {activeModal === 'timing' && <IconClock size={20} color="#38bdf8" />}
-                    {activeModal === 'proctoring' && <IconEye size={20} color="#a78bfa" />}
-                    {activeModal === 'audit' && <IconShield size={20} color="#34d399" />}
+                    {activeModal === 'guidelines' && <IconShield size={20} color="#FFB400" />}
                     {activeModal === 'privacy' && <IconLock size={20} color="#38bdf8" />}
                     {activeModal === 'security' && <IconFileText size={20} color="#f43f5e" />}
                   </div>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#f8fafc' }}>
-                      {activeModal === 'docs' && 'Platform Documentation & Specification'}
-                      {activeModal === 'status' && 'Live Platform Telemetry & System Status'}
-                      {activeModal === 'timing' && 'Server-Authoritative Timing Architecture'}
-                      {activeModal === 'proctoring' && 'Autonomous AI Proctoring Architecture'}
-                      {activeModal === 'audit' && 'Forensic Audit Ledger & Verification'}
-                      {activeModal === 'privacy' && 'Institutional Candidate Privacy Policy'}
-                      {activeModal === 'security' && 'Platform Security Terms & Conduct Policy'}
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#f8fafc' }}>
+                      {activeModal === 'guidelines' && 'Candidate Examination Guidelines'}
+                      {activeModal === 'privacy' && 'Candidate Privacy Policy'}
+                      {activeModal === 'security' && 'Examination Conduct Rules'}
                     </h3>
-                    <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-                      LogicWhileLiRE Autonomous Assessment Engine • v4.0.0
-                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>LogicWhile LiRE Institutional Assessment</div>
                   </div>
                 </div>
 
@@ -406,373 +322,40 @@ export default function SiteFooter() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '1rem',
-                    transition: 'all 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
-                    e.currentTarget.style.color = '#ef4444';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-                    e.currentTarget.style.color = '#94a3b8';
                   }}
                 >
                   <IconCross size={16} color="#94A3B8" />
                 </button>
               </div>
 
-              {/* Modal Body Content (Scrollable) */}
-              <div
-                style={{
-                  padding: '24px',
-                  overflowY: 'auto',
-                  flex: 1,
-                  lineHeight: 1.6,
-                  fontSize: '0.92rem',
-                  color: '#cbd5e1',
-                }}
-              >
-                {/* ─── 1. DOCUMENTATION ─── */}
-                {activeModal === 'docs' && (
-                  <div>
-                    {/* Doc Tabs */}
-                    <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: 14, marginBottom: 20 }}>
-                      {[
-                        { id: 'overview', label: 'Overview', icon: <IconLaunch size={14} /> },
-                        { id: 'student', label: 'Student Guide', icon: <IconGraduation size={14} /> },
-                        { id: 'faculty', label: 'Faculty & Admin', icon: <IconBuilding size={14} /> },
-                        { id: 'api', label: 'API Protocols', icon: <IconRadio size={14} /> },
-                      ].map((tab) => (
-                        <button
-                          key={tab.id}
-                          type="button"
-                          onClick={() => setActiveDocTab(tab.id as any)}
-                          style={{
-                            padding: '6px 14px',
-                            borderRadius: 6,
-                            fontSize: '0.82rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            border: activeDocTab === tab.id ? '1px solid #38BDF8' : '1px solid transparent',
-                            background: activeDocTab === tab.id ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.04)',
-                            color: activeDocTab === tab.id ? '#38BDF8' : '#94a3b8',
-                          }}
-                        >
-                          {tab.icon}
-                          {tab.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    {activeDocTab === 'overview' && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        <p style={{ margin: 0 }}>
-                          <strong>LogicWhileLiRE</strong> (<em>Live Rank Engine</em>) is an enterprise-grade autonomous examination platform engineered for collegiate hackathons, semester evaluations, and large-scale recruitment drives.
-                        </p>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                          <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 10, padding: 14 }}>
-                            <h4 style={{ margin: '0 0 6px', color: '#38BDF8', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <IconClock size={16} color="#38BDF8" /> Server-Authoritative Clock
-                            </h4>
-                            <p style={{ margin: 0, fontSize: '0.84rem', color: '#94a3b8' }}>Eliminates local system clock tampering. Time remaining is verified against high-precision backend time stamps on every submission.</p>
-                          </div>
-                          <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 10, padding: 14 }}>
-                            <h4 style={{ margin: '0 0 6px', color: '#34D399', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <IconLock size={16} color="#34D399" /> Single-Session Invariant
-                            </h4>
-                            <p style={{ margin: 0, fontSize: '0.84rem', color: '#94a3b8' }}>Cryptographic session tokens evict concurrent duplicate logins instantly, ensuring one test-taker per seat.</p>
-                          </div>
-                          <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 10, padding: 14 }}>
-                            <h4 style={{ margin: '0 0 6px', color: '#FBBF24', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <IconCpu size={16} color="#FBBF24" /> 5 Technical Sectors
-                            </h4>
-                            <p style={{ margin: 0, fontSize: '0.84rem', color: '#94a3b8' }}>Multi-dimensional skill taxonomy: Quant, Logic, Core CS, DSA, and Full-Stack Distributed Cloud Architecture.</p>
-                          </div>
-                          <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 10, padding: 14 }}>
-                            <h4 style={{ margin: '0 0 6px', color: '#F43F5E', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <IconDownload size={16} color="#F43F5E" /> Automated Cloud Backups
-                            </h4>
-                            <p style={{ margin: 0, fontSize: '0.84rem', color: '#94a3b8' }}>Every night at 02:00 AM, hierarchical snapshots sync to Google Drive in CSV, Excel, and institutional PDF formats.</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeDocTab === 'student' && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        <h4 style={{ margin: 0, color: '#f8fafc' }}>Candidate Workflow &amp; Examination Protocol</h4>
-                        <ol style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          <li><strong>Registration &amp; Verification:</strong> Candidates self-register via enabled colleges with hall ticket, university email, and a strong password verified via 6-digit email OTP.</li>
-                          <li><strong>Exam Code Entry:</strong> Join via unique passcodes formatted as <code>GR-&#123;COLLEGE&#125;-&#123;6CHAR&#125;</code> (e.g. <code>GR-TECH-8X9P2Q</code>) or active exam code.</li>
-                          <li><strong>Hardware &amp; AI Check:</strong> Camera, microphone, and fullscreen mode are verified prior to entering the live waiting lobby.</li>
-                          <li><strong>Continuous Auto-Save:</strong> Every answer change is instantly synchronized and saved into the persistent database.</li>
-                          <li><strong>Instant Scorecard:</strong> Upon automated or candidate submission, verified scorecards with sector-wise accuracy breakdown and tie-break rankings are published.</li>
-                        </ol>
-                      </div>
-                    )}
-
-                    {activeDocTab === 'faculty' && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        <h4 style={{ margin: 0, color: '#f8fafc' }}>Institutional Control Center &amp; RBAC Boundaries</h4>
-                        <p style={{ margin: 0 }}>
-                          Super Admin enforces strict server-side Role-Based Access Control (RBAC):
-                        </p>
-                        <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          <li><strong>Super Admin:</strong> Full CRUD across colleges, academic years, cohorts, sections, batches, curriculum sectors, question papers, and staff accounts.</li>
-                          <li><strong>Permission Matrix:</strong> Granular toggles determine what faculty members may execute: Question creation, Excel batch importing, results viewing, data exporting, or exam management.</li>
-                          <li><strong>Inspector Role:</strong> Directly routed to the waiting queue and live proctoring leaderboard to start/stop assessments for their assigned college without access to administrative settings.</li>
-                        </ul>
-                      </div>
-                    )}
-
-                    {activeDocTab === 'api' && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        <h4 style={{ margin: 0, color: '#f8fafc' }}>REST API &amp; WebSocket Endpoints</h4>
-                        <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', background: 'rgba(0,0,0,0.5)', padding: 12, borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          <div><span style={{ color: '#22c55e' }}>GET</span>  /api/health - Service health &amp; environment probe</div>
-                          <div><span style={{ color: '#22c55e' }}>GET</span>  /api/ready - Database live readiness check</div>
-                          <div><span style={{ color: '#38bdf8' }}>POST</span> /api/auth/register - Candidate self-registration</div>
-                          <div><span style={{ color: '#38bdf8' }}>POST</span> /api/exam-code/entry - Hall ticket verification &amp; token issue</div>
-                          <div><span style={{ color: '#eab308' }}>PATCH</span>/api/admin/staff/:id/permissions - Live RBAC matrix update</div>
-                          <div><span style={{ color: '#f43f5e' }}>POST</span> /api/admin/backup/drive-now - Google Drive backup dispatch</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+              <div style={{ padding: '24px', overflowY: 'auto', flex: 1, lineHeight: 1.65, fontSize: '0.92rem', color: '#cbd5e1' }}>
+                {activeModal === 'guidelines' && (
+                  <ol style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <li><strong>Sign In Early:</strong> Enter your Hall Ticket and Exam Code 5 minutes before scheduled start time.</li>
+                    <li><strong>Waiting Lobby:</strong> Wait in the examination lobby until your invigilator starts the exam. Your paper opens automatically.</li>
+                    <li><strong>Fullscreen Required:</strong> Keep the exam window in fullscreen mode without switching tabs or minimizing your browser.</li>
+                    <li><strong>Auto-Saved Answers:</strong> All selected answers are saved continuously so temporary Wi-Fi drops do not lose your progress.</li>
+                  </ol>
                 )}
 
-                {/* ─── 2. SYSTEM STATUS ─── */}
-                {activeModal === 'status' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: 12, padding: '14px 18px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 12px #22c55e' }} />
-                        <div>
-                          <div style={{ fontWeight: 800, color: '#4ade80', fontSize: '0.98rem' }}>ALL PLATFORM SYSTEMS NOMINAL</div>
-                          <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>High-concurrency assessment cluster operating with zero degraded services</div>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={fetchLiveStatus}
-                        disabled={statusLoading}
-                        style={{
-                          padding: '6px 14px',
-                          borderRadius: 8,
-                          background: 'rgba(255,255,255,0.08)',
-                          border: '1px solid rgba(255,255,255,0.15)',
-                          color: '#f8fafc',
-                          fontSize: '0.78rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                        }}
-                      >
-                        <IconRefresh size={14} color="#f8fafc" />
-                        {statusLoading ? 'Pinging...' : 'Refresh Status'}
-                      </button>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-                      <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 14 }}>
-                        <div style={{ fontSize: '0.76rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>REST API Cluster</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc', margin: '4px 0' }}>Online (200 OK)</div>
-                        <div style={{ fontSize: '0.78rem', color: '#4ade80' }}>Ping Latency: {latencyMs !== null ? `${latencyMs}ms` : '12ms'}</div>
-                      </div>
-
-                      <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 14 }}>
-                        <div style={{ fontSize: '0.76rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>PostgreSQL / Supabase</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc', margin: '4px 0' }}>Connected (Ready)</div>
-                        <div style={{ fontSize: '0.78rem', color: '#4ade80' }}>Mode: {readyData?.database?.mode || 'live_supabase'}</div>
-                      </div>
-
-                      <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 14 }}>
-                        <div style={{ fontSize: '0.76rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Socket.io Telemetry</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc', margin: '4px 0' }}>Synchronized</div>
-                        <div style={{ fontSize: '0.78rem', color: '#4ade80' }}>Throttled Batch: 1/sec max</div>
-                      </div>
-
-                      <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 14 }}>
-                        <div style={{ fontSize: '0.76rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Google Drive Backups</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc', margin: '4px 0' }}>Scheduled</div>
-                        <div style={{ fontSize: '0.78rem', color: '#38bdf8' }}>Next run: 02:00 AM UTC</div>
-                      </div>
-                    </div>
-
-                    <div style={{ fontSize: '0.8rem', color: '#64748b', textAlign: 'center' }}>
-                      Server Service: {healthData?.service || 'LogicWhileLiRE'} • Version: {healthData?.version || '4.0.0'} • Last checked: {new Date().toLocaleTimeString()}
-                    </div>
-                  </div>
-                )}
-
-                {/* ─── 3. SERVER-AUTHORITATIVE TIMING ─── */}
-                {activeModal === 'timing' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <div style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: 12, padding: 16 }}>
-                      <h4 style={{ margin: '0 0 6px', color: '#38bdf8', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <IconClock size={18} color="#38bdf8" /> The Anti-Tamper Timekeeper
-                      </h4>
-                      <p style={{ margin: 0, fontSize: '0.88rem' }}>
-                        In distributed academic assessments, local workstation clocks cannot be trusted. LogicWhileLiRE implements a <strong>server-authoritative time-lock protocol</strong> that enforces true chronological fairness.
-                      </p>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      <div style={{ padding: 14, borderRadius: 10, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <strong style={{ color: '#f8fafc' }}>1. Millisecond Master Clock:</strong>
-                        <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
-                          Each assessment attempt stores absolute UTC <code>start_time</code> and <code>end_time</code> in the database. Client tick timers calculate remaining seconds by reconciling with the server's time headers on every WebSocket batch.
-                        </p>
-                      </div>
-
-                      <div style={{ padding: 14, borderRadius: 10, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <strong style={{ color: '#f8fafc' }}>2. Client Clock Fraud Immunity:</strong>
-                        <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
-                          Altering your local Windows or macOS system clock, freezing browser execution threads, or pausing background workers has <strong>zero effect</strong> on examination duration. The backend enforces automated termination the instant server time expires.
-                        </p>
-                      </div>
-
-                      <div style={{ padding: 14, borderRadius: 10, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <strong style={{ color: '#f8fafc' }}>3. Resilient Network Reconnect:</strong>
-                        <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
-                          If a candidate's internet disconnects momentarily, upon reloading their attempt, the system restores the exact remaining time from the server ledger without granting unfair extensions.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ─── 4. AI PROCTORING ARCHITECTURE ─── */}
-                {activeModal === 'proctoring' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <div style={{ background: 'rgba(139, 92, 246, 0.08)', border: '1px solid rgba(139, 92, 246, 0.25)', borderRadius: 12, padding: 16 }}>
-                      <h4 style={{ margin: '0 0 6px', color: '#a78bfa', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <IconEye size={18} color="#a78bfa" /> Autonomous Multi-Modal Proctoring Grid
-                      </h4>
-                      <p style={{ margin: 0, fontSize: '0.88rem' }}>
-                        LogicWhileLiRE uses client-side vision AI models running directly in WebGL tensors to safeguard integrity while respecting candidate privacy.
-                      </p>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                      <div style={{ padding: 14, borderRadius: 10, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <h5 style={{ margin: '0 0 4px', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <IconUsers size={16} color="#38bdf8" /> Multi-Face &amp; Absence Detection
-                        </h5>
-                        <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8' }}>Tracks continuous presence. Alerts if the candidate vacates the frame or if secondary unauthorized persons appear.</p>
-                      </div>
-
-                      <div style={{ padding: 14, borderRadius: 10, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <h5 style={{ margin: '0 0 4px', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <IconStop size={16} color="#f59e0b" /> Tab-Lock &amp; Window Blur Guard
-                        </h5>
-                        <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8' }}>Intercepts Alt+Tab, window minimization, or switching browser tabs. Logs strike warnings and locks the test upon 3 strikes.</p>
-                      </div>
-
-                      <div style={{ padding: 14, borderRadius: 10, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <h5 style={{ margin: '0 0 4px', color: '#ef4444', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <IconProhibit size={16} color="#ef4444" /> DevTools &amp; Copy-Paste Lockout
-                        </h5>
-                        <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8' }}>Disables right-click context menus, developer inspect tools, and clipboard copy-pasting to prevent external AI injection.</p>
-                      </div>
-
-                      <div style={{ padding: 14, borderRadius: 10, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <h5 style={{ margin: '0 0 4px', color: '#10b981', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <IconFlash size={16} color="#10b981" /> Client-Side WebGL Inference
-                        </h5>
-                        <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8' }}>Zero continuous video streaming overhead: vision models execute on-device, preserving bandwidth on low-end campus WiFi.</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ─── 5. FORENSIC AUDIT LEDGER ─── */}
-                {activeModal === 'audit' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 12, padding: 16 }}>
-                      <h4 style={{ margin: '0 0 6px', color: '#34d399', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <IconShield size={18} color="#34d399" /> Immutable Forensic Ledger
-                      </h4>
-                      <p style={{ margin: 0, fontSize: '0.88rem' }}>
-                        Every high-stakes examination requires non-repudiable auditability. LogicWhileLiRE maintains a verifiable chronological ledger of all platform actions.
-                      </p>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.86rem' }}>
-                      <div style={{ padding: 12, borderRadius: 8, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <strong>• Granular Actor Auditing:</strong> Every login, failed attempt, question modification, score override, and export logs <code>user_id</code>, <code>role</code>, <code>ip</code>, <code>user_agent</code>, and UTC timestamp.
-                      </div>
-                      <div style={{ padding: 12, borderRadius: 8, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <strong>• Answer State History:</strong> Every option change is stored with millisecond timing, creating an undisputable forensic timeline of how questions were tackled.
-                      </div>
-                      <div style={{ padding: 12, borderRadius: 8, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <strong>• Cryptographic Scorecard Auditing:</strong> Institutional assessment scorecards feature SHA-256 verification hashes auditable through authorized administrative controls.
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ─── 6. PRIVACY POLICY ─── */}
                 {activeModal === 'privacy' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    <h4 style={{ margin: 0, color: '#f8fafc' }}>Institutional Candidate Privacy Charter</h4>
-                    <p style={{ margin: 0 }}>
-                      LogicWhileLiRE treats student and candidate data with uncompromising care and cryptographic safeguards.
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.86rem' }}>
-                      <div>
-                        <strong style={{ color: '#38bdf8' }}>1. On-Device Camera Processing:</strong> Camera frames used for AI face monitoring are processed in transient browser memory (WebGL). No raw continuous video files are uploaded or sold to advertising networks.
-                      </div>
-                      <div>
-                        <strong style={{ color: '#38bdf8' }}>2. Data Collection Boundaries:</strong> We collect only candidate name, university roll number, institutional affiliation, and submitted answers required to grade examinations accurately.
-                      </div>
-                      <div>
-                        <strong style={{ color: '#38bdf8' }}>3. 30-Day Automated Retention Pruning:</strong> Temporary proctoring alerts and audit snapshots are automatically purged according to institutional retention policies (default: 30 days).
-                      </div>
-                      <div>
-                        <strong style={{ color: '#38bdf8' }}>4. FERPA &amp; GDPR Alignment:</strong> Candidates and institutions retain full data portability with one-click export into standard CSV and encrypted PDF packages.
-                      </div>
-                    </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <p style={{ margin: 0 }}>LogicWhile LiRE protects candidate data and handles examination records strictly for academic evaluation.</p>
+                    <div><strong style={{ color: '#38bdf8' }}>1. Camera Verification:</strong> Webcam checks run locally in your browser during proctored exams.</div>
+                    <div><strong style={{ color: '#38bdf8' }}>2. Academic Records:</strong> Only your institutional identifier, name, and assessment responses are stored for grading and scorecards.</div>
                   </div>
                 )}
 
-                {/* ─── 7. SECURITY TERMS ─── */}
                 {activeModal === 'security' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    <h4 style={{ margin: 0, color: '#f8fafc' }}>Code of Examination Conduct &amp; Security Terms</h4>
-                    <p style={{ margin: 0 }}>
-                      By participating in assessments on LogicWhileLiRE, candidates and institutions agree to the following enforceable terms:
-                    </p>
-                    <ol style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8, fontSize: '0.86rem' }}>
-                      <li><strong>Single Seat Authorization:</strong> Candidates may only access examinations under their own verified hall ticket and email credentials. Proxy taking is punishable by immediate disqualification.</li>
-                      <li><strong>Prohibited Aids:</strong> Secondary screens, virtual machines, unauthorized browser extensions, remote desktop software, and generative AI aids are strictly forbidden.</li>
-                      <li><strong>Violation Consequences:</strong> Suspected cheating events are recorded in the institutional audit ledger. The examination proctor reserves the right to terminate candidates with zero credit.</li>
-                      <li><strong>Platform Integrity:</strong> Any attempt to reverse engineer API endpoints, forge session tokens, or flood platform infrastructure is logged and reported to collegiate authorities.</li>
-                    </ol>
-                  </div>
+                  <ol style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <li>Candidates must attempt assessments strictly under their own Hall Ticket and credentials.</li>
+                    <li>Secondary monitors, external messaging tools, and tab switching during exams are restricted.</li>
+                    <li>Repeated proctoring violations may lock and auto-submit an ongoing examination.</li>
+                  </ol>
                 )}
               </div>
 
-              {/* Modal Footer */}
-              <div
-                style={{
-                  padding: '14px 24px',
-                  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                  background: 'rgba(15, 23, 42, 0.8)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                  Press <kbd style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: 4, color: '#94a3b8' }}>ESC</kbd> to exit
-                </div>
+              <div style={{ padding: '14px 24px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', background: 'rgba(15, 23, 42, 0.8)', display: 'flex', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
                   onClick={closeModal}
@@ -785,7 +368,6 @@ export default function SiteFooter() {
                     fontWeight: 700,
                     fontSize: '0.85rem',
                     cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
                   }}
                 >
                   Close &amp; Return

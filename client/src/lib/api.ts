@@ -714,6 +714,57 @@ export const dispatchAdminEmail = (data: {
   metadata?: Record<string, any>;
 }) => api.post<{ success: boolean; message: string; result: any }>('/api/admin/mail-logs/dispatch', data);
 
+export interface MailDraftRecord {
+  id: string;
+  title: string;
+  templateKey: string;
+  to: string;
+  cc?: string;
+  subject: string;
+  html?: string;
+  variables: Record<string, any>;
+  status: 'draft' | 'dispatched';
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  lastSentAt?: string | null;
+}
+
+export interface RecentMailRecipient {
+  email: string;
+  name: string;
+  role: 'student' | 'faculty' | 'inspector' | 'admin' | 'contact';
+  hallTicket?: string;
+  section?: string;
+  recentTestsSummary: string;
+  completedTestsCount: number;
+  lastTemplate?: string;
+  lastActivityAt?: string;
+}
+
+export const listRecentMailRecipients = (limit = 40) =>
+  api.get<{ success: boolean; recipients: RecentMailRecipient[] }>('/api/admin/mail-recipients/recent', { params: { limit } });
+
+export const listMailDrafts = () =>
+  api.get<{ success: boolean; drafts: MailDraftRecord[] }>('/api/admin/mail-drafts');
+
+export const saveMailDraft = (data: {
+  id?: string;
+  title: string;
+  templateKey: string;
+  to: string;
+  cc?: string;
+  subject?: string;
+  html?: string;
+  variables?: Record<string, any>;
+}) => api.post<{ success: boolean; draft: MailDraftRecord }>('/api/admin/mail-drafts', data);
+
+export const sendMailDraft = (id: string) =>
+  api.post<{ success: boolean; message: string; draft: MailDraftRecord; result: any }>(`/api/admin/mail-drafts/${id}/send`);
+
+export const deleteMailDraft = (id: string) =>
+  api.delete<{ success: boolean; message: string }>(`/api/admin/mail-drafts/${id}`);
+
 export const getMailStats = () =>
   api.get<{
     success: boolean;

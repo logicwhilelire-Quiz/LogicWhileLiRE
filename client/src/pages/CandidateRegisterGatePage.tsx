@@ -526,7 +526,7 @@ export default function CandidateRegisterGatePage() {
                   Candidate Sign In &rarr;
                 </Link>
                 <Link
-                  to="/admin/login"
+                  to="/enter-exam"
                   style={{
                     background: '#FFFFFF',
                     border: '1.5px solid #CBD5E1',
@@ -538,7 +538,7 @@ export default function CandidateRegisterGatePage() {
                     fontSize: '0.92rem',
                   }}
                 >
-                  Admin Console &rarr;
+                  Enter Exam Code &rarr;
                 </Link>
               </div>
             </div>

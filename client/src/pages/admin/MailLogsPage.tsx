@@ -25,11 +25,18 @@ import {
   listMailTemplates,
   previewMailTemplate,
   dispatchAdminEmail,
+  listRecentMailRecipients,
+  listMailDrafts,
+  saveMailDraft,
+  sendMailDraft,
+  deleteMailDraft,
   getMailStats,
   listColleges,
   type MailLog,
   type MailForwarderRule,
   type MailTemplateDefinition,
+  type MailDraftRecord,
+  type RecentMailRecipient,
   extractErrorMessage,
 } from '../../lib/api';
 import axios from 'axios';
@@ -131,6 +138,16 @@ export default function MailLogsPage() {
   const [templateSearch, setTemplateSearch] = useState('');
   const [composeVariables, setComposeVariables] = useState<Record<string, string>>({});
   const [loadingComposePreview, setLoadingComposePreview] = useState(false);
+
+  // Recent Mail IDs & Saved Drafts Studio State
+  const [drafts, setDrafts] = useState<MailDraftRecord[]>([]);
+  const [recentRecipients, setRecentRecipients] = useState<RecentMailRecipient[]>([]);
+  const [showDraftsPanel, setShowDraftsPanel] = useState(true);
+  const [recentSearch, setRecentSearch] = useState('');
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [draftTitle, setDraftTitle] = useState('');
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [sendingDraftId, setSendingDraftId] = useState<string | null>(null);
   const [templatePreviewModal, setTemplatePreviewModal] = useState<{
     tpl: MailTemplateDefinition;
     vars: Record<string, string>;
@@ -143,6 +160,19 @@ export default function MailLogsPage() {
     ? templates.map((t) => ({ value: t.key, label: `${t.key} — ${t.name}` }))
     : FALLBACK_TEMPLATE_OPTIONS;
 
+  const fetchDraftsAndRecent = useCallback(() => {
+    listMailDrafts()
+      .then((res) => {
+        if (res.data?.drafts) setDrafts(res.data.drafts);
+      })
+      .catch(() => {});
+    listRecentMailRecipients(40)
+      .then((res) => {
+        if (res.data?.recipients) setRecentRecipients(res.data.recipients);
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     listColleges()
       .then((res) => setColleges(res.data?.colleges || []))
@@ -154,7 +184,144 @@ export default function MailLogsPage() {
         }
       })
       .catch(() => {});
-  }, []);
+    fetchDraftsAndRecent();
+  }, [fetchDraftsAndRecent]);
+
+  const handleOpenQuickDraft = async (
+    draftKey: 'forgot_password_draft' | 'platform_update_draft' | 'test_completion_draft',
+    recipient?: RecentMailRecipient
+  ) => {
+    const vars: Record<string, string> = {};
+    if (draftKey === 'forgot_password_draft') {
+      vars.name = recipient?.name || 'Candidate';
+      vars.email = recipient?.email || 'student@college.edu';
+      vars.hallTicket = recipient?.hallTicket || '24HU1A05F9';
+      vars.portalName = recipient?.role === 'faculty' ? 'Faculty Portal' : recipient?.role === 'inspector' ? 'Inspector Console' : 'Student Portal';
+    } else if (draftKey === 'platform_update_draft') {
+      vars.name = recipient?.name || 'All Candidates';
+      vars.updateTitle = 'Portal & Scheduled Examination Updates';
+    } else if (draftKey === 'test_completion_draft') {
+      vars.name = recipient?.name || 'Candidate';
+      vars.hallTicket = recipient?.hallTicket || '24HU1A05F9';
+      vars.testsSummary = recipient?.recentTestsSummary || 'Assessment Completed: Recorded cleanly in scorecard portal.';
+    }
+
+    setEditingDraftId(null);
+    setDraftTitle(
+      recipient
+        ? `${draftKey.replace('_draft', '').replace('_', ' ')} — ${recipient.name}`
+        : draftKey.replace(/_/g, ' ')
+    );
+    if (recipient?.email) {
+      setComposeTo(recipient.email);
+    }
+    setComposeTemplate(draftKey);
+    setComposeVariables(vars);
+    setIsComposeOpen(true);
+    setLoadingComposePreview(true);
+    try {
+      const res = await previewMailTemplate({ templateKey: draftKey, variables: vars });
+      setComposeSubject(res.data.subject);
+      setComposeBody(res.data.html);
+    } catch {
+    } finally {
+      setLoadingComposePreview(false);
+    }
+  };
+
+  const handleAppendRecentRecipient = (email: string) => {
+    setComposeTo((prev) => {
+      const list = prev
+        .split(/[,;\n]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (!list.includes(email)) list.push(email);
+      return list.join(', ');
+    });
+  };
+
+  const handleSaveAsDraft = async () => {
+    if (!composeSubject.trim()) {
+      showToast('Enter a subject line before saving this draft.', 'error');
+      return;
+    }
+    setSavingDraft(true);
+    try {
+      const res = await saveMailDraft({
+        id: editingDraftId || undefined,
+        title: draftTitle.trim() || composeSubject.trim().slice(0, 60),
+        templateKey: composeTemplate,
+        to: composeTo.trim(),
+        cc: composeCc.trim() || undefined,
+        subject: composeSubject.trim(),
+        html: composeBody.trim(),
+        variables: composeVariables,
+      });
+      if (res.data?.success) {
+        showToast('Draft mail saved cleanly and ready for dispatch.', 'success');
+        setEditingDraftId(null);
+        setDraftTitle('');
+        setIsComposeOpen(false);
+        fetchDraftsAndRecent();
+      }
+    } catch (err) {
+      showToast(extractErrorMessage(err, 'Failed to save draft mail'), 'error');
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  const handleLoadSavedDraft = (draft: MailDraftRecord) => {
+    setEditingDraftId(draft.id);
+    setDraftTitle(draft.title);
+    setComposeTemplate(draft.templateKey || 'custom_broadcast');
+    setComposeTo(draft.to || '');
+    setComposeCc(draft.cc || '');
+    setComposeSubject(draft.subject || '');
+    setComposeBody(draft.html || '');
+    const strVars: Record<string, string> = {};
+    for (const [k, v] of Object.entries(draft.variables || {})) {
+      strVars[k] = String(v ?? '');
+    }
+    setComposeVariables(strVars);
+    setIsComposeOpen(true);
+  };
+
+  const handleSendSavedDraftNow = async (draft: MailDraftRecord) => {
+    if (!draft.to || !draft.to.trim()) {
+      handleLoadSavedDraft(draft);
+      showToast('Add recipient email(s) in the Composer and click Dispatch.', 'error');
+      return;
+    }
+    setSendingDraftId(draft.id);
+    try {
+      const res = await sendMailDraft(draft.id);
+      if (res.data?.success) {
+        setDispatchPulse(true);
+        setTimeout(() => setDispatchPulse(false), 1800);
+        showToast(`Draft "${draft.title}" dispatched to ${draft.to}.`, 'success');
+        fetchDraftsAndRecent();
+        fetchLogs();
+        fetchForwardersAndRelay();
+      } else {
+        showToast(res.data?.message || 'Failed to dispatch draft.', 'error');
+      }
+    } catch (err) {
+      showToast(extractErrorMessage(err, 'Failed to dispatch draft'), 'error');
+    } finally {
+      setSendingDraftId(null);
+    }
+  };
+
+  const handleDeleteSavedDraft = async (id: string) => {
+    try {
+      await deleteMailDraft(id);
+      showToast('Draft deleted.', 'success');
+      fetchDraftsAndRecent();
+    } catch (err) {
+      showToast(extractErrorMessage(err, 'Failed to delete draft'), 'error');
+    }
+  };
 
   const buildDefaultVars = (tpl: MailTemplateDefinition): Record<string, string> => {
     const out: Record<string, string> = {};
@@ -555,6 +722,16 @@ export default function MailLogsPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <button
                   type="button"
+                  onClick={() => setShowDraftsPanel((v) => !v)}
+                  className="btn btn-sm btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, borderColor: showDraftsPanel ? 'rgba(16,185,129,0.45)' : undefined }}
+                >
+                  <IconMail size={14} color="#34D399" />
+                  <span>{showDraftsPanel ? 'Hide Drafts' : `Draft Mails (${drafts.length})`}</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setShowTemplatesCatalog((v) => !v)}
                   className="btn btn-sm btn-secondary"
                   style={{ display: 'flex', alignItems: 'center', gap: 6, borderColor: showTemplatesCatalog ? 'rgba(56,189,248,0.45)' : undefined }}
@@ -939,6 +1116,240 @@ export default function MailLogsPage() {
                             </div>
                           </motion.div>
                         ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Recent Mail IDs & Draft Mails Studio (Forgot Password, Updates & Completed Tests Drafts) */}
+            <AnimatePresence>
+              {showDraftsPanel && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.25 }}
+                  style={{ overflow: 'hidden', marginBottom: 22 }}
+                >
+                  <div className="card" style={{ padding: '18px 20px', border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(13, 24, 53, 0.92)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#F8FAFC', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <IconMail size={16} color="#34D399" />
+                          <span>Draft Mails &amp; Recent Mail IDs Directory ({drafts.length} Saved • {recentRecipients.length} Recent IDs)</span>
+                        </h3>
+                        <p style={{ margin: '3px 0 0', fontSize: '0.78rem', color: '#94A3B8' }}>
+                          Pick recent student/staff mail IDs, auto-generate drafts for Forgot Password, Portal Updates, or Completed Tests Summary, save drafts, and dispatch using the unified pipeline.
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenQuickDraft('forgot_password_draft')}
+                          className="btn btn-xs btn-secondary"
+                          style={{ color: '#FBBF24', borderColor: 'rgba(255,180,0,0.35)' }}
+                        >
+                          + Forgot Password Draft
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenQuickDraft('platform_update_draft')}
+                          className="btn btn-xs btn-secondary"
+                          style={{ color: '#38BDF8', borderColor: 'rgba(56,189,248,0.35)' }}
+                        >
+                          + Portal Updates Draft
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenQuickDraft('test_completion_draft')}
+                          className="btn btn-xs btn-secondary"
+                          style={{ color: '#34D399', borderColor: 'rgba(52,211,153,0.35)' }}
+                        >
+                          + Completed Tests Draft
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
+                      {/* Column 1: Recent Mail IDs with 1-Click Tailored Drafts */}
+                      <div style={{ padding: '14px', borderRadius: 12, background: 'rgba(7,13,30,0.75)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase' }}>
+                            Recent Mail IDs &amp; Activity
+                          </span>
+                          <input
+                            type="text"
+                            className="form-input form-input-sm"
+                            placeholder="Filter recent emails / IDs..."
+                            value={recentSearch}
+                            onChange={(e) => setRecentSearch(e.target.value)}
+                            style={{ maxWidth: 190 }}
+                          />
+                        </div>
+
+                        <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {recentRecipients
+                            .filter((r) => {
+                              if (!recentSearch.trim()) return true;
+                              const q = recentSearch.toLowerCase();
+                              return (
+                                r.email.toLowerCase().includes(q) ||
+                                r.name.toLowerCase().includes(q) ||
+                                (r.hallTicket || '').toLowerCase().includes(q)
+                              );
+                            })
+                            .slice(0, 16)
+                            .map((rec) => (
+                              <div
+                                key={rec.email}
+                                style={{
+                                  padding: '9px 11px',
+                                  borderRadius: 9,
+                                  background: 'rgba(255,255,255,0.03)',
+                                  border: '1px solid rgba(255,255,255,0.07)',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 6,
+                                }}
+                              >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                  <div>
+                                    <span style={{ fontWeight: 700, fontSize: '0.82rem', color: '#F8FAFC' }}>{rec.name}</span>
+                                    {rec.hallTicket && (
+                                      <span style={{ marginLeft: 6, fontFamily: 'monospace', fontSize: '0.72rem', color: '#FBBF24' }}>{rec.hallTicket}</span>
+                                    )}
+                                    <div style={{ fontFamily: 'monospace', fontSize: '0.76rem', color: '#38BDF8' }}>{rec.email}</div>
+                                  </div>
+                                  <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'rgba(56,189,248,0.12)', color: '#94A3B8', textTransform: 'uppercase' }}>
+                                    {rec.role} {rec.completedTestsCount > 0 ? `• ${rec.completedTestsCount} tests` : ''}
+                                  </span>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenQuickDraft('forgot_password_draft', rec)}
+                                    className="btn btn-xs btn-secondary"
+                                    style={{ fontSize: '0.68rem', color: '#FBBF24' }}
+                                  >
+                                    Forgot Password Draft
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenQuickDraft('platform_update_draft', rec)}
+                                    className="btn btn-xs btn-secondary"
+                                    style={{ fontSize: '0.68rem', color: '#38BDF8' }}
+                                  >
+                                    Updates Draft
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenQuickDraft('test_completion_draft', rec)}
+                                    className="btn btn-xs btn-secondary"
+                                    style={{ fontSize: '0.68rem', color: '#34D399' }}
+                                  >
+                                    Tests Done Draft
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          {recentRecipients.length === 0 && (
+                            <div style={{ padding: 18, textAlign: 'center', fontSize: '0.78rem', color: '#94A3B8' }}>
+                              Recent student, staff, and dispatched mail IDs will populate here automatically.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Column 2: Saved Draft Mails Queue */}
+                      <div style={{ padding: '14px', borderRadius: 12, background: 'rgba(7,13,30,0.75)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#34D399', textTransform: 'uppercase' }}>
+                            Saved Draft Mails ({drafts.length})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingDraftId(null);
+                              setDraftTitle('');
+                              setIsComposeOpen(true);
+                            }}
+                            className="btn btn-xs btn-primary"
+                            style={{ background: '#059669', fontWeight: 700 }}
+                          >
+                            + New Draft
+                          </button>
+                        </div>
+
+                        <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {drafts.length === 0 ? (
+                            <div style={{ padding: 20, textAlign: 'center', fontSize: '0.78rem', color: '#94A3B8' }}>
+                              No saved drafts yet. Pick a recent mail ID or click <strong>Save as Draft</strong> in the Composer.
+                            </div>
+                          ) : (
+                            drafts.map((d) => (
+                              <div
+                                key={d.id}
+                                style={{
+                                  padding: '10px 12px',
+                                  borderRadius: 9,
+                                  background: 'rgba(255,255,255,0.03)',
+                                  border: '1px solid rgba(52,211,153,0.22)',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  flexWrap: 'wrap',
+                                  gap: 8,
+                                }}
+                              >
+                                <div style={{ minWidth: 160, flex: 1 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                    <span style={{ fontWeight: 800, fontSize: '0.82rem', color: '#F8FAFC' }}>{d.title}</span>
+                                    <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '1px 6px', borderRadius: 5, ...getTemplateBadgeStyle(d.templateKey) }}>
+                                      {d.templateKey}
+                                    </span>
+                                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: d.status === 'dispatched' ? '#34D399' : '#FBBF24' }}>
+                                      {d.status === 'dispatched' ? 'Sent' : 'Draft'}
+                                    </span>
+                                  </div>
+                                  <div style={{ fontSize: '0.74rem', fontFamily: 'monospace', color: '#38BDF8', marginTop: 2 }}>
+                                    To: {d.to || 'No recipient yet'}
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleLoadSavedDraft(d)}
+                                    className="btn btn-xs btn-secondary"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={sendingDraftId === d.id}
+                                    onClick={() => handleSendSavedDraftNow(d)}
+                                    className="btn btn-xs btn-primary"
+                                    style={{ background: '#0284c7', fontWeight: 700 }}
+                                  >
+                                    {sendingDraftId === d.id ? 'Sending...' : 'Send Now'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteSavedDraft(d.id)}
+                                    className="btn btn-xs btn-secondary"
+                                    style={{ color: '#F87171' }}
+                                    aria-label="Delete draft"
+                                  >
+                                    <IconTrash size={12} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -1533,6 +1944,23 @@ export default function MailLogsPage() {
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: '#070d1e', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}
                   required
                 />
+                {recentRecipients.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                    <span style={{ fontSize: '0.7rem', color: '#94A3B8', alignSelf: 'center' }}>Recent IDs:</span>
+                    {recentRecipients.slice(0, 6).map((rec) => (
+                      <button
+                        key={rec.email}
+                        type="button"
+                        onClick={() => handleAppendRecentRecipient(rec.email)}
+                        className="btn btn-xs btn-secondary"
+                        style={{ fontSize: '0.68rem', padding: '2px 7px', color: '#38BDF8', borderColor: 'rgba(56,189,248,0.28)' }}
+                        title={`${rec.name}${rec.hallTicket ? ` (${rec.hallTicket})` : ''}`}
+                      >
+                        + {rec.email}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <span style={{ fontSize: '0.74rem', color: '#64748b', marginTop: 4, display: 'block' }}>
                   <IconShield size={14} color="#38BDF8" style={{ marginRight: 6 }} />Anti-spam shield: Simulated/demo domains (@example.com, @test.com) are safely intercepted.
                 </span>
@@ -1580,23 +2008,42 @@ export default function MailLogsPage() {
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-                <button
-                  type="button"
-                  onClick={() => setIsComposeOpen(false)}
-                  className="btn btn-secondary"
-                  style={{ padding: '10px 18px', borderRadius: 8 }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={sendingEmail}
-                  className="btn btn-primary"
-                  style={{ padding: '10px 22px', borderRadius: 8, background: '#0284c7', color: '#fff', fontWeight: 800 }}
-                >
-                  {sendingEmail ? 'Dispatching...' : 'Dispatch Now'}
-                </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                <input
+                  type="text"
+                  className="form-input form-input-sm"
+                  placeholder="Optional Draft Label..."
+                  value={draftTitle}
+                  onChange={(e) => setDraftTitle(e.target.value)}
+                  style={{ flex: '1 1 180px', maxWidth: 240 }}
+                />
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => { setIsComposeOpen(false); setEditingDraftId(null); }}
+                    className="btn btn-secondary"
+                    style={{ padding: '10px 16px', borderRadius: 8 }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingDraft}
+                    onClick={handleSaveAsDraft}
+                    className="btn btn-secondary"
+                    style={{ padding: '10px 16px', borderRadius: 8, borderColor: 'rgba(52,211,153,0.45)', color: '#34D399', fontWeight: 700 }}
+                  >
+                    {savingDraft ? 'Saving...' : editingDraftId ? 'Update Draft' : 'Save as Draft'}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={sendingEmail}
+                    className="btn btn-primary"
+                    style={{ padding: '10px 22px', borderRadius: 8, background: '#0284c7', color: '#fff', fontWeight: 800 }}
+                  >
+                    {sendingEmail ? 'Dispatching...' : 'Dispatch Now'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
