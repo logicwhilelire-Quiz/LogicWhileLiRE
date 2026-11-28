@@ -171,7 +171,7 @@ export default function StudentDashboardPage() {
           );
           setRank(res.data.rank || null);
         }
-      } catch (err: any) {
+      } catch {
         // Fallback to local student if available rather than kicking to /login
         if (localCandidate) {
           setUpcomingExams([]);

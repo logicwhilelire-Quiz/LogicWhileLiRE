@@ -27,8 +27,8 @@ export default function AdminLoginPage() {
 
   // Track warm-up elapsed time and auto-activate wakeup modal if request takes > 4.5s
   useEffect(() => {
-    let interval: any;
-    let timer: any;
+    let interval: ReturnType<typeof setInterval> | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     if (loading) {
       interval = setInterval(() => setWarmUpSeconds((prev) => prev + 1), 1000);
       timer = setTimeout(() => setIsWarmingUp(true), 4500);
@@ -36,8 +36,8 @@ export default function AdminLoginPage() {
       setWarmUpSeconds(0);
     }
     return () => {
-      clearInterval(interval);
-      clearTimeout(timer);
+      if (interval) clearInterval(interval);
+      if (timer) clearTimeout(timer);
     };
   }, [loading]);
 
@@ -99,7 +99,7 @@ export default function AdminLoginPage() {
         setError('');
       } else {
         setIsWarmingUp(false);
-        setError(err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Login failed. Invalid admin credentials.');
+        setError(err?.response?.data?.error || err?.response?.data?.message || 'Invalid admin username or password.');
       }
     } finally {
       setLoading(false);

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
@@ -21,11 +21,6 @@ function ExamEntryBg() {
 interface FormState {
   examCode: string
   hallTicket: string
-}
-
-interface ApiError {
-  message?: string
-  [key: string]: unknown
 }
 
 export default function EnterExamPage() {
@@ -115,8 +110,14 @@ export default function EnterExamPage() {
         if (data.student_gate_pass) {
           localStorage.setItem('student_gate_pass', data.student_gate_pass)
         }
-        // Save candidate info
+        // Merge candidate info without clobbering logged-in student profile fields
+        let existingProfile: Record<string, any> = {}
+        try {
+          const prevStr = localStorage.getItem('student_user')
+          if (prevStr) existingProfile = JSON.parse(prevStr) || {}
+        } catch {}
         const candidateProfile = {
+          ...existingProfile,
           name: candidateName,
           roll_number: canonicalHt,
           hall_ticket: canonicalHt,
@@ -178,11 +179,17 @@ export default function EnterExamPage() {
           if (resData.student_gate_pass) {
             localStorage.setItem('student_gate_pass', resData.student_gate_pass)
           }
+          let existingUser: Record<string, any> = {}
+          try {
+            const prevStr = localStorage.getItem('student_user')
+            if (prevStr) existingUser = JSON.parse(prevStr) || {}
+          } catch {}
           const candidateProfile = {
+            ...existingUser,
             name: candidateName,
             roll_number: canonicalHt,
             hall_ticket: canonicalHt,
-            section: resData.section || 'General',
+            section: resData.section || existingUser.section || 'General',
             gate_pass: resData.student_gate_pass || resData.candidate_gate_pass,
           }
           localStorage.setItem('student_user', JSON.stringify(candidateProfile))
@@ -200,7 +207,7 @@ export default function EnterExamPage() {
           return
         }
 
-        const msg = resData?.error || resData?.message || (err instanceof Error ? err.message : 'Entry failed. Please check your credentials.')
+        const msg = resData?.error || resData?.message || 'Unable to verify exam code or hall ticket. Please check your details.'
         setError(msg)
         if (resData?.code === 'EMAIL_NOT_VERIFIED' && resData?.email) {
           setUnverifiedEmail(resData.email)

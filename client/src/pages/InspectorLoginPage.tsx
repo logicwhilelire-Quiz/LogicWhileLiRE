@@ -24,8 +24,8 @@ export default function InspectorLoginPage() {
   }, []);
 
   useEffect(() => {
-    let interval: any;
-    let timer: any;
+    let interval: ReturnType<typeof setInterval> | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     if (loading) {
       interval = setInterval(() => setWarmUpSeconds((prev) => prev + 1), 1000);
       timer = setTimeout(() => setIsWarmingUp(true), 4500);
@@ -33,8 +33,8 @@ export default function InspectorLoginPage() {
       setWarmUpSeconds(0);
     }
     return () => {
-      clearInterval(interval);
-      clearTimeout(timer);
+      if (interval) clearInterval(interval);
+      if (timer) clearTimeout(timer);
     };
   }, [loading]);
 
@@ -89,7 +89,7 @@ export default function InspectorLoginPage() {
         setError('');
       } else {
         setIsWarmingUp(false);
-        setError(err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Invalid inspector credentials.');
+        setError(err?.response?.data?.error || err?.response?.data?.message || 'Invalid inspector username or password.');
       }
     } finally {
       setLoading(false);

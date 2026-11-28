@@ -24,8 +24,8 @@ export default function FacultyLoginPage() {
   }, []);
 
   useEffect(() => {
-    let interval: any;
-    let timer: any;
+    let interval: ReturnType<typeof setInterval> | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     if (loading) {
       interval = setInterval(() => setWarmUpSeconds((prev) => prev + 1), 1000);
       timer = setTimeout(() => setIsWarmingUp(true), 4500);
@@ -33,8 +33,8 @@ export default function FacultyLoginPage() {
       setWarmUpSeconds(0);
     }
     return () => {
-      clearInterval(interval);
-      clearTimeout(timer);
+      if (interval) clearInterval(interval);
+      if (timer) clearTimeout(timer);
     };
   }, [loading]);
 
@@ -89,7 +89,7 @@ export default function FacultyLoginPage() {
         setError('');
       } else {
         setIsWarmingUp(false);
-        setError(err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Invalid faculty credentials.');
+        setError(err?.response?.data?.error || err?.response?.data?.message || 'Invalid faculty username or password.');
       }
     } finally {
       setLoading(false);

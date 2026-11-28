@@ -348,8 +348,15 @@ export default function Dashboard() {
           <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: 14 }}>
             Control Center Operations
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 36 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16, marginBottom: 36 }}>
             {[
+              {
+                title: 'Colleges & Hierarchy',
+                desc: 'Register campuses and configure Course, Branch, Passout Year, and Section structures cleanly.',
+                action: 'Configure Structure',
+                route: '/admin/colleges',
+                color: '#38BDF8',
+              },
               {
                 title: 'Exam Control',
                 desc: 'Create, duplicate, edit, set duration, passing %, and toggles (Proctoring, Leaderboard, Fullscreen Lock).',
@@ -386,8 +393,15 @@ export default function Dashboard() {
                 color: '#F59E0B',
               },
               {
+                title: 'Mail Drafts & Forwarders Hub',
+                desc: 'Dispatch all 28 branded templates, draft Forgot Password / Updates / Test reports, and manage auto-forwarders.',
+                action: 'Open Mail Studio',
+                route: '/admin/mail-logs',
+                color: '#34D399',
+              },
+              {
                 title: 'Platform & Engine Control',
-                desc: 'Brand styling, allowed code runtimes (Python/JS/C++), timeout limits, and maintenance mode.',
+                desc: 'Brand styling, allowed code runtimes (Python/JS/C++), timeout limits, and cloud backups.',
                 action: 'Portal Settings',
                 route: '/admin/settings',
                 color: '#6366F1',
@@ -396,15 +410,18 @@ export default function Dashboard() {
               <div
                 key={i}
                 className="card"
+                onClick={() => navigate(card.route)}
                 style={{
                   padding: '22px 24px',
-                  background: 'rgba(11, 18, 38, 0.65)',
-                  border: '1px solid var(--color-border)',
+                  background: 'linear-gradient(155deg, rgba(13, 24, 53, 0.85) 0%, rgba(8, 15, 36, 0.92) 100%)',
+                  border: `1px solid ${card.color}30`,
+                  borderTop: `3px solid ${card.color}`,
                   borderRadius: 12,
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  transition: 'all 0.2s ease',
+                  cursor: 'pointer',
+                  transition: 'transform 0.18s ease, box-shadow 0.18s ease',
                 }}
               >
                 <div>
@@ -416,7 +433,11 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <button
-                  onClick={() => navigate(card.route)}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(card.route);
+                  }}
                   className="btn btn-ghost btn-sm"
                   style={{
                     marginTop: 18,
@@ -470,8 +491,8 @@ export default function Dashboard() {
                           ID: {exam.id.slice(0, 16)}...
                         </div>
                       </td>
-                      <td style={{ padding: '14px 18px', color: 'var(--color-text-muted)' }}>
-                        ⏱️ {exam.duration_minutes} mins
+                      <td style={{ padding: '14px 18px', color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                        {exam.duration_minutes} mins
                       </td>
                       <td style={{ padding: '14px 18px' }}>
                         <span
