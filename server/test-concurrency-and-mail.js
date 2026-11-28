@@ -241,6 +241,49 @@ async function run() {
   assert.strictEqual(delRuleRes.status, 200);
   console.log(`  ✅ [6] Multi-portal Forgot Password + Manual Mail Forward + Forwarder cleanup verified`);
 
+  // 7. Unified Mail Templates Catalog (all events & services) + Live Preview + Template Dispatch
+  const catalogRes = await req('GET', '/api/admin/mail-templates', null, authHdr);
+  assert.strictEqual(catalogRes.status, 200);
+  assert(Array.isArray(catalogRes.data.templates) && catalogRes.data.templates.length >= 24, `Expected >= 24 system mail templates, got ${catalogRes.data?.templates?.length}`);
+  const expectedKeys = [
+    'admin_welcome', 'inspector_created', 'faculty_created', 'welcome_credentials',
+    'student_otp', 'admin_login_otp', 'student_registered', 'password_reset', 'user_id_recovery',
+    'exam_scheduled', 'exam_started_reminder', 'submission_receipt', 'result_report', 'faculty_paper_allocated',
+    'inspector_notice', 'inspector_issue_alert', 'termination_alert', 'batch_termination_summary',
+    'admin_alert', 'admin_system_alert', 'daily_backup_completed', 'contact_auto_reply',
+    'contact_admin_notification', 'mail_forwarded', 'custom_broadcast',
+  ];
+  for (const key of expectedKeys) {
+    assert(catalogRes.data.templates.some((t) => t.key === key), `Missing template catalog key: ${key}`);
+  }
+
+  const prevRes = await req(
+    'POST',
+    '/api/admin/mail-templates/preview',
+    { templateKey: 'termination_alert', variables: { participantName: 'Arjun', hallTicket: 'HT901', violationCount: '4' } },
+    authHdr
+  );
+  assert.strictEqual(prevRes.status, 200);
+  assert(prevRes.data.html && prevRes.data.html.includes('HT901') && prevRes.data.subject.includes('HT901'));
+
+  const tplDispatchRes = await req(
+    'POST',
+    '/api/admin/mail-logs/dispatch',
+    {
+      to: 'dean@rvit.edu.in',
+      templateKey: 'exam_started_reminder',
+      variables: { recipientName: 'Dean Audit', hallTicket: 'DEAN01', examCode: examCode, examTitle: '300-Student Benchmark' },
+    },
+    authHdr
+  );
+  assert.strictEqual(tplDispatchRes.status, 200);
+  assert.strictEqual(tplDispatchRes.data.success, true);
+  assert(
+    memoryMailLogs.some((l) => l.template === 'exam_started_reminder' && l.to_email === 'dean@rvit.edu.in'),
+    'Template-rendered dispatch must persist into mail_logs'
+  );
+  console.log(`  ✅ [7] Unified ${catalogRes.data.templates.length}-Template Catalog, Preview & Dispatch verified`);
+
   console.log('================================================================\n');
   server.close();
   process.exit(0);

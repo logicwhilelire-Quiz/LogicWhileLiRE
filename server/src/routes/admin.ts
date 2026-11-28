@@ -76,6 +76,8 @@ import {
   listMailForwardersController,
   saveMailForwarderController,
   deleteMailForwarderController,
+  listMailTemplatesController,
+  previewMailTemplateController,
 } from '../controllers/adminController';
 import { getLeaderboard } from '../controllers/adminController';
 import {
@@ -452,6 +454,8 @@ router.get('/system-alerts', requireRole('super_admin'), (req, res) => {
 
 // ——— Outbound Email Logs, Forwarding & Automated Forwarder Rules (super_admin, admin) ———
 router.get('/mail-logs', requireRole('super_admin', 'admin'), listMailLogsController);
+router.get('/mail-templates', requireRole('super_admin', 'admin'), listMailTemplatesController);
+router.post('/mail-templates/preview', requireRole('super_admin', 'admin'), previewMailTemplateController);
 router.post('/mail-logs/:id/resend', requireRole('super_admin', 'admin'), auditLog('RESEND_EMAIL', 'mail_logs'), resendMailLogController);
 router.post('/mail-logs/:id/forward', requireRole('super_admin', 'admin'), auditLog('FORWARD_EMAIL', 'mail_logs'), forwardMailLogController);
 router.post('/mail-logs/dispatch', requireRole('super_admin', 'admin'), auditLog('ADMIN_DIRECT_DISPATCH_EMAIL', 'mail_logs'), dispatchAdminEmailController);

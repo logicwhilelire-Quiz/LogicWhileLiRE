@@ -33,6 +33,8 @@ import {
   listMailForwarders,
   upsertMailForwarder,
   deleteMailForwarder,
+  getMailTemplateCatalog,
+  renderMailTemplateByKey,
 } from '../services/mailService';
 import { verifyTotpCode } from '../utils/totp';
 import { getAdminJwtSecret } from '../middleware/adminAuth';
@@ -158,7 +160,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       },
       ip_address: clientIp,
       created_at: now,
-    }).then(() => {});
+    }).then(() => { });
 
     systemAlertAgent.recordAuthFailure({
       user: normalizedUser,
@@ -167,7 +169,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       userAgent: userAgent,
       reason: newCount >= 5 ? 'Account locked after 5 failed attempts' : `Invalid credentials (attempt ${newCount}/5)`,
       path: req.originalUrl || req.path,
-    }).catch(() => {});
+    }).catch(() => { });
 
     if (newCount >= 5) {
       adminLockoutMap.set(lockoutKey, {
@@ -328,7 +330,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
             must_change_password: cachedStaff.must_change_password,
           };
         }
-      } catch {}
+      } catch { }
     }
 
     // 1. First priority: look up by username (case-insensitive)
@@ -340,7 +342,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
           .ilike('username', normalizedUser)
           .maybeSingle();
         if (staffByUsername) staff = staffByUsername;
-      } catch {}
+      } catch { }
     }
 
     // 2. Second priority: look up by exact username match
@@ -352,7 +354,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
           .eq('username', normalizedUser)
           .maybeSingle();
         if (staffByExactUser) staff = staffByExactUser;
-      } catch {}
+      } catch { }
     }
 
     // 2b. Secondary fallback: check staff permissions for encoded username
@@ -372,7 +374,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
             };
           }
         }
-      } catch {}
+      } catch { }
     }
 
     // 3. Third priority: look up by email (with configured mail domain aliasing)
@@ -385,7 +387,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
           .eq('email', emailToLookup)
           .maybeSingle();
         if (staffByEmail) staff = staffByEmail;
-      } catch {}
+      } catch { }
 
       if (!staff) {
         // Alias: if user logged in without domain or with configured MAIL_DOMAIN
@@ -405,7 +407,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
                 staff = fallbackStaff;
                 break;
               }
-            } catch {}
+            } catch { }
           }
         }
       }
@@ -420,7 +422,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
           .eq('phone', normalizedUser)
           .maybeSingle();
         if (staffByPhone) staff = staffByPhone;
-      } catch {}
+      } catch { }
     }
 
     if (!staff) {
@@ -537,10 +539,10 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       const backupCodes: string[] = staffRecord.two_factor_backup_codes || [];
       const remaining = backupCodes.length > 0
         ? (() => {
-            const inputHash = require('crypto').createHash('sha256').update(String(totpCode).trim().toUpperCase()).digest('hex');
-            const idx = backupCodes.indexOf(inputHash);
-            return idx >= 0 ? backupCodes.filter((_: string, i: number) => i !== idx) : null;
-          })()
+          const inputHash = require('crypto').createHash('sha256').update(String(totpCode).trim().toUpperCase()).digest('hex');
+          const idx = backupCodes.indexOf(inputHash);
+          return idx >= 0 ? backupCodes.filter((_: string, i: number) => i !== idx) : null;
+        })()
         : null;
 
       if (remaining !== null) {
@@ -624,7 +626,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
       timestamp: successNow,
       created_at: successNow,
     })
-    .then(() => {});
+    .then(() => { });
 
   // Dispatch security alert on new login to linked email
   if (staffRecord.email) {
@@ -839,7 +841,7 @@ export async function verifyLoginOtp(req: Request, res: Response): Promise<void>
       timestamp: successNow,
       created_at: successNow,
     })
-    .then(() => {});
+    .then(() => { });
 
   res.json({
     success: true,
@@ -1275,7 +1277,7 @@ export async function exportExcelReport(req: Request, res: Response): Promise<vo
 
   const safeTitle = (exam?.title || 'exam').replace(/[^a-zA-Z0-9_\-]/g, '_');
   if (req.admin) {
-    recordAuditLog(req.admin, 'EXPORT_REPORT_EXCEL', 'exams', String(examId), { title: exam?.title, count: summaryRows.length }, req).catch(() => {});
+    recordAuditLog(req.admin, 'EXPORT_REPORT_EXCEL', 'exams', String(examId), { title: exam?.title, count: summaryRows.length }, req).catch(() => { });
   }
   res.set({
     'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -1322,7 +1324,7 @@ export async function exportPdfReport(req: Request, res: Response): Promise<void
 
   // Executive Brand Header: LogicWhileLiRE in deep blue
   doc.fontSize(24).font('Helvetica-Bold').fillColor('#0A3F8F').text('LogicWhileLiRE', { align: 'center' });
-  
+
   // Official Tagline
   doc.fontSize(9).font('Helvetica-Bold').fillColor('#4A7DBE').text('LOGIC. WHILE. LIRE.', { align: 'center', characterSpacing: 2 });
   doc.moveDown(0.6);
@@ -1363,7 +1365,7 @@ export async function exportPdfReport(req: Request, res: Response): Promise<void
   doc.fontSize(8).font('Helvetica').fillColor('#64748b').text('LogicWhile Assessment Engine • © 2026 LogicWhile. All rights reserved.', { align: 'center' });
 
   if (req.admin) {
-    recordAuditLog(req.admin, 'EXPORT_REPORT_PDF', 'exams', String(examId), { title: exam?.title, count: results?.length || 0 }, req).catch(() => {});
+    recordAuditLog(req.admin, 'EXPORT_REPORT_PDF', 'exams', String(examId), { title: exam?.title, count: results?.length || 0 }, req).catch(() => { });
   }
 
   doc.end();
@@ -1820,7 +1822,7 @@ export async function createStaff(req: Request, res: Response): Promise<void> {
         res.status(409).json({ success: false, error: 'A staff member with this username already exists' });
         return;
       }
-    } catch {}
+    } catch { }
   }
 
   // Check duplicate email if provided
@@ -1841,8 +1843,8 @@ export async function createStaff(req: Request, res: Response): Promise<void> {
     req.admin?.role === 'inspector' || req.admin?.role === 'college_admin'
       ? req.admin.college_id
       : college_id
-      ? parseInt(String(college_id), 10)
-      : null;
+        ? parseInt(String(college_id), 10)
+        : null;
 
   const assignedRole = role || 'inspector';
 
@@ -2767,7 +2769,7 @@ export async function createQuestion(req: Request, res: Response): Promise<void>
         section: newQuestion.section,
         created_at: newQuestion.created_at,
       });
-    } catch {}
+    } catch { }
 
     res.status(201).json({ success: true, question: data });
   } catch (err: any) {
@@ -2852,7 +2854,7 @@ export async function updateQuestion(req: Request, res: Response): Promise<void>
         topic: updates.topic,
         difficulty: updates.difficulty,
       }).eq('id', id);
-    } catch {}
+    } catch { }
 
     res.json({ success: true, question: data });
   } catch (err: any) {
@@ -2875,7 +2877,7 @@ export async function deleteQuestion(req: Request, res: Response): Promise<void>
 
     try {
       await supabase.from('questions').delete().eq('id', id);
-    } catch {}
+    } catch { }
 
     res.json({ success: true, message: 'Question deleted successfully from master question bank' });
   } catch (err: any) {
@@ -3004,7 +3006,7 @@ export async function resendMailLogController(req: Request, res: Response): Prom
   try {
     const { data } = await supabase.from('mail_logs').select('template, to_email').eq('id', id).maybeSingle();
     if (data) existingRecord = data;
-  } catch {}
+  } catch { }
   // Fallback to memory buffer
   if (!existingRecord) {
     const { memoryMailLogs } = await import('../services/mailService');
@@ -3066,14 +3068,54 @@ export async function resendMailLogController(req: Request, res: Response): Prom
   }
 }
 
+export async function listMailTemplatesController(_req: Request, res: Response): Promise<void> {
+  try {
+    const templates = getMailTemplateCatalog();
+    res.json({ success: true, templates });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to load mail templates catalog' });
+  }
+}
+
+export async function previewMailTemplateController(req: Request, res: Response): Promise<void> {
+  const { templateKey, variables } = req.body || {};
+  if (!templateKey) {
+    res.status(400).json({ success: false, error: 'templateKey is required' });
+    return;
+  }
+  try {
+    const rendered = renderMailTemplateByKey(String(templateKey), variables || {});
+    res.json({ success: true, ...rendered });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to render mail template preview' });
+  }
+}
+
 /**
  * POST /api/admin/mail-logs/dispatch
- * Executive Admin Direct Email Dispatch with live preview, optional CC/BCC/Forwarder & anti-spam verification
+ * Executive Admin Direct Email Dispatch with live preview, template catalog rendering, CC/BCC/Forwarder & anti-spam verification
  */
 export async function dispatchAdminEmailController(req: Request, res: Response): Promise<void> {
-  const { to, cc, bcc, subject, html, template, metadata } = req.body || {};
-  if (!to || !subject || !html) {
-    res.status(400).json({ success: false, error: 'Recipient (to), subject, and HTML content are required' });
+  const { to, cc, bcc, subject, html, template, templateKey, variables, metadata } = req.body || {};
+  const resolvedKey = templateKey || (variables && template ? template : undefined);
+
+  let finalSubject = subject;
+  let finalHtml = html;
+  let finalText: string | undefined;
+  let finalTemplate = template || templateKey || 'custom_broadcast';
+  let finalMetadata = metadata || {};
+
+  if (resolvedKey && (!finalHtml || !String(finalHtml).trim())) {
+    const rendered = renderMailTemplateByKey(String(resolvedKey), variables || {});
+    finalSubject = String(subject || '').trim() || rendered.subject;
+    finalHtml = rendered.html;
+    finalText = rendered.text;
+    finalTemplate = rendered.templateKey;
+    finalMetadata = { ...rendered.metadata, ...finalMetadata };
+  }
+
+  if (!to || !finalSubject || !finalHtml) {
+    res.status(400).json({ success: false, error: 'Recipient (to), subject, and HTML content (or templateKey) are required' });
     return;
   }
   try {
@@ -3082,10 +3124,11 @@ export async function dispatchAdminEmailController(req: Request, res: Response):
       to,
       cc,
       bcc,
-      subject,
-      html,
-      template: template || 'admin_direct_dispatch',
-      metadata: metadata || {},
+      subject: finalSubject,
+      html: finalHtml,
+      text: finalText,
+      template: finalTemplate,
+      metadata: finalMetadata,
       sentBy: (req as any).admin?.username || 'admin',
     });
     res.json({ success: result.success, message: 'Email dispatched successfully', result });

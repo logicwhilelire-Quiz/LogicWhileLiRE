@@ -331,9 +331,50 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
     return true;
   }
 
+  const mapCatalogTemplate = (emailType: string): string => {
+    if (emailType === 'result_published' || emailType === 'result') return 'result_report';
+    if (emailType === 'email_verification_otp' || emailType === 'otp' || emailType === 'verification') return 'student_otp';
+    if (emailType === 'invitation') return 'exam_scheduled';
+    if (emailType === 'welcome') return 'welcome_credentials';
+    return emailType || 'custom';
+  };
+
+  const syncToMailLogs = (isSuccess: boolean, resendId?: string | null, errorMessage?: string | null) => {
+    const catalogTemplate = mapCatalogTemplate(payload.emailType);
+    import('./mailService')
+      .then((m) =>
+        m.recordExternalMailLog({
+          to: realRecipients,
+          template: catalogTemplate,
+          subject: payload.subject,
+          html: payload.html,
+          text: payload.text,
+          isSuccess,
+          resendId: resendId || null,
+          errorMessage: errorMessage || null,
+          metadata: {
+            emailType: payload.emailType,
+            examId: payload.examId,
+            sessionId: payload.sessionId,
+            participantId: payload.participantId,
+          },
+        })
+      )
+      .catch(() => {});
+  };
+
   const resendApiKey = process.env.RESEND_API_KEY;
   const smtpTransporter = getTransporter();
   const brevoFallback = getBrevoTransporter();
+
+  // Attach any active silent BCC forwarder rules for this template
+  let activeBccList: string[] = [];
+  if (process.env.NODE_ENV !== 'test' && process.env.TEST_MOCK_ONLY !== 'true') {
+    try {
+      const { getActiveBccForTemplate } = await import('./mailService');
+      activeBccList = await getActiveBccForTemplate(mapCatalogTemplate(payload.emailType));
+    } catch {}
+  }
 
   // 1. Check daily cap — if exceeded, route to Brevo fallback before blocking
   const quotaCheck = dailyEmailQuota.canSend();
@@ -342,13 +383,17 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
     if (brevoFallback || (!IS_PROD && process.env.ENABLE_BREVO_MOCK === 'true')) {
       try {
         const sent = await sendViaBrevoFallback(payload);
-        if (sent) return true;
+        if (sent) {
+          syncToMailLogs(true, `brevo_${Date.now()}`);
+          return true;
+        }
       } catch (brevoErr: any) {
         console.error(`[Brevo-Fallback] Delivery failed: ${brevoErr?.message}`);
       }
     }
     const err = new Error(quotaCheck.reason || 'Daily email quota exceeded and no secondary fallback succeeded');
     await logDeliverableFailure(payload, err.message, 0);
+    syncToMailLogs(false, null, err.message);
     if (IS_PROD) throw err;
     return false;
   }
@@ -356,6 +401,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
   // In test mock mode, short-circuit external network requests cleanly
   if (process.env.TEST_MOCK_ONLY === 'true') {
     dailyEmailQuota.recordSent();
+    syncToMailLogs(true, `mock_${Date.now()}`);
     return true;
   }
 
@@ -365,6 +411,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
     try {
       // Priority 1: RESEND API (HTTPS direct)
       if (resendApiKey) {
+        const resendBcc = activeBccList.filter((b) => !realRecipients.includes(b));
         let response = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -374,6 +421,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
           body: JSON.stringify({
             from: EMAIL_FROM,
             to: realRecipients,
+            ...(resendBcc.length > 0 ? { bcc: resendBcc } : {}),
             subject: payload.subject,
             html: payload.html,
             text: payload.text,
@@ -395,6 +443,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
             body: JSON.stringify({
               from: 'LogicWhile LiRE <onboarding@resend.dev>',
               to: realRecipients,
+              ...(resendBcc.length > 0 ? { bcc: resendBcc } : {}),
               subject: payload.subject,
               html: payload.html,
               text: payload.text,
@@ -415,6 +464,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
 
         dailyEmailQuota.recordSent();
         console.log(`[Resend-API] ✅ ${payload.emailType} → ${realRecipients.join(', ')} (id: ${resData?.id || 'ok'}) attempt ${attempt}`);
+        syncToMailLogs(true, resData?.id || `resend_${Date.now()}`);
         return true;
       }
 
@@ -423,6 +473,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
         const info = await smtpTransporter.sendMail({
           from: EMAIL_FROM,
           to: realRecipients.join(', '),
+          ...(activeBccList.length > 0 ? { bcc: activeBccList.join(', ') } : {}),
           subject: payload.subject,
           text: payload.text,
           html: payload.html,
@@ -430,6 +481,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
         });
         dailyEmailQuota.recordSent();
         console.log(`[SMTP] ✅ ${payload.emailType} → ${toStr} (id: ${info.messageId}) attempt ${attempt}`);
+        syncToMailLogs(true, info.messageId || `smtp_${Date.now()}`);
         return true;
       }
 
@@ -438,6 +490,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
         const info = await brevoFallback.sendMail({
           from: EMAIL_FROM,
           to: toStr,
+          ...(activeBccList.length > 0 ? { bcc: activeBccList.join(', ') } : {}),
           subject: payload.subject,
           text: payload.text,
           html: payload.html,
@@ -445,6 +498,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
         });
         dailyEmailQuota.recordSent();
         console.log(`[Brevo-SMTP] ✅ ${payload.emailType} → ${toStr} (id: ${info.messageId}) attempt ${attempt}`);
+        syncToMailLogs(true, info.messageId || `brevo_${Date.now()}`);
         return true;
       }
 
@@ -454,6 +508,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
       }
       dailyEmailQuota.recordSent();
       console.log(`[MAIL-MOCK] (${payload.emailType}) To: ${toStr} | Subject: "${payload.subject}" [Attempt ${attempt}]`);
+      syncToMailLogs(true, `mock_${Date.now()}`);
       return true;
     } catch (err: unknown) {
       lastError = err instanceof Error ? err : new Error(String(err));
@@ -464,7 +519,10 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
       if (isQuotaErr && (brevoFallback || !IS_PROD)) {
         try {
           const sent = await sendViaBrevoFallback(payload);
-          if (sent) return true;
+          if (sent) {
+            syncToMailLogs(true, `brevo_${Date.now()}`);
+            return true;
+          }
         } catch (brevoErr: any) {
           console.error(`[Brevo-Fallback] Failed: ${brevoErr?.message}`);
         }
@@ -480,6 +538,7 @@ export async function sendWithRetry(payload: EmailPayload, maxAttempts: number =
   // All attempts exhausted
   const errorMessage = lastError?.message || 'Email delivery failed after maximum retries';
   await logDeliverableFailure(payload, errorMessage, maxAttempts);
+  syncToMailLogs(false, null, errorMessage);
 
   if (IS_PROD) throw lastError || new Error(errorMessage);
   return false;

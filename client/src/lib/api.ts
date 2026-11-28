@@ -679,6 +679,41 @@ export const saveMailForwarder = (data: {
 export const deleteMailForwarder = (id: string) =>
   api.delete<{ success: boolean; message: string }>(`/api/admin/mail-forwarders/${id}`);
 
+export interface MailTemplateVariableSpec {
+  key: string;
+  label: string;
+  defaultValue: string;
+}
+
+export interface MailTemplateDefinition {
+  key: string;
+  name: string;
+  category: 'auth_recovery' | 'exam_lifecycle' | 'proctoring_security' | 'support_ops';
+  categoryLabel: string;
+  audience: string;
+  triggerEvent: string;
+  description: string;
+  variables: MailTemplateVariableSpec[];
+}
+
+export const listMailTemplates = () =>
+  api.get<{ success: boolean; templates: MailTemplateDefinition[] }>('/api/admin/mail-templates');
+
+export const previewMailTemplate = (data: { templateKey: string; variables?: Record<string, any> }) =>
+  api.post<{ success: boolean; templateKey: string; subject: string; html: string; text: string }>('/api/admin/mail-templates/preview', data);
+
+export const dispatchAdminEmail = (data: {
+  to: string;
+  cc?: string;
+  bcc?: string;
+  subject?: string;
+  html?: string;
+  template?: string;
+  templateKey?: string;
+  variables?: Record<string, any>;
+  metadata?: Record<string, any>;
+}) => api.post<{ success: boolean; message: string; result: any }>('/api/admin/mail-logs/dispatch', data);
+
 export const getMailStats = () =>
   api.get<{
     success: boolean;

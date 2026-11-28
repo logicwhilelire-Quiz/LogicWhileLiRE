@@ -22,10 +22,14 @@ import {
   listMailForwarders,
   saveMailForwarder,
   deleteMailForwarder,
+  listMailTemplates,
+  previewMailTemplate,
+  dispatchAdminEmail,
   getMailStats,
   listColleges,
   type MailLog,
   type MailForwarderRule,
+  type MailTemplateDefinition,
   extractErrorMessage,
 } from '../../lib/api';
 import axios from 'axios';
@@ -37,21 +41,32 @@ import {
   buildSectionChoices,
 } from '../../constants/academicCatalog';
 
-const TEMPLATE_OPTIONS = [
-  { value: 'all', label: 'All Role Templates' },
-  { value: 'password_reset', label: 'password_reset (Credential & User ID Recovery)' },
-  { value: 'user_id_recovery', label: 'user_id_recovery (Hall Ticket / Username Dispatch)' },
-  { value: 'mail_forwarded', label: 'mail_forwarded (Forwarded & Relay Copies)' },
-  { value: 'admin_welcome', label: 'admin_welcome (Admin Console Onboarding)' },
-  { value: 'inspector_created', label: 'inspector_created (Invigilator Account)' },
-  { value: 'faculty_created', label: 'faculty_created (Faculty & Assigned Sections)' },
-  { value: 'student_otp', label: 'student_otp (Sign-Up OTP • 10m Expiry)' },
-  { value: 'student_registered', label: 'student_registered (Account Verified)' },
-  { value: 'exam_scheduled', label: 'exam_scheduled (Targeted Hall Ticket)' },
-  { value: 'faculty_paper_allocated', label: 'faculty_paper_allocated (Paper Assignment)' },
-  { value: 'result_report', label: 'result_report (Official Scorecard)' },
-  { value: 'admin_alert', label: 'admin_alert (Anti-Cheat & Nightly Backup)' },
-  { value: 'custom_broadcast', label: 'custom_broadcast (Direct Broadcasts)' },
+const FALLBACK_TEMPLATE_OPTIONS = [
+  { value: 'password_reset', label: 'password_reset — Password Reset Link' },
+  { value: 'user_id_recovery', label: 'user_id_recovery — User ID & Hall Ticket Recovery' },
+  { value: 'admin_welcome', label: 'admin_welcome — Admin Console Onboarding' },
+  { value: 'inspector_created', label: 'inspector_created — Invigilator Onboarding' },
+  { value: 'faculty_created', label: 'faculty_created — Faculty & Assigned Sections' },
+  { value: 'welcome_credentials', label: 'welcome_credentials — Credentials Welcome' },
+  { value: 'student_otp', label: 'student_otp — Student Verification OTP' },
+  { value: 'admin_login_otp', label: 'admin_login_otp — Staff Login Security OTP' },
+  { value: 'student_registered', label: 'student_registered — Registration Confirmed' },
+  { value: 'exam_scheduled', label: 'exam_scheduled — Examination Hall Ticket' },
+  { value: 'exam_started_reminder', label: 'exam_started_reminder — Live Exam Reminder' },
+  { value: 'submission_receipt', label: 'submission_receipt — Digital Submission Receipt' },
+  { value: 'result_report', label: 'result_report — Official Result Scorecard' },
+  { value: 'faculty_paper_allocated', label: 'faculty_paper_allocated — Paper Allocation' },
+  { value: 'inspector_notice', label: 'inspector_notice — Proctor Warning Notice' },
+  { value: 'inspector_issue_alert', label: 'inspector_issue_alert — Telemetry Flag Alert' },
+  { value: 'termination_alert', label: 'termination_alert — Session Termination Alert' },
+  { value: 'batch_termination_summary', label: 'batch_termination_summary — Termination Digest' },
+  { value: 'admin_alert', label: 'admin_alert — Admin Incident Alert' },
+  { value: 'admin_system_alert', label: 'admin_system_alert — System Health Bulletin' },
+  { value: 'daily_backup_completed', label: 'daily_backup_completed — Nightly Backup Report' },
+  { value: 'contact_auto_reply', label: 'contact_auto_reply — Contact Auto-Reply' },
+  { value: 'contact_admin_notification', label: 'contact_admin_notification — Contact Admin Alert' },
+  { value: 'mail_forwarded', label: 'mail_forwarded — Forwarded & Relay Copies' },
+  { value: 'custom_broadcast', label: 'custom_broadcast — Institutional Broadcast' },
 ];
 
 export default function MailLogsPage() {
@@ -109,11 +124,117 @@ export default function MailLogsPage() {
   const [loadingCohort, setLoadingCohort] = useState(false);
   const [cohortMatchCount, setCohortMatchCount] = useState<number | null>(null);
 
+  // Unified Mail Templates Catalog & Live Preview State
+  const [templates, setTemplates] = useState<MailTemplateDefinition[]>([]);
+  const [showTemplatesCatalog, setShowTemplatesCatalog] = useState(true);
+  const [templateCategoryFilter, setTemplateCategoryFilter] = useState<string>('all');
+  const [templateSearch, setTemplateSearch] = useState('');
+  const [composeVariables, setComposeVariables] = useState<Record<string, string>>({});
+  const [loadingComposePreview, setLoadingComposePreview] = useState(false);
+  const [templatePreviewModal, setTemplatePreviewModal] = useState<{
+    tpl: MailTemplateDefinition;
+    vars: Record<string, string>;
+    renderedSubject: string;
+    renderedHtml: string;
+    loading: boolean;
+  } | null>(null);
+
+  const templateSelectOptions = templates.length > 0
+    ? templates.map((t) => ({ value: t.key, label: `${t.key} — ${t.name}` }))
+    : FALLBACK_TEMPLATE_OPTIONS;
+
   useEffect(() => {
     listColleges()
       .then((res) => setColleges(res.data?.colleges || []))
       .catch(() => {});
+    listMailTemplates()
+      .then((res) => {
+        if (res.data?.templates) {
+          setTemplates(res.data.templates);
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  const buildDefaultVars = (tpl: MailTemplateDefinition): Record<string, string> => {
+    const out: Record<string, string> = {};
+    for (const v of tpl.variables) out[v.key] = v.defaultValue;
+    return out;
+  };
+
+  const handleOpenTemplatePreview = async (tpl: MailTemplateDefinition, customVars?: Record<string, string>) => {
+    const vars = customVars || buildDefaultVars(tpl);
+    setTemplatePreviewModal({
+      tpl,
+      vars,
+      renderedSubject: `Rendering ${tpl.name}...`,
+      renderedHtml: '',
+      loading: true,
+    });
+    try {
+      const res = await previewMailTemplate({ templateKey: tpl.key, variables: vars });
+      setTemplatePreviewModal({
+        tpl,
+        vars,
+        renderedSubject: res.data.subject,
+        renderedHtml: res.data.html,
+        loading: false,
+      });
+    } catch (err) {
+      showToast(extractErrorMessage(err, 'Failed to render template preview'), 'error');
+      setTemplatePreviewModal(null);
+    }
+  };
+
+  const handleLoadTemplateIntoComposer = async (tpl: MailTemplateDefinition, varsOverride?: Record<string, string>) => {
+    const vars = varsOverride || buildDefaultVars(tpl);
+    setComposeTemplate(tpl.key);
+    setComposeVariables(vars);
+    setIsComposeOpen(true);
+    setLoadingComposePreview(true);
+    try {
+      const res = await previewMailTemplate({ templateKey: tpl.key, variables: vars });
+      setComposeSubject(res.data.subject);
+      setComposeBody(res.data.html);
+    } catch {
+      // Fallback safely
+    } finally {
+      setLoadingComposePreview(false);
+    }
+  };
+
+  const handleComposerTemplateChange = async (templateKey: string) => {
+    setComposeTemplate(templateKey);
+    const tpl = templates.find((t) => t.key === templateKey);
+    if (!tpl) {
+      setComposeVariables({});
+      return;
+    }
+    const vars = buildDefaultVars(tpl);
+    setComposeVariables(vars);
+    setLoadingComposePreview(true);
+    try {
+      const res = await previewMailTemplate({ templateKey: tpl.key, variables: vars });
+      setComposeSubject(res.data.subject);
+      setComposeBody(res.data.html);
+    } catch {
+    } finally {
+      setLoadingComposePreview(false);
+    }
+  };
+
+  const handleRefreshComposerPreview = async () => {
+    setLoadingComposePreview(true);
+    try {
+      const res = await previewMailTemplate({ templateKey: composeTemplate, variables: composeVariables });
+      setComposeSubject(res.data.subject);
+      setComposeBody(res.data.html);
+    } catch (err) {
+      showToast(extractErrorMessage(err, 'Failed to render template'), 'error');
+    } finally {
+      setLoadingComposePreview(false);
+    }
+  };
 
   const handleLoadCohortRecipients = async () => {
     setLoadingCohort(true);
@@ -163,20 +284,17 @@ export default function MailLogsPage() {
       showToast('Please fill in recipient, subject, and message content.', 'error');
       return;
     }
-    const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
     setSendingEmail(true);
     try {
-      const res = await axios.post(
-        `${API_BASE_URL}/api/admin/mail-logs/dispatch`,
-        {
-          to: composeTo.trim(),
-          ...(composeCc.trim() ? { cc: composeCc.trim() } : {}),
-          subject: composeSubject.trim(),
-          html: composeBody.trim(),
-          template: composeTemplate,
-        },
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-      );
+      const res = await dispatchAdminEmail({
+        to: composeTo.trim(),
+        ...(composeCc.trim() ? { cc: composeCc.trim() } : {}),
+        subject: composeSubject.trim(),
+        html: composeBody.trim(),
+        template: composeTemplate,
+        templateKey: composeTemplate,
+        variables: composeVariables,
+      });
       if (res.data?.success) {
         setDispatchPulse(true);
         setTimeout(() => setDispatchPulse(false), 1800);
@@ -187,7 +305,7 @@ export default function MailLogsPage() {
         fetchLogs();
         fetchForwardersAndRelay();
       } else {
-        showToast(res.data?.error || 'Failed to dispatch email.', 'error');
+        showToast(res.data?.message || 'Failed to dispatch email.', 'error');
       }
     } catch (err: any) {
       showToast(err?.response?.data?.error || err.message || 'Dispatch failed.', 'error');
@@ -437,6 +555,16 @@ export default function MailLogsPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <button
                   type="button"
+                  onClick={() => setShowTemplatesCatalog((v) => !v)}
+                  className="btn btn-sm btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, borderColor: showTemplatesCatalog ? 'rgba(56,189,248,0.45)' : undefined }}
+                >
+                  <IconEye size={14} color="#38BDF8" />
+                  <span>{showTemplatesCatalog ? 'Hide Templates' : `Mail Templates (${templates.length || 25})`}</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setShowForwardersPanel((v) => !v)}
                   className="btn btn-sm btn-secondary"
                   style={{ display: 'flex', alignItems: 'center', gap: 6 }}
@@ -581,12 +709,9 @@ export default function MailLogsPage() {
                         onChange={(e) => setNewRuleTemplate(e.target.value)}
                       >
                         <option value="all">All Outbound Templates</option>
-                        <option value="password_reset">Password Reset Mails</option>
-                        <option value="user_id_recovery">User ID Recovery Mails</option>
-                        <option value="exam_scheduled">Exam Schedule &amp; Invites</option>
-                        <option value="result_report">Official Result Reports</option>
-                        <option value="admin_alert">Security &amp; Proctor Alerts</option>
-                        <option value="custom_broadcast">Direct Broadcasts</option>
+                        {templateSelectOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                       </select>
                       <input
                         type="text"
@@ -667,6 +792,159 @@ export default function MailLogsPage() {
               )}
             </AnimatePresence>
 
+            {/* All System Mail Templates & Event Dispatch Catalog */}
+            <AnimatePresence>
+              {showTemplatesCatalog && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.25 }}
+                  style={{ overflow: 'hidden', marginBottom: 22 }}
+                >
+                  <div className="card" style={{ padding: '18px 20px', border: '1px solid rgba(56, 189, 248, 0.3)', background: 'rgba(13, 24, 53, 0.92)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#F8FAFC', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <IconMail size={16} color="#38BDF8" />
+                          <span>System Mail Templates &amp; Automated Event Registry ({templates.length || 25})</span>
+                        </h3>
+                        <p style={{ margin: '3px 0 0', fontSize: '0.78rem', color: '#94A3B8' }}>
+                          Preview, customize parameters, route auto-forwarders, or dispatch any standardized event template across every portal and service.
+                        </p>
+                      </div>
+
+                      <input
+                        type="text"
+                        className="form-input form-input-sm"
+                        placeholder="Search templates or event trigger..."
+                        value={templateSearch}
+                        onChange={(e) => setTemplateSearch(e.target.value)}
+                        style={{ minWidth: 230 }}
+                      />
+                    </div>
+
+                    {/* Category Filter Tabs */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+                      {[
+                        { key: 'all', label: `All Templates (${templates.length})` },
+                        { key: 'auth_recovery', label: 'Auth & Recovery' },
+                        { key: 'exam_lifecycle', label: 'Exam Lifecycle' },
+                        { key: 'proctoring_security', label: 'Proctoring & Security' },
+                        { key: 'support_ops', label: 'Support & Operations' },
+                      ].map((tab) => {
+                        const active = templateCategoryFilter === tab.key;
+                        return (
+                          <button
+                            key={tab.key}
+                            type="button"
+                            onClick={() => setTemplateCategoryFilter(tab.key)}
+                            className={`btn btn-xs ${active ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{
+                              fontWeight: 700,
+                              background: active ? '#0284c7' : undefined,
+                              color: active ? '#ffffff' : '#cbd5e1',
+                            }}
+                          >
+                            {tab.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 12 }}>
+                      {templates
+                        .filter((t) => templateCategoryFilter === 'all' || t.category === templateCategoryFilter)
+                        .filter((t) => {
+                          if (!templateSearch.trim()) return true;
+                          const q = templateSearch.toLowerCase();
+                          return (
+                            t.key.toLowerCase().includes(q) ||
+                            t.name.toLowerCase().includes(q) ||
+                            t.triggerEvent.toLowerCase().includes(q) ||
+                            t.audience.toLowerCase().includes(q) ||
+                            t.description.toLowerCase().includes(q)
+                          );
+                        })
+                        .map((tpl, idx) => (
+                          <motion.div
+                            key={tpl.key}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.18, delay: Math.min(idx * 0.02, 0.24) }}
+                            style={{
+                              padding: '13px 14px',
+                              borderRadius: 11,
+                              background: 'rgba(7, 13, 30, 0.85)',
+                              border: '1px solid rgba(255,255,255,0.09)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              gap: 10,
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '2px 7px', borderRadius: 6, ...getTemplateBadgeStyle(tpl.key) }}>
+                                  {tpl.key}
+                                </span>
+                                <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#94A3B8' }}>
+                                  {tpl.categoryLabel}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#F8FAFC', marginBottom: 4 }}>
+                                {tpl.name}
+                              </div>
+                              <p style={{ margin: '0 0 6px', fontSize: '0.75rem', color: '#94A3B8', lineHeight: 1.45 }}>
+                                {tpl.description}
+                              </p>
+                              <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', color: '#38BDF8', opacity: 0.9, wordBreak: 'break-word' }}>
+                                Event: {tpl.triggerEvent}
+                              </div>
+                              <div style={{ fontSize: '0.68rem', color: '#A78BFA', marginTop: 2 }}>
+                                Audience: {tpl.audience}
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenTemplatePreview(tpl)}
+                                className="btn btn-xs btn-secondary"
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                              >
+                                <IconEye size={12} color="#38BDF8" /> Preview
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleLoadTemplateIntoComposer(tpl)}
+                                className="btn btn-xs btn-primary"
+                                style={{ background: '#0284c7', fontWeight: 700 }}
+                              >
+                                Use &amp; Dispatch
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowForwardersPanel(true);
+                                  setNewRuleTemplate(tpl.key);
+                                  setNewRuleName(`${tpl.name} Copy`);
+                                  showToast(`Selected "${tpl.key}" in Automated Forwarders.`, 'success');
+                                }}
+                                className="btn btn-xs btn-secondary"
+                                style={{ color: '#A78BFA' }}
+                              >
+                                Auto-Fwd
+                              </button>
+                            </div>
+                          </motion.div>
+                        ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Toast Notification */}
             {toast && (
               <div
@@ -720,10 +998,10 @@ export default function MailLogsPage() {
 
               <div className="card card-sm" style={{ borderLeft: '3px solid #a855f7' }}>
                 <div className="text-muted text-xs font-mono" style={{ textTransform: 'uppercase', marginBottom: 4 }}>
-                  Distinct Role Templates
+                  System Event Templates
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#c084fc' }}>
-                  10 Active
+                  {templates.length || 25} Active
                 </div>
               </div>
             </div>
@@ -762,7 +1040,8 @@ export default function MailLogsPage() {
                   className="input"
                   style={{ width: 'auto', minWidth: 220 }}
                 >
-                  {TEMPLATE_OPTIONS.map((opt) => (
+                  <option value="all">All Event &amp; Role Templates</option>
+                  {templateSelectOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>
@@ -1080,11 +1359,12 @@ export default function MailLogsPage() {
           <div
             style={{
               width: '100%',
-              maxWidth: 620,
+              maxWidth: 680,
+              maxHeight: '90vh',
+              overflowY: 'auto',
               background: '#0d1835',
               border: '1.5px solid rgba(2, 132, 199, 0.4)',
               borderRadius: 16,
-              overflow: 'hidden',
               boxShadow: '0 24px 60px rgba(0,0,0,0.85)',
             }}
             onClick={(e) => e.stopPropagation()}
@@ -1178,33 +1458,67 @@ export default function MailLogsPage() {
 
               <div style={{ marginBottom: 16 }}>
                 <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e2e8f0', marginBottom: 6, display: 'block' }}>
-                  Template Type
+                  System Event Template (Auto-Renders Institutional Brand HTML)
                 </label>
-                <select
-                  className="form-input"
-                  value={composeTemplate}
-                  onChange={(e) => {
-                    const t = e.target.value;
-                    setComposeTemplate(t);
-                    if (t === 'candidate_credentials') {
-                      setComposeSubject('LogicWhile LiRE — Your Examination Credentials');
-                      setComposeBody('<p>Dear Candidate,</p><p>Your examination credentials have been issued for the upcoming LogicWhile LiRE assessment.</p><p><strong>Hall Ticket:</strong> {{HALL_TICKET}}<br/><strong>Portal URL:</strong> https://logicwhilelire.com/enter-exam</p><p>Please enter your hall ticket and assigned exam code 15 minutes before slot start.</p>');
-                    } else if (t === 'verification_otp') {
-                      setComposeSubject('LogicWhile LiRE — Verification Code');
-                      setComposeBody('<p>Dear Candidate,</p><p>Your verification code for LogicWhile LiRE is: <strong>{{OTP}}</strong></p><p>This code is valid for 10 minutes. Do not share it with anyone.</p>');
-                    } else if (t === 'exam_schedule') {
-                      setComposeSubject('LogicWhile LiRE — Examination Schedule Announced');
-                      setComposeBody('<p>Dear Student,</p><p>The institutional examination schedule has been announced.</p><p>Exam Code: <strong>{{EXAM_CODE}}</strong></p><p>Ensure your camera and fullscreen permissions are verified.</p>');
-                    }
-                  }}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: '#070d1e', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}
-                >
-                  <option value="custom_broadcast">Custom Assessment Broadcast</option>
-                  <option value="candidate_credentials">Candidate Credentials &amp; Hall Ticket</option>
-                  <option value="verification_otp">Student Security OTP</option>
-                  <option value="exam_schedule">Examination Schedule Notice</option>
-                </select>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <select
+                    className="form-input"
+                    value={composeTemplate}
+                    onChange={(e) => handleComposerTemplateChange(e.target.value)}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: '#070d1e', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}
+                  >
+                    {templateSelectOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleRefreshComposerPreview}
+                    disabled={loadingComposePreview}
+                    className="btn btn-sm btn-secondary"
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
+                    {loadingComposePreview ? 'Rendering...' : 'Render Template'}
+                  </button>
+                </div>
               </div>
+
+              {(() => {
+                const activeTpl = templates.find((t) => t.key === composeTemplate);
+                if (!activeTpl || activeTpl.variables.length === 0) return null;
+                return (
+                  <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 10, background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.28)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#C4B5FD' }}>
+                        Template Variables — {activeTpl.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleRefreshComposerPreview}
+                        className="btn btn-xs btn-secondary"
+                        style={{ fontSize: '0.7rem' }}
+                      >
+                        Apply Variables to HTML
+                      </button>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 8 }}>
+                      {activeTpl.variables.map((vSpec) => (
+                        <div key={vSpec.key}>
+                          <label style={{ display: 'block', fontSize: '0.68rem', color: '#94A3B8', marginBottom: 3 }}>{vSpec.label}</label>
+                          <input
+                            type="text"
+                            className="form-input form-input-sm"
+                            value={composeVariables[vSpec.key] ?? vSpec.defaultValue}
+                            onChange={(e) => setComposeVariables((prev) => ({ ...prev, [vSpec.key]: e.target.value }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div style={{ marginBottom: 16 }}>
                 <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e2e8f0', marginBottom: 6, display: 'block' }}>
@@ -1362,6 +1676,127 @@ export default function MailLogsPage() {
                 </button>
               </div>
             </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Interactive Mail Template Live Preview & Parameter Modal */}
+      {templatePreviewModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0,0,0,0.84)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+          }}
+          onClick={() => setTemplatePreviewModal(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            style={{
+              width: '100%',
+              maxWidth: 920,
+              maxHeight: '92vh',
+              background: '#0d1835',
+              border: '1.5px solid rgba(56,189,248,0.4)',
+              borderRadius: 16,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.88)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ padding: '16px 22px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(56,189,248,0.08)' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 6, ...getTemplateBadgeStyle(templatePreviewModal.tpl.key) }}>
+                    {templatePreviewModal.tpl.key}
+                  </span>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#F8FAFC' }}>
+                    {templatePreviewModal.tpl.name}
+                  </h3>
+                </div>
+                <div style={{ fontSize: '0.76rem', color: '#94A3B8', marginTop: 4 }}>
+                  Subject: <span style={{ color: '#38BDF8', fontWeight: 600 }}>{templatePreviewModal.renderedSubject}</span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const m = templatePreviewModal;
+                    setTemplatePreviewModal(null);
+                    handleLoadTemplateIntoComposer(m.tpl, m.vars);
+                  }}
+                  className="btn btn-xs btn-primary"
+                  style={{ background: '#0284c7', fontWeight: 700 }}
+                >
+                  Open in Dispatch Composer →
+                </button>
+                <button onClick={() => setTemplatePreviewModal(null)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }} aria-label="Close">
+                  <IconCross size={18} color="#94A3B8" />
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(240px, 0.9fr) minmax(360px, 1.4fr)', flex: 1, overflow: 'hidden' }}>
+              <div style={{ padding: 16, borderRight: '1px solid rgba(255,255,255,0.08)', overflowY: 'auto', background: 'rgba(7,13,30,0.65)' }}>
+                <div style={{ fontSize: '0.76rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase', marginBottom: 8 }}>
+                  Template Parameters
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginBottom: 12 }}>
+                  Trigger: <span style={{ fontFamily: 'monospace', color: '#cbd5e1' }}>{templatePreviewModal.tpl.triggerEvent}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {templatePreviewModal.tpl.variables.map((vSpec) => (
+                    <div key={vSpec.key}>
+                      <label style={{ display: 'block', fontSize: '0.72rem', color: '#cbd5e1', fontWeight: 600, marginBottom: 4 }}>{vSpec.label}</label>
+                      <input
+                        type="text"
+                        className="form-input form-input-sm"
+                        value={templatePreviewModal.vars[vSpec.key] ?? ''}
+                        onChange={(e) =>
+                          setTemplatePreviewModal((prev) =>
+                            prev ? { ...prev, vars: { ...prev.vars, [vSpec.key]: e.target.value } } : null
+                          )
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  disabled={templatePreviewModal.loading}
+                  onClick={() => handleOpenTemplatePreview(templatePreviewModal.tpl, templatePreviewModal.vars)}
+                  className="btn btn-sm btn-primary"
+                  style={{ width: '100%', marginTop: 14, background: '#0284c7', fontWeight: 700 }}
+                >
+                  {templatePreviewModal.loading ? 'Rendering HTML...' : 'Re-Render Preview'}
+                </button>
+              </div>
+
+              <div style={{ padding: 14, background: '#070d1e', overflowY: 'auto' }}>
+                {templatePreviewModal.loading ? (
+                  <div style={{ height: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
+                    Rendering Institutional Brand Email Template...
+                  </div>
+                ) : (
+                  <iframe
+                    title="Mail Template Live Preview"
+                    srcDoc={templatePreviewModal.renderedHtml}
+                    style={{ width: '100%', height: 540, border: 'none', borderRadius: 10, background: '#0b1329' }}
+                    sandbox="allow-same-origin"
+                  />
+                )}
+              </div>
+            </div>
           </motion.div>
         </div>
       )}
